@@ -138,7 +138,16 @@ class TableService {
 
   Future<List<CafeTableInfo>> tables() async {
     try {
-      final res = await ApiClient.instance.dio.get('/cafe/tables', queryParameters: _loc);
+      Response res;
+      try {
+        res = await ApiClient.instance.dio.get('/v1/pos/tables', queryParameters: _loc);
+      } catch (_) {
+        try {
+          res = await ApiClient.instance.dio.get('/v1/tables', queryParameters: _loc);
+        } catch (_) {
+          res = await ApiClient.instance.dio.get('/cafe/tables', queryParameters: _loc);
+        }
+      }
       final body = res.data;
 
       final raw = body is Map ? (body['data'] ?? body['tables'] ?? body) : body;
@@ -211,7 +220,11 @@ class TableService {
 
   Future<void> release(String tableId) async {
     try {
-      await ApiClient.instance.dio.post('/cafe/tables/$tableId/release', queryParameters: _loc);
+      try {
+        await ApiClient.instance.dio.post('/v1/pos/tables/$tableId/release', queryParameters: _loc);
+      } catch (_) {
+        await ApiClient.instance.dio.post('/cafe/tables/$tableId/release', queryParameters: _loc);
+      }
     } catch (e) {
       throw ApiException.from(e);
     }
@@ -251,7 +264,12 @@ class TableService {
 
   Future<ActiveTableOrder?> getActiveOrder(String tableId) async {
     try {
-      final res = await ApiClient.instance.dio.get('/cafe/tables/$tableId/active-order', queryParameters: _loc);
+      Response res;
+      try {
+        res = await ApiClient.instance.dio.get('/v1/pos/tables/$tableId/active-order', queryParameters: _loc);
+      } catch (_) {
+        res = await ApiClient.instance.dio.get('/cafe/tables/$tableId/active-order', queryParameters: _loc);
+      }
       final body = res.data;
       final raw = body is Map<String, dynamic> ? body['data'] : (body is Map ? body['data'] : null);
       if (raw is! Map) return null;
