@@ -133,6 +133,8 @@ class AuthUser {
   final String name;
   final String email;
   final String role;
+  final bool isOwner;
+  final bool isVeloraStaff;
   final List<String> permissions;
   final String tenantId;
   final String tenantName;
@@ -144,6 +146,8 @@ class AuthUser {
     required this.name,
     required this.email,
     this.role = 'cashier',
+    this.isOwner = false,
+    this.isVeloraStaff = false,
     this.permissions = const [],
     required this.tenantId,
     required this.tenantName,
@@ -156,6 +160,8 @@ class AuthUser {
     String? name,
     String? email,
     String? role,
+    bool? isOwner,
+    bool? isVeloraStaff,
     List<String>? permissions,
     String? tenantId,
     String? tenantName,
@@ -167,6 +173,8 @@ class AuthUser {
       name: name ?? this.name,
       email: email ?? this.email,
       role: role ?? this.role,
+      isOwner: isOwner ?? this.isOwner,
+      isVeloraStaff: isVeloraStaff ?? this.isVeloraStaff,
       permissions: permissions ?? this.permissions,
       tenantId: tenantId ?? this.tenantId,
       tenantName: tenantName ?? this.tenantName,
@@ -175,14 +183,35 @@ class AuthUser {
     );
   }
 
-  /// Apakah pengguna ini adalah owner, admin, atau manager yang berhak mengelola cabang
+  /// Apakah pengguna ini adalah owner, admin, manager, atau staf elevated (berhak mengelola cabang, shift, dll).
+  /// Menggunakan logika terpadu RBAC (Permission), kepemilikan bisnis, dan pola heuristik peran.
   bool get isOwnerOrAdmin {
+    // 1. Cek langsung properti kepemilikan / staf internal Velora
+    if (isOwner || isVeloraStaff) return true;
+
+    // 2. Berbasis Hak Akses / Permission (RBAC dinamis)
+    for (final perm in permissions) {
+      final p = perm.toLowerCase();
+      if (p == '*' ||
+          p == 'all' ||
+          p == 'manage:all' ||
+          p == 'manage-all' ||
+          p == 'manage.all' ||
+          p.contains('dashboard') ||
+          p.contains('setting-user') ||
+          p.contains('manage-shifts') ||
+          p.contains('manage-roles') ||
+          p.contains('manage-pos')) {
+        if (p.contains('dashboard') || p.contains('setting-user') || p.contains('manage-roles') || p.contains('manage-shifts') || p == '*' || p == 'all' || p.contains('manage:all') || p.contains('manage-all')) {
+          return true;
+        }
+      }
+    }
+
+    // 3. Fallback Heuristik Pola Nama Role (Dinamis: Owner, Admin, Manager, Supervisor, Kepala Toko, PIC, Leader, Lead, Koordinator)
     final r = role.toLowerCase().trim();
-    return r == 'owner' ||
-        r == 'admin' ||
-        r == 'administrator' ||
-        r == 'manager' ||
-        r == 'supervisor';
+    final elevatedRegex = RegExp(r'(owner|admin|manager|manajer|supervisor|kepala|leader|lead|pic|koordinator)', caseSensitive: false);
+    return elevatedRegex.hasMatch(r);
   }
 
   /// Apakah pengguna ini adalah kasir atau staf toko biasa
@@ -197,14 +226,17 @@ class AuthUser {
 
   /// Nama label role bahasa Indonesia yang rapi untuk UI
   String get roleDisplayName {
+    if (isOwner) return 'Owner';
     final r = role.toLowerCase().trim();
     if (r == 'owner') return 'Owner';
     if (r == 'admin' || r == 'administrator') return 'Administrator';
-    if (r == 'manager') return 'Manajer';
+    if (r == 'manager' || r == 'manajer') return 'Manajer';
     if (r == 'supervisor') return 'Supervisor';
+    if (r.contains('kepala')) return role;
+    if (r.contains('lead') || r.contains('pic') || r.contains('koordinator')) return role;
     if (r == 'barista') return 'Barista';
     if (r == 'waiter' || r == 'pelayan') return 'Pelayan';
-    return 'Kasir';
+    return role.isNotEmpty ? role : 'Kasir';
   }
 
   static String _extractRole(Map<String, dynamic>? json) {
@@ -370,11 +402,23 @@ class AuthUser {
       ..._extractPermissions(source),
     }.toList();
 
+    final extractedRole = _extractRole(source.isNotEmpty ? source : json);
+    final isOwner = source.getBool(
+      'is_owner',
+      fallback: json.getBool('is_owner', fallback: extractedRole.toLowerCase().trim() == 'owner'),
+    );
+    final isVeloraStaff = source.getBool(
+      'is_velora_staff',
+      fallback: json.getBool('is_velora_staff'),
+    );
+
     return AuthUser(
       id: source.getInt('id', fallback: json.getInt('id')),
       name: source.getString('name', fallback: json.getString('name', fallback: 'Kasir')),
       email: source.getString('email', fallback: json.getString('email')),
-      role: _extractRole(source.isNotEmpty ? source : json),
+      role: extractedRole,
+      isOwner: isOwner,
+      isVeloraStaff: isVeloraStaff,
       permissions: perms,
       tenantId: source.getString('tenant_id', fallback: json.getString('tenant_id', fallback: json.getString('current_tenant_id'))),
       tenantName: tenant.getString('name', fallback: source.getString('store_name', fallback: json.getString('store_name', fallback: ''))),
