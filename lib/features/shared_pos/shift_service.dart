@@ -366,7 +366,7 @@ class ShiftService extends ChangeNotifier {
       data: {
         'opening_cash': startingCash,
         'starting_cash': startingCash,
-        if (locationId != null && locationId.isNotEmpty) 'location_id': locationId,
+        if (locationId != null && locationId.isNotEmpty) 'location_id': int.tryParse(locationId) ?? locationId,
         'notes': notes ?? 'Shift dibuka via Flutter POS',
       },
     );
@@ -380,13 +380,15 @@ class ShiftService extends ChangeNotifier {
     String? notes,
   }) async {
     final locationId = SessionStorage.instance.getLocationId();
+    final shiftIdVal = currentShift.shiftId;
     final response = await ApiClient.instance.dio.post(
       '/v1/pos/shift-close',
       data: {
-        'shift_id': currentShift.shiftId,
+        if (shiftIdVal != null && shiftIdVal.isNotEmpty) 'shift_id': int.tryParse(shiftIdVal) ?? shiftIdVal,
         'closing_cash': actualCash,
         'actual_cash': actualCash,
-        if (locationId != null && locationId.isNotEmpty) 'location_id': locationId,
+        'cash_actual': actualCash,
+        if (locationId != null && locationId.isNotEmpty) 'location_id': int.tryParse(locationId) ?? locationId,
         'notes': notes,
       },
     );

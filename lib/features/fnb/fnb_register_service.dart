@@ -119,7 +119,7 @@ class FnbRegisterService {
     final clientTxId = _uuid.v4();
     final payload = {
       'client_tx_id': clientTxId,
-      'location_id': locId,
+      'location_id': int.tryParse(locId) ?? locId,
       if (orderId != null && orderId.isNotEmpty) 'order_id': int.tryParse(orderId) ?? orderId,
       if (tableId != null && tableId.isNotEmpty) 'table_id': int.tryParse(tableId) ?? tableId,
       if (tableId != null && tableId.isNotEmpty) 'table_number': tableId,
