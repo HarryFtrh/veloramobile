@@ -190,7 +190,7 @@ class KitchenService {
     try {
       final id = SessionStorage.instance.getLocationId();
       final query = {
-        if (id != null && id.isNotEmpty) 'location_id': id,
+        if (id != null && id.isNotEmpty) 'location_id': int.tryParse(id) ?? id,
         'status': 'open,held,preparing,ready',
       };
       dynamic raw;
@@ -265,7 +265,7 @@ class KitchenService {
   Future<void> _post(String path) async {
     try {
       final id = SessionStorage.instance.getLocationId();
-      final query = {if (id != null && id.isNotEmpty) 'location_id': id};
+      final query = {if (id != null && id.isNotEmpty) 'location_id': int.tryParse(id) ?? id};
       try {
         await ApiClient.instance.dio.post('/v1/pos/orders/$path', queryParameters: query);
       } catch (_) {
@@ -285,7 +285,7 @@ class KitchenService {
     removeHeldOrder(orderId);
     try {
       final id = SessionStorage.instance.getLocationId();
-      final query = {if (id != null && id.isNotEmpty) 'location_id': id};
+      final query = {if (id != null && id.isNotEmpty) 'location_id': int.tryParse(id) ?? id};
       final data = {'reason': reason ?? 'Dibatalkan oleh kasir'};
       try {
         // Prioritas 1: Canonical POS v1 Void

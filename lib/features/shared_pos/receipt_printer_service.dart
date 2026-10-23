@@ -450,7 +450,9 @@ class ReceiptPrinterService {
   Future<Map<String, dynamic>?> fetchCloudPrinters() async {
     try {
       final locId = SessionStorage.instance.getLocationId();
-      final query = locId != null && locId.isNotEmpty ? {'location_id': locId} : null;
+      final query = locId != null && locId.isNotEmpty
+          ? {'location_id': int.tryParse(locId) ?? locId}
+          : null;
       dynamic raw;
       try {
         final res = await ApiClient.instance.dio.get('/v1/pos/printers', queryParameters: query);
@@ -490,7 +492,8 @@ class ReceiptPrinterService {
         'cashier_printer_id': cashierPrinterId,
         'kitchen_printer_id': kitchenPrinterId,
         'bar_printer_id': barPrinterId,
-        if (locId != null && locId.isNotEmpty) 'location_id': locId,
+        if (locId != null && locId.isNotEmpty)
+          'location_id': int.tryParse(locId) ?? locId,
       };
       try {
         await ApiClient.instance.dio.put('/v1/pos/printers/routing', data: payload);

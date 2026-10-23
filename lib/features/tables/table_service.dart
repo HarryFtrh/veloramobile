@@ -133,7 +133,7 @@ class TableService {
 
   Map<String, dynamic> get _loc {
     final id = SessionStorage.instance.getLocationId();
-    return {if (id != null && id.isNotEmpty) 'location_id': id};
+    return {if (id != null && id.isNotEmpty) 'location_id': int.tryParse(id) ?? id};
   }
 
   Future<List<CafeTableInfo>> tables() async {

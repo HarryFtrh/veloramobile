@@ -24,11 +24,17 @@ class PosCartItem {
   });
 
   Map<String, dynamic> toJson() {
+    final effectivePrice = price;
+    final effectiveQty = quantity;
+    final effectiveSubtotal = effectivePrice * effectiveQty;
     return {
-      'product_id': productId,
+      'product_id': int.tryParse(productId) ?? productId,
       'name': name,
-      'price': price,
-      'quantity': quantity,
+      'price': effectivePrice,
+      'unit_price': effectivePrice,
+      'quantity': effectiveQty,
+      'qty': effectiveQty,
+      'subtotal': effectiveSubtotal,
       'batch_number': ?batchNumber,
       'expiry_date': ?expiryDate,
       'modifiers': ?modifiers,
@@ -83,14 +89,33 @@ class PosCheckoutService {
 
     final payload = {
       'client_tx_id': clientTxId,
-      'location_id': locationId,
+      'location_id': int.tryParse(locationId) ?? locationId,
       'payment_method': paymentMethod,
+      'payment_details': [
+        {
+          'method': paymentMethod,
+          'payment_method': paymentMethod,
+          'amount': paidAmount,
+          'nominal': paidAmount,
+        }
+      ],
+      'payments': [
+        {
+          'method': paymentMethod,
+          'payment_method': paymentMethod,
+          'amount': paidAmount,
+          'nominal': paidAmount,
+        }
+      ],
       'total_amount': totalAmount,
       'grand_total': totalAmount,
       'subtotal': subtotal ?? totalAmount,
       'tax_total': ?taxAmount,
+      'tax_amount': ?taxAmount,
       'discount_total': ?discountAmount,
+      'discount_amount': ?discountAmount,
       'rounding_amount': ?roundingAmount,
+      'dp_amount': 0,
       'paid_amount': paidAmount,
       'change_amount': paidAmount >= totalAmount ? paidAmount - totalAmount : 0,
       'customer_name': ?customerName,

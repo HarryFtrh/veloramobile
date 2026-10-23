@@ -112,7 +112,7 @@ class CustomerService {
 
   Map<String, dynamic> _locationQuery() {
     final id = SessionStorage.instance.getLocationId();
-    return {if (id != null && id.isNotEmpty) 'location_id': id};
+    return {if (id != null && id.isNotEmpty) 'location_id': int.tryParse(id) ?? id};
   }
 
   Map<String, dynamic> _data(dynamic raw) {

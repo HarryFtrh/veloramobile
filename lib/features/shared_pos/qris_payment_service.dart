@@ -65,9 +65,9 @@ class QrisPaymentService {
     final locationId = SessionStorage.instance.getLocationId();
     final payload = {
       'amount': amount,
-      if (orderId != null && orderId.isNotEmpty) 'order_id': orderId,
+      if (orderId != null && orderId.isNotEmpty) 'order_id': int.tryParse(orderId) ?? orderId,
       if (tableNumber != null && tableNumber.isNotEmpty) 'table_number': tableNumber,
-      if (locationId != null && locationId.isNotEmpty) 'location_id': locationId,
+      if (locationId != null && locationId.isNotEmpty) 'location_id': int.tryParse(locationId) ?? locationId,
     };
 
     Response response;

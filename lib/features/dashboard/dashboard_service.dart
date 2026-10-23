@@ -69,7 +69,8 @@ class DashboardService {
     return {
       'start_date': _dateFmt.format(start),
       'end_date': _dateFmt.format(end),
-      if (locationId != null && locationId.isNotEmpty) 'location_id': locationId,
+      if (locationId != null && locationId.isNotEmpty)
+        'location_id': int.tryParse(locationId) ?? locationId,
     };
   }
 
