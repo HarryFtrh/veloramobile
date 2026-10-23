@@ -211,6 +211,19 @@ class _FnbRegisterScreenState extends State<FnbRegisterScreen> {
     if (_ctrl.busy) return;
     final bill = _ctrl.bill;
     if (bill == null || _ctrl.lines.isEmpty) return;
+
+    if (_ctrl.shiftId == null) {
+      final s = await _ctrl.refreshShift();
+      if ((s == null || !s.isOpen || _ctrl.shiftId == null) && mounted) {
+        _toast('Shift kasir belum aktif. Silakan buka shift kasir terlebih dahulu.');
+        await ShiftDialogs.showOpenShiftDialog(
+          context,
+          onOpened: (_) => _ctrl.refreshShift(),
+        );
+        if (_ctrl.shiftId == null || !mounted) return;
+      }
+    }
+
     final choice = await FnbPaymentSheet.show(context, bill.total);
     if (choice == null || !mounted) return;
 

@@ -178,6 +178,14 @@ class FnbRegisterService {
       if (tableId != null && tableId.isNotEmpty) 'table_number': tableId,
       if (customerName != null && customerName.isNotEmpty) 'customer_name': customerName,
       'payment_method': method,
+      'payments': [
+        {
+          'method': method,
+          'payment_method': method,
+          'amount': paid,
+          'nominal': paid,
+        }
+      ],
       'total_amount': bill.total,
       'grand_total': bill.total,
       'subtotal': bill.subtotal,

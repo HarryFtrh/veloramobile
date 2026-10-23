@@ -46,14 +46,17 @@ class ShiftStatus {
     if (active.isEmpty) {
       active = json.getMap('active_shift');
     }
+    // Jika data shift langsung berada di root (bukan nested di key 'shift')
+    if (active.isEmpty && (json.containsKey('status') || json.containsKey('id') || json.containsKey('starting_cash') || json.containsKey('opening_cash'))) {
+      active = json;
+    }
 
     // Determine if the shift is genuinely open
     final bool rawIsOpen = json.containsKey('is_open') ? json.getBool('is_open') : true;
-    final String statusStr = active.getString('status').toLowerCase();
+    final String statusStr = active.getString('status', fallback: json.getString('status')).toLowerCase();
     final bool isClosedStatus = statusStr == 'closed' || statusStr == 'ended' || statusStr == 'completed';
-    final bool hasClosedAt = active['closed_at'] != null &&
-        active.getString('closed_at').isNotEmpty &&
-        active.getString('closed_at') != 'null';
+    final bool hasClosedAt = (active['closed_at'] != null && active.getString('closed_at').isNotEmpty && active.getString('closed_at') != 'null') ||
+        (json['closed_at'] != null && json.getString('closed_at').isNotEmpty && json.getString('closed_at') != 'null');
 
     final bool isOpen = rawIsOpen && active.isNotEmpty && !isClosedStatus && !hasClosedAt;
 
@@ -68,12 +71,12 @@ class ShiftStatus {
     final user = active.getMap('user');
     final cashierName = user.getString(
       'name',
-      fallback: active.getString('cashier_name', fallback: 'Kasir'),
+      fallback: active.getString('cashier_name', fallback: json.getString('cashier_name', fallback: 'Kasir')),
     );
 
     final startingCash = active.getDouble(
       'starting_cash',
-      fallback: active.getDouble('opening_cash', fallback: 0),
+      fallback: active.getDouble('opening_cash', fallback: json.getDouble('starting_cash', fallback: json.getDouble('opening_cash', fallback: 0))),
     );
 
     final summaryMap = json.getMap('summary').isNotEmpty ? json.getMap('summary') : active;
@@ -145,7 +148,7 @@ class ShiftStatus {
 
     return ShiftStatus(
       isOpen: true,
-      shiftId: active.getString('id'),
+      shiftId: active.getString('id', fallback: active.getString('shift_id', fallback: json.getString('shift_id', fallback: json.getString('id')))),
       cashierName: cashierName,
       startingCash: startingCash,
       openedAt: active['opened_at'] != null ? DateTime.tryParse(active.getString('opened_at')) : null,

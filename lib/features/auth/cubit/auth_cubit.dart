@@ -54,6 +54,10 @@ class AuthCubit extends Cubit<AuthState> {
           role: liveUser.role,
         );
         await SessionStorage.instance.saveUserPermissions(liveUser.permissions);
+        if ((SessionStorage.instance.getLocationId() == null || SessionStorage.instance.getLocationId()!.isEmpty) && liveUser.locations.isNotEmpty) {
+          final primary = liveUser.locations.firstWhere((l) => l.isMain, orElse: () => liveUser.locations.first);
+          await SessionStorage.instance.saveLocation(id: primary.id, name: primary.name);
+        }
         final locName = SessionStorage.instance.getLocationName() ??
             (liveUser.locations.isNotEmpty ? liveUser.locations.first.name : 'Cabang Utama');
 
