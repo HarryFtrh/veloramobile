@@ -16,10 +16,12 @@ class RegisterLine {
     this.quantity = 1,
     this.note,
     this.options = const [],
+    this.orderItemId,
   });
 
   final String productId;
   final String name;
+  final String? orderItemId;
 
   /// Harga dasar produk, tanpa modifier.
   final num price;
@@ -71,6 +73,10 @@ class RegisterLine {
 
   Map<String, dynamic> toCheckoutJson() => {
         ...toOrderJson(),
+        if (orderItemId != null && orderItemId!.isNotEmpty) ...{
+          'order_item_id': int.tryParse(orderItemId!) ?? orderItemId,
+          'id': int.tryParse(orderItemId!) ?? orderItemId,
+        },
         'unit_price': unitPrice,
         'price': unitPrice,
         'subtotal': subtotal,
@@ -178,6 +184,14 @@ class FnbRegisterService {
       if (tableId != null && tableId.isNotEmpty) 'table_number': tableId,
       if (customerName != null && customerName.isNotEmpty) 'customer_name': customerName,
       'payment_method': method,
+      'payment_details': [
+        {
+          'method': method,
+          'payment_method': method,
+          'amount': paid,
+          'nominal': paid,
+        }
+      ],
       'payments': [
         {
           'method': method,
@@ -196,6 +210,7 @@ class FnbRegisterService {
       'tax_total': bill.tax,
       'tax_amount': bill.tax,
       'rounding_amount': bill.rounding,
+      'dp_amount': 0,
       'paid_amount': paid,
       'change_amount': change,
       if (shiftId != null && shiftId.isNotEmpty) 'shift_id': int.tryParse(shiftId) ?? shiftId,

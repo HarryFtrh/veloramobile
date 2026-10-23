@@ -193,6 +193,7 @@ class _FnbPaymentSplitScreenState extends State<FnbPaymentSplitScreen> {
               'checked': true,
               'line': RegisterLine(
                 productId: effectiveProdId,
+                orderItemId: it.id,
                 name: it.name,
                 price: it.price,
                 quantity: it.quantity,
