@@ -180,8 +180,11 @@ class _FnbPaymentSplitScreenState extends State<FnbPaymentSplitScreen> {
         );
         if (activeOrder != null && activeOrder.items.isNotEmpty) {
           _billItems = activeOrder.items.map((it) {
+            final effectiveProdId = it.productId.isNotEmpty ? it.productId : it.id;
             return {
               'id': it.id,
+              'order_item_id': it.id,
+              'product_id': effectiveProdId,
               'name': it.name,
               'notes': it.notes ?? '',
               'price': it.price.toInt(),
@@ -189,7 +192,7 @@ class _FnbPaymentSplitScreenState extends State<FnbPaymentSplitScreen> {
               'payQty': it.quantity,
               'checked': true,
               'line': RegisterLine(
-                productId: it.id,
+                productId: effectiveProdId,
                 name: it.name,
                 price: it.price,
                 quantity: it.quantity,
@@ -329,9 +332,10 @@ class _FnbPaymentSplitScreenState extends State<FnbPaymentSplitScreen> {
             ),
           );
         } else {
+          final prodId = (item['product_id'] ?? item['productId'] ?? item['id'] ?? 'item-${item['name']}').toString();
           selectedLines.add(
             RegisterLine(
-              productId: (item['id'] ?? 'item-${item['name']}').toString(),
+              productId: prodId,
               name: item['name']?.toString() ?? 'Item',
               price: (item['price'] as num?) ?? 0,
               quantity: payQty,
