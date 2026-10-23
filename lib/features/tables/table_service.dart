@@ -190,7 +190,12 @@ class TableService {
         'capacity': capacity,
         'position': ?position,
       };
-      final res = await ApiClient.instance.dio.post('/cafe/tables', data: payload);
+      Response res;
+      try {
+        res = await ApiClient.instance.dio.post('/v1/pos/tables', data: payload);
+      } catch (_) {
+        res = await ApiClient.instance.dio.post('/cafe/tables', data: payload);
+      }
       final body = res.data;
       final raw = body is Map ? (body['data'] ?? body) : body;
       if (raw is Map) {
@@ -245,7 +250,11 @@ class TableService {
         if (r.notes != null && r.notes!.trim().isNotEmpty)
           'notes': r.notes!.trim(),
       };
-      await ApiClient.instance.dio.post('/cafe/reservations', data: payload);
+      try {
+        await ApiClient.instance.dio.post('/v1/pos/reservations', data: payload);
+      } catch (_) {
+        await ApiClient.instance.dio.post('/cafe/reservations', data: payload);
+      }
     } catch (e) {
       throw ApiException.from(e);
     }
@@ -253,10 +262,17 @@ class TableService {
 
   Future<void> setReservationStatus(String reservationId, String status) async {
     try {
-      await ApiClient.instance.dio.patch(
-        '/cafe/reservations/$reservationId/status',
-        data: {'status': status},
-      );
+      try {
+        await ApiClient.instance.dio.patch(
+          '/v1/pos/reservations/$reservationId/status',
+          data: {'status': status},
+        );
+      } catch (_) {
+        await ApiClient.instance.dio.patch(
+          '/cafe/reservations/$reservationId/status',
+          data: {'status': status},
+        );
+      }
     } catch (e) {
       throw ApiException.from(e);
     }
