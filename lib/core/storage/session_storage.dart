@@ -93,7 +93,12 @@ class SessionStorage {
     final clean = _cleanString(token);
     if (clean != null) {
       _memCache[_tokenKey] = clean;
-      await _secureStorage.write(key: _tokenKey, value: clean);
+      try {
+        await _secureStorage.write(key: _tokenKey, value: clean);
+      } catch (e) {
+        // Fallback jika Keychain iOS Simulator terkunci atau error -34018
+        await _prefs?.setString(_tokenKey, clean);
+      }
     } else {
       await clearAuthToken();
     }
@@ -102,10 +107,15 @@ class SessionStorage {
   Future<String?> getAuthToken() async {
     try {
       final token = await _secureStorage.read(key: _tokenKey);
-      return _cleanString(token) ?? _cleanString(_memCache[_tokenKey]?.toString());
-    } catch (_) {
-      return _cleanString(_memCache[_tokenKey]?.toString());
-    }
+      final clean = _cleanString(token);
+      if (clean != null) return clean;
+    } catch (_) {}
+
+    // Fallback ke prefs atau memory cache
+    final fromPrefs = _cleanString(_prefs?.getString(_tokenKey));
+    if (fromPrefs != null) return fromPrefs;
+
+    return _cleanString(_memCache[_tokenKey]?.toString());
   }
 
   Future<void> clearAuthToken() async {
