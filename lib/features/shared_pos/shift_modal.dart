@@ -522,16 +522,18 @@ class ShiftDialogs {
                             child: const Icon(Icons.lock_clock_rounded, color: WarmPalette.secondary, size: 24),
                           ),
                           const SizedBox(width: 14),
-                          const Expanded(
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Tutup Shift & Rekonsiliasi Kasir',
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: WarmPalette.textPrimary),
+                                  currentShift.cashierName != null && currentShift.cashierName != 'Kasir'
+                                      ? 'Tutup Shift: ${currentShift.cashierName}'
+                                      : 'Tutup Shift & Rekonsiliasi Kasir',
+                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: WarmPalette.textPrimary),
                                 ),
-                                SizedBox(height: 2),
-                                Text(
+                                const SizedBox(height: 2),
+                                const Text(
                                   'Hitung total uang fisik di laci kasir & cetak Z-Report',
                                   style: TextStyle(fontSize: 12, color: WarmPalette.textSecondary),
                                 ),

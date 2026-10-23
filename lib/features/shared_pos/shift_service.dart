@@ -68,10 +68,15 @@ class ShiftStatus {
       );
     }
 
-    final user = active.getMap('user');
+    final user = active.getMap('user').isNotEmpty ? active.getMap('user') : active.getMap('opened_by');
     final cashierName = user.getString(
       'name',
-      fallback: active.getString('cashier_name', fallback: json.getString('cashier_name', fallback: 'Kasir')),
+      fallback: active.getString('cashier_name',
+        fallback: active.getString('opened_by_name',
+          fallback: active.getString('user_name',
+            fallback: active.getString('user',
+              fallback: json.getString('cashier_name',
+                fallback: json.getString('user_name', fallback: 'Kasir')))))),
     );
 
     final startingCash = active.getDouble(
@@ -417,15 +422,20 @@ class ShiftService extends ChangeNotifier {
     required String type, // 'in' or 'out'
     required num amount,
     required String reason,
+    String? shiftId,
   }) async {
     final locationId = SessionStorage.instance.getLocationId();
+    final effectiveShiftId = shiftId ?? _currentStatus?.shiftId;
     await ApiClient.instance.dio.post(
       '/v1/pos/petty-cash',
       data: {
         'type': type,
         'amount': amount,
         'reason': reason,
-        if (locationId != null && locationId.isNotEmpty) 'location_id': locationId,
+        if (effectiveShiftId != null && effectiveShiftId.isNotEmpty)
+          'shift_id': int.tryParse(effectiveShiftId) ?? effectiveShiftId,
+        if (locationId != null && locationId.isNotEmpty)
+          'location_id': int.tryParse(locationId) ?? locationId,
       },
     );
     await getShiftStatus();
