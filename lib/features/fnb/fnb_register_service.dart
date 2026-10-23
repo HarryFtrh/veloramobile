@@ -172,18 +172,21 @@ class FnbRegisterService {
     final change = paid > bill.total ? paid - bill.total : 0;
     final payload = {
       'client_tx_id': clientTxId,
-      'location_id': locId,
+      'location_id': int.tryParse(locId) ?? locId,
       if (orderId != null && orderId.isNotEmpty) 'order_id': int.tryParse(orderId) ?? orderId,
-      if (tableId != null) 'table_id': int.tryParse(tableId) ?? tableId,
-      'table_number': ?tableId,
+      if (tableId != null && tableId.isNotEmpty) 'table_id': int.tryParse(tableId) ?? tableId,
+      if (tableId != null && tableId.isNotEmpty) 'table_number': tableId,
       if (customerName != null && customerName.isNotEmpty) 'customer_name': customerName,
       'payment_method': method,
       'total_amount': bill.total,
       'grand_total': bill.total,
       'subtotal': bill.subtotal,
       'discount_total': bill.discount,
+      'discount_amount': bill.discount,
       if (voucherCode != null && voucherCode.isNotEmpty) 'voucher_code': voucherCode,
+      if (voucherCode != null && voucherCode.isNotEmpty) 'promo_code': voucherCode,
       'tax_total': bill.tax,
+      'tax_amount': bill.tax,
       'rounding_amount': bill.rounding,
       'paid_amount': paid,
       'change_amount': change,
@@ -198,8 +201,13 @@ class FnbRegisterService {
         res = await ApiClient.instance.dio.post('/v1/pos/checkout-sale', data: payload);
       } on DioException catch (e) {
         if (e.response?.statusCode == 404 || e.response?.statusCode == 405) {
-          // Fallback: Endpoint domain cafe
-          res = await ApiClient.instance.dio.post('/cafe/pos/checkout', data: payload);
+          try {
+            // Fallback 1: POS v1 Checkout (/v1/pos/checkout)
+            res = await ApiClient.instance.dio.post('/v1/pos/checkout', data: payload);
+          } catch (_) {
+            // Fallback 2: Endpoint domain cafe (/cafe/pos/checkout)
+            res = await ApiClient.instance.dio.post('/cafe/pos/checkout', data: payload);
+          }
         } else if (e.type == DioExceptionType.connectionError ||
                    e.type == DioExceptionType.connectionTimeout) {
           // Offline Guard: Simpan transaksi lokal v1 bila internet mati

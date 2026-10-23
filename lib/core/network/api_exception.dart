@@ -15,9 +15,29 @@ class ApiException implements Exception {
     if (error is DioException) {
       final status = error.response?.statusCode;
       final body = error.response?.data;
-      final serverMessage = body is Map
-          ? (body['message'] ?? body['error'])?.toString()
-          : null;
+      String? serverMessage;
+
+      if (body is Map) {
+        // Ambil detail error validasi spesifik dari Laravel (errors: {field: [message]})
+        if (body['errors'] is Map) {
+          final errMap = body['errors'] as Map;
+          final messages = <String>[];
+          for (final entry in errMap.entries) {
+            final val = entry.value;
+            if (val is List && val.isNotEmpty) {
+              messages.add(val.first.toString());
+            } else if (val != null) {
+              messages.add(val.toString());
+            }
+          }
+          if (messages.isNotEmpty) {
+            serverMessage = messages.join('\n');
+          }
+        }
+        serverMessage ??= (body['message'] ?? body['error'])?.toString();
+      } else if (body is String && body.isNotEmpty && !body.contains('<html') && !body.contains('<!DOCTYPE')) {
+        serverMessage = body;
+      }
 
       if (serverMessage != null && serverMessage.isNotEmpty && status != null && status < 500) {
         return ApiException(serverMessage, statusCode: status);
