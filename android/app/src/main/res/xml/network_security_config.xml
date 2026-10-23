@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Mencegah cleartext HTTP di seluruh aplikasi -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <!-- Hanya mempercayai sertifikat root resmi sistem Android.
+                 Sertifikat CA pengguna (User-installed CA dari Burp Suite/Charles Proxy/mitmproxy)
+                 otomatis ditolak untuk mencegah inspeksi payload MitM. -->
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- Konfigurasi domain khusus velora.co.id -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">velora.co.id</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+</network-security-config>

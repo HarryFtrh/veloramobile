@@ -1,0 +1,51 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    
+    {
+      "name": "Velora F&B (Debug)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main_fnb.dart",
+      "args": ["--flavor", "fnb", "--android-skip-build-dependency-validation"]
+    },
+    {
+      "name": "Velora F&B (Release - Super Cepat)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "release",
+      "program": "lib/main_fnb.dart",
+      "args": ["--flavor", "fnb", "--android-skip-build-dependency-validation"]
+    },
+    {
+      "name": "Velora Pharmacy (Debug)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main_pharmacy.dart",
+      "args": ["--flavor", "pharmacy", "--android-skip-build-dependency-validation"]
+    },
+    {
+      "name": "Velora Pharmacy (Release - Super Cepat)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "release",
+      "program": "lib/main_pharmacy.dart",
+      "args": ["--flavor", "pharmacy", "--android-skip-build-dependency-validation"]
+    },
+    {
+      "name": "Velora F&B Customer (Debug)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main_customer.dart",
+      "args": ["--flavor", "customer", "--android-skip-build-dependency-validation"]
+    },
+    {
+      "name": "Velora F&B Customer (Release)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "release",
+      "program": "lib/main_customer.dart",
+      "args": ["--flavor", "customer", "--android-skip-build-dependency-validation"]
+    }
+  ]
+}
