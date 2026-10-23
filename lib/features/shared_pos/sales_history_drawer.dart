@@ -4,6 +4,7 @@ import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/audio_helper.dart';
 import 'receipt_printer_service.dart';
 import 'pos_checkout_service.dart';
+import '../kitchen/kitchen_service.dart';
 
 class CompletedSaleRecord {
   final String invoiceNumber;
@@ -175,6 +176,10 @@ class _SalesHistoryDrawerState extends State<SalesHistoryDrawer> {
               setState(() {
                 sale.isVoided = true;
               });
+              KitchenService.instance.cancelOrder(
+                sale.invoiceNumber,
+                reason: 'Void via riwayat transaksi kasir',
+              );
               AudioHelper.actionFeedback();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
