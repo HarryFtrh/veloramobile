@@ -226,7 +226,9 @@ class _ExpenseFormState extends State<_ExpenseForm> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    final amount = double.parse(_amount.text);
+    final clean = _amount.text.replaceAll(RegExp(r'[^0-9.]'), '');
+    final amount = double.tryParse(clean) ?? 0.0;
+    if (amount <= 0) return;
     final month = widget.expense?.month ?? widget.defaultPeriod.month;
     final year = widget.expense?.year ?? widget.defaultPeriod.year;
     final service = FinanceService.instance;

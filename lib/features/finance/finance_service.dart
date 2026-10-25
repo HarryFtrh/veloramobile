@@ -110,7 +110,7 @@ class ReturnableOrder {
         status: json.getString('status'),
         items: json.getList<ReturnItem>(
           'items',
-          (e) => ReturnItem.fromJson(e as Map<String, dynamic>),
+          (e) => ReturnItem.fromJson(e is Map ? Map<String, dynamic>.from(e) : <String, dynamic>{}),
         ),
       );
 }
@@ -161,7 +161,7 @@ class FinanceService {
       return PagedResult(
         items: paginator.getList<Expense>(
           'data',
-          (e) => Expense.fromJson(e as Map<String, dynamic>),
+          (e) => Expense.fromJson(e is Map ? Map<String, dynamic>.from(e) : <String, dynamic>{}),
         ),
         page: paginator.getInt('current_page', fallback: 1),
         lastPage: paginator.getInt('last_page', fallback: 1),

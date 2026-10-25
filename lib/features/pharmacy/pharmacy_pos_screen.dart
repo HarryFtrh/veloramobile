@@ -183,14 +183,17 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
   void _showCheckoutDialog() {
     final grandTotal = _totalPrice + (_totalPrice > 0 ? _tuslahFee : 0);
     final cartItems = _cart.entries.map((e) {
-      final item = _drugItems.firstWhere((m) => m['id'] == e.key);
+      final item = _drugItems.firstWhere(
+        (m) => m['id'] == e.key,
+        orElse: () => <String, dynamic>{'id': e.key, 'name': 'Obat', 'price': 0},
+      );
       return PosCartItem(
         productId: e.key,
-        name: item['name'] as String,
-        price: item['price'] as num,
+        name: item['name']?.toString() ?? 'Obat',
+        price: (item['price'] as num?) ?? 0,
         quantity: e.value,
-        batchNumber: item['batch'] as String?,
-        expiryDate: (item['ed'] ?? item['exp']) as String?,
+        batchNumber: item['batch']?.toString(),
+        expiryDate: (item['ed'] ?? item['exp'])?.toString(),
       );
     }).toList();
 
