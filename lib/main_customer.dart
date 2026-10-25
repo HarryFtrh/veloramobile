@@ -5,6 +5,7 @@ import 'core/storage/session_storage.dart';
 import 'core/network/api_client.dart';
 import 'core/utils/app_locale.dart';
 import 'features/fnb_customer/customer_login_screen.dart';
+import 'core/utils/fallback_localizations.dart';
 import 'features/fnb_customer/customer_home_screen.dart';
 
 void main() async {
@@ -60,6 +61,20 @@ class _CustomerSelfOrderAppState extends State<CustomerSelfOrderApp> {
     return MaterialApp(
       title: 'Velora Self-Order',
       debugShowCheckedModeBanner: false,
+      locale: const Locale('id', 'ID'),
+      supportedLocales: const [
+        Locale('id', 'ID'),
+        Locale('en', 'US'),
+      ],
+      localizationsDelegates: const [
+        FallbackMaterialLocalizationsDelegate(),
+        FallbackWidgetsLocalizationsDelegate(),
+        FallbackCupertinoLocalizationsDelegate(),
+      ],
+      builder: (context, child) => Directionality(
+        textDirection: TextDirection.ltr,
+        child: child ?? const SizedBox.shrink(),
+      ),
       theme: AppTheme.build(AppFlavor.customer, Brightness.light),
       home: _isChecking
           ? const Scaffold(

@@ -5,6 +5,7 @@ import 'core/config/app_theme.dart';
 import 'core/storage/session_storage.dart';
 import 'core/network/api_client.dart';
 import 'core/components/splash_screen.dart';
+import 'core/utils/fallback_localizations.dart';
 import 'features/auth/cubit/auth_cubit.dart';
 import 'features/auth/cubit/auth_state.dart';
 import 'features/auth/login_screen.dart';
@@ -42,6 +43,20 @@ class VeloraSalesApp extends StatelessWidget {
     return MaterialApp(
       title: 'Velora Sales',
       debugShowCheckedModeBanner: false,
+      locale: const Locale('id', 'ID'),
+      supportedLocales: const [
+        Locale('id', 'ID'),
+        Locale('en', 'US'),
+      ],
+      localizationsDelegates: const [
+        FallbackMaterialLocalizationsDelegate(),
+        FallbackWidgetsLocalizationsDelegate(),
+        FallbackCupertinoLocalizationsDelegate(),
+      ],
+      builder: (context, child) => Directionality(
+        textDirection: TextDirection.ltr,
+        child: child ?? const SizedBox.shrink(),
+      ),
       theme: AppTheme.getTheme(AppFlavor.sales),
       home: BlocBuilder<AuthCubit, AuthState>(
         builder: (context, state) {
