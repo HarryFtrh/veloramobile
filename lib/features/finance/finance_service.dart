@@ -152,10 +152,20 @@ class FinanceService {
         'per_page': 20,
       };
       dynamic res;
-      try {
+      final endpoints = [
+        '/v1/pos/expenses',
+        '/v1/finance/expenses',
+        '/v1/pharmacy/finance/expenses',
+        '/pharmacy/finance/expenses',
+      ];
+      for (final ep in endpoints) {
+        try {
+          res = await ApiClient.instance.dio.get(ep, queryParameters: q);
+          if (res != null) break;
+        } catch (_) {}
+      }
+      if (res == null) {
         res = await ApiClient.instance.dio.get('/v1/pharmacy/finance/expenses', queryParameters: q);
-      } catch (_) {
-        res = await ApiClient.instance.dio.get('/pharmacy/finance/expenses', queryParameters: q);
       }
       final paginator = _data(res.data);
       return PagedResult(
@@ -203,10 +213,22 @@ class FinanceService {
         year: year,
         description: description,
       );
-      try {
+      bool success = false;
+      final endpoints = [
+        '/v1/pos/expenses',
+        '/v1/finance/expenses',
+        '/v1/pharmacy/finance/expenses',
+        '/pharmacy/finance/expenses',
+      ];
+      for (final ep in endpoints) {
+        try {
+          await ApiClient.instance.dio.post(ep, data: payload);
+          success = true;
+          break;
+        } catch (_) {}
+      }
+      if (!success) {
         await ApiClient.instance.dio.post('/v1/pharmacy/finance/expenses', data: payload);
-      } catch (_) {
-        await ApiClient.instance.dio.post('/pharmacy/finance/expenses', data: payload);
       }
     } catch (e) {
       throw ApiException.from(e);

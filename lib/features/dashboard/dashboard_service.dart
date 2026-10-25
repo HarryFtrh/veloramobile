@@ -56,8 +56,7 @@ class DashboardService {
     try {
       return switch (AppConfig.instance.flavor) {
         AppFlavor.pharmacy => await _pharmacy(start, end),
-        AppFlavor.fnb => await _cafe(start, end),
-        _ => throw const ApiException('Dashboard belum tersedia untuk aplikasi ini.'),
+        _ => await _cafe(start, end),
       };
     } catch (e) {
       throw ApiException.from(e);
