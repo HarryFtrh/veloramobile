@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import '../../core/storage/session_storage.dart';
 import '../auth/auth_service.dart';
+import '../customers/customer_service.dart';
 
 class CustomerLoginScreen extends StatefulWidget {
   const CustomerLoginScreen({super.key, this.onLoginSuccess});
@@ -106,6 +107,223 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
     }
   }
 
+  void _showHelpDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: WarmPalette.primary.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.help_outline_rounded, color: WarmPalette.primary, size: 22),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Pusat Bantuan',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Cara Pemesanan Self-Order:',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: WarmPalette.textPrimary),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              '1. Masuk menggunakan akun member atau pesan langsung sebagai tamu di meja.\n'
+              '2. Pilih menu favorit dan sesuaikan topping / kemanisan.\n'
+              '3. Bayar secara instan via QRIS atau bayar langsung di kasir.\n'
+              '4. Lacak status pembuatan kopi Anda secara real-time.',
+              style: TextStyle(fontSize: 12, height: 1.5, color: WarmPalette.textSecondary),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: WarmPalette.canvas,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: WarmPalette.line),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.support_agent_rounded, color: WarmPalette.secondary, size: 22),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Butuh bantuan staf? Panggil barista di meja pemesanan.',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: WarmPalette.textPrimary),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            style: FilledButton.styleFrom(
+              backgroundColor: WarmPalette.primary,
+              shape: const StadiumBorder(),
+            ),
+            child: const Text('Mengerti', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showForgotPasswordDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Lupa Kata Sandi?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+        content: const Text(
+          'Untuk alasan keamanan, silakan hubungi kasir atau barista di meja untuk mereset kata sandi akun Velora Member Anda, atau Anda dapat melanjutkan pesan sebagai tamu.',
+          style: TextStyle(fontSize: 13, height: 1.4, color: WarmPalette.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Tutup', style: TextStyle(color: WarmPalette.textSecondary)),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _continueAsGuest();
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: WarmPalette.primary,
+              shape: const StadiumBorder(),
+            ),
+            child: const Text('Lanjut Pesan Tamu', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRegisterDialog() {
+    final nameCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController();
+    final emailCtrl = TextEditingController();
+    bool isSubmitting = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (dialogCtx, setModalState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Daftar Member Baru', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Daftarkan diri Anda untuk mengumpulkan poin loyalitas dan promo eksklusif Velora.',
+                  style: TextStyle(fontSize: 12, color: WarmPalette.textSecondary),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Nama Lengkap *',
+                    prefixIcon: Icon(Icons.person_outline_rounded, size: 20),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: phoneCtrl,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'No. WhatsApp / HP *',
+                    prefixIcon: Icon(Icons.phone_outlined, size: 20),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: emailCtrl,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Email (Opsional)',
+                    prefixIcon: Icon(Icons.email_outlined, size: 20),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isSubmitting ? null : () => Navigator.of(ctx).pop(),
+              child: const Text('Batal'),
+            ),
+            FilledButton(
+              onPressed: isSubmitting
+                  ? null
+                  : () async {
+                      final name = nameCtrl.text.trim();
+                      final phone = phoneCtrl.text.trim();
+                      if (name.isEmpty || phone.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Nama dan nomor telepon wajib diisi')),
+                        );
+                        return;
+                      }
+                      setModalState(() => isSubmitting = true);
+                      try {
+                        await CustomerService.instance.createCustomer(
+                          name: name,
+                          phone: phone,
+                          email: emailCtrl.text.trim().isEmpty ? null : emailCtrl.text.trim(),
+                        );
+                        if (dialogCtx.mounted) {
+                          Navigator.of(dialogCtx).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Selamat bergabung, $name! Silakan masuk dengan akun Anda.'),
+                              backgroundColor: WarmPalette.success,
+                            ),
+                          );
+                          _emailCtrl.text = emailCtrl.text.trim().isNotEmpty ? emailCtrl.text.trim() : phone;
+                        }
+                      } catch (e) {
+                        setModalState(() => isSubmitting = false);
+                        if (dialogCtx.mounted) {
+                          ScaffoldMessenger.of(dialogCtx).showSnackBar(
+                            SnackBar(
+                              content: Text('Gagal mendaftar: ${e.toString().replaceAll("Exception: ", "")}'),
+                              backgroundColor: WarmPalette.error,
+                            ),
+                          );
+                        }
+                      }
+                    },
+              style: FilledButton.styleFrom(
+                backgroundColor: WarmPalette.primary,
+                shape: const StadiumBorder(),
+              ),
+              child: isSubmitting
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Text('Daftar', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
@@ -173,7 +391,7 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                         ),
                       ),
                       IconButton.filledTonal(
-                        onPressed: () {},
+                        onPressed: _showHelpDialog,
                         icon: const Icon(Icons.help_outline_rounded, size: 20),
                         style: IconButton.styleFrom(
                           backgroundColor: Colors.white.withValues(alpha: 0.2),
@@ -293,7 +511,7 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: WarmPalette.textPrimary),
                             ),
                             TextButton(
-                              onPressed: () {},
+                              onPressed: _showForgotPasswordDialog,
                               style: TextButton.styleFrom(
                                 padding: EdgeInsets.zero,
                                 minimumSize: Size.zero,
@@ -453,7 +671,7 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                         style: TextStyle(color: WarmPalette.line, fontSize: 13),
                       ),
                       GestureDetector(
-                        onTap: () {},
+                        onTap: _showRegisterDialog,
                         child: const Text(
                           'Daftar gratis ↗',
                           style: TextStyle(color: WarmPalette.secondary, fontSize: 13, fontWeight: FontWeight.w700),

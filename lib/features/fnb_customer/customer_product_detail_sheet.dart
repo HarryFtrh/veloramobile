@@ -51,6 +51,7 @@ class _CustomerProductDetailSheetState
   int _toppingsPrice = 0;
   int _quantity = 1;
   final _notesCtrl = TextEditingController();
+  bool _isFavorite = false;
 
   List<ModifierGroup> _apiModifierGroups = [];
   bool _isLoadingModifiers = true;
@@ -149,11 +150,23 @@ class _CustomerProductDetailSheetState
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(
-                        Icons.favorite_border_rounded,
+                      icon: Icon(
+                        _isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                         color: WarmPalette.primary,
                       ),
-                      onPressed: () {},
+                      onPressed: () {
+                        setState(() => _isFavorite = !_isFavorite);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              _isFavorite
+                                  ? '${widget.product.name} ditambahkan ke favorit!'
+                                  : '${widget.product.name} dihapus dari favorit',
+                            ),
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),

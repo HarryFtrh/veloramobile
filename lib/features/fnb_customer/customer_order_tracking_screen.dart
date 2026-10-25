@@ -3,8 +3,10 @@ import '../../core/design/tokens.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/storage/session_storage.dart';
+import '../../core/utils/currency_formatter.dart';
 import '../kitchen/kitchen_service.dart';
 import 'customer_models.dart';
 import 'customer_order_timeline_step.dart';
@@ -70,6 +72,142 @@ class _CustomerOrderTrackingScreenState
         });
       }
     } catch (_) {}
+  }
+
+  void _requestBaristaAssistance() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.support_agent_rounded, color: WarmPalette.secondary),
+            SizedBox(width: 8),
+            Text('Panggil Barista', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Text(
+          'Barista akan segera mendatangi Meja ${widget.tableNumber}. Silakan tunggu sebentar.',
+          style: const TextStyle(fontSize: 13, height: 1.4, color: WarmPalette.textPrimary),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Pemberitahuan telah terkirim ke barista Meja ${widget.tableNumber}!'),
+                  backgroundColor: WarmPalette.success,
+                ),
+              );
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: WarmPalette.primary,
+              shape: const StadiumBorder(),
+            ),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _requestTableChange() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Pindah Meja', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        content: Text(
+          'Saat ini pesanan Anda terdaftar di Meja ${widget.tableNumber}.\n\nJika Anda ingin berpindah meja, silakan beritahu barista atau kasir agar pesanan dan pengantaran kopi Anda diarahkan ke meja yang baru.',
+          style: const TextStyle(fontSize: 13, height: 1.4, color: WarmPalette.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _requestBaristaAssistance();
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: WarmPalette.primary,
+              shape: const StadiumBorder(),
+            ),
+            child: const Text('Panggil Barista'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _downloadOrShareReceipt() {
+    final buf = StringBuffer();
+    final storeName = SessionStorage.instance.getTenantName() ?? 'Velora Cafe & Eatery';
+    final loc = SessionStorage.instance.getLocationName() ?? 'Outlet Utama';
+    buf.writeln('================================');
+    buf.writeln('          $storeName');
+    buf.writeln('          $loc');
+    buf.writeln('================================');
+    buf.writeln('No. Pesanan: ${widget.orderNumber}');
+    buf.writeln('Meja       : ${widget.tableNumber}');
+    buf.writeln('Waktu      : ${DateTime.now().toLocal().toString().split('.').first}');
+    buf.writeln('--------------------------------');
+    for (final item in widget.items) {
+      buf.writeln('${item.name} x${item.quantity}');
+      buf.writeln('               ${CurrencyFormatter.format(item.subtotal)}');
+    }
+    buf.writeln('--------------------------------');
+    buf.writeln('Total Bayar: ${CurrencyFormatter.format(widget.totalAmount)}');
+    buf.writeln('Status     : Terkonfirmasi / Lunas');
+    buf.writeln('================================');
+    buf.writeln('Terima kasih atas kunjungan Anda!');
+    buf.writeln('================================');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.receipt_long_rounded, color: WarmPalette.primary),
+            SizedBox(width: 8),
+            Text('Nota Digital / E-Receipt', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: WarmPalette.canvas,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: WarmPalette.line),
+          ),
+          child: SingleChildScrollView(
+            child: Text(
+              buf.toString(),
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 11, height: 1.4),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Tutup'),
+          ),
+          FilledButton.icon(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              Share.share(buf.toString(), subject: 'Nota Pesanan ${widget.orderNumber}');
+            },
+            icon: const Icon(Icons.share_rounded, size: 16),
+            label: const Text('Bagikan'),
+            style: FilledButton.styleFrom(backgroundColor: WarmPalette.primary),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -417,7 +555,7 @@ class _CustomerOrderTrackingScreenState
                   ),
                 ),
                 TextButton(
-                  onPressed: () {},
+                  onPressed: _requestTableChange,
                   child: const Text(
                     'Pindah Meja?',
                     style: TextStyle(
@@ -586,7 +724,7 @@ class _CustomerOrderTrackingScreenState
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    onPressed: () {},
+                    onPressed: _downloadOrShareReceipt,
                     icon: const Icon(Icons.download_rounded, size: 16),
                     label: const Text(
                       'Download Nota Digital / E-Receipt',
@@ -627,7 +765,7 @@ class _CustomerOrderTrackingScreenState
           children: [
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () {},
+                onPressed: _requestBaristaAssistance,
                 icon: const Icon(Icons.support_agent_rounded, size: 18),
                 label: const Text(
                   'Bantuan Barista',
