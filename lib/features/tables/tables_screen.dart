@@ -1143,8 +1143,8 @@ class _TablesScreenState extends State<TablesScreen> {
                         style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
                       ),
                       Text(
-                        t.order?.customerName != null && t.order!.customerName!.isNotEmpty
-                            ? t.order!.customerName!
+                        (t.order?.customerName?.trim().isNotEmpty == true)
+                            ? t.order!.customerName!.trim()
                             : 'Pelanggan Umum',
                         style: const TextStyle(fontSize: 9.5, color: WarmPalette.textSecondary),
                         maxLines: 1,

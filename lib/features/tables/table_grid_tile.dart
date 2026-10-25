@@ -201,9 +201,8 @@ class TableGridTile extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        t.order?.customerName != null &&
-                                t.order!.customerName!.isNotEmpty
-                            ? t.order!.customerName!
+                        (t.order?.customerName?.trim().isNotEmpty == true)
+                            ? t.order!.customerName!.trim()
                             : 'Dine In',
                         style: const TextStyle(
                           fontSize: 10,

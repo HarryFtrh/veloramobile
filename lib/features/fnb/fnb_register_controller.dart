@@ -362,7 +362,7 @@ class RegisterController extends ChangeNotifier {
                 price: 0,
               );
 
-              if (!matchedOpts.any((existing) => existing.name.toLowerCase() == matched!.name.toLowerCase())) {
+              if (!matchedOpts.any((existing) => existing.name.toLowerCase() == matched.name.toLowerCase())) {
                 matchedOpts.add(matched);
               }
             }
@@ -449,7 +449,7 @@ class RegisterController extends ChangeNotifier {
             price: 0,
           );
 
-          if (!matchedOpts.any((existing) => existing.name.toLowerCase() == matched!.name.toLowerCase())) {
+          if (!matchedOpts.any((existing) => existing.name.toLowerCase() == matched.name.toLowerCase())) {
             matchedOpts.add(matched);
           }
         }

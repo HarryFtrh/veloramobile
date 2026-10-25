@@ -540,7 +540,7 @@ class _FnbRegisterScreenState extends State<FnbRegisterScreen> {
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
-                                  SessionStorage.instance.getLocationName()!,
+                                  SessionStorage.instance.getLocationName() ?? '',
                                   style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: WarmPalette.primary),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
