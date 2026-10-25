@@ -97,6 +97,12 @@ class AuthCubit extends Cubit<AuthState> {
           ],
         );
 
+        if (AppConfig.instance.flavor != AppFlavor.customer && cachedUser.isCustomerAccount) {
+          await SessionStorage.instance.clearAll();
+          emit(const Unauthenticated());
+          return;
+        }
+
         emit(Authenticated(user: cachedUser, activeLocationName: locationName));
       }
     } catch (e) {
