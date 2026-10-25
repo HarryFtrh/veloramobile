@@ -6,6 +6,7 @@ import '../../core/network/api_exception.dart';
 import '../../core/storage/session_storage.dart';
 import '../fnb/billing.dart';
 import '../fnb/fnb_register_service.dart';
+import '../fnb/modifiers.dart';
 import 'customer_cart_item_card.dart';
 import 'customer_models.dart';
 import 'customer_order_tracking_screen.dart';
@@ -82,17 +83,51 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
   Future<void> _checkout() async {
     setState(() => _isSubmitting = true);
     try {
-      final lines = widget.cartItems
-          .map(
-            (ci) => RegisterLine(
-              productId: ci.product.id,
-              name: ci.product.name,
-              price: ci.unitPrice,
-              quantity: ci.quantity,
-              note: ci.notes.isEmpty ? null : ci.notes,
-            ),
-          )
-          .toList();
+      final lines = widget.cartItems.map((ci) {
+        final opts = <ModifierOption>[];
+        if (ci.size.isNotEmpty && ci.size != 'Regular') {
+          opts.add(ModifierOption(
+            id: 'size_${ci.size}',
+            name: 'Ukuran: ${ci.size}',
+            price: ci.sizePrice,
+          ));
+        }
+        if (ci.sweetness.isNotEmpty && ci.sweetness != 'Normal (100%)') {
+          opts.add(ModifierOption(
+            id: 'sugar_${ci.sweetness}',
+            name: 'Gula: ${ci.sweetness}',
+            price: 0,
+          ));
+        }
+        if (ci.iceLevel.isNotEmpty && ci.iceLevel != 'Normal Ice') {
+          opts.add(ModifierOption(
+            id: 'ice_${ci.iceLevel}',
+            name: 'Es: ${ci.iceLevel}',
+            price: 0,
+          ));
+        }
+        for (final top in ci.toppings) {
+          if (top.isNotEmpty) {
+            final perTopPrice = ci.toppings.isNotEmpty && ci.toppingsPrice > 0
+                ? (ci.toppingsPrice / ci.toppings.length)
+                : 0;
+            opts.add(ModifierOption(
+              id: 'top_$top',
+              name: top,
+              price: perTopPrice,
+            ));
+          }
+        }
+
+        return RegisterLine(
+          productId: ci.product.id,
+          name: ci.product.name,
+          price: ci.product.basePrice,
+          quantity: ci.quantity,
+          note: ci.notes.isEmpty ? null : ci.notes,
+          options: opts,
+        );
+      }).toList();
 
       final userName = SessionStorage.instance.getUserName();
       final customerLabel = (userName != null && userName.isNotEmpty)
