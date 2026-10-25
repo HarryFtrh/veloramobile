@@ -392,7 +392,9 @@ class _DebtsTabState extends State<_DebtsTab>
                 ButtonSegment(value: DebtStatus.paid, label: Text('Lunas')),
               ],
               selected: {_status},
-              onSelectionChanged: (s) => _setStatus(s.first),
+              onSelectionChanged: (s) {
+                if (s.isNotEmpty) _setStatus(s.first);
+              },
             ),
           ),
           Expanded(

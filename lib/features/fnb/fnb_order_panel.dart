@@ -371,6 +371,7 @@ class FnbOrderPanel extends StatelessWidget {
                   ],
                   selected: {ctrl.orderType},
                   onSelectionChanged: (s) {
+                    if (s.isEmpty) return;
                     final newType = s.first;
                     Future.microtask(() {
                       ctrl.setOrderType(newType);

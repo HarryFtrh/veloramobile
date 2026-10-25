@@ -233,7 +233,8 @@ class _FnbPaymentSplitScreenState extends State<FnbPaymentSplitScreen> {
   int get _selectedItemsTotal {
     if (!_isSplitBill) return totalBillAmount;
     if (_splitMode == 'equal') {
-      final perPerson = (totalBillAmount / _paxCount).ceil();
+      final safePax = _paxCount > 0 ? _paxCount : 1;
+      final perPerson = (totalBillAmount / safePax).ceil();
       return (_paxToPay * perPerson).clamp(0, 999999999);
     }
     final itemsSum = _billItems
@@ -614,7 +615,7 @@ class _FnbPaymentSplitScreenState extends State<FnbPaymentSplitScreen> {
                         it['checked'] = true;
                       }
                     } else {
-                      _paxCount = _paxCount - _paxToPay;
+                      _paxCount = (_paxCount - _paxToPay).clamp(1, 20);
                       _paxToPay = 1;
                     }
                     _updatePreset(_selectedItemsTotal);
@@ -1107,7 +1108,7 @@ class _FnbPaymentSplitScreenState extends State<FnbPaymentSplitScreen> {
                         children: [
                           const Text('Bagian per 1 Orang', style: TextStyle(fontSize: 12, color: WarmPalette.textSecondary)),
                           Text(
-                            'Rp ${(totalBillAmount / _paxCount).ceil().toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
+                            'Rp ${(totalBillAmount / (_paxCount > 0 ? _paxCount : 1)).ceil().toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
                             style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: WarmPalette.secondary),
                           ),
                         ],

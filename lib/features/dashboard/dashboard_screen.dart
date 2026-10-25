@@ -72,7 +72,9 @@ class _RangePicker extends StatelessWidget {
             ButtonSegment(value: r, label: Text(r.label)),
         ],
         selected: {selected},
-        onSelectionChanged: (s) => onChanged(s.first),
+        onSelectionChanged: (s) {
+          if (s.isNotEmpty) onChanged(s.first);
+        },
       ),
     );
   }
