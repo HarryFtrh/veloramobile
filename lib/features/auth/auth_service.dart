@@ -484,10 +484,19 @@ class AuthService {
     required String email,
     required String password,
   }) async {
+    final flavor = AppConfig.instance.flavor;
+    final deviceName = switch (flavor) {
+      AppFlavor.customer => 'Velora Customer Self-Order',
+      AppFlavor.pharmacy => 'Velora Pharmacy POS Terminal',
+      AppFlavor.sales => 'Velora Sales Mobile Terminal',
+      AppFlavor.marketplace => 'Velora Marketplace Terminal',
+      _ => 'Velora Mobile POS Terminal',
+    };
+
     final payload = {
       'email': email,
       'password': password,
-      'device_name': 'Velora Mobile POS Terminal',
+      'device_name': deviceName,
     };
 
     Response response;
@@ -514,9 +523,18 @@ class AuthService {
   Future<AuthUser> loginWithGoogle({String? code, String? state}) async {
     // 1. Jika authorization code sudah tersedia dari callback OAuth
     if (code != null && code.isNotEmpty) {
+      final flavor = AppConfig.instance.flavor;
+      final deviceName = switch (flavor) {
+        AppFlavor.customer => 'Velora Customer Self-Order',
+        AppFlavor.pharmacy => 'Velora Pharmacy POS Terminal',
+        AppFlavor.sales => 'Velora Sales Mobile Terminal',
+        AppFlavor.marketplace => 'Velora Marketplace Terminal',
+        _ => 'Velora Mobile POS Terminal',
+      };
+
       final payload = <String, dynamic>{
         'code': code,
-        'device_name': 'Velora Mobile POS Terminal',
+        'device_name': deviceName,
       };
       if (state != null) {
         payload['state'] = state;
