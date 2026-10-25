@@ -4,13 +4,17 @@ import 'package:flutter/material.dart';
 
 import '../../core/design/tokens.dart';
 import '../../core/storage/session_storage.dart';
-import '../../core/utils/safe_json.dart';
 import '../fnb/fnb_payment_split_screen.dart';
 import '../shared_pos/pos_checkout_service.dart';
 import '../shared_pos/receipt_printer_service.dart';
 import '../shared_pos/shift_service.dart';
 import 'table_grid_tile.dart';
 import 'table_service.dart';
+import 'widgets/table_add_dialog.dart';
+import 'widgets/table_detail_pane.dart';
+import 'widgets/table_filter_ribbon.dart';
+import 'widgets/table_mobile_bottom_bar.dart';
+import 'widgets/table_transfer_dialog.dart';
 
 class TablesScreen extends StatefulWidget {
   const TablesScreen({super.key, this.onOpenTable});
@@ -104,24 +108,6 @@ class _TablesScreenState extends State<TablesScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
-
-  Color _statusColor(TableStatus s) {
-    return switch (s) {
-      TableStatus.available => WarmPalette.tertiary,
-      TableStatus.ordered => WarmPalette.primary,
-      TableStatus.occupied => WarmPalette.secondary,
-      TableStatus.reserved => const Color(0xFF6A4C93),
-    };
-  }
-
-  String _statusLabel(TableStatus s) {
-    return switch (s) {
-      TableStatus.available => 'Kosong',
-      TableStatus.ordered => 'Terisi',
-      TableStatus.occupied => 'Bill',
-      TableStatus.reserved => 'Booking',
-    };
-  }
 
   void _openPayment() {
     final t = _selectedTable;
@@ -243,167 +229,29 @@ class _TablesScreenState extends State<TablesScreen> {
       return;
     }
 
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (sheetCtx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Pindah ${fromTable.name} ke Meja Lain', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
-              const SizedBox(height: 4),
-              const Text('Pilih meja kosong tujuan perpindahan pelanggan:', style: TextStyle(fontSize: 12, color: WarmPalette.textSecondary)),
-              const SizedBox(height: 12),
-              Flexible(
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: availableTables.length,
-                  separatorBuilder: (_, _) => const Divider(height: 1, color: WarmPalette.line),
-                  itemBuilder: (_, i) {
-                    final target = availableTables[i];
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: WarmPalette.tertiary.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(Icons.table_restaurant_rounded, color: WarmPalette.tertiary, size: 20),
-                      ),
-                      title: Text(target.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                      subtitle: Text('Kapasitas ${target.capacity} Kursi • Kosong', style: const TextStyle(fontSize: 11, color: WarmPalette.textSecondary)),
-                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: WarmPalette.textSecondary),
-                      onTap: () {
-                        Navigator.pop(sheetCtx);
-                        _toast('✓ Meja ${fromTable.name} berhasil dipindah ke ${target.name}');
-                        _load();
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    await showTransferTableSheet(
+      context,
+      fromTable: fromTable,
+      availableTables: availableTables,
+      onTransferred: (target) {
+        _toast('✓ Meja ${fromTable.name} berhasil dipindah ke ${target.name}');
+        _load();
+      },
     );
   }
 
   void _showAddTableDialog() {
-    final nameCtrl = TextEditingController();
-    final capacityCtrl = TextEditingController(text: '4');
-    String position = 'indoor';
-    bool busy = false;
-
-    showDialog<void>(
-      context: context,
-      builder: (dialogCtx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          backgroundColor: Colors.white,
-          title: const Row(
-            children: [
-              Icon(Icons.table_restaurant_rounded, color: WarmPalette.primary),
-              SizedBox(width: 8),
-              Text('Tambah Meja Baru', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameCtrl,
-                textCapitalization: TextCapitalization.words,
-                decoration: InputDecoration(
-                  labelText: 'Nama Meja',
-                  hintText: 'Contoh: Meja 09, VIP 1',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: capacityCtrl,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: 'Kapasitas (Kursi / Pax)',
-                  hintText: '4',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                ),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: position,
-                decoration: InputDecoration(
-                  labelText: 'Posisi Ruangan',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'indoor', child: Text('Indoor / Ruang Utama')),
-                  DropdownMenuItem(value: 'outdoor', child: Text('Outdoor / Teras')),
-                  DropdownMenuItem(value: 'smoking', child: Text('Smoking Area')),
-                  DropdownMenuItem(value: 'vip', child: Text('Ruang VIP / Meeting')),
-                ],
-                onChanged: (val) {
-                  if (val != null) setDialogState(() => position = val);
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: busy ? null : () => Navigator.pop(dialogCtx),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: busy
-                  ? null
-                  : () async {
-                      final name = nameCtrl.text.trim();
-                      final cap = int.tryParse(capacityCtrl.text.trim()) ?? 4;
-                      if (name.isEmpty) {
-                        _toast('Nama meja tidak boleh kosong');
-                        return;
-                      }
-                      setDialogState(() => busy = true);
-                      try {
-                        await TableService.instance.createTable(
-                          name: name,
-                          capacity: cap,
-                          position: position,
-                        );
-                        if (dialogCtx.mounted) {
-                          Navigator.pop(dialogCtx);
-                        }
-                        if (mounted) {
-                          _toast('✓ $name berhasil ditambahkan');
-                          _load();
-                        }
-                      } catch (e) {
-                        setDialogState(() => busy = false);
-                        _toast('Gagal menambah meja: $e');
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: WarmPalette.primary,
-                foregroundColor: Colors.white,
-                shape: const StadiumBorder(),
-              ),
-              child: busy
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text('Simpan Meja'),
-            ),
-          ],
-        ),
-      ),
+    showAddTableDialog(
+      context,
+      onTableAdded: (name) {
+        if (mounted) {
+          _toast('✓ $name berhasil ditambahkan');
+          _load();
+        }
+      },
+      onError: (msg) {
+        if (mounted) _toast(msg);
+      },
     );
   }
 
@@ -430,7 +278,24 @@ class _TablesScreenState extends State<TablesScreen> {
       ),
       builder: (sheetContext) => SizedBox(
         height: MediaQuery.sizeOf(sheetContext).height * 0.88,
-        child: _buildTableDetailContent(isModal: true),
+        child: TableDetailPane(
+          table: _selectedTable,
+          activeOrder: _selectedActiveOrder,
+          isLoadingActiveOrder: _isLoadingActiveOrder,
+          isModal: true,
+          onClose: () => Navigator.pop(sheetContext),
+          onOpenPos: (table) {
+            Navigator.pop(sheetContext);
+            widget.onOpenTable?.call(table);
+          },
+          onPrintBill: _printBill,
+          onTransferTable: _showTransferTableDialog,
+          onReleaseTable: _releaseTable,
+          onDirectPayment: () {
+            Navigator.pop(sheetContext);
+            _openPayment();
+          },
+        ),
       ),
     );
   }
@@ -688,74 +553,13 @@ class _TablesScreenState extends State<TablesScreen> {
                         ],
 
                         // Dynamic Unified Filter Ribbon & Occupancy Pill
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          physics: const BouncingScrollPhysics(),
-                          child: Row(
-                            children: [
-                              _buildFilterTab(
-                                'all',
-                                'Semua',
-                                allTables.length,
-                                Icons.grid_view_rounded,
-                                null,
-                              ),
-                              const SizedBox(width: 8),
-                              _buildFilterTab(
-                                'available',
-                                'Kosong',
-                                availableCount,
-                                Icons.check_circle_outline_rounded,
-                                WarmPalette.tertiary,
-                              ),
-                              const SizedBox(width: 8),
-                              _buildFilterTab(
-                                'occupied',
-                                'Terisi',
-                                occupiedCount,
-                                Icons.restaurant_rounded,
-                                WarmPalette.primary,
-                              ),
-                              const SizedBox(width: 8),
-                              _buildFilterTab(
-                                'reserved',
-                                'Booking',
-                                reservedCount,
-                                Icons.bookmark_outline_rounded,
-                                const Color(0xFF6A4C93),
-                              ),
-                              const SizedBox(width: 10),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: WarmPalette.line),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.pie_chart_rounded,
-                                      size: 13,
-                                      color: WarmPalette.secondary,
-                                    ),
-                                    const SizedBox(width: 5),
-                                    Text(
-                                      allTables.isEmpty
-                                          ? '0 Meja'
-                                          : '${((occupiedCount / allTables.length) * 100).round()}% Terpakai',
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                        color: WarmPalette.textPrimary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                        TableFilterRibbon(
+                          selectedFilter: _selectedFilter,
+                          onFilterSelected: (val) => setState(() => _selectedFilter = val),
+                          allCount: allTables.length,
+                          availableCount: availableCount,
+                          occupiedCount: occupiedCount,
+                          reservedCount: reservedCount,
                         ),
                         const SizedBox(height: 14),
 
@@ -887,7 +691,21 @@ class _TablesScreenState extends State<TablesScreen> {
                   flex: 4,
                   child: Container(
                     color: Colors.white,
-                    child: _buildTableDetailContent(isModal: false),
+                    child: TableDetailPane(
+                      table: _selectedTable,
+                      activeOrder: _selectedActiveOrder,
+                      isLoadingActiveOrder: _isLoadingActiveOrder,
+                      isModal: false,
+                      onClose: () => setState(() {
+                        _selectedTable = null;
+                        _selectedActiveOrder = null;
+                      }),
+                      onOpenPos: (table) => widget.onOpenTable?.call(table),
+                      onPrintBill: _printBill,
+                      onTransferTable: _showTransferTableDialog,
+                      onReleaseTable: _releaseTable,
+                      onDirectPayment: _openPayment,
+                    ),
                   ),
                 ),
               ],
@@ -896,582 +714,20 @@ class _TablesScreenState extends State<TablesScreen> {
 
           // Floating Mobile Selection Bar
           bottomSheet: (!isWide && _selectedTable != null)
-              ? SafeArea(
-                  top: false,
-                  child: Container(
-                    margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: WarmPalette.line),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 14,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: () => _showMobileTableDetailSheet(_selectedTable!),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: _statusColor(_selectedTable!.status).withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Icon(
-                                  Icons.table_restaurant_rounded,
-                                  color: _statusColor(_selectedTable!.status),
-                                  size: 18,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Flexible(
-                                          child: Text(
-                                            sanitizeDisplayName(_selectedTable!.name),
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w800,
-                                              fontSize: 14,
-                                              color: WarmPalette.textPrimary,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                          decoration: BoxDecoration(
-                                            color: _statusColor(_selectedTable!.status).withValues(alpha: 0.12),
-                                            borderRadius: BorderRadius.circular(4),
-                                          ),
-                                          child: Text(
-                                            _statusLabel(_selectedTable!.status),
-                                            style: TextStyle(
-                                              color: _statusColor(_selectedTable!.status),
-                                              fontSize: 9,
-                                              fontWeight: FontWeight.w800,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      _selectedActiveOrder != null
-                                          ? 'Rp ${_selectedActiveOrder!.totalAmount.round().toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")} (${_selectedActiveOrder!.items.length} item)'
-                                          : (_selectedTable!.order != null
-                                              ? 'Rp ${_selectedTable!.order!.total.round().toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")} (${_selectedTable!.order!.itemCount} item)'
-                                              : 'Kapasitas ${_selectedTable!.capacity} Kursi • Kosong'),
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                        color: _selectedTable!.status != TableStatus.available
-                                            ? WarmPalette.primary
-                                            : WarmPalette.tertiary,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              if (_selectedTable!.status != TableStatus.available)
-                                FilledButton(
-                                  onPressed: _openPayment,
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: WarmPalette.primary,
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                    visualDensity: VisualDensity.compact,
-                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                  ),
-                                  child: const Text('Bayar', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800)),
-                                )
-                              else if (widget.onOpenTable != null)
-                                FilledButton(
-                                  onPressed: () => widget.onOpenTable!(_selectedTable!),
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: WarmPalette.tertiary,
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                    visualDensity: VisualDensity.compact,
-                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                  ),
-                                  child: const Text('Buka POS', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800)),
-                                ),
-                              const SizedBox(width: 4),
-                              InkWell(
-                                onTap: () => setState(() {
-                                  _selectedTable = null;
-                                  _selectedActiveOrder = null;
-                                }),
-                                borderRadius: BorderRadius.circular(12),
-                                child: const Padding(
-                                  padding: EdgeInsets.all(4),
-                                  child: Icon(Icons.close_rounded, size: 18, color: WarmPalette.textSecondary),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+              ? TableMobileBottomBar(
+                  table: _selectedTable!,
+                  activeOrder: _selectedActiveOrder,
+                  onTapDetails: () => _showMobileTableDetailSheet(_selectedTable!),
+                  onPayment: _openPayment,
+                  onOpenPos: widget.onOpenTable != null ? () => widget.onOpenTable!(_selectedTable!) : null,
+                  onClose: () => setState(() {
+                    _selectedTable = null;
+                    _selectedActiveOrder = null;
+                  }),
                 )
               : null,
         );
       },
-    );
-  }
-
-  Widget _buildTableDetailContent({required bool isModal}) {
-    final t = _selectedTable;
-    if (t == null) {
-      return const Center(child: Text('Pilih meja untuk melihat detail'));
-    }
-
-    final act = _selectedActiveOrder;
-    final total = act?.totalAmount.round() ?? t.order?.total.round() ?? 0;
-    final items = act?.items ?? [];
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16, isModal ? 4 : 20, 16, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        'Detail ${sanitizeDisplayName(t.name)}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 17,
-                          color: WarmPalette.textPrimary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                      decoration: BoxDecoration(
-                        color: _statusColor(t.status),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        _statusLabel(t.status),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close_rounded, size: 20),
-                onPressed: () {
-                  if (isModal) {
-                    Navigator.pop(context);
-                  } else {
-                    setState(() {
-                      _selectedTable = null;
-                      _selectedActiveOrder = null;
-                    });
-                  }
-                },
-              ),
-            ],
-          ),
-          Text(
-            'Kapasitas ${t.capacity} Kursi • ${t.status == TableStatus.available ? "Tersedia" : "Terpakai"}',
-            style: const TextStyle(fontSize: 11.5, color: WarmPalette.textSecondary),
-          ),
-          const SizedBox(height: 12),
-
-          // Stats cards
-          Row(
-            children: [
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: WarmPalette.surfaceMuted,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Jumlah Tamu',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: WarmPalette.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${t.capacity} Pax',
-                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
-                      ),
-                      Text(
-                        (t.order?.customerName?.trim().isNotEmpty == true)
-                            ? t.order!.customerName!.trim()
-                            : 'Pelanggan Umum',
-                        style: const TextStyle(fontSize: 9.5, color: WarmPalette.textSecondary),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: WarmPalette.surfaceMuted,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Total Tagihan',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: WarmPalette.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Rp ${total.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 13.5,
-                          color: WarmPalette.primary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        '${items.isNotEmpty ? items.length : (t.order?.itemCount ?? 0)} item terdaftar',
-                        style: const TextStyle(
-                          fontSize: 9.5,
-                          color: WarmPalette.tertiary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Order Items Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Pesanan Aktif di Meja',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: WarmPalette.surfaceMuted,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '${items.isNotEmpty ? items.length : (t.order?.itemCount ?? 0)} Item',
-                  style: const TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w700,
-                    color: WarmPalette.primary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          // Order Items List
-          Expanded(
-            child: _isLoadingActiveOrder
-                ? const Center(child: CircularProgressIndicator())
-                : items.isNotEmpty
-                    ? ListView.builder(
-                        itemCount: items.length,
-                        itemBuilder: (ctx, idx) {
-                          final it = items[idx];
-                          final sub = it.modifierNames.isNotEmpty
-                              ? it.modifierNames.join(' • ')
-                              : (it.notes ?? 'Standar');
-                          return _buildActiveOrderItem(
-                            '${it.quantity}x ${it.name}',
-                            sub,
-                            (it.price * it.quantity).round(),
-                          );
-                        },
-                      )
-                    : Center(
-                        child: Text(
-                          t.status == TableStatus.available
-                              ? 'Tidak ada pesanan aktif'
-                              : 'Memuat atau pesanan belum memiliki rincian',
-                          style: const TextStyle(
-                            color: WarmPalette.textSecondary,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-          ),
-          const SizedBox(height: 10),
-
-          // Action Buttons
-          SizedBox(
-            width: double.infinity,
-            height: 44,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                if (isModal) Navigator.pop(context);
-                widget.onOpenTable?.call(t);
-              },
-              icon: const Icon(Icons.add_shopping_cart_rounded, size: 17),
-              label: const FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  'Buka Menu POS (+ Tambah Menu)',
-                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800),
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: WarmPalette.primary,
-                foregroundColor: Colors.white,
-                shape: const StadiumBorder(),
-                elevation: 0,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          if (t.status != TableStatus.available) ...[
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _printBill(t),
-                    icon: const Icon(Icons.print_outlined, size: 15),
-                    label: const FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text('Cetak Bill', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: WarmPalette.textPrimary,
-                      side: const BorderSide(color: WarmPalette.line),
-                      shape: const StadiumBorder(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _showTransferTableDialog(t),
-                    icon: const Icon(Icons.sync_alt_rounded, size: 15),
-                    label: const FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text('Pindah Meja', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: WarmPalette.textPrimary,
-                      side: const BorderSide(color: WarmPalette.line),
-                      shape: const StadiumBorder(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _releaseTable(t),
-                    icon: const Icon(Icons.cleaning_services_rounded, size: 15),
-                    label: const FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text('Kosongkan', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: WarmPalette.danger,
-                      side: const BorderSide(color: WarmPalette.danger),
-                      shape: const StadiumBorder(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      if (isModal) Navigator.pop(context);
-                      _openPayment();
-                    },
-                    icon: const Icon(Icons.payments_rounded, size: 16),
-                    label: const FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text('Langsung Bayar', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800)),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: WarmPalette.secondary,
-                      foregroundColor: Colors.white,
-                      shape: const StadiumBorder(),
-                      elevation: 0,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterTab(
-    String key,
-    String title,
-    int count,
-    IconData icon,
-    Color? badgeColor,
-  ) {
-    final isSel = _selectedFilter == key;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedFilter = key),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 12),
-        decoration: BoxDecoration(
-          color: isSel ? WarmPalette.primary : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSel ? Colors.transparent : WarmPalette.line,
-          ),
-          boxShadow: isSel
-              ? [
-                  BoxShadow(
-                    color: WarmPalette.primary.withValues(alpha: 0.15),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 15,
-              color: isSel ? Colors.white : (badgeColor ?? WarmPalette.textSecondary),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              '$title ($count)',
-              style: TextStyle(
-                fontSize: 11.5,
-                fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
-                color: isSel ? Colors.white : WarmPalette.textPrimary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActiveOrderItem(
-    String name,
-    String sub,
-    int price,
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: WarmPalette.canvas,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: WarmPalette.line),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12.5,
-                    color: WarmPalette.textPrimary,
-                  ),
-                ),
-                Text(
-                  sub,
-                  style: const TextStyle(
-                    fontSize: 10.5,
-                    color: WarmPalette.textSecondary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            'Rp ${price.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
-            style: const TextStyle(
-              fontWeight: FontWeight.w800,
-              fontSize: 12,
-              color: WarmPalette.primary,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
