@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/design/tokens.dart';
 import '../../../shared_pos/qris_payment_service.dart';
-import '../cash_payment_numpad.dart';
+import '../../cash_payment_numpad.dart';
 import 'split_bill_cash_pane.dart';
 
 class SplitBillPaymentPane extends StatelessWidget {
