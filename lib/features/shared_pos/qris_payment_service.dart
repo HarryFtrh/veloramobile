@@ -43,7 +43,16 @@ class QrisInvoiceData {
 
     return QrisInvoiceData(
       transactionId: json.getString('transaction_id', fallback: json.getString('id', fallback: 'QRIS-${DateTime.now().millisecondsSinceEpoch}')),
-      qrString: json.getString('qr_string', fallback: json.getString('qr_content', fallback: json.getString('payload'))),
+      qrString: json.getString(
+        'qr_string',
+        fallback: json.getString(
+          'qr_code',
+          fallback: json.getString(
+            'qr_content',
+            fallback: json.getString('payload', fallback: json.getString('qr_url')),
+          ),
+        ),
+      ),
       amount: json.getDouble('amount', fallback: fallbackAmount.toDouble()),
       nmid: json.getString('nmid'),
       expiresAt: json['expires_at'] != null ? DateTime.tryParse(json.getString('expires_at')) : null,

@@ -53,8 +53,8 @@ class TableOrderInfo {
     final name = json.getString('customer_name');
     return TableOrderInfo(
       id: json.getString('id'),
-      total: json.getDouble('total_amount'),
-      itemCount: json.getInt('items_count'),
+      total: json.getDouble('total_amount', fallback: json.getDouble('grand_total', fallback: json.getDouble('total'))),
+      itemCount: json.getInt('items_count', fallback: json.getInt('item_count', fallback: json.getInt('total_items', fallback: 1))),
       createdAt:
           DateTime.tryParse(json.getString('created_at'))?.toLocal() ??
           DateTime.now(),
@@ -83,8 +83,8 @@ class CafeTableInfo {
   final TableReservationInfo? reservation;
 
   factory CafeTableInfo.fromJson(Map<String, dynamic> json) {
-    final order = json.getMap('active_order');
-    final reservation = json.getMap('active_reservation');
+    final order = json.getMap('active_order').isNotEmpty ? json.getMap('active_order') : json.getMap('order');
+    final reservation = json.getMap('active_reservation').isNotEmpty ? json.getMap('active_reservation') : json.getMap('reservation');
     return CafeTableInfo(
       id: json.getString('id'),
       name: json.getString(
@@ -325,11 +325,11 @@ class ActiveTableItem {
         id: json.getString('id').isNotEmpty
             ? json.getString('id')
             : json.getString('product_id'),
-        productId: json.getString('product_id'),
+        productId: json.getString('product_id', fallback: json.getString('menu_item_id')),
         name: sanitizeDisplayName(json.getString('name', fallback: 'Item')),
-        price: json.getDouble('price'),
-        quantity: json.getInt('quantity', fallback: 1),
-        notes: json.getString('notes').isEmpty ? null : json.getString('notes'),
+        price: json.getDouble('price', fallback: json.getDouble('unit_price')),
+        quantity: json.getInt('quantity', fallback: json.getInt('qty', fallback: 1)),
+        notes: json.getString('notes').isEmpty ? (json.getString('note').isEmpty ? null : json.getString('note')) : json.getString('notes'),
         modifiers: json.getList<dynamic>('modifiers', (e) => e),
         modifierNames: json.getList<String>(
           'modifierNames',
@@ -357,19 +357,30 @@ class ActiveTableOrder {
   final bool isAlreadyPaid;
   final List<ActiveTableItem> items;
 
-  factory ActiveTableOrder.fromJson(Map<String, dynamic> json) =>
-      ActiveTableOrder(
-        id: json.getString('id'),
-        customerName: sanitizeDisplayName(json.getString('customer_name')),
-        notes: json.getString('notes'),
-        subtotal: json.getDouble('subtotal'),
-        totalAmount: json.getDouble('total_amount'),
-        isAlreadyPaid: json.getBool('is_already_paid'),
-        items: json.getList<ActiveTableItem>(
-          'items',
-          (e) => ActiveTableItem.fromJson(
-            e is Map<String, dynamic> ? e : Map<String, dynamic>.from(e as Map),
-          ),
+  factory ActiveTableOrder.fromJson(Map<String, dynamic> json) {
+    List<ActiveTableItem> parsedItems = json.getList<ActiveTableItem>(
+      'items',
+      (e) => ActiveTableItem.fromJson(
+        e is Map<String, dynamic> ? e : Map<String, dynamic>.from(e as Map),
+      ),
+    );
+    if (parsedItems.isEmpty) {
+      parsedItems = json.getList<ActiveTableItem>(
+        'order_items',
+        (e) => ActiveTableItem.fromJson(
+          e is Map<String, dynamic> ? e : Map<String, dynamic>.from(e as Map),
         ),
       );
+    }
+
+    return ActiveTableOrder(
+      id: json.getString('id'),
+      customerName: sanitizeDisplayName(json.getString('customer_name')),
+      notes: json.getString('notes', fallback: json.getString('note')),
+      subtotal: json.getDouble('subtotal'),
+      totalAmount: json.getDouble('total_amount', fallback: json.getDouble('grand_total', fallback: json.getDouble('total'))),
+      isAlreadyPaid: json.getBool('is_already_paid', fallback: json.getString('status').toLowerCase() == 'paid'),
+      items: parsedItems,
+    );
+  }
 }

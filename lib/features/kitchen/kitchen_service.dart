@@ -147,6 +147,26 @@ class KitchenOrder {
     final notes = json.getString('notes', fallback: json.getString('note'));
     final tableNum = json.getString('table_number', fallback: json.getString('table_id'));
 
+    List<KitchenItem> parsedItems = json.getList<KitchenItem>('items', (e) {
+      if (e is Map<String, dynamic>) return KitchenItem.fromJson(e);
+      if (e is Map) return KitchenItem.fromJson(Map<String, dynamic>.from(e));
+      throw const FormatException('Invalid item');
+    });
+    if (parsedItems.isEmpty) {
+      parsedItems = json.getList<KitchenItem>('order_items', (e) {
+        if (e is Map<String, dynamic>) return KitchenItem.fromJson(e);
+        if (e is Map) return KitchenItem.fromJson(Map<String, dynamic>.from(e));
+        throw const FormatException('Invalid item');
+      });
+    }
+    if (parsedItems.isEmpty) {
+      parsedItems = json.getList<KitchenItem>('details', (e) {
+        if (e is Map<String, dynamic>) return KitchenItem.fromJson(e);
+        if (e is Map) return KitchenItem.fromJson(Map<String, dynamic>.from(e));
+        throw const FormatException('Invalid item');
+      });
+    }
+
     return KitchenOrder(
       id: json.getString('id'),
       number: json.getString('order_number', fallback: '#${json.getString('id')}'),
@@ -157,11 +177,7 @@ class KitchenOrder {
         _ => KitchenStage.fresh,
       },
       createdAt: DateTime.tryParse(json.getString('created_at'))?.toLocal() ?? DateTime.now(),
-      items: json.getList<KitchenItem>('items', (e) {
-        if (e is Map<String, dynamic>) return KitchenItem.fromJson(e);
-        if (e is Map) return KitchenItem.fromJson(Map<String, dynamic>.from(e));
-        throw const FormatException('Invalid item');
-      }),
+      items: parsedItems,
       status: status.isEmpty ? null : status,
       customerName: customer.isEmpty ? null : sanitizeDisplayName(customer),
       notes: notes.isEmpty ? null : notes,
