@@ -116,9 +116,9 @@ class VeloraApp extends StatelessWidget {
                   ),
                 if (user.can(AppPermission.viewDashboard))
                   ShellTab(
-                    label: 'Ringkasan',
-                    icon: Icons.bar_chart_outlined,
-                    selectedIcon: Icons.bar_chart,
+                    label: 'Dashboard',
+                    icon: Icons.dashboard_outlined,
+                    selectedIcon: Icons.dashboard_rounded,
                     builder: (_) => const DashboardScreen(),
                   ),
                 ShellTab(
@@ -128,6 +128,12 @@ class VeloraApp extends StatelessWidget {
                   builder: (_) => MoreScreen(
                     onLogout: () => context.read<AuthCubit>().logout(),
                     entries: [
+                      MoreEntry(
+                        icon: Icons.dashboard_rounded,
+                        title: 'Dashboard & Analitik Penjualan',
+                        subtitle: 'Ringkasan omzet harian, status pesanan, & tren',
+                        builder: (_) => const DashboardScreen(),
+                      ),
                       MoreEntry(
                         icon: Icons.coffee_rounded,
                         title: 'Mode Pelanggan (Customer Self-Order)',
