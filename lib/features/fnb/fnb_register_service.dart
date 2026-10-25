@@ -146,10 +146,11 @@ class FnbRegisterService {
       }
 
       final body = res.data;
-      final data = body is Map<String, dynamic> ? body['data'] : null;
-      if (data is Map) {
+      if (body is Map) {
+        final data = body['data'] is Map ? body['data'] as Map : body;
         final orderObj = data['order'] is Map ? data['order'] as Map : data;
-        return (orderObj['id'] ?? orderObj['order_number'] ?? orderObj['number'] ?? '').toString();
+        final orderId = (orderObj['id'] ?? orderObj['order_number'] ?? orderObj['number'] ?? '').toString();
+        if (orderId.isNotEmpty) return orderId;
       }
       return '';
     } catch (e) {
@@ -249,9 +250,18 @@ class FnbRegisterService {
       }
 
       final body = res.data;
-      final data = body is Map ? body['data'] : null;
-      final order = data is Map ? (data['order'] is Map ? data['order'] as Map : data) : const {};
-      final invoice = (order['order_number'] ?? order['invoice_number'] ?? order['id'] ?? 'INV-$clientTxId').toString();
+      Map<String, dynamic> data = {};
+      if (body is Map) {
+        final inner = body['data'] ?? body;
+        data = inner is Map ? Map<String, dynamic>.from(inner) : Map<String, dynamic>.from(body);
+      }
+      final order = data['order'] is Map ? Map<String, dynamic>.from(data['order'] as Map) : data;
+      final invoice = (order['order_number'] ??
+              order['invoice_number'] ??
+              order['id'] ??
+              (body is Map ? (body['invoice'] ?? body['invoice_number']) : null) ??
+              'INV-$clientTxId')
+          .toString();
       return CheckoutOutcome(invoice: invoice, change: change);
     } catch (e) {
       throw ApiException.from(e);

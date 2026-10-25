@@ -122,14 +122,20 @@ class FinanceService {
 
   Map<String, dynamic> _location() {
     final id = SessionStorage.instance.getLocationId();
-    return {if (id != null && id.isNotEmpty) 'location_id': id};
+    return {
+      if (id != null && id.isNotEmpty)
+        'location_id': int.tryParse(id) ?? id,
+    };
   }
 
   Map<String, dynamic> _data(dynamic raw) {
-    if (raw is Map<String, dynamic> && raw['data'] is Map<String, dynamic>) {
-      return raw['data'] as Map<String, dynamic>;
+    if (raw is Map) {
+      if (raw['data'] is Map) {
+        return Map<String, dynamic>.from(raw['data'] as Map);
+      }
+      return Map<String, dynamic>.from(raw);
     }
-    return raw is Map<String, dynamic> ? raw : <String, dynamic>{};
+    return <String, dynamic>{};
   }
 
   Future<PagedResult<Expense>> expenses({

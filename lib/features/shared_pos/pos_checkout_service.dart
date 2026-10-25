@@ -145,9 +145,18 @@ class PosCheckoutService {
       }
 
       final body = response.data;
-      final data = body is Map<String, dynamic> ? (body['data'] is Map<String, dynamic> ? body['data'] as Map<String, dynamic> : body) : <String, dynamic>{};
-      final order = data['order'] is Map<String, dynamic> ? data['order'] as Map<String, dynamic> : data;
-      final invoiceNum = (order['invoice_number'] ?? order['order_number'] ?? order['id'] ?? 'INV-$clientTxId').toString();
+      Map<String, dynamic> data = {};
+      if (body is Map) {
+        final inner = body['data'] ?? body;
+        data = inner is Map ? Map<String, dynamic>.from(inner) : Map<String, dynamic>.from(body);
+      }
+      final order = data['order'] is Map ? Map<String, dynamic>.from(data['order'] as Map) : data;
+      final invoiceNum = (order['invoice_number'] ??
+              order['order_number'] ??
+              order['id'] ??
+              (body is Map ? (body['invoice'] ?? body['invoice_number']) : null) ??
+              'INV-$clientTxId')
+          .toString();
 
       return PosCheckoutResult(
         success: true,

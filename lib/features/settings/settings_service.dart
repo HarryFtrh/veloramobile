@@ -41,11 +41,11 @@ class SettingsService {
         res = await ApiClient.instance.dio.get('/profile/tokens');
       }
       final body = res.data;
-      final raw = body is Map<String, dynamic> ? body['data'] : body;
+      final raw = body is Map ? (body['data'] ?? body['tokens'] ?? body) : body;
       if (raw is! List) return const [];
       return [
         for (final item in raw)
-          if (item is Map<String, dynamic>) ActiveSession.fromJson(item),
+          if (item is Map) ActiveSession.fromJson(Map<String, dynamic>.from(item)),
       ];
     } catch (e) {
       throw ApiException.from(e);

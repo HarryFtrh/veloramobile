@@ -78,15 +78,16 @@ class MarketplaceService {
 
     final rawData = response.data;
     List items = [];
-    if (rawData is Map<String, dynamic>) {
-      items = rawData['data'] is List ? rawData['data'] as List : [];
+    if (rawData is Map) {
+      final inner = rawData['data'];
+      items = inner is List ? inner : (rawData['products'] is List ? rawData['products'] as List : []);
     } else if (rawData is List) {
       items = rawData;
     }
 
     return items
-        .whereType<Map<String, dynamic>>()
-        .map((e) => MarketplaceProduct.fromJson(e))
+        .whereType<Map>()
+        .map((e) => MarketplaceProduct.fromJson(Map<String, dynamic>.from(e)))
         .toList();
   }
 
@@ -94,24 +95,27 @@ class MarketplaceService {
     final response = await ApiClient.instance.dio.get('/v1/mobile/customer/order-history');
     final rawData = response.data;
     List items = [];
-    if (rawData is Map<String, dynamic>) {
-      items = rawData['data'] is List ? rawData['data'] as List : [];
+    if (rawData is Map) {
+      final inner = rawData['data'];
+      items = inner is List ? inner : (rawData['orders'] is List ? rawData['orders'] as List : []);
     } else if (rawData is List) {
       items = rawData;
     }
 
     return items
-        .whereType<Map<String, dynamic>>()
-        .map((e) => MarketplaceOrderHistoryItem.fromJson(e))
+        .whereType<Map>()
+        .map((e) => MarketplaceOrderHistoryItem.fromJson(Map<String, dynamic>.from(e)))
         .toList();
   }
 
   Future<num> getPointsBalance() async {
     final response = await ApiClient.instance.dio.get('/v1/mobile/customer/points-balance');
     final rawData = response.data;
-    if (rawData is Map<String, dynamic>) {
-      final data = rawData['data'] is Map<String, dynamic> ? rawData['data'] : rawData;
-      return (data['points_balance'] as num?) ?? 0;
+    if (rawData is Map) {
+      final inner = rawData['data'] ?? rawData;
+      if (inner is Map) {
+        return (inner['points_balance'] as num?) ?? (inner['points'] as num?) ?? 0;
+      }
     }
     return 0;
   }
@@ -131,8 +135,9 @@ class MarketplaceService {
     );
 
     final rawData = response.data;
-    if (rawData is Map<String, dynamic>) {
-      return rawData['data'] is Map<String, dynamic> ? rawData['data'] : rawData;
+    if (rawData is Map) {
+      final inner = rawData['data'];
+      return inner is Map ? Map<String, dynamic>.from(inner) : Map<String, dynamic>.from(rawData);
     }
     return {};
   }

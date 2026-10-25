@@ -287,9 +287,11 @@ class TableService {
         res = await ApiClient.instance.dio.get('/cafe/tables/$tableId/active-order', queryParameters: _loc);
       }
       final body = res.data;
-      final raw = body is Map<String, dynamic> ? body['data'] : (body is Map ? body['data'] : null);
+      if (body is! Map) return null;
+      final inner = body['data'] ?? body['order'] ?? body;
+      final raw = (inner is Map && inner['order'] is Map) ? inner['order'] : inner;
       if (raw is! Map) return null;
-      return ActiveTableOrder.fromJson(Map<String, dynamic>.from(raw));
+      return ActiveTableOrder.fromJson(Map<String, dynamic>.from(raw as Map));
     } catch (e) {
       return null;
     }

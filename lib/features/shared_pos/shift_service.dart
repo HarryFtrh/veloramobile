@@ -351,13 +351,17 @@ class ShiftService extends ChangeNotifier {
     final response = await ApiClient.instance.dio.get(
       '/v1/pos/shift-status',
       queryParameters: {
-        if (locationId != null && locationId.isNotEmpty) 'location_id': locationId,
+        if (locationId != null && locationId.isNotEmpty)
+          'location_id': int.tryParse(locationId) ?? locationId,
       },
     );
     final rawData = response.data;
     Map<String, dynamic> data = {};
-    if (rawData is Map<String, dynamic>) {
-      data = rawData['data'] is Map<String, dynamic> ? rawData['data'] : rawData;
+    if (rawData is Map) {
+      final inner = rawData['data'];
+      data = inner is Map
+          ? Map<String, dynamic>.from(inner)
+          : Map<String, dynamic>.from(rawData);
     }
     _currentStatus = ShiftStatus.fromJson(data);
     notifyListeners();
@@ -399,8 +403,11 @@ class ShiftService extends ChangeNotifier {
     );
     final rawData = response.data;
     Map<String, dynamic> data = {};
-    if (rawData is Map<String, dynamic>) {
-      data = rawData['data'] is Map<String, dynamic> ? rawData['data'] as Map<String, dynamic> : rawData;
+    if (rawData is Map) {
+      final inner = rawData['data'];
+      data = inner is Map
+          ? Map<String, dynamic>.from(inner)
+          : Map<String, dynamic>.from(rawData);
     }
 
     final summary = ShiftCloseSummary.fromResponse(

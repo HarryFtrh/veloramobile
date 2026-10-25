@@ -116,14 +116,22 @@ class CustomerService {
   }
 
   Map<String, dynamic> _data(dynamic raw) {
-    if (raw is Map<String, dynamic> && raw['data'] is Map<String, dynamic>) {
-      return raw['data'] as Map<String, dynamic>;
+    if (raw is Map) {
+      if (raw['data'] is Map) {
+        return Map<String, dynamic>.from(raw['data'] as Map);
+      }
+      return Map<String, dynamic>.from(raw);
     }
-    return raw is Map<String, dynamic> ? raw : <String, dynamic>{};
+    return <String, dynamic>{};
   }
 
   PagedResult<T> _paged<T>(Map<String, dynamic> paginator, T Function(Map<String, dynamic>) map) {
-    final rows = paginator.getList<T>('data', (e) => map(e as Map<String, dynamic>));
+    final rows = paginator.getList<T>('data', (e) {
+      if (e is Map) {
+        return map(Map<String, dynamic>.from(e));
+      }
+      throw const FormatException('Invalid item format');
+    });
     return PagedResult(
       items: rows,
       page: paginator.getInt('current_page', fallback: 1),

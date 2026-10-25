@@ -98,9 +98,11 @@ class QrisPaymentService {
     }
 
     final body = response.data;
-    final data = body is Map<String, dynamic>
-        ? (body['data'] is Map<String, dynamic> ? body['data'] as Map<String, dynamic> : body)
-        : <String, dynamic>{};
+    Map<String, dynamic> data = {};
+    if (body is Map) {
+      final inner = body['data'] ?? body;
+      data = inner is Map ? Map<String, dynamic>.from(inner) : Map<String, dynamic>.from(body);
+    }
 
     final invoice = QrisInvoiceData.fromJson(data, amount);
     if (invoice.qrString.isEmpty && invoice.transactionId.isEmpty) {
@@ -124,9 +126,11 @@ class QrisPaymentService {
       }
 
       final body = response.data;
-      final data = body is Map<String, dynamic>
-          ? (body['data'] is Map<String, dynamic> ? body['data'] as Map<String, dynamic> : body)
-          : <String, dynamic>{};
+      Map<String, dynamic> data = {};
+      if (body is Map) {
+        final inner = body['data'] ?? body;
+        data = inner is Map ? Map<String, dynamic>.from(inner) : Map<String, dynamic>.from(body);
+      }
 
       final statusStr = data.getString('status').toLowerCase();
       if (statusStr == 'paid' || statusStr == 'settlement' || statusStr == 'success') {

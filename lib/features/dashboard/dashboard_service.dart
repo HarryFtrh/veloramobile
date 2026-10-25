@@ -75,10 +75,10 @@ class DashboardService {
   }
 
   Map<String, dynamic> _unwrap(dynamic raw) {
-    if (raw is Map<String, dynamic>) {
+    if (raw is Map) {
       final data = raw['data'];
-      if (data is Map<String, dynamic>) return data;
-      return raw;
+      if (data is Map) return Map<String, dynamic>.from(data);
+      return Map<String, dynamic>.from(raw);
     }
     return <String, dynamic>{};
   }

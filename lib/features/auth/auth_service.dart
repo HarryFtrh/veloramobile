@@ -578,10 +578,11 @@ class AuthService {
   /// Internal helper to parse login response, save secure session, and configure active branch
   Future<AuthUser> _processAuthResponse(dynamic rawData) async {
     Map<String, dynamic> data = {};
-    if (rawData is Map<String, dynamic>) {
-      data = rawData['data'] is Map<String, dynamic>
-          ? rawData['data'] as Map<String, dynamic>
-          : rawData;
+    if (rawData is Map) {
+      final inner = rawData['data'];
+      data = inner is Map
+          ? Map<String, dynamic>.from(inner)
+          : Map<String, dynamic>.from(rawData);
     }
 
     final token = data.getString('access_token', fallback: data.getString('token'));
@@ -651,10 +652,11 @@ class AuthService {
       }
       final rawData = response.data;
       Map<String, dynamic> data = {};
-      if (rawData is Map<String, dynamic>) {
-        data = rawData['data'] is Map<String, dynamic>
-            ? rawData['data'] as Map<String, dynamic>
-            : rawData;
+      if (rawData is Map) {
+        final inner = rawData['data'];
+        data = inner is Map
+            ? Map<String, dynamic>.from(inner)
+            : Map<String, dynamic>.from(rawData);
       }
       return AuthUser.fromJson(data);
     } on DioException catch (e) {

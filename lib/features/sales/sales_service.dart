@@ -69,8 +69,9 @@ class SalesService {
     );
 
     final rawData = response.data;
-    if (rawData is Map<String, dynamic>) {
-      return rawData['data'] is Map<String, dynamic> ? rawData['data'] : rawData;
+    if (rawData is Map) {
+      final inner = rawData['data'];
+      return inner is Map ? Map<String, dynamic>.from(inner) : Map<String, dynamic>.from(rawData);
     }
     return {};
   }
@@ -88,8 +89,9 @@ class SalesService {
     );
 
     final rawData = response.data;
-    if (rawData is Map<String, dynamic>) {
-      return rawData['data'] is Map<String, dynamic> ? rawData['data'] : rawData;
+    if (rawData is Map) {
+      final inner = rawData['data'];
+      return inner is Map ? Map<String, dynamic>.from(inner) : Map<String, dynamic>.from(rawData);
     }
     return {};
   }
@@ -98,15 +100,16 @@ class SalesService {
     final response = await ApiClient.instance.dio.get('/v1/mobile/salesman/schedule-visits');
     final rawData = response.data;
     List items = [];
-    if (rawData is Map<String, dynamic>) {
-      items = rawData['data'] is List ? rawData['data'] as List : [];
+    if (rawData is Map) {
+      final inner = rawData['data'];
+      items = inner is List ? inner : (rawData['visits'] is List ? rawData['visits'] as List : []);
     } else if (rawData is List) {
       items = rawData;
     }
 
     return items
-        .whereType<Map<String, dynamic>>()
-        .map((e) => SalesVisit.fromJson(e))
+        .whereType<Map>()
+        .map((e) => SalesVisit.fromJson(Map<String, dynamic>.from(e)))
         .toList();
   }
 
@@ -132,8 +135,9 @@ class SalesService {
     );
 
     final rawData = response.data;
-    if (rawData is Map<String, dynamic>) {
-      return rawData['data'] is Map<String, dynamic> ? rawData['data'] : rawData;
+    if (rawData is Map) {
+      final inner = rawData['data'];
+      return inner is Map ? Map<String, dynamic>.from(inner) : Map<String, dynamic>.from(rawData);
     }
     return {};
   }
@@ -156,8 +160,9 @@ class SalesService {
     );
 
     final rawData = response.data;
-    if (rawData is Map<String, dynamic>) {
-      return rawData['data'] is Map<String, dynamic> ? rawData['data'] : rawData;
+    if (rawData is Map) {
+      final inner = rawData['data'];
+      return inner is Map ? Map<String, dynamic>.from(inner) : Map<String, dynamic>.from(rawData);
     }
     return {};
   }

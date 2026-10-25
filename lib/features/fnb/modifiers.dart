@@ -122,7 +122,9 @@ class ModifierService {
   Future<List<ModifierGroup>> groups() async {
     try {
       final id = SessionStorage.instance.getLocationId();
-      final q = {if (id != null && id.isNotEmpty) 'location_id': id};
+      final q = {
+        if (id != null && id.isNotEmpty) 'location_id': int.tryParse(id) ?? id,
+      };
       dynamic body;
       try {
         final res = await ApiClient.instance.dio.get('/v1/pos/modifiers', queryParameters: q);
@@ -131,11 +133,21 @@ class ModifierService {
         final res = await ApiClient.instance.dio.get('/cafe/menu/modifiers', queryParameters: q);
         body = res.data;
       }
-      final raw = body is Map<String, dynamic> ? body['data'] : body;
-      if (raw is! List) return const [];
+      List? list;
+      if (body is List) {
+        list = body;
+      } else if (body is Map) {
+        final inner = body['data'] ?? body['modifiers'] ?? body['modifier_groups'] ?? body['groups'];
+        if (inner is List) {
+          list = inner;
+        } else if (inner is Map && inner['data'] is List) {
+          list = inner['data'] as List;
+        }
+      }
+      if (list == null) return const [];
       return [
-        for (final e in raw)
-          if (e is Map<String, dynamic>) ModifierGroup.fromJson(e),
+        for (final e in list)
+          if (e is Map) ModifierGroup.fromJson(Map<String, dynamic>.from(e)),
       ].where((g) => g.options.isNotEmpty).toList();
     } catch (e) {
       throw ApiException.from(e);
