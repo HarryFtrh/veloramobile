@@ -251,7 +251,7 @@ class _FnbRegisterScreenState extends State<FnbRegisterScreen> {
         tax: bill.tax,
         grandTotal: bill.total,
         paidAmount: choice.paid,
-        changeAmount: 0,
+        changeAmount: choice.paid > bill.total ? choice.paid - bill.total : 0,
         paymentMethod: choice.method,
       );
 

@@ -369,6 +369,7 @@ class RegisterController extends ChangeNotifier {
 
             lines.add(RegisterLine(
               productId: item.productId,
+              orderItemId: item.id,
               name: item.name,
               price: item.price,
               quantity: item.quantity,
@@ -461,6 +462,7 @@ class RegisterController extends ChangeNotifier {
 
         lines.add(RegisterLine(
           productId: prodId,
+          orderItemId: item.id,
           name: item.name,
           price: basePrice,
           quantity: item.quantity,
@@ -498,12 +500,13 @@ class RegisterController extends ChangeNotifier {
     if (lines.isEmpty) throw ApiException.from('Keranjang masih kosong');
     busy = true;
     notifyListeners();
+    final effectiveOrderId = activeOrderId ?? existingOrderId;
     try {
       final id = await _service.sendToKitchen(
         lines: lines,
         tableId: table?.id,
         customerName: customerName,
-        orderId: existingOrderId,
+        orderId: effectiveOrderId,
         isHold: false,
         orderType: orderType.name,
       );
@@ -527,19 +530,20 @@ class RegisterController extends ChangeNotifier {
 
     busy = true;
     notifyListeners();
+    final effectiveOrderId = activeOrderId ?? existingOrderId;
     try {
       final id = await _service.sendToKitchen(
         lines: lines,
         tableId: table?.id,
         customerName: effectiveCustomer,
-        orderId: existingOrderId,
+        orderId: effectiveOrderId,
         isHold: true,
         orderType: orderType.name,
       );
 
       final orderIdToRegister = id.isNotEmpty
           ? id
-          : (existingOrderId ?? 'HOLD-${DateTime.now().millisecondsSinceEpoch}');
+          : (effectiveOrderId ?? 'HOLD-${DateTime.now().millisecondsSinceEpoch}');
 
       KitchenService.instance.registerLocalHeldOrder(
         KitchenOrder(
@@ -580,20 +584,21 @@ class RegisterController extends ChangeNotifier {
     if (b == null) throw ApiException.from('Pengaturan pajak belum termuat');
     busy = true;
     notifyListeners();
+    final effectiveOrderId = activeOrderId ?? existingOrderId;
     try {
       final res = await _service.checkout(
         lines: lines,
         bill: b,
         method: method,
         paid: paid,
-        orderId: existingOrderId,
+        orderId: effectiveOrderId,
         tableId: table?.id,
         customerName: customerName,
         shiftId: shiftId,
         voucherCode: activeVoucherCode,
       );
-      if (existingOrderId != null) {
-        KitchenService.instance.removeHeldOrder(existingOrderId!);
+      if (effectiveOrderId != null) {
+        KitchenService.instance.removeHeldOrder(effectiveOrderId);
       }
       existingOrderId = null;
       return res;

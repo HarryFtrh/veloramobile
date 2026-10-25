@@ -373,7 +373,19 @@ class _FnbPaymentSplitScreenState extends State<FnbPaymentSplitScreen> {
 
       await ReceiptPrinterService.instance.openCashDrawer();
     } catch (e) {
-      debugPrint('Checkout API note: $e');
+      debugPrint('Checkout API error: $e');
+      if (mounted) {
+        setState(() => _submitting = false);
+        final errorMsg = ApiException.from(e).message;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Pembayaran gagal: $errorMsg'),
+            backgroundColor: WarmPalette.danger,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+      return;
     } finally {
       if (mounted) setState(() => _submitting = false);
     }

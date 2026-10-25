@@ -149,7 +149,10 @@ class _FnbPaymentSheetState extends State<FnbPaymentSheet> {
                 keyboardType: TextInputType.number,
                 style: const TextStyle(fontSize: 13),
                 decoration: const InputDecoration(labelText: 'Nominal lain', prefixText: 'Rp '),
-                onChanged: (v) => setState(() => _paid = num.tryParse(v) ?? 0),
+                onChanged: (v) {
+                  final clean = v.replaceAll('.', '').replaceAll(',', '').replaceAll(' ', '');
+                  setState(() => _paid = num.tryParse(clean) ?? 0);
+                },
               ),
               const SizedBox(height: Gap.sm),
               Row(

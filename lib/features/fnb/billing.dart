@@ -350,7 +350,10 @@ class BillingSettings {
   /// 5. `GET /v1/pos/vouchers`
   static Future<List<StorePromotion>> fetchDiscountsFromApi() async {
     final locId = SessionStorage.instance.getLocationId();
-    final qLoc = {if (locId != null && locId.isNotEmpty) 'location_id': locId};
+    final qLoc = {
+      if (locId != null && locId.isNotEmpty)
+        'location_id': int.tryParse(locId) ?? locId,
+    };
 
     final endpoints = [
       '/v1/pos/discounts',
@@ -411,7 +414,8 @@ class BillingSettings {
       'promo_code': cleanCode,
       'voucher_code': cleanCode,
       'subtotal': subtotal,
-      if (locId != null && locId.isNotEmpty) 'location_id': locId,
+      if (locId != null && locId.isNotEmpty)
+        'location_id': int.tryParse(locId) ?? locId,
     };
 
     final postEndpoints = [
@@ -446,7 +450,8 @@ class BillingSettings {
     for (final ep in getEndpoints) {
       try {
         final res = await ApiClient.instance.dio.get(ep, queryParameters: {
-          if (locId != null && locId.isNotEmpty) 'location_id': locId,
+          if (locId != null && locId.isNotEmpty)
+        'location_id': int.tryParse(locId) ?? locId,
         });
         final raw = res.data;
         Map<String, dynamic>? dataMap;
@@ -469,7 +474,10 @@ class BillingSettings {
   static Future<BillingSettings> fetch() async {
     try {
       final locId = SessionStorage.instance.getLocationId();
-      final qLoc = {if (locId != null && locId.isNotEmpty) 'location_id': locId};
+      final qLoc = {
+      if (locId != null && locId.isNotEmpty)
+        'location_id': int.tryParse(locId) ?? locId,
+    };
       dynamic body;
       try {
         final res = await ApiClient.instance.dio.get('/v1/pos/config', queryParameters: qLoc);
