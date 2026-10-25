@@ -83,63 +83,189 @@ class _MembersTabState extends State<_MembersTab>
     });
   }
 
+  Future<void> _showAddCustomerDialog() async {
+    final nameCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController();
+    final emailCtrl = TextEditingController();
+    bool saving = false;
+    String? err;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDlgState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.person_add_rounded, color: WarmPalette.primary),
+              SizedBox(width: 10),
+              Text('Tambah Pelanggan Baru', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (err != null)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: WarmPalette.danger.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(err!, style: const TextStyle(color: WarmPalette.danger, fontSize: 12)),
+                  ),
+                TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Nama Lengkap *',
+                    hintText: 'Mis. Budi Santoso',
+                    prefixIcon: Icon(Icons.person_outline),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: phoneCtrl,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Nomor WhatsApp / HP *',
+                    hintText: '0812xxxxxxx',
+                    prefixIcon: Icon(Icons.phone_outlined),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: emailCtrl,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Email (Opsional)',
+                    hintText: 'budi@example.com',
+                    prefixIcon: Icon(Icons.email_outlined),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: saving ? null : () => Navigator.pop(ctx),
+              child: const Text('Batal'),
+            ),
+            FilledButton(
+              onPressed: saving
+                  ? null
+                  : () async {
+                      final nm = nameCtrl.text.trim();
+                      final ph = phoneCtrl.text.trim();
+                      if (nm.isEmpty || ph.isEmpty) {
+                        setDlgState(() => err = 'Nama dan Nomor HP wajib diisi');
+                        return;
+                      }
+
+                      setDlgState(() {
+                        saving = true;
+                        err = null;
+                      });
+
+                      try {
+                        await CustomerService.instance.createCustomer(
+                          name: nm,
+                          phone: ph,
+                          email: emailCtrl.text.trim().isNotEmpty ? emailCtrl.text.trim() : null,
+                        );
+
+                        if (ctx.mounted) Navigator.pop(ctx);
+                        _cubit.reload();
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('✓ Pelanggan $nm berhasil ditambahkan')),
+                          );
+                        }
+                      } catch (e) {
+                        setDlgState(() {
+                          saving = false;
+                          err = ApiException.from(e).message;
+                        });
+                      }
+                    },
+              child: saving
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Text('Simpan'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
     return BlocProvider.value(
       value: _cubit,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(Gap.lg, Gap.md, Gap.lg, 0),
-            child: TextField(
-              onChanged: _onSearch,
-              textInputAction: TextInputAction.search,
-              decoration: const InputDecoration(
-                hintText: 'Cari nama, telepon, atau email',
-                prefixIcon: Icon(Icons.search),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: _showAddCustomerDialog,
+          backgroundColor: WarmPalette.primary,
+          foregroundColor: Colors.white,
+          icon: const Icon(Icons.person_add_rounded, size: 20),
+          label: const Text('Tambah Pelanggan', style: TextStyle(fontWeight: FontWeight.w700)),
+        ),
+        body: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(Gap.lg, Gap.md, Gap.lg, 0),
+              child: TextField(
+                onChanged: _onSearch,
+                textInputAction: TextInputAction.search,
+                decoration: const InputDecoration(
+                  hintText: 'Cari nama, telepon, atau email',
+                  prefixIcon: Icon(Icons.search),
+                ),
               ),
             ),
-          ),
-          Expanded(
-            child: PagedListView<LoyaltyMember>(
-              emptyIcon: Icons.people_outline,
-              emptyTitle: 'Belum ada anggota',
-              emptyMessage: _query.isEmpty
-                  ? 'Anggota loyalty akan muncul di sini.'
-                  : 'Tidak ada hasil untuk "$_query".',
-              header: (context, state) {
-                final stats = state.extra;
-                if (stats is! MemberStats) return const SizedBox.shrink();
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: Gap.sm),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: StatTile(
-                          label: 'Total anggota',
-                          value: NumberFormat.decimalPattern('id_ID')
-                              .format(stats.totalMembers),
-                          caption: '+${stats.newThisMonth} bulan ini',
+            Expanded(
+              child: PagedListView<LoyaltyMember>(
+                emptyIcon: Icons.people_outline,
+                emptyTitle: 'Belum ada anggota',
+                emptyMessage: _query.isEmpty
+                    ? 'Anggota loyalty akan muncul di sini.'
+                    : 'Tidak ada hasil untuk "$_query".',
+                header: (context, state) {
+                  final stats = state.extra;
+                  if (stats is! MemberStats) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: Gap.sm),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: StatTile(
+                            label: 'Total anggota',
+                            value: NumberFormat.decimalPattern('id_ID')
+                                .format(stats.totalMembers),
+                            caption: '+${stats.newThisMonth} bulan ini',
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: Gap.md),
-                      Expanded(
-                        child: StatTile(
-                          label: 'Rata-rata belanja',
-                          value: CurrencyFormatter.format(stats.avgSpend),
-                          caption: '${stats.activeLoyalty} punya poin',
+                        const SizedBox(width: Gap.md),
+                        Expanded(
+                          child: StatTile(
+                            label: 'Rata-rata belanja',
+                            value: CurrencyFormatter.format(stats.avgSpend),
+                            caption: '${stats.activeLoyalty} punya poin',
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-              itemBuilder: (context, m) => _MemberTile(member: m),
+                      ],
+                    ),
+                  );
+                },
+                itemBuilder: (context, m) => _MemberTile(member: m),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -53,14 +53,18 @@ class _CustomerOrderTrackingScreenState
     if (oid == null || oid.isEmpty) return;
     try {
       final orders = await KitchenService.instance.load();
-      final match = orders.firstWhere(
-        (o) => o.id == oid || o.number.contains(oid) || oid.contains(o.id),
-        orElse: () => orders.firstWhere(
-          (o) => o.tableLabel == widget.tableNumber,
-          orElse: () => orders.first,
-        ),
-      );
-      if (mounted) {
+      if (orders.isEmpty) return;
+      final match = orders
+              .where((o) =>
+                  o.id == oid ||
+                  o.number.contains(oid) ||
+                  oid.contains(o.id))
+              .firstOrNull ??
+          orders
+              .where((o) =>
+                  o.tableLabel.toLowerCase() == widget.tableNumber.toLowerCase())
+              .firstOrNull;
+      if (match != null && mounted) {
         setState(() {
           _currentStage = match.stage;
         });
