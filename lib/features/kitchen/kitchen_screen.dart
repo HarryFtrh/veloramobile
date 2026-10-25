@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/design/tokens.dart';
 import '../../core/storage/session_storage.dart';
+import '../../core/utils/audio_helper.dart';
 import 'kitchen_cubit.dart';
 import 'kitchen_service.dart';
 import 'kitchen_ticket_card.dart';
@@ -86,7 +87,16 @@ class _KitchenView extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.volume_up_outlined, color: WarmPalette.textPrimary),
-            onPressed: () {},
+            tooltip: 'Suara Peringatan KDS',
+            onPressed: () {
+              AudioHelper.successFeedback();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('🔔 Pengeras audio notifikasi KDS aktif'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
           ),
         ],
       ) : null,

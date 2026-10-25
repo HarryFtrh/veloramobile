@@ -8,6 +8,7 @@ import '../../core/utils/safe_json.dart';
 import '../fnb/fnb_payment_split_screen.dart';
 import '../shared_pos/pos_checkout_service.dart';
 import '../shared_pos/receipt_printer_service.dart';
+import '../shared_pos/shift_service.dart';
 import 'table_grid_tile.dart';
 import 'table_service.dart';
 
@@ -135,6 +136,8 @@ class _TablesScreenState extends State<TablesScreen> {
           tableId: t.id,
           tableNumber: t.name,
           totalAmount: total,
+          shiftId: ShiftService.instance.currentStatus?.shiftId,
+          customerName: act?.customerName,
           onPaymentComplete: () {
             _toast('${t.name} pembayaran selesai');
             _load();
