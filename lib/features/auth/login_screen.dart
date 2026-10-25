@@ -170,11 +170,15 @@ class _LoginScreenState extends State<LoginScreen> {
       } else if (resData is String && resData.isNotEmpty) {
         msg = resData;
       }
-      setState(() => _errorMessage = msg ?? 'Login gagal. Periksa koneksi internet atau kredensial Anda.');
+      if (mounted) {
+        setState(() => _errorMessage = msg ?? 'Login gagal. Periksa koneksi internet atau kredensial Anda.');
+      }
     } catch (e) {
       AudioHelper.errorFeedback();
       final errText = e.toString().replaceFirst('Exception: ', '');
-      setState(() => _errorMessage = errText.isNotEmpty ? errText : 'Terjadi kesalahan tidak terduga.');
+      if (mounted) {
+        setState(() => _errorMessage = errText.isNotEmpty ? errText : 'Terjadi kesalahan tidak terduga.');
+      }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -208,11 +212,15 @@ class _LoginScreenState extends State<LoginScreen> {
       } else if (resData is String && resData.isNotEmpty) {
         msg = resData;
       }
-      setState(() => _errorMessage = msg ?? 'Login Google gagal. Hubungi administrator toko.');
+      if (mounted) {
+        setState(() => _errorMessage = msg ?? 'Login Google gagal. Hubungi administrator toko.');
+      }
     } catch (e) {
       AudioHelper.errorFeedback();
       final errText = e.toString().replaceFirst('Exception: ', '');
-      setState(() => _errorMessage = errText.isNotEmpty ? errText : 'Terjadi kesalahan saat otentikasi Google.');
+      if (mounted) {
+        setState(() => _errorMessage = errText.isNotEmpty ? errText : 'Terjadi kesalahan saat otentikasi Google.');
+      }
     } finally {
       if (mounted) {
         setState(() => _isGoogleLoading = false);

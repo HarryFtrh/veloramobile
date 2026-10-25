@@ -108,7 +108,7 @@ class DashboardService {
         : <double>[];
 
     final branches = data.getList<BranchSales>('sales_by_branches', (item) {
-      final m = item as Map<String, dynamic>;
+      final m = item is Map ? Map<String, dynamic>.from(item) : <String, dynamic>{};
       return BranchSales(
         name: m.getString('branch_name', fallback: '-'),
         total: m.getDouble('total_sales'),

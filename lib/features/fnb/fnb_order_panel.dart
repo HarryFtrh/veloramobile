@@ -1050,14 +1050,18 @@ class _PromoAndVoucherSheetState extends State<_PromoAndVoucherSheet> {
       if (applied) {
         if (mounted) Navigator.pop(context);
       } else {
-        setState(() {
-          _errorMsg = 'Kode voucher "$code" tidak ditemukan atau sudah tidak aktif';
-        });
+        if (mounted) {
+          setState(() {
+            _errorMsg = 'Kode voucher "$code" tidak ditemukan atau sudah tidak aktif';
+          });
+        }
       }
     } catch (e) {
-      setState(() {
-        _errorMsg = ApiException.from(e).message;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMsg = ApiException.from(e).message;
+        });
+      }
     } finally {
       if (mounted) setState(() => _isVerifying = false);
     }

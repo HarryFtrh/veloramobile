@@ -579,10 +579,11 @@ class AuthService {
 
     final rawData = redirectRes.data;
     Map<String, dynamic> data = {};
-    if (rawData is Map<String, dynamic>) {
-      data = rawData['data'] is Map<String, dynamic>
-          ? rawData['data'] as Map<String, dynamic>
-          : rawData;
+    if (rawData is Map) {
+      final inner = rawData['data'];
+      data = inner is Map
+          ? Map<String, dynamic>.from(inner)
+          : Map<String, dynamic>.from(rawData);
     }
 
     final url = data['url']?.toString();

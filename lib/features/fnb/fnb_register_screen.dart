@@ -725,19 +725,19 @@ class _FnbRegisterScreenState extends State<FnbRegisterScreen> {
                                   isModal: true,
                                   onOpenBills: _openBillsModal,
                                   onSplitBill: () {
-                                    Navigator.pop(context);
+                                    Navigator.pop(sheetContext);
                                     _openSplitBill();
                                   },
                                   onKitchen: () async {
-                                    Navigator.pop(context);
+                                    Navigator.pop(sheetContext);
                                     await _kitchen();
                                   },
                                   onHold: () async {
-                                    Navigator.pop(context);
+                                    Navigator.pop(sheetContext);
                                     await _hold();
                                   },
                                   onPay: () async {
-                                    Navigator.pop(context);
+                                    Navigator.pop(sheetContext);
                                     await _pay();
                                   },
                                 ),
