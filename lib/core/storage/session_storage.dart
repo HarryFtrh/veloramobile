@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
@@ -109,7 +110,9 @@ class SessionStorage {
       final token = await _secureStorage.read(key: _tokenKey);
       final clean = _cleanString(token);
       if (clean != null) return clean;
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[SessionStorage] SecureStorage read token error: $e');
+    }
 
     // Fallback ke prefs atau memory cache
     final fromPrefs = _cleanString(_prefs?.getString(_tokenKey));
@@ -122,7 +125,9 @@ class SessionStorage {
     _memCache.remove(_tokenKey);
     try {
       await _secureStorage.delete(key: _tokenKey);
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[SessionStorage] SecureStorage delete token error: $e');
+    }
   }
 
   Future<void> saveLocation({required String id, required String name}) async {
@@ -159,12 +164,16 @@ class SessionStorage {
       _memCache[_userPinKey] = clean;
       try {
         await _secureStorage.write(key: _userPinKey, value: clean);
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('[SessionStorage] SecureStorage write PIN error: $e');
+      }
     } else {
       _memCache.remove(_userPinKey);
       try {
         await _secureStorage.delete(key: _userPinKey);
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('[SessionStorage] SecureStorage delete PIN error: $e');
+      }
     }
   }
 
@@ -327,9 +336,13 @@ class SessionStorage {
     _memCache.clear();
     try {
       await _secureStorage.deleteAll();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[SessionStorage] SecureStorage deleteAll error: $e');
+    }
     try {
       await _prefs?.clear();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[SessionStorage] SharedPreferences clear error: $e');
+    }
   }
 }

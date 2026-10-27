@@ -3,9 +3,9 @@ import '../../core/config/app_theme.dart';
 import '../../core/storage/session_storage.dart';
 import '../../core/utils/audio_helper.dart';
 import 'sales_service.dart';
-import 'sales_action_card.dart';
-import 'sales_visit_card.dart';
-import 'sales_attendance_card.dart';
+import 'widgets/sales_action_card.dart';
+import 'widgets/sales_visit_card.dart';
+import 'widgets/sales_attendance_card.dart';
 
 class SalesDashboardScreen extends StatefulWidget {
   final VoidCallback onLogout;

@@ -12,9 +12,9 @@ import '../shared_pos/shift_badge.dart';
 import '../shared_pos/universal_checkout_dialog.dart';
 import '../shared_pos/sales_history_drawer.dart';
 import '../shared_pos/printer_settings_modal.dart';
-import 'pharmacy_patient_dialog.dart';
-import 'pharmacy_drug_card.dart';
-import 'pharmacy_cart_panel.dart';
+import 'widgets/pharmacy_patient_dialog.dart';
+import 'widgets/pharmacy_drug_card.dart';
+import 'widgets/pharmacy_cart_panel.dart';
 
 class PharmacyPosScreen extends StatefulWidget {
   final VoidCallback? onLogout;
@@ -59,7 +59,9 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
           onOpened: (_) => setState(() {}),
         );
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[PharmacyPosScreen] Gagal cek status shift: $e');
+    }
   }
 
   Future<void> _fetchCatalog() async {

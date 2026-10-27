@@ -9,7 +9,7 @@ import '../../core/storage/session_storage.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../kitchen/kitchen_service.dart';
 import 'customer_models.dart';
-import 'customer_order_timeline_step.dart';
+import 'widgets/customer_order_timeline_step.dart';
 
 class CustomerOrderTrackingScreen extends StatefulWidget {
   const CustomerOrderTrackingScreen({
@@ -71,7 +71,9 @@ class _CustomerOrderTrackingScreenState
           _currentStage = match.stage;
         });
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[CustomerOrderTrackingScreen] Gagal sinkronisasi status order KDS: $e');
+    }
   }
 
   void _requestBaristaAssistance() {

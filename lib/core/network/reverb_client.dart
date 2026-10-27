@@ -81,7 +81,9 @@ class ReverbClient {
         try {
           final parsed = jsonDecode(dataStr);
           if (parsed is Map<String, dynamic>) data = parsed;
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('[ReverbClient] Gagal mem-parse string data dari pesan: $e');
+        }
       }
 
       if (event == 'pusher:ping') {
@@ -123,7 +125,9 @@ class ReverbClient {
     _pingTimer = null;
     try {
       _channel?.sink.close();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[ReverbClient] Error saat menutup sink channel: $e');
+    }
     _channel = null;
   }
 

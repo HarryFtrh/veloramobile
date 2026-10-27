@@ -4,4 +4,4 @@
 export 'kitchen_screen.dart';
 export 'kitchen_service.dart';
 export 'kitchen_cubit.dart';
-export 'kitchen_ticket_card.dart';
+export 'widgets/kitchen_ticket_card.dart';

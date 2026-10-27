@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/state/paged_result.dart';
@@ -162,7 +163,9 @@ class FinanceService {
         try {
           res = await ApiClient.instance.dio.get(ep, queryParameters: q);
           if (res != null) break;
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('⚠️ [FinanceService] Fallback get expenses $ep: $e');
+        }
       }
       if (res == null) {
         res = await ApiClient.instance.dio.get('/v1/pharmacy/finance/expenses', queryParameters: q);
@@ -225,7 +228,9 @@ class FinanceService {
           await ApiClient.instance.dio.post(ep, data: payload);
           success = true;
           break;
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('⚠️ [FinanceService] Fallback create expense $ep: $e');
+        }
       }
       if (!success) {
         await ApiClient.instance.dio.post('/v1/pharmacy/finance/expenses', data: payload);

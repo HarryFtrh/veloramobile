@@ -13,13 +13,13 @@ import '../shared_pos/shift_badge.dart';
 import '../shared_pos/shift_service.dart';
 import '../shared_pos/sales_history_drawer.dart';
 import '../tables/table_service.dart';
-import 'fnb_modifier_sheet.dart';
-import 'fnb_open_bills_sheet.dart';
+import 'widgets/fnb_modifier_sheet.dart';
+import 'widgets/fnb_open_bills_sheet.dart';
 import 'fnb_payment_split_screen.dart';
-import 'fnb_payment_sheet.dart';
-import 'fnb_catalog_pane.dart';
+import 'widgets/fnb_payment_sheet.dart';
+import 'widgets/fnb_catalog_pane.dart';
 import 'fnb_order_panel.dart';
-import 'fnb_table_picker_sheet.dart';
+import 'widgets/fnb_table_picker_sheet.dart';
 import 'fnb_register_controller.dart';
 
 class FnbRegisterScreen extends StatefulWidget {

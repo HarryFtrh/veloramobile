@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/design/tokens.dart';
 import '../../core/utils/safe_json.dart';
-import 'fnb_customer_picker_sheet.dart';
+import 'widgets/fnb_customer_picker_sheet.dart';
 import 'fnb_register_controller.dart';
 import 'order_panel/widgets/fnb_cart_bar.dart';
 import 'order_panel/widgets/order_header_bar.dart';

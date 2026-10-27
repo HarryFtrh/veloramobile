@@ -1,4 +1,5 @@
 // features/tables/table_service.dart
+import 'package:flutter/foundation.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/storage/session_storage.dart';
@@ -218,7 +219,9 @@ class TableService {
           position: i <= 6 ? 'indoor' : 'outdoor',
         );
         if (t != null) created.add(t);
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('⚠️ [TableService] Gagal seed meja $i: $e');
+      }
     }
     return created;
   }
@@ -227,7 +230,8 @@ class TableService {
     try {
       try {
         await ApiClient.instance.dio.post('/v1/pos/tables/$tableId/release', queryParameters: _loc);
-      } catch (_) {
+      } catch (e) {
+        debugPrint('⚠️ [TableService] /v1/pos/tables release fallback to /cafe: $e');
         await ApiClient.instance.dio.post('/cafe/tables/$tableId/release', queryParameters: _loc);
       }
     } catch (e) {

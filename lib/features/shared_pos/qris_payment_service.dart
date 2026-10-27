@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import '../../core/network/api_client.dart';
 import '../../core/storage/session_storage.dart';
@@ -150,7 +151,8 @@ class QrisPaymentService {
         return QrisPaymentStatus.failed;
       }
       return QrisPaymentStatus.pending;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('⚠️ [QrisPaymentService] Gagal cek status QRIS: $e');
       return QrisPaymentStatus.pending;
     }
   }
@@ -159,6 +161,8 @@ class QrisPaymentService {
   Future<void> cancel(String transactionId) async {
     try {
       await ApiClient.instance.dio.post('/v1/pos/payments/qris/$transactionId/cancel');
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('⚠️ [QrisPaymentService] Gagal membatalkan transaksi QRIS $transactionId: $e');
+    }
   }
 }

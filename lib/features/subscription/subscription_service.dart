@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import '../../core/network/api_client.dart';
 import '../../core/storage/session_storage.dart';
@@ -25,7 +26,9 @@ class SubscriptionService {
           _cached = TenantSubscription.fromJson(decoded);
           return _cached!;
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('[SubscriptionService] Gagal parse cached subscription: $e');
+      }
     }
 
     final dio = ApiClient.instance.dio;
@@ -75,7 +78,9 @@ class SubscriptionService {
             _cached = parsed;
             try {
               await SessionStorage.instance.saveSubscriptionCache(jsonEncode(parsed.toJson()));
-            } catch (_) {}
+            } catch (e) {
+              debugPrint('[SubscriptionService] Gagal simpan cache subscription: $e');
+            }
             return parsed;
           }
         }
@@ -84,7 +89,8 @@ class SubscriptionService {
         if (e.response?.statusCode == 404) continue;
         // Jika offline atau error lain, fallback ke cache jika ada
         if (_cached != null) return _cached!;
-      } catch (_) {
+      } catch (e) {
+        debugPrint('⚠️ [SubscriptionService] Request $ep error: $e');
         if (_cached != null) return _cached!;
       }
     }

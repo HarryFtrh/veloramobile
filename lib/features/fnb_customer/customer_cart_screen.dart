@@ -7,9 +7,9 @@ import '../../core/storage/session_storage.dart';
 import '../fnb/billing.dart';
 import '../fnb/fnb_register_service.dart';
 import '../fnb/modifiers.dart';
-import 'customer_cart_item_card.dart';
 import 'customer_models.dart';
 import 'customer_order_tracking_screen.dart';
+import 'widgets/customer_cart_item_card.dart';
 import 'widgets/customer_cart_bottom_bar.dart';
 import 'widgets/customer_cart_order_type_bar.dart';
 import 'widgets/customer_cart_payment_selector.dart';
@@ -66,7 +66,9 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
     try {
       final b = await BillingSettings.fetch();
       if (mounted) setState(() => _billing = b);
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[CustomerCartScreen] Gagal memuat billing settings: $e');
+    }
   }
 
   int get _subtotal =>

@@ -101,12 +101,16 @@ class RegisterController extends ChangeNotifier {
     if (modifierGroups.isEmpty) {
       try {
         modifierGroups = await ModifierService.instance.groups();
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('⚠️ [FnbRegisterController] Gagal memuat modifier groups: $e');
+      }
     }
 
     try {
       await refreshShift();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('⚠️ [FnbRegisterController] Gagal refresh shift saat init: $e');
+    }
 
     loading = false;
     notifyListeners();
@@ -118,7 +122,8 @@ class RegisterController extends ChangeNotifier {
       shiftId = s.isOpen ? s.shiftId : null;
       notifyListeners();
       return s;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('⚠️ [FnbRegisterController] Gagal getShiftStatus: $e');
       return null;
     }
   }
@@ -213,7 +218,9 @@ class RegisterController extends ChangeNotifier {
         billing = billing!.copyWith(promotions: merged);
         notifyListeners();
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('⚠️ [FnbRegisterController] Gagal refresh voucher dari API: $e');
+    }
   }
 
   void applyVoucher(String code, double amount, {StorePromotion? promo}) {
@@ -378,7 +385,9 @@ class RegisterController extends ChangeNotifier {
             ));
           }
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('⚠️ [FnbRegisterController] Gagal parse item open bill: $e');
+      }
       busy = false;
       notifyListeners();
     }
@@ -407,7 +416,9 @@ class RegisterController extends ChangeNotifier {
                   t.id == order.tableLabel ||
                   'meja ${t.name.toLowerCase()}' == label)
               .firstOrNull;
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('⚠️ [FnbRegisterController] Gagal mencari table meja untuk order KDS: $e');
+        }
       } else {
         orderType = OrderType.takeaway;
         table = null;

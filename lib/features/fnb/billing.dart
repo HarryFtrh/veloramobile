@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../../core/network/api_client.dart';
 import '../../core/storage/session_storage.dart';
 import '../../core/utils/safe_json.dart';
@@ -247,7 +248,9 @@ class BillingSettings {
         if (item is Map) {
           try {
             promos.add(StorePromotion.fromJson(Map<String, dynamic>.from(item)));
-          } catch (_) {}
+          } catch (e) {
+            debugPrint('⚠️ [BillingSettings] Gagal parse StorePromotion: $e');
+          }
         }
       }
     }
@@ -263,7 +266,9 @@ class BillingSettings {
         if (item is Map) {
           try {
             tiers.add(MemberTier.fromJson(Map<String, dynamic>.from(item)));
-          } catch (_) {}
+          } catch (e) {
+            debugPrint('⚠️ [BillingSettings] Gagal parse MemberTier: $e');
+          }
         }
       }
     }
@@ -389,15 +394,17 @@ class BillingSettings {
             if (item is Map) {
               try {
                 results.add(StorePromotion.fromJson(Map<String, dynamic>.from(item)));
-              } catch (_) {}
+              } catch (e) {
+                debugPrint('⚠️ [BillingSettings] Gagal parse promotion item: $e');
+              }
             }
           }
           if (results.isNotEmpty) {
             return results;
           }
         }
-      } catch (_) {
-        // Fallback coba endpoint berikutnya
+      } catch (e) {
+        debugPrint('⚠️ [BillingSettings] Fallback endpoint diskon $ep: $e');
       }
     }
     return const [];
@@ -440,7 +447,9 @@ class BillingSettings {
         if (dataMap != null && dataMap.isNotEmpty) {
           return StorePromotion.fromJson(dataMap);
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('⚠️ [BillingSettings] POST voucher check failed on $ep: $e');
+      }
     }
 
     final getEndpoints = [
@@ -465,7 +474,9 @@ class BillingSettings {
         if (dataMap != null && dataMap.isNotEmpty) {
           return StorePromotion.fromJson(dataMap);
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('⚠️ [BillingSettings] GET voucher check failed on $ep: $e');
+      }
     }
 
     return null;
@@ -536,7 +547,9 @@ class BillingSettings {
           }
           settings = settings.copyWith(promotions: merged);
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('⚠️ [BillingSettings] Gagal mengambil diskon API tambahan: $e');
+      }
 
       return settings;
     } catch (e) {
@@ -563,7 +576,9 @@ class BillingSettings {
         if (extraPromos.isNotEmpty) {
           fallbackSettings = fallbackSettings.copyWith(promotions: extraPromos);
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('⚠️ [BillingSettings] Gagal fetch fallback discounts: $e');
+      }
 
       return fallbackSettings;
     }

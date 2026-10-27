@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import '../../core/config/app_config.dart';
 import '../../core/network/api_client.dart';
@@ -694,10 +695,13 @@ class AuthService {
     try {
       try {
         await ApiClient.instance.dio.post('/v1/auth/logout');
-      } catch (_) {
+      } catch (e) {
+        debugPrint('[AuthService] Logout endpoint /v1/auth/logout failed: $e');
         await ApiClient.instance.dio.post('/auth/logout');
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[AuthService] Logout API notification failed (session will still clear): $e');
+    }
     await SessionStorage.instance.clearAuthToken();
   }
 
@@ -847,7 +851,9 @@ class AuthService {
         await SessionStorage.instance.saveUserPin(pin);
         return true;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[AuthService] Quick PIN verification error: $e');
+    }
 
     return false;
   }
@@ -861,14 +867,16 @@ class AuthService {
           '/v1/auth/pin',
           data: {'pin': pin},
         );
-      } catch (_) {
+      } catch (e) {
+        debugPrint('[AuthService] Endpoint /v1/auth/pin failed: $e');
         await ApiClient.instance.dio.post(
           '/auth/pin',
           data: {'pin': pin},
         );
       }
-    } catch (_) {
+    } catch (e) {
       // Backend mungkin belum mengimplementasikan /auth/pin, penyimpanan lokal tetap aman
+      debugPrint('[AuthService] Sinkronisasi PIN backend tidak tersedia: $e');
     }
   }
 }

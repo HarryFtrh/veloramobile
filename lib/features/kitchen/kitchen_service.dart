@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/storage/session_storage.dart';
@@ -214,17 +215,21 @@ class KitchenService {
         // Prioritas 1: Canonical POS v1 Orders
         final res = await ApiClient.instance.dio.get('/v1/pos/orders', queryParameters: query);
         raw = res.data;
-      } catch (_) {
+      } catch (e1) {
+        debugPrint('⚠️ [KitchenService] /v1/pos/orders failed: $e1, trying /cafe/pos/orders');
         try {
           // Fallback 1: Endpoint Cafe POS Orders
           final res = await ApiClient.instance.dio.get('/cafe/pos/orders', queryParameters: query);
           raw = res.data;
-        } catch (_) {
+        } catch (e2) {
+          debugPrint('⚠️ [KitchenService] /cafe/pos/orders failed: $e2, trying /cafe/kitchen/orders');
           try {
             // Fallback 2: Endpoint KDS Kitchen Cafe
             final res = await ApiClient.instance.dio.get('/cafe/kitchen/orders', queryParameters: query);
             raw = res.data;
-          } catch (_) {}
+          } catch (e3) {
+            debugPrint('⚠️ [KitchenService] All KDS order endpoints failed: $e3');
+          }
         }
       }
 

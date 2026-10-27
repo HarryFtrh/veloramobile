@@ -169,7 +169,9 @@ class PosProduct {
         if (m is Map) {
           try {
             modGroups.add(ModifierGroup.fromJson(Map<String, dynamic>.from(m)));
-          } catch (_) {}
+          } catch (e) {
+            debugPrint('⚠️ [PosProduct] Gagal parse ModifierGroup: $e');
+          }
         }
       }
     }
@@ -253,16 +255,23 @@ class ProductCatalogService {
       queryParams['since_version'] = sinceVersion;
     }
 
-    final candidateEndpoints = [
-      '/v1/pos/products-sync',
-      '/v1/pos/products',
-      '/v1/pos/menu',
-      '/v1/products',
-      '/cafe/pos/products',
-      '/cafe/menu',
-      '/cafe/products',
-      '/products',
-    ];
+    final bizType = SessionStorage.instance.getBusinessType()?.toLowerCase() ?? 'retail';
+    final candidateEndpoints = bizType == 'fnb'
+        ? [
+            '/v1/pos/products-sync',
+            '/v1/pos/menu',
+            '/v1/pos/products',
+            '/cafe/pos/products',
+            '/cafe/menu',
+            '/v1/products',
+          ]
+        : [
+            '/v1/pos/products-sync',
+            '/v1/pos/products',
+            '/v1/products',
+            '/v1/pos/menu',
+            '/products',
+          ];
 
     Response<dynamic>? response;
     String? successfulEndpoint;
@@ -277,7 +286,9 @@ class ProductCatalogService {
           successfulEndpoint = ep;
           break;
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('⚠️ [CATALOG] Candidate $ep failed: $e');
+      }
     }
 
     if (response == null) {
@@ -327,7 +338,9 @@ class ProductCatalogService {
       if (item is Map) {
         try {
           rawProducts.add(PosProduct.fromJson(Map<String, dynamic>.from(item)));
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('⚠️ [CATALOG] Gagal parse PosProduct item: $e');
+        }
       }
     }
 
@@ -361,7 +374,9 @@ class ProductCatalogService {
         if (m is Map) {
           try {
             catalogModifiers.add(ModifierGroup.fromJson(Map<String, dynamic>.from(m)));
-          } catch (_) {}
+          } catch (e) {
+            debugPrint('⚠️ [CATALOG] Gagal parse ModifierGroup catalog: $e');
+          }
         }
       }
     }

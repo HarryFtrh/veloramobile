@@ -5,7 +5,7 @@ import '../../core/storage/session_storage.dart';
 import '../../core/utils/audio_helper.dart';
 import 'kitchen_cubit.dart';
 import 'kitchen_service.dart';
-import 'kitchen_ticket_card.dart';
+import 'widgets/kitchen_ticket_card.dart';
 
 class KitchenScreen extends StatelessWidget {
   const KitchenScreen({super.key});
