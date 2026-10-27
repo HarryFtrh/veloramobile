@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../core/network/api_exception.dart';
+import '../../core/storage/session_storage.dart';
 import '../kitchen/kitchen_service.dart';
 import '../shared_pos/product_catalog_service.dart';
 import '../shared_pos/shift_service.dart';
@@ -112,8 +114,52 @@ class RegisterController extends ChangeNotifier {
       debugPrint('⚠️ [FnbRegisterController] Gagal refresh shift saat init: $e');
     }
 
+    _restoreDraft();
+
     loading = false;
     notifyListeners();
+  }
+
+  void _persistDraft() {
+    if (existingOrderId != null) return;
+    if (lines.isEmpty) {
+      SessionStorage.instance.clearDraftCart('fnb');
+    } else {
+      final jsonList = lines.map((l) => l.toJson()).toList();
+      SessionStorage.instance.saveDraftCart(
+        'fnb',
+        jsonEncode({
+          'lines': jsonList,
+          'customer_name': customerName,
+          'order_type': orderType.name,
+        }),
+      );
+    }
+  }
+
+  void _restoreDraft() {
+    try {
+      final str = SessionStorage.instance.getDraftCart('fnb');
+      if (str != null && str.isNotEmpty && lines.isEmpty) {
+        final decoded = jsonDecode(str);
+        if (decoded is Map) {
+          final rawLines = decoded['lines'];
+          if (rawLines is List && rawLines.isNotEmpty) {
+            for (final item in rawLines) {
+              if (item is Map) {
+                lines.add(RegisterLine.fromJson(Map<String, dynamic>.from(item)));
+              }
+            }
+            customerName = decoded['customer_name']?.toString() ?? '';
+            final otStr = decoded['order_type']?.toString();
+            if (otStr == 'dineIn') orderType = OrderType.dineIn;
+            if (otStr == 'online') orderType = OrderType.online;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ [FnbRegisterController] Gagal memulihkan draft cart: $e');
+    }
   }
 
   Future<ShiftStatus?> refreshShift() async {
@@ -287,11 +333,13 @@ class RegisterController extends ChangeNotifier {
     } else {
       lines.add(candidate);
     }
+    _persistDraft();
     notifyListeners();
   }
 
   void increment(RegisterLine l) {
     l.quantity++;
+    _persistDraft();
     notifyListeners();
   }
 
@@ -301,16 +349,19 @@ class RegisterController extends ChangeNotifier {
     } else {
       l.quantity--;
     }
+    _persistDraft();
     notifyListeners();
   }
 
   void remove(RegisterLine l) {
     lines.remove(l);
+    _persistDraft();
     notifyListeners();
   }
 
   void setNote(RegisterLine l, String note) {
     l.note = note.trim().isEmpty ? null : note.trim();
+    _persistDraft();
     notifyListeners();
   }
 
@@ -494,6 +545,7 @@ class RegisterController extends ChangeNotifier {
 
   void reset() {
     lines.clear();
+    SessionStorage.instance.clearDraftCart('fnb');
     table = null;
     existingOrderId = null;
     customerName = '';

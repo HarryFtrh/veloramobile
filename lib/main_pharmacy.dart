@@ -65,7 +65,7 @@ class VeloraPharmacyApp extends StatelessWidget {
         textDirection: TextDirection.ltr,
         child: child ?? const SizedBox.shrink(),
       ),
-      theme: AppTheme.getTheme(AppFlavor.pharmacy),
+      theme: AppTheme.build(AppFlavor.pharmacy, Brightness.light),
       home: BlocBuilder<AuthCubit, AuthState>(
         builder: (context, state) {
           if (state is AuthInitial || (state is AuthLoading && state.message != null)) {

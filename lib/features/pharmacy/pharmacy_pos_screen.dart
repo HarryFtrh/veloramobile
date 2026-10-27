@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../core/config/app_theme.dart';
 import '../../core/design/tokens.dart';
@@ -44,10 +45,42 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchCatalog();
+    _fetchCatalog().then((_) {
+      if (mounted) _restoreCart();
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkShiftStatus();
     });
+  }
+
+  void _persistCart() {
+    if (_cart.isEmpty) {
+      SessionStorage.instance.clearDraftCart('pharmacy');
+    } else {
+      SessionStorage.instance.saveDraftCart('pharmacy', jsonEncode(_cart));
+    }
+  }
+
+  void _restoreCart() {
+    try {
+      final str = SessionStorage.instance.getDraftCart('pharmacy');
+      if (str != null && str.isNotEmpty && _cart.isEmpty) {
+        final decoded = jsonDecode(str);
+        if (decoded is Map) {
+          setState(() {
+            for (final entry in decoded.entries) {
+              final qty = int.tryParse(entry.value.toString()) ?? 0;
+              if (qty > 0) {
+                _cart[entry.key.toString()] = qty;
+              }
+            }
+            _calculateTotal();
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('[PharmacyPosScreen] Gagal memulihkan draft cart: $e');
+    }
   }
 
   Future<void> _checkShiftStatus() async {
@@ -144,6 +177,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
     setState(() {
       _cart[id] = (_cart[id] ?? 0) + 1;
       _calculateTotal();
+      _persistCart();
     });
   }
 
@@ -157,6 +191,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
         _cart[id] = current - 1;
       }
       _calculateTotal();
+      _persistCart();
     });
   }
 
@@ -164,6 +199,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
     setState(() {
       _cart.clear();
       _totalPrice = 0;
+      _persistCart();
     });
   }
 
@@ -237,6 +273,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
         setState(() {
           _cart.clear();
           _totalPrice = 0;
+          _persistCart();
         });
       },
     );

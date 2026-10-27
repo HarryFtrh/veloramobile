@@ -39,6 +39,31 @@ class RegisterLine {
     return '$productId|${ids.join(',')}|${note ?? ''}';
   }
 
+  Map<String, dynamic> toJson() => {
+        'product_id': productId,
+        'name': name,
+        'price': price,
+        'quantity': quantity,
+        'note': note,
+        'order_item_id': orderItemId,
+        'options': options.map((o) => o.toJson()).toList(),
+      };
+
+  factory RegisterLine.fromJson(Map<String, dynamic> json) => RegisterLine(
+        productId: json['product_id']?.toString() ?? '',
+        name: json['name']?.toString() ?? '',
+        price: json['price'] is num ? json['price'] as num : (num.tryParse(json['price']?.toString() ?? '') ?? 0),
+        quantity: json['quantity'] is int ? json['quantity'] as int : (int.tryParse(json['quantity']?.toString() ?? '') ?? 1),
+        note: json['note']?.toString(),
+        orderItemId: json['order_item_id']?.toString(),
+        options: (json['options'] is List)
+            ? (json['options'] as List)
+                .whereType<Map>()
+                .map((m) => ModifierOption.fromJson(Map<String, dynamic>.from(m)))
+                .toList()
+            : const [],
+      );
+
   Map<String, dynamic> toOrderJson() {
     final modIds = [for (final o in options) int.tryParse(o.id) ?? o.id];
     final modObjects = [

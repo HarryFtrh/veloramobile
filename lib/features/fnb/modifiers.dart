@@ -12,6 +12,12 @@ class ModifierOption {
   /// Harga tambahan per item (sudah memakai harga khusus cabang bila ada).
   final num price;
 
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'price': price,
+      };
+
   factory ModifierOption.fromJson(Map<String, dynamic> json) {
     final priceVal = json.getNum('effective_price',
         fallback: json.getNum('additional_price',

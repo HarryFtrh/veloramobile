@@ -11,6 +11,10 @@ class SubscriptionService {
 
   TenantSubscription? _cached;
 
+  /// Alias for backward compatibility with settings
+  Future<TenantSubscription> fetchStatus({bool forceRefresh = false}) =>
+      getSubscription(forceRefresh: forceRefresh);
+
   /// Ambil data langganan tenant aktif (V1-First dengan multi-level fallback)
   Future<TenantSubscription> getSubscription({bool forceRefresh = false}) async {
     if (!forceRefresh && _cached != null) {

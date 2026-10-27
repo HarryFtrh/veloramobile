@@ -48,10 +48,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _loadSubscription({bool forceRefresh = false}) async {
     setState(() => _loadingSubscription = true);
     try {
-      final sub = await SubscriptionService.instance.fetchStatus(forceRefresh: forceRefresh);
+      final sub = await SubscriptionService.instance.getSubscription(forceRefresh: forceRefresh);
       if (mounted) setState(() => _subscription = sub);
-    } catch (_) {
-      // Ignored: fallback jika offline / server belum implement subscription
+    } catch (e) {
+      debugPrint('[SettingsScreen] Gagal memuat status langganan: $e');
     } finally {
       if (mounted) setState(() => _loadingSubscription = false);
     }

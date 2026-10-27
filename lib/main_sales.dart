@@ -4,6 +4,7 @@ import 'core/config/app_config.dart';
 import 'core/config/app_theme.dart';
 import 'core/storage/session_storage.dart';
 import 'core/network/api_client.dart';
+import 'core/utils/app_locale.dart';
 import 'core/components/splash_screen.dart';
 import 'core/utils/fallback_localizations.dart';
 import 'features/auth/cubit/auth_cubit.dart';
@@ -21,6 +22,7 @@ void main() async {
   );
 
   try {
+    await initAppLocale();
     await SessionStorage.init();
     ApiClient.init();
   } catch (e) {
@@ -57,7 +59,7 @@ class VeloraSalesApp extends StatelessWidget {
         textDirection: TextDirection.ltr,
         child: child ?? const SizedBox.shrink(),
       ),
-      theme: AppTheme.getTheme(AppFlavor.sales),
+      theme: AppTheme.build(AppFlavor.sales, Brightness.light),
       home: BlocBuilder<AuthCubit, AuthState>(
         builder: (context, state) {
           if (state is AuthInitial || (state is AuthLoading && state.message != null)) {

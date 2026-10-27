@@ -332,6 +332,19 @@ class SessionStorage {
 
   String? getSubscriptionCache() => _getString(_subscriptionCacheKey);
 
+  Future<void> saveDraftCart(String namespace, String jsonCart) async {
+    await _setString('velora_draft_cart_$namespace', jsonCart);
+  }
+
+  String? getDraftCart(String namespace) {
+    return _getString('velora_draft_cart_$namespace');
+  }
+
+  Future<void> clearDraftCart(String namespace) async {
+    _memCache.remove('velora_draft_cart_$namespace');
+    await _prefs?.remove('velora_draft_cart_$namespace');
+  }
+
   Future<void> clearAll() async {
     _memCache.clear();
     try {
