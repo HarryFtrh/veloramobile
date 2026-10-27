@@ -284,7 +284,7 @@ class ReceiptPrinterService {
 
   /// Mengonversi laporan Z-Report tutup shift ke format teks rapi untuk dibagikan via WhatsApp/chat
   String formatShiftReportPlainText(ShiftCloseSummary summary, {String? storeName}) {
-    final store = storeName ?? SessionStorage.instance.getTenantName() ?? SessionStorage.instance.getLocationName() ?? 'VELORA POS';
+    final store = storeName ?? SessionStorage.instance.getTenantName() ?? 'VELORA POS';
     final sb = StringBuffer();
     String dateFmt(DateTime dt) =>
         '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
@@ -348,7 +348,7 @@ class ReceiptPrinterService {
   Uint8List generateShiftReportEscPosBytes(ShiftCloseSummary summary, {bool is80mm = false, String? storeName}) {
     final int width = is80mm ? 48 : 32;
     final List<int> bytes = [];
-    final store = storeName ?? SessionStorage.instance.getTenantName() ?? SessionStorage.instance.getLocationName() ?? 'VELORA POS';
+    final store = storeName ?? SessionStorage.instance.getTenantName() ?? 'VELORA POS';
     String dateFmt(DateTime dt) =>
         '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 

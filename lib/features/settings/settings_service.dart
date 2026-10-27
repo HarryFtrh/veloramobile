@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/utils/safe_json.dart';
@@ -37,8 +38,12 @@ class SettingsService {
       dynamic res;
       try {
         res = await ApiClient.instance.dio.get('/v1/profile/tokens');
-      } catch (_) {
-        res = await ApiClient.instance.dio.get('/profile/tokens');
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 404) {
+          res = await ApiClient.instance.dio.get('/profile/tokens');
+        } else {
+          rethrow;
+        }
       }
       final body = res.data;
       final raw = body is Map ? (body['data'] ?? body['tokens'] ?? body) : body;
@@ -57,8 +62,12 @@ class SettingsService {
     try {
       try {
         await ApiClient.instance.dio.delete('/v1/profile/tokens/$sessionId');
-      } catch (_) {
-        await ApiClient.instance.dio.delete('/profile/tokens/$sessionId');
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 404) {
+          await ApiClient.instance.dio.delete('/profile/tokens/$sessionId');
+        } else {
+          rethrow;
+        }
       }
     } catch (e) {
       throw ApiException.from(e);

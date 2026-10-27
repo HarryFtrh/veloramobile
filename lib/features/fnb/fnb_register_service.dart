@@ -158,15 +158,12 @@ class FnbRegisterService {
     try {
       Response res;
       try {
-        // Prioritas 1: Canonical POS v1 Orders
         res = await ApiClient.instance.dio.post('/v1/pos/orders', data: payload);
-      } catch (_) {
-        try {
-          // Fallback 1: Domain Cafe POS
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 404) {
           res = await ApiClient.instance.dio.post('/cafe/pos/orders', data: payload);
-        } catch (_) {
-          // Fallback 2: Domain KDS Kitchen
-          res = await ApiClient.instance.dio.post('/cafe/kitchen/orders', data: payload);
+        } else {
+          rethrow;
         }
       }
 
@@ -176,7 +173,7 @@ class FnbRegisterService {
         final data = rawData is Map ? rawData : body;
         final rawOrder = data['order'];
         final orderObj = rawOrder is Map ? rawOrder : data;
-        final orderId = (orderObj['id'] ?? orderObj['order_number'] ?? orderObj['number'] ?? '').toString();
+        final orderId = (orderObj['id'] ?? orderObj['order_number'] ?? '').toString();
         if (orderId.isNotEmpty) return orderId;
       }
       return '';

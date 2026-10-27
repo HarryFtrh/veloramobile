@@ -313,7 +313,7 @@ class ProductCatalogService {
       final inner = rawData['data'];
       if (inner is Map) {
         data = Map<String, dynamic>.from(inner);
-        final p = data['products'] ?? data['data'] ?? data['items'] ?? data['menu'];
+        final p = data['products'] ?? data['items'] ?? data['data'];
         if (p is List) productList = p;
         final c = data['categories'] ?? data['category_list'];
         if (c is List) categoryList = c;
@@ -322,7 +322,7 @@ class ProductCatalogService {
         data = Map<String, dynamic>.from(rawData);
       } else {
         data = Map<String, dynamic>.from(rawData);
-        final p = data['products'] ?? data['data'] ?? data['items'] ?? data['menu'];
+        final p = data['products'] ?? data['items'] ?? data['data'];
         if (p is List) productList = p;
       }
       final rawCats = rawData['categories'] ?? rawData['category_list'];
@@ -347,7 +347,7 @@ class ProductCatalogService {
     final rawCategories = <String>[];
     for (final item in categoryList) {
       if (item is Map) {
-        final n = item['name'] ?? item['category_name'] ?? item['title'] ?? item['label'];
+        final n = item['name'] ?? item['category_name'];
         if (n != null) rawCategories.add(sanitizeDisplayName(n));
       } else {
         rawCategories.add(sanitizeDisplayName(item));

@@ -693,12 +693,7 @@ class AuthService {
 
   Future<void> logout() async {
     try {
-      try {
-        await ApiClient.instance.dio.post('/v1/auth/logout');
-      } catch (e) {
-        debugPrint('[AuthService] Logout endpoint /v1/auth/logout failed: $e');
-        await ApiClient.instance.dio.post('/auth/logout');
-      }
+      await ApiClient.instance.dio.post('/v1/auth/logout');
     } catch (e) {
       debugPrint('[AuthService] Logout API notification failed (session will still clear): $e');
     }
@@ -833,18 +828,10 @@ class AuthService {
 
     // Jika belum tersimpan lokal atau tidak cocok, coba verifikasi ke backend
     try {
-      Response response;
-      try {
-        response = await ApiClient.instance.dio.post(
-          '/v1/auth/pin/verify',
-          data: {'pin': pin},
-        );
-      } catch (_) {
-        response = await ApiClient.instance.dio.post(
-          '/auth/pin/verify',
-          data: {'pin': pin},
-        );
-      }
+      final response = await ApiClient.instance.dio.post(
+        '/v1/auth/pin/verify',
+        data: {'pin': pin},
+      );
       final body = response.data;
       final isValid = body is Map && (body['valid'] == true || body['status'] == 'success');
       if (isValid) {
@@ -862,21 +849,12 @@ class AuthService {
   Future<void> setQuickPin(String pin) async {
     await SessionStorage.instance.saveUserPin(pin);
     try {
-      try {
-        await ApiClient.instance.dio.post(
-          '/v1/auth/pin',
-          data: {'pin': pin},
-        );
-      } catch (e) {
-        debugPrint('[AuthService] Endpoint /v1/auth/pin failed: $e');
-        await ApiClient.instance.dio.post(
-          '/auth/pin',
-          data: {'pin': pin},
-        );
-      }
+      await ApiClient.instance.dio.post(
+        '/v1/auth/pin',
+        data: {'pin': pin},
+      );
     } catch (e) {
-      // Backend mungkin belum mengimplementasikan /auth/pin, penyimpanan lokal tetap aman
-      debugPrint('[AuthService] Sinkronisasi PIN backend tidak tersedia: $e');
+      debugPrint('[AuthService] Sinkronisasi PIN backend: $e');
     }
   }
 }

@@ -1,4 +1,5 @@
 // features/tables/table_service.dart
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exception.dart';
@@ -138,46 +139,44 @@ class TableService {
   }
 
   Future<List<CafeTableInfo>> tables() async {
+    Response res;
     try {
-      Response res;
-      try {
-        res = await ApiClient.instance.dio.get('/v1/pos/tables', queryParameters: _loc);
-      } catch (_) {
-        try {
-          res = await ApiClient.instance.dio.get('/v1/tables', queryParameters: _loc);
-        } catch (_) {
-          res = await ApiClient.instance.dio.get('/cafe/tables', queryParameters: _loc);
-        }
+      res = await ApiClient.instance.dio.get('/v1/pos/tables', queryParameters: _loc);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        res = await ApiClient.instance.dio.get('/cafe/tables', queryParameters: _loc);
+      } else {
+        throw ApiException.from(e);
       }
-      final body = res.data;
-
-      final raw = body is Map ? (body['data'] ?? body['tables'] ?? body) : body;
-      List listData = const [];
-      if (raw is List) {
-        listData = raw;
-      } else if (raw is Map) {
-        final rawData = raw['data'];
-        final rawTables = raw['tables'];
-        if (rawData is List) {
-          listData = rawData;
-        } else if (rawTables is List) {
-          listData = rawTables;
-        }
-      }
-
-      final list = <CafeTableInfo>[];
-      for (final e in listData) {
-        if (e is Map<String, dynamic>) {
-          list.add(CafeTableInfo.fromJson(e));
-        } else if (e is Map) {
-          list.add(CafeTableInfo.fromJson(Map<String, dynamic>.from(e)));
-        }
-      }
-
-      return list..removeWhere((t) => !t.isActive);
     } catch (e) {
       throw ApiException.from(e);
     }
+    final body = res.data;
+
+    final raw = body is Map ? (body['data'] ?? body['tables'] ?? body) : body;
+    List listData = const [];
+    if (raw is List) {
+      listData = raw;
+    } else if (raw is Map) {
+      final rawData = raw['data'];
+      final rawTables = raw['tables'];
+      if (rawData is List) {
+        listData = rawData;
+      } else if (rawTables is List) {
+        listData = rawTables;
+      }
+    }
+
+    final list = <CafeTableInfo>[];
+    for (final e in listData) {
+      if (e is Map<String, dynamic>) {
+        list.add(CafeTableInfo.fromJson(e));
+      } else if (e is Map) {
+        list.add(CafeTableInfo.fromJson(Map<String, dynamic>.from(e)));
+      }
+    }
+
+    return list..removeWhere((t) => !t.isActive);
   }
 
   /// Membuat meja baru
@@ -186,28 +185,30 @@ class TableService {
     required int capacity,
     String? position,
   }) async {
+    final payload = {
+      ..._loc,
+      'name': name,
+      'capacity': capacity,
+      'position': ?position,
+    };
+    Response res;
     try {
-      final payload = {
-        ..._loc,
-        'name': name,
-        'capacity': capacity,
-        'position': ?position,
-      };
-      Response res;
-      try {
-        res = await ApiClient.instance.dio.post('/v1/pos/tables', data: payload);
-      } catch (_) {
+      res = await ApiClient.instance.dio.post('/v1/pos/tables', data: payload);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
         res = await ApiClient.instance.dio.post('/cafe/tables', data: payload);
+      } else {
+        throw ApiException.from(e);
       }
-      final body = res.data;
-      final raw = body is Map ? (body['data'] ?? body) : body;
-      if (raw is Map) {
-        return CafeTableInfo.fromJson(Map<String, dynamic>.from(raw));
-      }
-      return null;
     } catch (e) {
       throw ApiException.from(e);
     }
+    final body = res.data;
+    final raw = body is Map ? (body['data'] ?? body) : body;
+    if (raw is Map) {
+      return CafeTableInfo.fromJson(Map<String, dynamic>.from(raw));
+    }
+    return null;
   }
 
   /// Otomatis membuatkan meja standar (Meja 01 s/d 08) jika belum ada meja sama sekali
@@ -230,11 +231,12 @@ class TableService {
 
   Future<void> release(String tableId) async {
     try {
-      try {
-        await ApiClient.instance.dio.post('/v1/pos/tables/$tableId/release', queryParameters: _loc);
-      } catch (e) {
-        debugPrint('⚠️ [TableService] /v1/pos/tables release fallback to /cafe: $e');
+      await ApiClient.instance.dio.post('/v1/pos/tables/$tableId/release', queryParameters: _loc);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
         await ApiClient.instance.dio.post('/cafe/tables/$tableId/release', queryParameters: _loc);
+      } else {
+        throw ApiException.from(e);
       }
     } catch (e) {
       throw ApiException.from(e);
@@ -258,8 +260,12 @@ class TableService {
       };
       try {
         await ApiClient.instance.dio.post('/v1/pos/reservations', data: payload);
-      } catch (_) {
-        await ApiClient.instance.dio.post('/cafe/reservations', data: payload);
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 404) {
+          await ApiClient.instance.dio.post('/cafe/reservations', data: payload);
+        } else {
+          rethrow;
+        }
       }
     } catch (e) {
       throw ApiException.from(e);
@@ -268,16 +274,18 @@ class TableService {
 
   Future<void> setReservationStatus(String reservationId, String status) async {
     try {
-      try {
-        await ApiClient.instance.dio.patch(
-          '/v1/pos/reservations/$reservationId/status',
-          data: {'status': status},
-        );
-      } catch (_) {
+      await ApiClient.instance.dio.patch(
+        '/v1/pos/reservations/$reservationId/status',
+        data: {'status': status},
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
         await ApiClient.instance.dio.patch(
           '/cafe/reservations/$reservationId/status',
           data: {'status': status},
         );
+      } else {
+        throw ApiException.from(e);
       }
     } catch (e) {
       throw ApiException.from(e);
@@ -285,22 +293,24 @@ class TableService {
   }
 
   Future<ActiveTableOrder?> getActiveOrder(String tableId) async {
+    Response res;
     try {
-      Response res;
-      try {
-        res = await ApiClient.instance.dio.get('/v1/pos/tables/$tableId/active-order', queryParameters: _loc);
-      } catch (_) {
+      res = await ApiClient.instance.dio.get('/v1/pos/tables/$tableId/active-order', queryParameters: _loc);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
         res = await ApiClient.instance.dio.get('/cafe/tables/$tableId/active-order', queryParameters: _loc);
+      } else {
+        return null;
       }
-      final body = res.data;
-      if (body is! Map) return null;
-      final inner = body['data'] ?? body['order'] ?? body;
-      final raw = (inner is Map && inner['order'] is Map) ? inner['order'] : inner;
-      if (raw is! Map) return null;
-      return ActiveTableOrder.fromJson(Map<String, dynamic>.from(raw));
     } catch (e) {
       return null;
     }
+    final body = res.data;
+    if (body is! Map) return null;
+    final inner = body['data'] ?? body['order'] ?? body;
+    final raw = (inner is Map && inner['order'] is Map) ? inner['order'] : inner;
+    if (raw is! Map) return null;
+    return ActiveTableOrder.fromJson(Map<String, dynamic>.from(raw));
   }
 }
 

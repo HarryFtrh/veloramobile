@@ -675,14 +675,18 @@ class FnbCatalogPane extends StatelessWidget {
             const SizedBox(width: 8),
             const Text('|', style: TextStyle(color: WarmPalette.line)),
             const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                'Pajak Resto ${((ctrl.billing?.pb1Rate ?? 0) > 1 ? (ctrl.billing?.pb1Rate ?? 0) : (ctrl.billing?.pb1Rate ?? 0) * 100).round()}% Aktif (PB1)',
-                style: const TextStyle(fontSize: 10, color: WarmPalette.textSecondary),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
+            Builder(builder: (_) {
+              final rate = ctrl.billing?.pb1Rate ?? 0;
+              final pct = (rate > 1 ? rate : rate * 100).round();
+              return Flexible(
+                child: Text(
+                  'Pajak Resto $pct% Aktif (PB1)',
+                  style: const TextStyle(fontSize: 10, color: WarmPalette.textSecondary),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              );
+            }),
           ],
           if (w >= 900) ...[
             const Spacer(),

@@ -6,7 +6,6 @@ import 'core/storage/session_storage.dart';
 import 'core/network/api_client.dart';
 import 'core/utils/app_locale.dart';
 import 'core/components/splash_screen.dart';
-import 'core/security/anti_tamper_service.dart';
 import 'features/auth/auth_service.dart';
 import 'features/auth/cubit/auth_cubit.dart';
 import 'features/auth/cubit/auth_state.dart';
@@ -37,10 +36,6 @@ void main() async {
     await initAppLocale();
     await SessionStorage.init();
     ApiClient.init();
-    final integrity = await AntiTamperService.instance.verifyRuntimeIntegrity();
-    if (!integrity.isSecure) {
-      debugPrint('⚠️ Peringatan Keamanan Runtime: $integrity');
-    }
   } catch (e) {
     debugPrint('Bootstrap initialization error: $e');
   }

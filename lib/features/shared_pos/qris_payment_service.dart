@@ -88,17 +88,10 @@ class QrisPaymentService {
       );
     } on DioException catch (e) {
       if (e.response?.statusCode == 404 || e.response?.statusCode == 405) {
-        try {
-          response = await ApiClient.instance.dio.post(
-            '/cafe/pos/payments/qris',
-            data: payload,
-          );
-        } on DioException catch (e2) {
-          final errMsg = e2.response?.data is Map
-              ? (e2.response?.data['message']?.toString())
-              : null;
-          throw Exception(errMsg ?? e2.message ?? 'Gagal menghubungi gateway QRIS');
-        }
+        response = await ApiClient.instance.dio.post(
+          '/cafe/pos/payments/qris',
+          data: payload,
+        );
       } else {
         final errMsg = e.response?.data is Map
             ? (e.response?.data['message']?.toString())

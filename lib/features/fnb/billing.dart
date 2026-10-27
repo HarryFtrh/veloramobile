@@ -380,10 +380,10 @@ class BillingSettings {
           if (data is List) {
             list = data;
           } else if (data is Map) {
-            final sub = data['discounts'] ?? data['promotions'] ?? data['vouchers'] ?? data['items'];
+            final sub = data['discounts'] ?? data['promotions'];
             if (sub is List) list = sub;
           } else {
-            final sub = rawData['discounts'] ?? rawData['promotions'] ?? rawData['vouchers'];
+            final sub = rawData['discounts'] ?? rawData['promotions'];
             if (sub is List) list = sub;
           }
         }

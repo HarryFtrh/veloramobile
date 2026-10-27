@@ -212,24 +212,14 @@ class KitchenService {
       };
       dynamic raw;
       try {
-        // Prioritas 1: Canonical POS v1 Orders
         final res = await ApiClient.instance.dio.get('/v1/pos/orders', queryParameters: query);
         raw = res.data;
-      } catch (e1) {
-        debugPrint('⚠️ [KitchenService] /v1/pos/orders failed: $e1, trying /cafe/pos/orders');
-        try {
-          // Fallback 1: Endpoint Cafe POS Orders
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 404) {
           final res = await ApiClient.instance.dio.get('/cafe/pos/orders', queryParameters: query);
           raw = res.data;
-        } catch (e2) {
-          debugPrint('⚠️ [KitchenService] /cafe/pos/orders failed: $e2, trying /cafe/kitchen/orders');
-          try {
-            // Fallback 2: Endpoint KDS Kitchen Cafe
-            final res = await ApiClient.instance.dio.get('/cafe/kitchen/orders', queryParameters: query);
-            raw = res.data;
-          } catch (e3) {
-            debugPrint('⚠️ [KitchenService] All KDS order endpoints failed: $e3');
-          }
+        } else {
+          rethrow;
         }
       }
 

@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/state/paged_result.dart';
@@ -153,9 +154,13 @@ class CustomerService {
       try {
         final res = await ApiClient.instance.dio.get('/v1/pos/customers', queryParameters: query);
         resData = res.data;
-      } catch (_) {
-        final res = await ApiClient.instance.dio.get('/cafe/dashboard/customers', queryParameters: query);
-        resData = res.data;
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 404) {
+          final res = await ApiClient.instance.dio.get('/cafe/dashboard/customers', queryParameters: query);
+          resData = res.data;
+        } else {
+          rethrow;
+        }
       }
 
       final data = _data(resData);
@@ -202,9 +207,13 @@ class CustomerService {
       try {
         final res = await ApiClient.instance.dio.get('/v1/pos/debts', queryParameters: query);
         rawData = res.data;
-      } catch (_) {
-        final res = await ApiClient.instance.dio.get('/cafe/pos/debts', queryParameters: query);
-        rawData = res.data;
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 404) {
+          final res = await ApiClient.instance.dio.get('/cafe/pos/debts', queryParameters: query);
+          rawData = res.data;
+        } else {
+          rethrow;
+        }
       }
       return _paged(_data(rawData), Debt.fromJson);
     } catch (e) {
@@ -220,8 +229,12 @@ class CustomerService {
       };
       try {
         await ApiClient.instance.dio.post('/v1/pos/debts/$debtId/settle', data: payload);
-      } catch (_) {
-        await ApiClient.instance.dio.post('/cafe/pos/debts/$debtId/settle', data: payload);
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 404) {
+          await ApiClient.instance.dio.post('/cafe/pos/debts/$debtId/settle', data: payload);
+        } else {
+          rethrow;
+        }
       }
     } catch (e) {
       throw ApiException.from(e);
@@ -232,8 +245,12 @@ class CustomerService {
     try {
       try {
         await ApiClient.instance.dio.post('/v1/pos/debts/$debtId/write-off');
-      } catch (_) {
-        await ApiClient.instance.dio.post('/cafe/pos/debts/$debtId/write-off');
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 404) {
+          await ApiClient.instance.dio.post('/cafe/pos/debts/$debtId/write-off');
+        } else {
+          rethrow;
+        }
       }
     } catch (e) {
       throw ApiException.from(e);

@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exception.dart';
@@ -154,22 +155,14 @@ class FinanceService {
         'per_page': 20,
       };
       dynamic res;
-      final endpoints = [
-        '/v1/pos/expenses',
-        '/v1/finance/expenses',
-        '/v1/pharmacy/finance/expenses',
-        '/pharmacy/finance/expenses',
-      ];
-      for (final ep in endpoints) {
-        try {
-          res = await ApiClient.instance.dio.get(ep, queryParameters: q);
-          if (res != null) break;
-        } catch (e) {
-          debugPrint('⚠️ [FinanceService] Fallback get expenses $ep: $e');
+      try {
+        res = await ApiClient.instance.dio.get('/v1/pos/expenses', queryParameters: q);
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 404) {
+          res = await ApiClient.instance.dio.get('/v1/pharmacy/finance/expenses', queryParameters: q);
+        } else {
+          rethrow;
         }
-      }
-      if (res == null) {
-        res = await ApiClient.instance.dio.get('/v1/pharmacy/finance/expenses', queryParameters: q);
       }
       final paginator = _data(res.data);
       return PagedResult(
@@ -217,24 +210,14 @@ class FinanceService {
         year: year,
         description: description,
       );
-      bool success = false;
-      final endpoints = [
-        '/v1/pos/expenses',
-        '/v1/finance/expenses',
-        '/v1/pharmacy/finance/expenses',
-        '/pharmacy/finance/expenses',
-      ];
-      for (final ep in endpoints) {
-        try {
-          await ApiClient.instance.dio.post(ep, data: payload);
-          success = true;
-          break;
-        } catch (e) {
-          debugPrint('⚠️ [FinanceService] Fallback create expense $ep: $e');
+      try {
+        await ApiClient.instance.dio.post('/v1/pos/expenses', data: payload);
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 404) {
+          await ApiClient.instance.dio.post('/v1/pharmacy/finance/expenses', data: payload);
+        } else {
+          rethrow;
         }
-      }
-      if (!success) {
-        await ApiClient.instance.dio.post('/v1/pharmacy/finance/expenses', data: payload);
       }
     } catch (e) {
       throw ApiException.from(e);

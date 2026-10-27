@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/storage/session_storage.dart';
@@ -135,15 +136,19 @@ class ModifierService {
       try {
         final res = await ApiClient.instance.dio.get('/v1/pos/modifiers', queryParameters: q);
         body = res.data;
-      } catch (_) {
-        final res = await ApiClient.instance.dio.get('/cafe/menu/modifiers', queryParameters: q);
-        body = res.data;
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 404) {
+          final res = await ApiClient.instance.dio.get('/cafe/menu/modifiers', queryParameters: q);
+          body = res.data;
+        } else {
+          rethrow;
+        }
       }
       List? list;
       if (body is List) {
         list = body;
       } else if (body is Map) {
-        final inner = body['data'] ?? body['modifiers'] ?? body['modifier_groups'] ?? body['groups'];
+        final inner = body['data'] ?? body['modifiers'];
         if (inner is List) {
           list = inner;
         } else if (inner is Map) {
