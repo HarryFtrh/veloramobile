@@ -102,8 +102,9 @@ class DashboardService {
     final daily = data.getMap('average_daily_sales');
     final earnings = data.getMap('total_earnings');
 
-    final trend = daily['trend'] is List
-        ? (daily['trend'] as List).map((e) => e is num ? e.toDouble() : 0.0).toList()
+    final rawTrend = daily['trend'];
+    final trend = rawTrend is List
+        ? rawTrend.map((e) => e is num ? e.toDouble() : 0.0).toList()
         : <double>[];
 
     final branches = data.getList<BranchSales>('sales_by_branches', (item) {

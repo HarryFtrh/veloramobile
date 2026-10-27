@@ -52,8 +52,9 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
     if (mounted) {
       setState(() {
         _isLoadingCloud = false;
-        if (data != null && data['printers'] is List) {
-          _cloudPrinters = (data['printers'] as List)
+        final rawPrinters = data?['printers'];
+        if (rawPrinters is List) {
+          _cloudPrinters = rawPrinters
               .whereType<Map>()
               .map((e) => Map<String, dynamic>.from(e))
               .toList();

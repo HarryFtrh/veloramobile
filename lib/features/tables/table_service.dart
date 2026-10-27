@@ -156,10 +156,12 @@ class TableService {
       if (raw is List) {
         listData = raw;
       } else if (raw is Map) {
-        if (raw['data'] is List) {
-          listData = raw['data'] as List;
-        } else if (raw['tables'] is List) {
-          listData = raw['tables'] as List;
+        final rawData = raw['data'];
+        final rawTables = raw['tables'];
+        if (rawData is List) {
+          listData = rawData;
+        } else if (rawTables is List) {
+          listData = rawTables;
         }
       }
 
@@ -295,7 +297,7 @@ class TableService {
       final inner = body['data'] ?? body['order'] ?? body;
       final raw = (inner is Map && inner['order'] is Map) ? inner['order'] : inner;
       if (raw is! Map) return null;
-      return ActiveTableOrder.fromJson(Map<String, dynamic>.from(raw as Map));
+      return ActiveTableOrder.fromJson(Map<String, dynamic>.from(raw));
     } catch (e) {
       return null;
     }
@@ -365,14 +367,14 @@ class ActiveTableOrder {
     List<ActiveTableItem> parsedItems = json.getList<ActiveTableItem>(
       'items',
       (e) => ActiveTableItem.fromJson(
-        e is Map<String, dynamic> ? e : Map<String, dynamic>.from(e as Map),
+        e is Map ? Map<String, dynamic>.from(e) : <String, dynamic>{},
       ),
     );
     if (parsedItems.isEmpty) {
       parsedItems = json.getList<ActiveTableItem>(
         'order_items',
         (e) => ActiveTableItem.fromJson(
-          e is Map<String, dynamic> ? e : Map<String, dynamic>.from(e as Map),
+          e is Map ? Map<String, dynamic>.from(e) : <String, dynamic>{},
         ),
       );
     }

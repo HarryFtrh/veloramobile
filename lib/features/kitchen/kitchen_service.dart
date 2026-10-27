@@ -241,13 +241,18 @@ class KitchenService {
         if (inner is List) {
           listData = inner;
         } else if (inner is Map) {
-          if (inner['orders'] is List) {
-            listData = inner['orders'] as List;
-          } else if (inner['data'] is List) {
-            listData = inner['data'] as List;
+          final orders = inner['orders'];
+          final data = inner['data'];
+          if (orders is List) {
+            listData = orders;
+          } else if (data is List) {
+            listData = data;
           }
-        } else if (raw['orders'] is List) {
-          listData = raw['orders'] as List;
+        } else {
+          final rawOrders = raw['orders'];
+          if (rawOrders is List) {
+            listData = rawOrders;
+          }
         }
       }
 

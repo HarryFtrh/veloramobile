@@ -39,7 +39,7 @@ class KitchenLoaded extends KitchenState {
   KitchenLoaded copyWith({List<KitchenOrder>? orders, Object? station = _keep, String? actionError}) =>
       KitchenLoaded(
         orders ?? this.orders,
-        station: identical(station, _keep) ? this.station : station as String?,
+        station: identical(station, _keep) ? this.station : (station is String ? station : null),
         actionError: actionError,
       );
 }

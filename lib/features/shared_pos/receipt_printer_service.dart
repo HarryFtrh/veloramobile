@@ -275,7 +275,7 @@ class ReceiptPrinterService {
   Future<bool> printReceipt(ReceiptData data, {bool is80mm = false}) async {
     final bytes = generateEscPosBytes(data, is80mm: is80mm);
     if (kDebugMode) {
-      print(
+      debugPrint(
         '=== [ESC/POS PRINTER] DISPATCHING RECEIPT #${data.invoiceNumber} (${bytes.length} bytes) ===',
       );
     }
@@ -441,7 +441,7 @@ class ReceiptPrinterService {
   /// Trigger cash drawer pulse without printing receipt
   Future<bool> openCashDrawer() async {
     if (kDebugMode) {
-      print('=== [ESC/POS] CASH DRAWER PULSE SENT (PIN 2 / 24V) ===');
+      debugPrint('=== [ESC/POS] CASH DRAWER PULSE SENT (PIN 2 / 24V) ===');
     }
     return true;
   }
@@ -467,14 +467,15 @@ class ReceiptPrinterService {
         }
       }
       if (raw is Map) {
-        return raw['data'] is Map
-            ? Map<String, dynamic>.from(raw['data'] as Map)
+        final inner = raw['data'];
+        return inner is Map
+            ? Map<String, dynamic>.from(inner)
             : Map<String, dynamic>.from(raw);
       }
       return null;
     } catch (e) {
       if (kDebugMode) {
-        print('Error fetching cloud printers: $e');
+        debugPrint('Error fetching cloud printers: $e');
       }
       return null;
     }

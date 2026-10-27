@@ -147,8 +147,10 @@ class FnbRegisterService {
 
       final body = res.data;
       if (body is Map) {
-        final data = body['data'] is Map ? body['data'] as Map : body;
-        final orderObj = data['order'] is Map ? data['order'] as Map : data;
+        final rawData = body['data'];
+        final data = rawData is Map ? rawData : body;
+        final rawOrder = data['order'];
+        final orderObj = rawOrder is Map ? rawOrder : data;
         final orderId = (orderObj['id'] ?? orderObj['order_number'] ?? orderObj['number'] ?? '').toString();
         if (orderId.isNotEmpty) return orderId;
       }
@@ -255,7 +257,8 @@ class FnbRegisterService {
         final inner = body['data'] ?? body;
         data = inner is Map ? Map<String, dynamic>.from(inner) : Map<String, dynamic>.from(body);
       }
-      final order = data['order'] is Map ? Map<String, dynamic>.from(data['order'] as Map) : data;
+      final rawOrder = data['order'];
+      final order = rawOrder is Map ? Map<String, dynamic>.from(rawOrder) : data;
       final invoice = (order['order_number'] ??
               order['invoice_number'] ??
               order['id'] ??

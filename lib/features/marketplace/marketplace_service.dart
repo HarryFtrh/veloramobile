@@ -80,7 +80,8 @@ class MarketplaceService {
     List items = [];
     if (rawData is Map) {
       final inner = rawData['data'];
-      items = inner is List ? inner : (rawData['products'] is List ? rawData['products'] as List : []);
+      final prods = rawData['products'];
+      items = inner is List ? inner : (prods is List ? prods : const []);
     } else if (rawData is List) {
       items = rawData;
     }
@@ -97,7 +98,8 @@ class MarketplaceService {
     List items = [];
     if (rawData is Map) {
       final inner = rawData['data'];
-      items = inner is List ? inner : (rawData['orders'] is List ? rawData['orders'] as List : []);
+      final orders = rawData['orders'];
+      items = inner is List ? inner : (orders is List ? orders : const []);
     } else if (rawData is List) {
       items = rawData;
     }

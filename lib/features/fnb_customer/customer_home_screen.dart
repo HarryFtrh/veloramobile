@@ -61,15 +61,13 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     });
 
     try {
-      final results = await Future.wait([
-        ProductCatalogService.instance.fetchCatalog(),
-        TableService.instance.tables().catchError((_) => <CafeTableInfo>[]),
-        BillingSettings.fetch().catchError((_) => const BillingSettings()),
-      ]);
+      final catalogFuture = ProductCatalogService.instance.fetchCatalog();
+      final tablesFuture = TableService.instance.tables().catchError((_) => <CafeTableInfo>[]);
+      final billingFuture = BillingSettings.fetch().catchError((_) => const BillingSettings());
 
-      final catalog = results[0] as PosCatalogData;
-      final tables = results[1] as List<CafeTableInfo>;
-      final billing = results[2] as BillingSettings;
+      final catalog = await catalogFuture;
+      final tables = await tablesFuture;
+      final billing = await billingFuture;
 
       if (mounted) {
         setState(() {

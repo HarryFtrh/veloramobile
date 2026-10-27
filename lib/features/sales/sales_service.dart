@@ -102,7 +102,8 @@ class SalesService {
     List items = [];
     if (rawData is Map) {
       final inner = rawData['data'];
-      items = inner is List ? inner : (rawData['visits'] is List ? rawData['visits'] as List : []);
+      final visits = rawData['visits'];
+      items = inner is List ? inner : (visits is List ? visits : const []);
     } else if (rawData is List) {
       items = rawData;
     }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import '../config/app_config.dart';
 import '../storage/session_storage.dart';
@@ -47,19 +48,16 @@ class ApiClient {
           final deviceId = await SessionStorage.instance.getDeviceId();
           options.headers['X-Device-Id'] = deviceId;
 
-          // ignore: avoid_print
-          print('🌐 [API REQ] ${options.method} ${options.baseUrl}${options.path} -> data: ${options.data}');
+          debugPrint('🌐 [API REQ] ${options.method} ${options.baseUrl}${options.path} -> data: ${options.data}');
 
           return handler.next(options);
         },
         onResponse: (response, handler) {
-          // ignore: avoid_print
-          print('✅ [API RES] ${response.statusCode} ${response.requestOptions.path} -> ${response.data}');
+          debugPrint('✅ [API RES] ${response.statusCode} ${response.requestOptions.path} -> ${response.data}');
           return handler.next(response);
         },
         onError: (DioException e, handler) async {
-          // ignore: avoid_print
-          print('❌ [API ERR] ${e.response?.statusCode} ${e.requestOptions.path} -> data: ${e.response?.data} | msg: ${e.message}');
+          debugPrint('❌ [API ERR] ${e.response?.statusCode} ${e.requestOptions.path} -> data: ${e.response?.data} | msg: ${e.message}');
 
           // 1. Tangani 401 Unauthorized / Sesi Berakhir
           if (e.response?.statusCode == 401) {

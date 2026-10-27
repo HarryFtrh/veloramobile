@@ -19,10 +19,10 @@ class ApiException implements Exception {
 
       if (body is Map) {
         // Ambil detail error validasi spesifik dari Laravel (errors: {field: [message]})
-        if (body['errors'] is Map) {
-          final errMap = body['errors'] as Map;
+        final rawErrors = body['errors'];
+        if (rawErrors is Map) {
           final messages = <String>[];
-          for (final entry in errMap.entries) {
+          for (final entry in rawErrors.entries) {
             final val = entry.value;
             if (val is List && val.isNotEmpty) {
               messages.add(val.first.toString());

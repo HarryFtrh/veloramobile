@@ -438,8 +438,9 @@ class BillingSettings {
         final raw = res.data;
         Map<String, dynamic>? dataMap;
         if (raw is Map) {
-          if (raw['data'] is Map) {
-            dataMap = Map<String, dynamic>.from(raw['data'] as Map);
+          final inner = raw['data'];
+          if (inner is Map) {
+            dataMap = Map<String, dynamic>.from(inner);
           } else {
             dataMap = Map<String, dynamic>.from(raw);
           }
@@ -465,8 +466,9 @@ class BillingSettings {
         final raw = res.data;
         Map<String, dynamic>? dataMap;
         if (raw is Map) {
-          if (raw['data'] is Map) {
-            dataMap = Map<String, dynamic>.from(raw['data'] as Map);
+          final inner = raw['data'];
+          if (inner is Map) {
+            dataMap = Map<String, dynamic>.from(inner);
           } else {
             dataMap = Map<String, dynamic>.from(raw);
           }
@@ -509,8 +511,9 @@ class BillingSettings {
       }
       Map<String, dynamic> data = const {};
       if (body is Map) {
-        if (body['data'] is Map) {
-          data = Map<String, dynamic>.from(body['data'] as Map);
+        final inner = body['data'];
+        if (inner is Map) {
+          data = Map<String, dynamic>.from(inner);
         } else {
           data = Map<String, dynamic>.from(body);
         }

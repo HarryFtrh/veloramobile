@@ -117,8 +117,9 @@ class CustomerService {
 
   Map<String, dynamic> _data(dynamic raw) {
     if (raw is Map) {
-      if (raw['data'] is Map) {
-        return Map<String, dynamic>.from(raw['data'] as Map);
+      final inner = raw['data'];
+      if (inner is Map) {
+        return Map<String, dynamic>.from(inner);
       }
       return Map<String, dynamic>.from(raw);
     }

@@ -140,8 +140,9 @@ class ModifierService {
         final inner = body['data'] ?? body['modifiers'] ?? body['modifier_groups'] ?? body['groups'];
         if (inner is List) {
           list = inner;
-        } else if (inner is Map && inner['data'] is List) {
-          list = inner['data'] as List;
+        } else if (inner is Map) {
+          final nested = inner['data'];
+          if (nested is List) list = nested;
         }
       }
       if (list == null) return const [];

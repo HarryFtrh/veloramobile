@@ -150,7 +150,8 @@ class PosCheckoutService {
         final inner = body['data'] ?? body;
         data = inner is Map ? Map<String, dynamic>.from(inner) : Map<String, dynamic>.from(body);
       }
-      final order = data['order'] is Map ? Map<String, dynamic>.from(data['order'] as Map) : data;
+      final rawOrder = data['order'];
+      final order = rawOrder is Map ? Map<String, dynamic>.from(rawOrder) : data;
       final invoiceNum = (order['invoice_number'] ??
               order['order_number'] ??
               order['id'] ??

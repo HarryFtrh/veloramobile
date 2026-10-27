@@ -121,14 +121,16 @@ class TenantSubscription {
   factory TenantSubscription.fromJson(Map<String, dynamic> raw) {
     // Unwrap nested objects if wrapped in 'data', 'subscription', or 'plan'
     Map<String, dynamic> json = raw;
-    if (raw['subscription'] is Map) {
-      json = Map<String, dynamic>.from(raw['subscription'] as Map);
-    } else if (raw['data'] is Map) {
-      final inner = raw['data'] as Map;
-      if (inner['subscription'] is Map) {
-        json = Map<String, dynamic>.from(inner['subscription'] as Map);
+    final sub = raw['subscription'];
+    final data = raw['data'];
+    if (sub is Map) {
+      json = Map<String, dynamic>.from(sub);
+    } else if (data is Map) {
+      final innerSub = data['subscription'];
+      if (innerSub is Map) {
+        json = Map<String, dynamic>.from(innerSub);
       } else {
-        json = Map<String, dynamic>.from(inner);
+        json = Map<String, dynamic>.from(data);
       }
     }
 

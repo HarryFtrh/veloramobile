@@ -59,12 +59,15 @@ class SubscriptionService {
 
           if (data is Map) {
             final map = Map<String, dynamic>.from(data);
-            if (map.containsKey('subscription') && map['subscription'] is Map) {
-              subMap = Map<String, dynamic>.from(map['subscription'] as Map);
-            } else if (map.containsKey('data') && map['data'] is Map) {
-              final inner = Map<String, dynamic>.from(map['data'] as Map);
-              if (inner.containsKey('subscription') && inner['subscription'] is Map) {
-                subMap = Map<String, dynamic>.from(inner['subscription'] as Map);
+            final rawSub = map['subscription'];
+            final rawData = map['data'];
+            if (rawSub is Map) {
+              subMap = Map<String, dynamic>.from(rawSub);
+            } else if (rawData is Map) {
+              final inner = Map<String, dynamic>.from(rawData);
+              final innerSub = inner['subscription'];
+              if (innerSub is Map) {
+                subMap = Map<String, dynamic>.from(innerSub);
               } else {
                 subMap = inner;
               }
