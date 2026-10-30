@@ -19,12 +19,22 @@ class OfflineSyncManager {
   static const int _maxIntervalSeconds = 60;
   static const int _defaultIntervalSeconds = 25;
 
+  final ValueNotifier<int> queueCountNotifier = ValueNotifier<int>(0);
+  final ValueNotifier<bool> isSyncingNotifier = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> isOnlineNotifier = ValueNotifier<bool>(true);
+
+  void refreshState() {
+    queueCountNotifier.value = SessionStorage.instance.getOfflineQueueCount();
+    isSyncingNotifier.value = _isSyncing;
+  }
+
   /// Callback jika ada transaksi offline yang berhasil disinkronkan ke server
   static void Function(int syncedCount)? onSyncSuccess;
 
   /// Memulai pengecekan periodik sinkronisasi offline dengan adaptive timing
   void startAutoSync({Duration interval = const Duration(seconds: _defaultIntervalSeconds)}) {
     _autoSyncTimer?.cancel();
+    refreshState();
     _scheduleNextSync(interval.inSeconds);
   }
 
@@ -56,6 +66,7 @@ class OfflineSyncManager {
   /// Masukkan transaksi ke antrean offline dan picu sinkronisasi segera
   Future<void> enqueueAndSync(Map<String, dynamic> saleRecord) async {
     await SessionStorage.instance.enqueueOfflineSale(jsonEncode(saleRecord));
+    refreshState();
     // Picu sinkronisasi tanpa menunda
     unawaited(triggerSync());
   }
@@ -63,6 +74,8 @@ class OfflineSyncManager {
   /// Pemicu sinkronisasi manual atau background
   Future<int> triggerSync() async {
     if (_isSyncing) return 0;
+    refreshState();
+
     final queue = SessionStorage.instance.getOfflineQueue();
     if (queue.isEmpty) {
       _consecutiveFailures = 0;
@@ -74,12 +87,14 @@ class OfflineSyncManager {
 
     // Pastikan server backend dalam keadaan sehat sebelum mengirim batch
     final isHealthy = await ApiClient.checkHealth();
+    isOnlineNotifier.value = isHealthy;
     if (!isHealthy) {
       _consecutiveFailures++;
       return 0;
     }
 
     _isSyncing = true;
+    refreshState();
     try {
       final List<Map<String, dynamic>> transactions = [];
       for (final raw in queue) {
@@ -153,6 +168,7 @@ class OfflineSyncManager {
       debugPrint('⚠️ [OFFLINE SYNC] Sinkronisasi ditunda (koneksi/server belum siap, retry #$_consecutiveFailures): $e');
     } finally {
       _isSyncing = false;
+      refreshState();
     }
     return 0;
   }

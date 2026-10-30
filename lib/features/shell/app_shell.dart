@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/design/tokens.dart';
 import '../../core/storage/session_storage.dart';
+import '../shared_pos/offline_sync_badge.dart';
 import '../shared_pos/receipt_printer_service.dart';
 import '../shared_pos/shift_badge.dart';
 
@@ -169,32 +170,10 @@ class _AppShellState extends State<AppShell> {
                 ),
               ),
 
-              // Online Status & Clock
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: p.surfaceMuted,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: p.line),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.circle, size: 6, color: WarmPalette.tertiary),
-                    const SizedBox(width: 4),
-                    const Text(
-                      'ONLINE',
-                      style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: WarmPalette.tertiary),
-                    ),
-                    if (!isCompact) ...[
-                      const SizedBox(width: 6),
-                      Text(
-                        timeStr,
-                        style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w600, color: p.textSecondary),
-                      ),
-                    ],
-                  ],
-                ),
+              // Online Status & Clock & Offline Queue Badge
+              OfflineSyncBadge(
+                showClock: !isCompact,
+                timeStr: timeStr,
               ),
               const SizedBox(width: 6),
 
