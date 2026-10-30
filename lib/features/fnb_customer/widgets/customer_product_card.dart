@@ -40,6 +40,7 @@ class CustomerProductCard extends StatelessWidget {
                   child: Image.network(
                     item.imageUrl,
                     fit: BoxFit.cover,
+                    cacheWidth: 360,
                     errorBuilder: (_, _, _) => Container(
                       color: WarmPalette.surfaceMuted,
                       child: const Icon(

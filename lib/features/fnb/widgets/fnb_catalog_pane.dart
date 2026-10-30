@@ -467,6 +467,7 @@ class FnbCatalogPane extends StatelessWidget {
                                             ? Image.network(
                                                 item.imageUrl!,
                                                 fit: BoxFit.cover,
+                                                cacheWidth: 320,
                                                 errorBuilder: (_, _, _) => Center(
                                                   child: Icon(item.defaultIcon, size: 28, color: WarmPalette.primary),
                                                 ),

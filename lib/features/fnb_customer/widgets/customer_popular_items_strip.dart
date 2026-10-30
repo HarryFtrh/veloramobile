@@ -94,6 +94,8 @@ class CustomerPopularItemsStrip extends StatelessWidget {
                                   ? Image.network(
                                       item.imageUrl,
                                       fit: BoxFit.cover,
+                                      cacheWidth: 160,
+                                      cacheHeight: 160,
                                       errorBuilder: (_, _, _) => Container(
                                         color: WarmPalette.surfaceMuted,
                                         child: const Icon(Icons.coffee, color: WarmPalette.primary),

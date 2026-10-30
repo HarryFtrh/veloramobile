@@ -1,25 +1,51 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import '../../core/network/api_client.dart';
 import '../../core/storage/session_storage.dart';
 
 /// Manajer sinkronisasi otomatis transaksi offline di background.
 /// Berjalan secara senyap saat internet kembali pulih tanpa mengganggu kasir.
+/// Dilengkapi adaptive exponential backoff dengan jitter untuk mencegah server overload.
 class OfflineSyncManager {
   static final OfflineSyncManager instance = OfflineSyncManager._();
   OfflineSyncManager._();
 
   bool _isSyncing = false;
   Timer? _autoSyncTimer;
+  int _consecutiveFailures = 0;
+  static const int _minIntervalSeconds = 5;
+  static const int _maxIntervalSeconds = 60;
+  static const int _defaultIntervalSeconds = 25;
 
   /// Callback jika ada transaksi offline yang berhasil disinkronkan ke server
   static void Function(int syncedCount)? onSyncSuccess;
 
-  /// Memulai pengecekan periodik sinkronisasi offline (default per 25 detik)
-  void startAutoSync({Duration interval = const Duration(seconds: 25)}) {
+  /// Memulai pengecekan periodik sinkronisasi offline dengan adaptive timing
+  void startAutoSync({Duration interval = const Duration(seconds: _defaultIntervalSeconds)}) {
     _autoSyncTimer?.cancel();
-    _autoSyncTimer = Timer.periodic(interval, (_) => triggerSync());
+    _scheduleNextSync(interval.inSeconds);
+  }
+
+  void _scheduleNextSync(int seconds) {
+    _autoSyncTimer?.cancel();
+    _autoSyncTimer = Timer(Duration(seconds: seconds), () async {
+      await triggerSync();
+      // Hitung interval berikutnya berdasarkan status antrean & kegagalan
+      final queueCount = SessionStorage.instance.getOfflineQueueCount();
+      if (queueCount == 0) {
+        _consecutiveFailures = 0;
+        _scheduleNextSync(_defaultIntervalSeconds);
+      } else if (_consecutiveFailures > 0) {
+        // Exponential backoff dengan jitter: min(max, min * 2^failures) + jitter
+        final base = min(_maxIntervalSeconds, _minIntervalSeconds * pow(2, min(_consecutiveFailures, 4)).toInt());
+        final jitter = Random().nextInt(4);
+        _scheduleNextSync(base + jitter);
+      } else {
+        _scheduleNextSync(_minIntervalSeconds);
+      }
+    });
   }
 
   void stopAutoSync() {
@@ -27,18 +53,31 @@ class OfflineSyncManager {
     _autoSyncTimer = null;
   }
 
+  /// Masukkan transaksi ke antrean offline dan picu sinkronisasi segera
+  Future<void> enqueueAndSync(Map<String, dynamic> saleRecord) async {
+    await SessionStorage.instance.enqueueOfflineSale(jsonEncode(saleRecord));
+    // Picu sinkronisasi tanpa menunda
+    unawaited(triggerSync());
+  }
+
   /// Pemicu sinkronisasi manual atau background
   Future<int> triggerSync() async {
     if (_isSyncing) return 0;
     final queue = SessionStorage.instance.getOfflineQueue();
-    if (queue.isEmpty) return 0;
+    if (queue.isEmpty) {
+      _consecutiveFailures = 0;
+      return 0;
+    }
 
     final token = await SessionStorage.instance.getAuthToken();
     if (token == null || token.isEmpty) return 0;
 
     // Pastikan server backend dalam keadaan sehat sebelum mengirim batch
     final isHealthy = await ApiClient.checkHealth();
-    if (!isHealthy) return 0;
+    if (!isHealthy) {
+      _consecutiveFailures++;
+      return 0;
+    }
 
     _isSyncing = true;
     try {
@@ -56,10 +95,11 @@ class OfflineSyncManager {
 
       if (transactions.isEmpty) {
         await SessionStorage.instance.clearOfflineQueue();
+        _consecutiveFailures = 0;
         return 0;
       }
 
-      debugPrint('🔄 [OFFLINE SYNC] Mengirim ${transactions.length} transaksi offline ke /v1/pos/offline-batch-sync...');
+      debugPrint('🔄 [OFFLINE SYNC] Mengirim ${transactions.length} transaksi offline ke backend...');
 
       final payload = {
         'transactions': transactions,
@@ -87,12 +127,16 @@ class OfflineSyncManager {
       if (res != null && (res.statusCode == 200 || res.statusCode == 201)) {
         final syncedCount = transactions.length;
         await SessionStorage.instance.clearOfflineQueue();
+        _consecutiveFailures = 0;
         debugPrint('✅ [OFFLINE SYNC] Berhasil menyinkronkan $syncedCount transaksi offline ke server cloud');
         onSyncSuccess?.call(syncedCount);
         return syncedCount;
+      } else {
+        _consecutiveFailures++;
       }
     } catch (e) {
-      debugPrint('⚠️ [OFFLINE SYNC] Sinkronisasi ditunda (koneksi/server belum siap): $e');
+      _consecutiveFailures++;
+      debugPrint('⚠️ [OFFLINE SYNC] Sinkronisasi ditunda (koneksi/server belum siap, retry #$_consecutiveFailures): $e');
     } finally {
       _isSyncing = false;
     }

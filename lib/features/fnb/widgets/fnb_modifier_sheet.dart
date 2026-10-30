@@ -169,6 +169,7 @@ class _FnbModifierSheetState extends State<FnbModifierSheet> {
                         child: Image.network(
                           widget.product.imageUrl!,
                           fit: BoxFit.cover,
+                          cacheWidth: 320,
                           errorBuilder: (_, _, _) => const Icon(
                             Icons.coffee_rounded,
                             color: WarmPalette.primary,

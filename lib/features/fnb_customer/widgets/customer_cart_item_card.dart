@@ -36,6 +36,8 @@ class CustomerCartItemCard extends StatelessWidget {
                   width: 72,
                   height: 72,
                   fit: BoxFit.cover,
+                  cacheWidth: 160,
+                  cacheHeight: 160,
                   errorBuilder: (_, _, _) => Container(
                     width: 72,
                     height: 72,

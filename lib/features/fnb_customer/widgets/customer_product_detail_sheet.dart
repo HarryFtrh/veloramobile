@@ -188,6 +188,7 @@ class _CustomerProductDetailSheetState
                             child: Image.network(
                               widget.product.imageUrl,
                               fit: BoxFit.cover,
+                              cacheWidth: 600,
                               errorBuilder: (_, _, _) => Container(
                                 color: WarmPalette.surfaceMuted,
                                 child: const Icon(
