@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import '../../core/network/api_client.dart';
@@ -347,15 +349,45 @@ class ProductCatalogService {
       if (_cachedCatalog != null && _cachedCatalog!.products.isNotEmpty) {
         return _cachedCatalog!;
       }
+      // Pulihkan dari disk cache jika aplikasi dinyalakan saat offline total
+      final diskJson = SessionStorage.instance.getCatalogCache(bizType);
+      if (diskJson != null && diskJson.isNotEmpty) {
+        try {
+          final decoded = jsonDecode(diskJson);
+          final diskData = _parseCatalogData(decoded);
+          if (diskData.products.isNotEmpty) {
+            debugPrint('📦 [CATALOG] Berhasil memulihkan ${diskData.products.length} produk dari cache disk offline');
+            _rebuildIndex(diskData.products);
+            _cachedCatalog = diskData;
+            return diskData;
+          }
+        } catch (e) {
+          debugPrint('⚠️ [CATALOG] Gagal membaca disk catalog cache: $e');
+        }
+      }
       return PosCatalogData(
         products: const [],
         categories: const ['Semua'],
         catalogVersion: 1,
-        businessType: 'fnb',
+        businessType: bizType,
       );
     }
 
-    final dynamic rawData = response.data;
+    final catalogData = _parseCatalogData(response.data);
+    debugPrint('📦 [CATALOG] Loaded ${catalogData.products.length} dynamic products across ${catalogData.categories.length} categories and ${catalogData.modifiers.length} modifier groups from $successfulEndpoint');
+    _rebuildIndex(catalogData.products);
+    _cachedCatalog = catalogData;
+
+    // Persist ke disk storage agar kasir tetap bisa berjualan saat cold-boot offline
+    try {
+      unawaited(SessionStorage.instance.saveCatalogCache(bizType, jsonEncode(response.data)));
+    } catch (_) {}
+
+    return catalogData;
+  }
+
+  /// Parser defensif untuk payload katalog produk dari API maupun disk cache lokal
+  PosCatalogData _parseCatalogData(dynamic rawData) {
     Map<String, dynamic> data = {};
     List<dynamic> productList = const [];
     List<dynamic> categoryList = const [];
@@ -418,7 +450,7 @@ class ProductCatalogService {
       }
     }
 
-    final rawModifiersData = data['modifiers'] ?? rawData['modifiers'];
+    final rawModifiersData = data['modifiers'] ?? (rawData is Map ? rawData['modifiers'] : null);
     final List<ModifierGroup> catalogModifiers = [];
     if (rawModifiersData is List) {
       for (final m in rawModifiersData) {
@@ -432,17 +464,12 @@ class ProductCatalogService {
       }
     }
 
-    final catalogData = PosCatalogData(
+    return PosCatalogData(
       products: rawProducts,
       categories: categorySet.toList(),
       modifiers: catalogModifiers,
       catalogVersion: data.getInt('catalog_version', fallback: 1),
       businessType: data.getString('business_type', fallback: 'retail'),
     );
-
-    debugPrint('📦 [CATALOG] Loaded ${rawProducts.length} dynamic products across ${categorySet.length} categories and ${catalogModifiers.length} modifier groups from $successfulEndpoint');
-    _rebuildIndex(rawProducts);
-    _cachedCatalog = catalogData;
-    return catalogData;
   }
 }

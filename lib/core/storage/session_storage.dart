@@ -332,6 +332,14 @@ class SessionStorage {
 
   String? getSubscriptionCache() => _getString(_subscriptionCacheKey);
 
+  Future<void> saveCatalogCache(String namespace, String jsonStr) async {
+    await _setString('velora_catalog_cache_$namespace', jsonStr);
+  }
+
+  String? getCatalogCache(String namespace) {
+    return _getString('velora_catalog_cache_$namespace');
+  }
+
   Future<void> saveDraftCart(String namespace, String jsonCart) async {
     await _setString('velora_draft_cart_$namespace', jsonCart);
   }
