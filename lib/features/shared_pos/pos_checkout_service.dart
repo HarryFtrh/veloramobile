@@ -51,6 +51,7 @@ class PosCheckoutResult {
   final num changeAmount;
   final bool isOffline;
   final String? errorMessage;
+  final String? qrData;
 
   PosCheckoutResult({
     required this.success,
@@ -60,6 +61,7 @@ class PosCheckoutResult {
     required this.changeAmount,
     this.isOffline = false,
     this.errorMessage,
+    this.qrData,
   });
 }
 
@@ -160,6 +162,13 @@ class PosCheckoutService {
               'INV-$clientTxId')
           .toString();
 
+      final qrVal = order['qr_content'] ??
+          order['qris'] ??
+          order['qr_code'] ??
+          order['payment_url'] ??
+          order['invoice_url'] ??
+          (data['qr_content'] ?? data['qris'] ?? data['qr_code']);
+
       return PosCheckoutResult(
         success: true,
         invoiceNumber: invoiceNum,
@@ -167,6 +176,7 @@ class PosCheckoutService {
         paidAmount: paidAmount,
         changeAmount: paidAmount >= totalAmount ? paidAmount - totalAmount : 0,
         isOffline: false,
+        qrData: qrVal?.toString(),
       );
     } on DioException catch (e) {
       // Offline fallback: save locally if internet drops!

@@ -159,6 +159,7 @@ class _UniversalCheckoutDialogState extends State<UniversalCheckoutDialog> {
         paidAmount: finalPaid,
         changeAmount: _changeAmount,
         paymentMethod: paymentMethod.toUpperCase(),
+        qrData: result.qrData,
       );
 
       await ReceiptPrinterService.instance.printReceipt(receiptData);
