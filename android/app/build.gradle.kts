@@ -98,6 +98,8 @@ android {
                 storeFile = resolvedStoreFile
                 storePassword = storePasswordProp ?: ""
             } else {
+                // PERINGATAN: AAB yang ditandatangani debug key akan DITOLAK Google Play Console
+                logger.warn("⚠️ [VELORA SIGNING] key.properties / keystore tidak ditemukan. Build release memakai DEBUG KEY — jangan upload ke Play Store!")
                 val debugConfig = signingConfigs.getByName("debug")
                 keyAlias = debugConfig.keyAlias
                 keyPassword = debugConfig.keyPassword

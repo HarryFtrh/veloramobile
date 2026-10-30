@@ -77,17 +77,24 @@ class ApiClient {
             options.headers['X-Correlation-Id'] = _uuid.v4();
           }
 
-          debugPrint('🌐 [API REQ] ${options.method} ${options.baseUrl}${options.path} (trace: ${options.headers['X-Correlation-Id']}) -> data: ${options.data}');
+          if (kDebugMode) {
+            final sanitized = _sanitizeData(options.data);
+            debugPrint('🌐 [API REQ] ${options.method} ${options.baseUrl}${options.path} (trace: ${options.headers['X-Correlation-Id']}) -> data: $sanitized');
+          }
 
           return handler.next(options);
         },
         onResponse: (response, handler) {
-          debugPrint('✅ [API RES] ${response.statusCode} ${response.requestOptions.path} -> ${response.data}');
+          if (kDebugMode) {
+            debugPrint('✅ [API RES] ${response.statusCode} ${response.requestOptions.path} -> ${_sanitizeData(response.data)}');
+          }
           return handler.next(response);
         },
         onError: (DioException e, handler) async {
           final traceId = e.response?.data is Map ? e.response?.data['trace_id'] : null;
-          debugPrint('❌ [API ERR] ${e.response?.statusCode} ${e.requestOptions.path} (trace: $traceId) -> data: ${e.response?.data} | msg: ${e.message}');
+          if (kDebugMode) {
+            debugPrint('❌ [API ERR] ${e.response?.statusCode} ${e.requestOptions.path} (trace: $traceId) -> data: ${_sanitizeData(e.response?.data)} | msg: ${e.message}');
+          }
 
           // 1. Tangani 401 Unauthorized / Sesi Berakhir
           if (e.response?.statusCode == 401) {
@@ -132,5 +139,27 @@ class ApiClient {
         return false;
       }
     }
+  }
+
+  /// Sanitasi data log untuk mencegah kebocoran kredensial (PIN, password, token) di console/logcat
+  static dynamic _sanitizeData(dynamic data) {
+    if (data is Map) {
+      final copy = <String, dynamic>{};
+      for (final entry in data.entries) {
+        final k = entry.key.toString();
+        final lower = k.toLowerCase();
+        if (lower.contains('password') || lower == 'pin' || lower.contains('secret') || lower.contains('token') || lower.contains('authorization')) {
+          copy[k] = '***REDACTED***';
+        } else if (entry.value is Map || entry.value is List) {
+          copy[k] = _sanitizeData(entry.value);
+        } else {
+          copy[k] = entry.value;
+        }
+      }
+      return copy;
+    } else if (data is List) {
+      return data.map((e) => _sanitizeData(e)).toList();
+    }
+    return data;
   }
 }

@@ -332,6 +332,26 @@ class SessionStorage {
 
   String? getSubscriptionCache() => _getString(_subscriptionCacheKey);
 
+  /// Status percobaan PIN gagal (anti brute-force), disimpan agar tidak reset saat app di-restart
+  int getPinFailCount() => _prefs?.getInt('velora_pin_fail_count') ?? (_memCache['velora_pin_fail_count'] as int? ?? 0);
+
+  DateTime? getPinLockedUntil() {
+    final ms = _prefs?.getInt('velora_pin_locked_until') ?? _memCache['velora_pin_locked_until'] as int?;
+    return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
+  }
+
+  Future<void> savePinLockState({required int failCount, DateTime? lockedUntil}) async {
+    _memCache['velora_pin_fail_count'] = failCount;
+    await _prefs?.setInt('velora_pin_fail_count', failCount);
+    if (lockedUntil == null) {
+      _memCache.remove('velora_pin_locked_until');
+      await _prefs?.remove('velora_pin_locked_until');
+    } else {
+      _memCache['velora_pin_locked_until'] = lockedUntil.millisecondsSinceEpoch;
+      await _prefs?.setInt('velora_pin_locked_until', lockedUntil.millisecondsSinceEpoch);
+    }
+  }
+
   Future<void> saveCatalogCache(String namespace, String jsonStr) async {
     await _setString('velora_catalog_cache_$namespace', jsonStr);
   }

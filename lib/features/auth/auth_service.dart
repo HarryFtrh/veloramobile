@@ -820,9 +820,52 @@ class AuthService {
   }
 
   /// Verifikasi PIN kasir secara hybrid (lokal perangkat + server backend)
+  /// Sisa waktu kunci PIN akibat terlalu banyak percobaan gagal (null = tidak terkunci)
+  Duration? quickPinLockRemaining() {
+    final until = SessionStorage.instance.getPinLockedUntil();
+    if (until == null) return null;
+    final diff = until.difference(DateTime.now());
+    return diff.isNegative ? null : diff;
+  }
+
+  /// Bandingkan string dengan waktu konstan (mencegah timing attack)
+  bool _constantTimeEquals(String a, String b) {
+    if (a.length != b.length) return false;
+    var result = 0;
+    for (var i = 0; i < a.length; i++) {
+      result |= a.codeUnitAt(i) ^ b.codeUnitAt(i);
+    }
+    return result == 0;
+  }
+
+  Future<void> _registerPinFailure() async {
+    final fails = SessionStorage.instance.getPinFailCount() + 1;
+    DateTime? lockedUntil;
+    // Setelah 5x gagal: kunci 30 detik, lalu berlipat (60, 120, ... maks 15 menit)
+    if (fails >= 5) {
+      final exp = (fails - 5).clamp(0, 5);
+      final seconds = (30 * (1 << exp)).clamp(30, 900);
+      lockedUntil = DateTime.now().add(Duration(seconds: seconds));
+    }
+    await SessionStorage.instance.savePinLockState(failCount: fails, lockedUntil: lockedUntil);
+  }
+
   Future<bool> verifyQuickPin(String pin) async {
+    // Tolak langsung bila masih dalam masa kunci anti brute-force
+    if (quickPinLockRemaining() != null) return false;
+
+    final ok = await _verifyQuickPinInternal(pin);
+    if (ok) {
+      await SessionStorage.instance.savePinLockState(failCount: 0);
+    } else {
+      await _registerPinFailure();
+    }
+    return ok;
+  }
+
+  Future<bool> _verifyQuickPinInternal(String pin) async {
     final savedPin = await SessionStorage.instance.getUserPin();
-    if (savedPin != null && savedPin.isNotEmpty && pin == savedPin) {
+    if (savedPin != null && savedPin.isNotEmpty && _constantTimeEquals(pin, savedPin)) {
       return true;
     }
 
