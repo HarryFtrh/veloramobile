@@ -128,6 +128,20 @@ class OfflineSyncManager {
         final syncedCount = transactions.length;
         await SessionStorage.instance.clearOfflineQueue();
         _consecutiveFailures = 0;
+
+        // Jika backend merespons ada item gagal, masukkan kembali ke antrean
+        if (res.data is Map) {
+          final innerData = res.data['data'] is Map ? res.data['data'] : res.data;
+          final failedList = innerData['failed'];
+          if (failedList is List && failedList.isNotEmpty) {
+            for (final f in failedList) {
+              if (f is Map) {
+                await SessionStorage.instance.enqueueOfflineSale(jsonEncode(f));
+              }
+            }
+          }
+        }
+
         debugPrint('✅ [OFFLINE SYNC] Berhasil menyinkronkan $syncedCount transaksi offline ke server cloud');
         onSyncSuccess?.call(syncedCount);
         return syncedCount;
@@ -141,5 +155,17 @@ class OfflineSyncManager {
       _isSyncing = false;
     }
     return 0;
+  }
+
+  /// Pemicu sinkronisasi manual dengan laporan detail (digunakan oleh PosCheckoutService & UI)
+  Future<Map<String, dynamic>> triggerSyncDetailed() async {
+    final prevCount = SessionStorage.instance.getOfflineQueueCount();
+    final synced = await triggerSync();
+    final remaining = SessionStorage.instance.getOfflineQueueCount();
+    return {
+      'synced': synced,
+      'failed': max(0, prevCount - synced - remaining),
+      'remaining': remaining,
+    };
   }
 }

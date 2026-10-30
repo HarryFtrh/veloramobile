@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/storage/session_storage.dart';
+import '../shared_pos/offline_sync_manager.dart';
 import 'billing.dart';
 import 'modifiers.dart';
 
@@ -266,7 +267,7 @@ class FnbRegisterService {
             ...payload,
             'created_at': DateTime.now().toIso8601String(),
           };
-          await SessionStorage.instance.enqueueOfflineSale(jsonEncode(offlineRecord));
+          await OfflineSyncManager.instance.enqueueAndSync(offlineRecord);
           return CheckoutOutcome(invoice: offlineInvoice, change: change);
         } else {
           rethrow;

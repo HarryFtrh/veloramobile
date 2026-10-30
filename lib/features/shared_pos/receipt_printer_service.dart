@@ -28,6 +28,7 @@ class ReceiptData {
   final num paidAmount;
   final num changeAmount;
   final String paymentMethod;
+  final String? qrData;
 
   ReceiptData({
     required this.storeName,
@@ -44,6 +45,7 @@ class ReceiptData {
     required this.paidAmount,
     required this.changeAmount,
     required this.paymentMethod,
+    this.qrData,
   });
 }
 
@@ -195,6 +197,29 @@ class ReceiptPrinterService {
     writeDivider(char: '=');
 
     // 6. Footer & QR
+    if (data.qrData != null && data.qrData!.isNotEmpty) {
+      writeDivider();
+      final qrBytes = utf8.encode(data.qrData!);
+      final len = qrBytes.length + 3;
+      final pL = len % 256;
+      final pH = len ~/ 256;
+
+      // Model 2 QR Code
+      bytes.addAll([0x1D, 0x28, 0x6B, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00]);
+      // Module Size: 5 (58mm) / 6 (80mm)
+      bytes.addAll([0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x43, is80mm ? 6 : 5]);
+      // Error Correction Level M
+      bytes.addAll([0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x45, 0x31]);
+      // Store QR Data
+      bytes.addAll([0x1D, 0x28, 0x6B, pL, pH, 0x31, 0x50, 0x30, ...qrBytes]);
+      // Print QR Code
+      bytes.addAll(cmdAlignCenter);
+      bytes.addAll([0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x51, 0x30]);
+      bytes.addAll(latin1.encode('\n'));
+      writeLine('Pindai QR Bukti Transaksi', align: cmdAlignCenter);
+      writeDivider();
+    }
+
     writeLine(
       'Terima Kasih Atas Kunjungan Anda',
       align: cmdAlignCenter,
@@ -255,6 +280,10 @@ class ReceiptPrinterService {
       'Bayar (${data.paymentMethod.toUpperCase()}) : ${CurrencyFormatter.format(data.paidAmount)}',
     );
     sb.writeln('Kembali   : ${CurrencyFormatter.format(data.changeAmount)}');
+    if (data.qrData != null && data.qrData!.isNotEmpty) {
+      sb.writeln('--------------------------------');
+      sb.writeln('Tautan/Bukti: ${data.qrData}');
+    }
     sb.writeln('================================');
     sb.writeln('Terima kasih atas kunjungan Anda!');
     sb.writeln('Powered by Velora POS Cloud');

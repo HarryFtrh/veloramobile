@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/network/api_client.dart';
 import '../../core/storage/session_storage.dart';
+import 'offline_sync_manager.dart';
 
 class PosCartItem {
   final String productId;
@@ -199,7 +200,7 @@ class PosCheckoutService {
         'created_at': DateTime.now().toIso8601String(),
       };
 
-      await SessionStorage.instance.enqueueOfflineSale(jsonEncode(offlineRecord));
+      await OfflineSyncManager.instance.enqueueAndSync(offlineRecord);
 
       return PosCheckoutResult(
         success: true,
@@ -213,87 +214,10 @@ class PosCheckoutService {
     }
   }
 
-  bool _isSyncing = false;
+  bool get _isSyncing => false;
 
-  /// Sync all pending offline transactions to Canonical POS Offline Batch API
+  /// Sync all pending offline transactions to Canonical POS Offline Batch API via unified OfflineSyncManager
   Future<Map<String, dynamic>> syncOfflineQueue() async {
-    if (_isSyncing) {
-      return {'synced': 0, 'failed': 0, 'remaining': pendingOfflineCount};
-    }
-    _isSyncing = true;
-
-    final queueRaw = SessionStorage.instance.getOfflineQueue();
-    if (queueRaw.isEmpty) {
-      _isSyncing = false;
-      return {'synced': 0, 'failed': 0, 'remaining': 0};
-    }
-
-    final transactions = <Map<String, dynamic>>[];
-    for (final raw in queueRaw) {
-      try {
-        final decoded = jsonDecode(raw);
-        if (decoded is Map<String, dynamic>) {
-          transactions.add(decoded);
-        }
-      } catch (_) {
-        // Skip corrupt entry
-      }
-    }
-
-    if (transactions.isEmpty) {
-      await SessionStorage.instance.clearOfflineQueue();
-      _isSyncing = false;
-      return {'synced': 0, 'failed': 0, 'remaining': 0};
-    }
-
-    try {
-      final response = await ApiClient.instance.dio.post(
-        '/v1/pos/offline-batch-sync',
-        data: {
-          'location_id': SessionStorage.instance.getLocationId(),
-          'transactions': transactions,
-        },
-      );
-
-      Map<String, dynamic> data = {};
-      if (response.data is Map) {
-        final rawData = response.data['data'];
-        if (rawData is Map) {
-          data = Map<String, dynamic>.from(rawData);
-        } else {
-          data = Map<String, dynamic>.from(response.data);
-        }
-      }
-      final syncedCount = (data['synced_count'] as num?)?.toInt() ?? transactions.length;
-
-      // Clear queue on batch sync
-      await SessionStorage.instance.clearOfflineQueue();
-
-      // If server returned failed records, re-enqueue them
-      final failedRaw = data['failed'];
-      final failedList = failedRaw is List ? failedRaw : null;
-      if (failedList != null && failedList.isNotEmpty) {
-        for (final item in failedList) {
-          if (item is Map) {
-            await SessionStorage.instance.enqueueOfflineSale(jsonEncode(item));
-          }
-        }
-      }
-
-      return {
-        'synced': syncedCount,
-        'failed': failedList?.length ?? 0,
-        'remaining': SessionStorage.instance.getOfflineQueueCount(),
-      };
-    } catch (e) {
-      return {
-        'synced': 0,
-        'failed': transactions.length,
-        'remaining': transactions.length,
-        'error': e.toString(),
-      };
-    } finally {
-      _isSyncing = false;
-    }
+    return await OfflineSyncManager.instance.triggerSyncDetailed();
   }
 }
