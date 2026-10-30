@@ -235,6 +235,51 @@ class ProductCatalogService {
   PosCatalogData? _cachedCatalog;
   PosCatalogData? get cachedCatalog => _cachedCatalog;
 
+  // In-Memory Fast Lookup Indices (O(1) Scan & Search)
+  final Map<String, PosProduct> _barcodeMap = {};
+  final Map<String, PosProduct> _skuMap = {};
+  final Map<String, PosProduct> _idMap = {};
+
+  void _rebuildIndex(List<PosProduct> products) {
+    _barcodeMap.clear();
+    _skuMap.clear();
+    _idMap.clear();
+    for (final p in products) {
+      if (p.id.isNotEmpty) _idMap[p.id] = p;
+      if (p.barcode.isNotEmpty) _barcodeMap[p.barcode.trim().toLowerCase()] = p;
+      if (p.sku.isNotEmpty) _skuMap[p.sku.trim().toLowerCase()] = p;
+    }
+  }
+
+  /// Pencarian barcode O(1) instan (<1ms) untuk scanner fisik USB/Bluetooth
+  PosProduct? findByBarcode(String barcode) => _barcodeMap[barcode.trim().toLowerCase()];
+
+  /// Pencarian SKU O(1) instan
+  PosProduct? findBySku(String sku) => _skuMap[sku.trim().toLowerCase()];
+
+  /// Pencarian ID produk O(1) instan
+  PosProduct? findById(String id) => _idMap[id.trim()];
+
+  /// Filter pencarian cepat (Barcode -> SKU -> Nama -> Kategori)
+  List<PosProduct> searchFast(String query) {
+    if (query.isEmpty) return _cachedCatalog?.products ?? const [];
+    final q = query.trim().toLowerCase();
+
+    final bMatch = _barcodeMap[q];
+    if (bMatch != null) return [bMatch];
+
+    final sMatch = _skuMap[q];
+    if (sMatch != null) return [sMatch];
+
+    final list = _cachedCatalog?.products ?? const [];
+    return list.where((p) =>
+      p.name.toLowerCase().contains(q) ||
+      p.sku.toLowerCase().contains(q) ||
+      p.barcode.toLowerCase().contains(q) ||
+      p.category.toLowerCase().contains(q)
+    ).toList();
+  }
+
   /// Fetches products from the canonical POS sync API
   Future<PosCatalogData> fetchCatalog({
     String? search,
@@ -390,6 +435,7 @@ class ProductCatalogService {
     );
 
     debugPrint('📦 [CATALOG] Loaded ${rawProducts.length} dynamic products across ${categorySet.length} categories and ${catalogModifiers.length} modifier groups from $successfulEndpoint');
+    _rebuildIndex(rawProducts);
     _cachedCatalog = catalogData;
     return catalogData;
   }

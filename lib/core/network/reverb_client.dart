@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../config/app_config.dart';
 import '../storage/session_storage.dart';
+import 'api_client.dart';
 
 /// Callback listener untuk event realtime Pusher/Reverb
 typedef ReverbEventListener = void Function(Map<String, dynamic> data);
@@ -17,11 +18,13 @@ class ReverbClient {
   Timer? _reconnectTimer;
   bool _isConnected = false;
   bool _isDisposed = false;
+  String? _socketId;
 
   final Map<String, List<ReverbEventListener>> _eventListeners = {};
   final Set<String> _subscribedChannels = {};
 
   bool get isConnected => _isConnected;
+  String? get socketId => _socketId;
 
   /// Inisialisasi koneksi websocket ke Laravel Reverb
   Future<void> connect() async {
@@ -84,6 +87,19 @@ class ReverbClient {
         } catch (e) {
           debugPrint('[ReverbClient] Gagal mem-parse string data dari pesan: $e');
         }
+      }
+
+      if (event == 'pusher:connection_established') {
+        final sId = data['socket_id']?.toString();
+        if (sId != null && sId.isNotEmpty) {
+          _socketId = sId;
+          debugPrint('[ReverbClient] Terhubung dengan Socket ID: $_socketId');
+          // Re-subscribe channels setelah socketId siap
+          for (final chan in _subscribedChannels) {
+            _sendSubscribe(chan);
+          }
+        }
+        return;
       }
 
       if (event == 'pusher:ping') {
@@ -166,12 +182,35 @@ class ReverbClient {
     }
   }
 
-  void _sendSubscribe(String channelName) {
+  Future<void> _sendSubscribe(String channelName) async {
+    Map<String, dynamic> data = {'channel': channelName};
+    if (channelName.startsWith('private-') || channelName.startsWith('presence-')) {
+      if (_socketId != null && _socketId!.isNotEmpty) {
+        try {
+          final res = await ApiClient.instance.dio.post(
+            '/broadcasting/auth',
+            data: {
+              'socket_id': _socketId,
+              'channel_name': channelName,
+            },
+          );
+          if (res.statusCode == 200 && res.data is Map) {
+            final auth = res.data['auth']?.toString();
+            if (auth != null && auth.isNotEmpty) {
+              data['auth'] = auth;
+              if (res.data['channel_data'] != null) {
+                data['channel_data'] = res.data['channel_data'];
+              }
+            }
+          }
+        } catch (e) {
+          debugPrint('[ReverbClient] Auth channel $channelName gagal (fallback direct): $e');
+        }
+      }
+    }
     _send({
       'event': 'pusher:subscribe',
-      'data': {
-        'channel': channelName,
-      },
+      'data': data,
     });
   }
 

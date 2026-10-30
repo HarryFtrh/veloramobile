@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/network/reverb_client.dart';
 import '../../core/storage/session_storage.dart';
+import '../../core/utils/audio_helper.dart';
 import 'kitchen_service.dart';
 
 sealed class KitchenState {
@@ -68,12 +70,24 @@ class KitchenCubit extends Cubit<KitchenState> {
     _timer?.cancel();
     _timer = Timer.periodic(pollInterval, (_) => refresh());
 
-    // Berlangganan event websocket jika Reverb terkonfigurasi
+    // Berlangganan event realtime WebSocket ke Laravel Reverb
+    final tenantId = SessionStorage.instance.getTenantId();
     final locationId = SessionStorage.instance.getLocationId();
-    if (locationId != null && locationId.isNotEmpty) {
-      _subscribedChannel = 'kitchen.$locationId';
+
+    if (tenantId != null && tenantId.isNotEmpty) {
+      final locChannel = locationId != null && locationId.isNotEmpty
+          ? 'private-tenant.$tenantId.location.$locationId'
+          : 'private-tenant.$tenantId';
+      _subscribedChannel = locChannel;
+
       ReverbClient.instance.connect().then((_) {
         ReverbClient.instance.subscribe(_subscribedChannel!);
+        if (locationId != null && locationId.isNotEmpty) {
+          ReverbClient.instance.subscribe('kitchen.$locationId');
+        }
+        // Event canonical dari CafeKitchenOrderCreated.php & PosOrderPaid.php
+        ReverbClient.instance.on('kitchen.order.created', _onRealtimeOrderEvent);
+        ReverbClient.instance.on('PosOrderPaid', _onRealtimeOrderEvent);
         ReverbClient.instance.on('order.created', _onRealtimeOrderEvent);
         ReverbClient.instance.on('order.updated', _onRealtimeOrderEvent);
       }).catchError((_) {});
@@ -81,6 +95,8 @@ class KitchenCubit extends Cubit<KitchenState> {
   }
 
   void _onRealtimeOrderEvent(Map<String, dynamic> data) {
+    debugPrint('🔔 [KDS REALTIME] Menerima sinyal pesanan dapur via Reverb: $data');
+    AudioHelper.successFeedback();
     refresh();
   }
 
@@ -140,6 +156,8 @@ class KitchenCubit extends Cubit<KitchenState> {
   Future<void> close() {
     _timer?.cancel();
     if (_subscribedChannel != null) {
+      ReverbClient.instance.off('kitchen.order.created', _onRealtimeOrderEvent);
+      ReverbClient.instance.off('PosOrderPaid', _onRealtimeOrderEvent);
       ReverbClient.instance.off('order.created', _onRealtimeOrderEvent);
       ReverbClient.instance.off('order.updated', _onRealtimeOrderEvent);
       ReverbClient.instance.unsubscribe(_subscribedChannel!);

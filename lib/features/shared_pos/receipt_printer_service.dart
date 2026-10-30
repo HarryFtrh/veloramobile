@@ -1,5 +1,6 @@
 // features/shared_pos/receipt_printer_service.dart
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -271,6 +272,27 @@ class ReceiptPrinterService {
     );
   }
 
+  /// Helper pengiriman byte ESC/POS langsung ke printer thermal fisik via TCP socket port 9100 (LAN / WiFi)
+  Future<bool> _sendToPrinterSocket(List<int> bytes) async {
+    final connType = SessionStorage.instance.getPrinterConnectionType();
+    final address = SessionStorage.instance.getPrinterAddress();
+    if (connType == 'Network IP (LAN)' && address != null && address.trim().isNotEmpty) {
+      try {
+        final host = address.trim();
+        final socket = await Socket.connect(host, 9100, timeout: const Duration(seconds: 4));
+        socket.add(bytes);
+        await socket.flush();
+        await socket.close();
+        debugPrint('✅ [ESC/POS PRINTER] Sukses mengirim ${bytes.length} bytes ke $host:9100');
+        return true;
+      } catch (e) {
+        debugPrint('⚠️ [ESC/POS PRINTER] Gagal koneksi socket printer LAN ($address:9100): $e');
+        return false;
+      }
+    }
+    return true;
+  }
+
   /// Sends command to thermal printer or logs formatted receipt in debug mode
   Future<bool> printReceipt(ReceiptData data, {bool is80mm = false}) async {
     final bytes = generateEscPosBytes(data, is80mm: is80mm);
@@ -279,7 +301,7 @@ class ReceiptPrinterService {
         '=== [ESC/POS PRINTER] DISPATCHING RECEIPT #${data.invoiceNumber} (${bytes.length} bytes) ===',
       );
     }
-    return true;
+    return await _sendToPrinterSocket(bytes);
   }
 
   /// Mengonversi laporan Z-Report tutup shift ke format teks rapi untuk dibagikan via WhatsApp/chat
@@ -433,17 +455,17 @@ class ReceiptPrinterService {
   Future<bool> printShiftReport(ShiftCloseSummary summary, {bool is80mm = false}) async {
     final bytes = generateShiftReportEscPosBytes(summary, is80mm: is80mm);
     if (kDebugMode) {
-      print('=== [ESC/POS PRINTER] DISPATCHING Z-REPORT SHIFT #${summary.shiftId} (${bytes.length} bytes) ===');
+      debugPrint('=== [ESC/POS PRINTER] DISPATCHING Z-REPORT SHIFT #${summary.shiftId} (${bytes.length} bytes) ===');
     }
-    return true;
+    return await _sendToPrinterSocket(bytes);
   }
 
-  /// Trigger cash drawer pulse without printing receipt
+  /// Trigger cash drawer pulse without printing receipt (ESC p 0 25 250)
   Future<bool> openCashDrawer() async {
     if (kDebugMode) {
       debugPrint('=== [ESC/POS] CASH DRAWER PULSE SENT (PIN 2 / 24V) ===');
     }
-    return true;
+    return await _sendToPrinterSocket(const [0x1B, 0x70, 0x00, 0x19, 0xFA]);
   }
 
   /// Menarik preferensi konfigurasi printer & routing stasiun dari API (/v1/pos/printers / /cafe/setting/printers)

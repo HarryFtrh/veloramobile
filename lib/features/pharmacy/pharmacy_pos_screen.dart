@@ -435,6 +435,18 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
               height: 40,
               child: TextField(
                 onChanged: (val) => setState(() => _searchQuery = val),
+                onSubmitted: (val) {
+                  final trimmed = val.trim();
+                  if (trimmed.isEmpty) return;
+                  for (final it in _drugItems) {
+                    if (it['barcode']?.toString().toLowerCase() == trimmed.toLowerCase() ||
+                        it['sku']?.toString().toLowerCase() == trimmed.toLowerCase()) {
+                      _addToCart(it['id'].toString());
+                      AudioHelper.actionFeedback();
+                      break;
+                    }
+                  }
+                },
                 style: const TextStyle(fontSize: 13),
                 decoration: InputDecoration(
                   hintText: isMobile ? 'Cari nama obat, SKU...' : 'Scan barcode atau cari nama obat, kandungan, SKU...',
@@ -648,9 +660,11 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
     final filteredItems = _drugItems.where((item) {
       final matchesCategory = _selectedCategoryIndex == 0 ||
           item['category'] == _categories[_selectedCategoryIndex];
+      final q = _searchQuery.toLowerCase();
       final matchesSearch = _searchQuery.isEmpty ||
-          item['name'].toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          item['sku'].toString().toLowerCase().contains(_searchQuery.toLowerCase());
+          item['name'].toString().toLowerCase().contains(q) ||
+          item['sku'].toString().toLowerCase().contains(q) ||
+          (item['barcode'] != null && item['barcode'].toString().toLowerCase().contains(q));
       return matchesCategory && matchesSearch;
     }).toList();
 
