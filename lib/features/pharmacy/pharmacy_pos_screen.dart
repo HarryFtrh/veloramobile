@@ -5,6 +5,7 @@ import '../../core/design/tokens.dart';
 import '../../core/utils/audio_helper.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/storage/session_storage.dart';
+import '../shared_pos/offline_sync_badge.dart';
 import '../shared_pos/product_catalog_service.dart';
 import '../shared_pos/pos_checkout_service.dart';
 import '../shared_pos/shift_service.dart';
@@ -624,17 +625,8 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                 PrinterSettingsModal.show(context);
               },
             ),
-            if (PosCheckoutService.instance.pendingOfflineCount > 0) ...[
-              const SizedBox(width: 4),
-              IconButton(
-                icon: Badge(
-                  label: Text('${PosCheckoutService.instance.pendingOfflineCount}'),
-                  child: const Icon(Icons.cloud_upload_outlined, size: 18, color: Color(0xFF10B981)),
-                ),
-                tooltip: 'Sinkronkan Antrean Offline ke Server',
-                onPressed: _syncOfflineQueue,
-              ),
-            ],
+            const SizedBox(width: 6),
+            const OfflineSyncBadge(showClock: false),
             if (widget.onLogout != null) ...[
               const SizedBox(width: 8),
               IconButton(

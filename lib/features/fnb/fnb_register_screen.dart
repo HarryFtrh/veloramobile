@@ -5,6 +5,7 @@ import '../../core/network/api_exception.dart';
 import '../../core/utils/audio_helper.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/storage/session_storage.dart';
+import '../shared_pos/offline_sync_badge.dart';
 import '../shared_pos/pos_checkout_service.dart';
 import '../shared_pos/product_catalog_service.dart';
 import '../shared_pos/receipt_printer_service.dart';
@@ -560,42 +561,7 @@ class _FnbRegisterScreenState extends State<FnbRegisterScreen> {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            if (PosCheckoutService.instance.pendingOfflineCount > 0)
-                              InkWell(
-                                onTap: _syncOffline,
-                                borderRadius: BorderRadius.circular(4),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                  decoration: BoxDecoration(
-                                    color: WarmPalette.secondary.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(color: WarmPalette.secondary, width: 0.8),
-                                  ),
-                                  child: Text(
-                                    'Sync (${PosCheckoutService.instance.pendingOfflineCount})',
-                                    style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: WarmPalette.secondary),
-                                  ),
-                                ),
-                              )
-                            else
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                decoration: BoxDecoration(
-                                  color: WarmPalette.tertiary.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.circle, size: 6, color: WarmPalette.tertiary),
-                                    SizedBox(width: 3),
-                                    Text(
-                                      'ONLINE',
-                                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: WarmPalette.tertiary),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                            const OfflineSyncBadge(showClock: false),
                           ],
                         ),
                       ],
