@@ -536,6 +536,63 @@ class ReceiptPrinterService {
     }
   }
 
+  /// Memindai printer thermal ESC/POS di jaringan lokal (WiFi / LAN) pada port 9100 secara paralel
+  Future<List<String>> discoverLocalNetworkPrinters({Duration timeout = const Duration(milliseconds: 350)}) async {
+    final List<String> discoveredIps = [];
+    final List<String> baseSubnets = [];
+
+    try {
+      final interfaces = await NetworkInterface.list(
+        type: InternetAddressType.IPv4,
+        includeLinkLocal: false,
+      );
+      for (final iface in interfaces) {
+        for (final addr in iface.addresses) {
+          final ip = addr.address;
+          if (ip.startsWith('127.') || ip == '0.0.0.0') continue;
+          final parts = ip.split('.');
+          if (parts.length == 4) {
+            baseSubnets.add('${parts[0]}.${parts[1]}.${parts[2]}');
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ [PRINTER DISCOVERY] Gagal membaca NetworkInterface: $e');
+    }
+
+    if (baseSubnets.isEmpty) {
+      baseSubnets.addAll(['192.168.1', '192.168.0', '192.168.43', '10.0.0']);
+    }
+
+    final uniqueSubnets = baseSubnets.toSet();
+
+    for (final subnet in uniqueSubnets) {
+      debugPrint('🔍 [PRINTER DISCOVERY] Memindai subnet $subnet.1 - $subnet.254 pada port 9100...');
+      for (int batchStart = 1; batchStart <= 254; batchStart += 32) {
+        final batchEnd = (batchStart + 31).clamp(1, 254);
+        final futures = <Future<void>>[];
+
+        for (int host = batchStart; host <= batchEnd; host++) {
+          final targetIp = '$subnet.$host';
+          futures.add(() async {
+            try {
+              final socket = await Socket.connect(targetIp, 9100, timeout: timeout);
+              socket.destroy();
+              if (!discoveredIps.contains(targetIp)) {
+                discoveredIps.add(targetIp);
+                debugPrint('🖨️ [PRINTER DISCOVERY] Ditemukan printer thermal di $targetIp:9100');
+              }
+            } catch (_) {}
+          }());
+        }
+
+        await Future.wait(futures);
+      }
+    }
+
+    return discoveredIps;
+  }
+
   /// Dialog pengaturan konfigurasi printer thermal (Bluetooth/Network & lebar kertas 58mm/80mm)
   void openSettings(BuildContext context) {
     PrinterSettingsModal.show(context);

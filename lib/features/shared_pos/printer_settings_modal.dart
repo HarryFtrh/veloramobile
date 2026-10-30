@@ -30,6 +30,8 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
   late String _connectionType;
   late TextEditingController _addressController;
   bool _isTesting = false;
+  bool _isScanningPrinters = false;
+  List<String> _discoveredPrinters = [];
 
   final List<String> _connectionTypes = ['Bluetooth', 'USB OTG', 'Network IP (LAN)'];
   List<Map<String, dynamic>> _cloudPrinters = [];
@@ -75,6 +77,31 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
       connectionType: _connectionType,
       printerAddress: _addressController.text.trim(),
     );
+  }
+
+  Future<void> _scanPrinters() async {
+    setState(() {
+      _isScanningPrinters = true;
+      _discoveredPrinters = [];
+    });
+    try {
+      final ips = await ReceiptPrinterService.instance.discoverLocalNetworkPrinters();
+      if (mounted) {
+        setState(() {
+          _discoveredPrinters = ips;
+          _isScanningPrinters = false;
+        });
+        if (ips.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Tidak ada printer thermal port 9100 yang terdeteksi di WiFi saat ini.')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isScanningPrinters = false);
+      }
+    }
   }
 
   Future<void> _testPrint() async {
@@ -349,6 +376,54 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
               ),
               onChanged: (_) => _saveConfig(),
             ),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: _isScanningPrinters ? null : _scanPrinters,
+              icon: _isScanningPrinters
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.radar_rounded, size: 18),
+              label: Text(_isScanningPrinters ? 'Memindai Jaringan WiFi...' : 'Pindai Printer Otomatis di WiFi'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: WarmPalette.primary,
+                side: const BorderSide(color: WarmPalette.primary),
+                minimumSize: const Size(double.infinity, 42),
+              ),
+            ),
+            if (_discoveredPrinters.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Printer Ditemukan (${_discoveredPrinters.length}):',
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: WarmPalette.textSecondary),
+              ),
+              const SizedBox(height: 6),
+              ..._discoveredPrinters.map((ip) => Card(
+                elevation: 0,
+                color: WarmPalette.surfaceMuted,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: BorderSide(color: _addressController.text == ip ? WarmPalette.primary : WarmPalette.line),
+                ),
+                child: ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.print_rounded, color: WarmPalette.primary, size: 20),
+                  title: Text('Thermal Printer ($ip)', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  subtitle: const Text('Port 9100 ESC/POS Ready', style: TextStyle(fontSize: 11)),
+                  trailing: TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _addressController.text = ip;
+                        _connectionType = 'Network IP (LAN)';
+                      });
+                      _saveConfig();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Printer $ip berhasil disambungkan!')),
+                      );
+                    },
+                    child: Text(_addressController.text == ip ? 'Aktif' : 'Sambungkan'),
+                  ),
+                ),
+              )),
+            ],
             const SizedBox(height: 16),
           ] else if (_connectionType == 'Bluetooth') ...[
             Container(

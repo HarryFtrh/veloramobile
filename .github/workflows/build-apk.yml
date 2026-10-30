@@ -1,0 +1,70 @@
+name: Build & Release Multi-Flavor Velora APKs
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Multi-Flavor Release APKs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21 (JDK)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Flutter Dependencies
+        run: flutter pub get
+
+      - name: Build Velora F&B APK
+        run: |
+          flutter build apk --flavor fnb -t lib/main_fnb.dart --release
+
+      - name: Build Velora Pharmacy APK
+        run: |
+          flutter build apk --flavor pharmacy -t lib/main_pharmacy.dart --release
+
+      - name: Build Velora Sales APK
+        run: |
+          flutter build apk --flavor sales -t lib/main_sales.dart --release
+
+      - name: Build Velora Customer Self-Order APK
+        run: |
+          flutter build apk --flavor customer -t lib/main_customer.dart --release
+
+      - name: Build Velora Marketplace APK
+        run: |
+          flutter build apk --flavor marketplace -t lib/main_marketplace.dart --release
+
+      - name: Collect & Organize APK Artifacts
+        run: |
+          mkdir -p release-apks
+          find build/app/outputs/flutter-apk build/app/outputs/apk -name "*.apk" 2>/dev/null | while read apk; do
+            filename=$(basename "$apk")
+            echo "Menemukan APK: $apk -> $filename"
+            cp "$apk" release-apks/
+          done
+          ls -la release-apks/
+
+      - name: Upload Release APKs Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: velora-release-apks
+          path: release-apks/*.apk
+          retention-days: 30

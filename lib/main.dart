@@ -20,6 +20,7 @@ import 'features/shell/app_shell.dart';
 import 'features/shell/more_screen.dart';
 import 'features/fnb/fnb_payment_split_screen.dart';
 import 'features/fnb_customer/customer_home_screen.dart';
+import 'features/shared_pos/offline_sync_manager.dart';
 import 'core/utils/fallback_localizations.dart';
 
 void main() async {
@@ -36,6 +37,7 @@ void main() async {
     await initAppLocale();
     await SessionStorage.init();
     ApiClient.init();
+    OfflineSyncManager.instance.startAutoSync();
   } catch (e) {
     debugPrint('Bootstrap initialization error: $e');
   }

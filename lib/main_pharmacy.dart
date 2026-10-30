@@ -14,6 +14,7 @@ import 'features/dashboard/dashboard_screen.dart';
 import 'features/finance/expenses_screen.dart';
 import 'features/finance/return_screen.dart';
 import 'features/pharmacy/pharmacy_pos_screen.dart';
+import 'features/shared_pos/offline_sync_manager.dart';
 import 'features/shell/app_shell.dart';
 import 'features/shell/more_screen.dart';
 import 'features/settings/settings_screen.dart';
@@ -31,6 +32,7 @@ void main() async {
     await initAppLocale();
     await SessionStorage.init();
     ApiClient.init();
+    OfflineSyncManager.instance.startAutoSync();
   } catch (e) {
     debugPrint('Bootstrap initialization error: $e');
   }
