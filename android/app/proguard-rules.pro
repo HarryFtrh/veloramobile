@@ -65,3 +65,7 @@
 # 8. Prevent Inlining of Security Check Assertions
 -dontwarn javax.annotation.**
 -dontwarn kotlin.**
+
+# 9. Preserve MainActivity & Flutter MethodChannels
+-keep class com.velora.velora_mobile.MainActivity { *; }
+-keep class io.flutter.plugin.common.** { *; }
