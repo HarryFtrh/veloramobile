@@ -1,4 +1,4 @@
-name: Build & Release Multi-Flavor Velora APKs
+name: Build & Release Multi-Flavor Velora Apps (APK & Play Store AAB)
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build:
-    name: Build Multi-Flavor Release APKs
+    name: Build Multi-Flavor APK & Play Store AAB
     runs-on: ubuntu-latest
 
     steps:
@@ -29,42 +29,71 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Configure Keystore from Secrets (If Provided)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEY_PROPERTIES: ${{ secrets.ANDROID_KEY_PROPERTIES }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "Mendekode Android Keystore dari GitHub Secrets..."
+            echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          fi
+          if [ -n "$KEY_PROPERTIES" ]; then
+            echo "Membuat android/key.properties dari GitHub Secrets..."
+            echo "$KEY_PROPERTIES" > android/key.properties
+          fi
+
       - name: Install Flutter Dependencies
         run: flutter pub get
 
-      - name: Build Velora F&B APK
+      - name: Build APKs (Direct Installation)
         run: |
           flutter build apk --flavor fnb -t lib/main_fnb.dart --release
-
-      - name: Build Velora Pharmacy APK
-        run: |
           flutter build apk --flavor pharmacy -t lib/main_pharmacy.dart --release
-
-      - name: Build Velora Sales APK
-        run: |
           flutter build apk --flavor sales -t lib/main_sales.dart --release
-
-      - name: Build Velora Customer Self-Order APK
-        run: |
           flutter build apk --flavor customer -t lib/main_customer.dart --release
-
-      - name: Build Velora Marketplace APK
-        run: |
           flutter build apk --flavor marketplace -t lib/main_marketplace.dart --release
 
-      - name: Collect & Organize APK Artifacts
+      - name: Build Android App Bundles (.aab for Google Play Store)
+        run: |
+          flutter build appbundle --flavor fnb -t lib/main_fnb.dart --release
+          flutter build appbundle --flavor pharmacy -t lib/main_pharmacy.dart --release
+          flutter build appbundle --flavor sales -t lib/main_sales.dart --release
+          flutter build appbundle --flavor customer -t lib/main_customer.dart --release
+          flutter build appbundle --flavor marketplace -t lib/main_marketplace.dart --release
+
+      - name: Collect & Organize Build Outputs
         run: |
           mkdir -p release-apks
+          mkdir -p release-bundles
+
+          # Collect APKs
           find build/app/outputs/flutter-apk build/app/outputs/apk -name "*.apk" 2>/dev/null | while read apk; do
             filename=$(basename "$apk")
-            echo "Menemukan APK: $apk -> $filename"
             cp "$apk" release-apks/
           done
-          ls -la release-apks/
 
-      - name: Upload Release APKs Artifact
+          # Collect AABs (Play Store)
+          find build/app/outputs/bundle -name "*.aab" 2>/dev/null | while read aab; do
+            filename=$(basename "$aab")
+            cp "$aab" release-bundles/
+          done
+
+          echo "=== DAFTAR APK TERSEDIA ==="
+          ls -la release-apks/
+          echo "=== DAFTAR AAB GOOGLE PLAY STORE TERSEDIA ==="
+          ls -la release-bundles/
+
+      - name: Upload Testing APKs Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: velora-release-apks
+          name: velora-apks-testing
           path: release-apks/*.apk
+          retention-days: 30
+
+      - name: Upload Play Store AAB Bundles Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: velora-playstore-aab
+          path: release-bundles/*.aab
           retention-days: 30

@@ -1,0 +1,16 @@
+# ==============================================================================
+# Velora Mobile - Template Konfigurasi Keystore Rilis Google Play Store
+# ==============================================================================
+#
+# 1. Cara generate keystore rilis baru (jalankan di terminal):
+#    keytool -genkey -v -keystore android/app/upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+#
+# 2. Salin file ini menjadi 'android/key.properties' (file asli jangan di-commit ke Git):
+#    cp android/key.properties.example android/key.properties
+#
+# 3. Masukkan password dan path keystore Anda di bawah ini:
+
+storePassword=password_keystore_anda
+keyPassword=password_key_alias_anda
+keyAlias=upload
+storeFile=upload-keystore.jks

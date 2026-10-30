@@ -67,6 +67,46 @@ android {
         }
     }
 
+    val keystorePropertiesFile = rootProject.file("key.properties")
+    val keystoreProperties = java.util.Properties()
+    if (keystorePropertiesFile.exists()) {
+        keystoreProperties.load(java.io.FileInputStream(keystorePropertiesFile))
+    }
+
+    signingConfigs {
+        create("release") {
+            val keyAliasProp = keystoreProperties.getProperty("keyAlias") ?: System.getenv("ANDROID_KEY_ALIAS")
+            val keyPasswordProp = keystoreProperties.getProperty("keyPassword") ?: System.getenv("ANDROID_KEY_PASSWORD")
+            val storeFileProp = keystoreProperties.getProperty("storeFile") ?: System.getenv("ANDROID_STORE_FILE")
+            val storePasswordProp = keystoreProperties.getProperty("storePassword") ?: System.getenv("ANDROID_STORE_PASSWORD")
+
+            val resolvedStoreFile = if (storeFileProp != null) {
+                val f1 = file(storeFileProp)
+                val f2 = rootProject.file(storeFileProp)
+                val f3 = file("app/$storeFileProp")
+                when {
+                    f1.exists() -> f1
+                    f2.exists() -> f2
+                    f3.exists() -> f3
+                    else -> null
+                }
+            } else null
+
+            if (resolvedStoreFile != null && resolvedStoreFile.exists() && keyAliasProp != null) {
+                keyAlias = keyAliasProp
+                keyPassword = keyPasswordProp ?: ""
+                storeFile = resolvedStoreFile
+                storePassword = storePasswordProp ?: ""
+            } else {
+                val debugConfig = signingConfigs.getByName("debug")
+                keyAlias = debugConfig.keyAlias
+                keyPassword = debugConfig.keyPassword
+                storeFile = debugConfig.storeFile
+                storePassword = debugConfig.storePassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -75,7 +115,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
@@ -102,6 +142,21 @@ tasks.whenTaskAdded {
                     ?: apks.find { it.name.contains("default", ignoreCase = true) && it.name.contains("debug", ignoreCase = true) }
                     ?: apks.firstOrNull { it.name.contains("debug", ignoreCase = true) }
                 fnbApk?.copyTo(File(targetFlutterApk, "app-debug.apk"), overwrite = true)
+            }
+        }
+    }
+    if (name.startsWith("bundle")) {
+        doLast {
+            val rootBuild = File(rootDir, "../build/app/outputs")
+            val localBuild = layout.buildDirectory.asFile.get()
+            val bundleDir = File(localBuild, "outputs/bundle")
+            if (bundleDir.exists()) {
+                val targetFlutterBundle = File(rootBuild, "bundle")
+                targetFlutterBundle.mkdirs()
+                val aabs = bundleDir.walkTopDown().filter { it.extension == "aab" }.toList()
+                aabs.forEach { aab ->
+                    aab.copyTo(File(targetFlutterBundle, aab.name), overwrite = true)
+                }
             }
         }
     }
