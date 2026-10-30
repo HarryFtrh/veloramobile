@@ -1,7 +1,10 @@
 // features/tables/cubit/tables_cubit.dart
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/network/reverb_client.dart';
+import '../../../core/storage/session_storage.dart';
 import '../table_service.dart';
 import 'tables_state.dart';
 
@@ -12,17 +15,54 @@ class TablesCubit extends Cubit<TablesState> {
 
   final TableService _service;
   Timer? _pollTimer;
-  static const _pollInterval = Duration(seconds: 15);
+  String? _subscribedChannel;
+  static const _pollInterval = Duration(seconds: 30);
 
   void startPolling() {
     _pollTimer?.cancel();
     loadTables();
     _pollTimer = Timer.periodic(_pollInterval, (_) => loadTables(silent: true));
+
+    // Sambungkan ke WebSocket Reverb untuk update denah meja realtime (<100ms)
+    final tenantId = SessionStorage.instance.getTenantId();
+    final locationId = SessionStorage.instance.getLocationId();
+
+    if (tenantId != null && tenantId.isNotEmpty) {
+      final locChannel = locationId != null && locationId.isNotEmpty
+          ? 'private-tenant.$tenantId.location.$locationId'
+          : 'private-tenant.$tenantId';
+      _subscribedChannel = locChannel;
+
+      ReverbClient.instance.connect().then((_) {
+        ReverbClient.instance.subscribe(_subscribedChannel!);
+        ReverbClient.instance.on('table.status_changed', _onRealtimeTableEvent);
+        ReverbClient.instance.on('order.created', _onRealtimeTableEvent);
+        ReverbClient.instance.on('order.updated', _onRealtimeTableEvent);
+        ReverbClient.instance.on('PosOrderPaid', _onRealtimeTableEvent);
+        ReverbClient.instance.on('CafeKitchenOrderCreated', _onRealtimeTableEvent);
+        ReverbClient.instance.on('kitchen.order.status_updated', _onRealtimeTableEvent);
+      }).catchError((_) {});
+    }
+  }
+
+  void _onRealtimeTableEvent(Map<String, dynamic> data) {
+    debugPrint('🍽️ [TABLES REALTIME] Menerima update status meja via Reverb: $data');
+    loadTables(silent: true);
   }
 
   void stopPolling() {
     _pollTimer?.cancel();
     _pollTimer = null;
+    if (_subscribedChannel != null) {
+      ReverbClient.instance.off('table.status_changed', _onRealtimeTableEvent);
+      ReverbClient.instance.off('order.created', _onRealtimeTableEvent);
+      ReverbClient.instance.off('order.updated', _onRealtimeTableEvent);
+      ReverbClient.instance.off('PosOrderPaid', _onRealtimeTableEvent);
+      ReverbClient.instance.off('CafeKitchenOrderCreated', _onRealtimeTableEvent);
+      ReverbClient.instance.off('kitchen.order.status_updated', _onRealtimeTableEvent);
+      ReverbClient.instance.unsubscribe(_subscribedChannel!);
+      _subscribedChannel = null;
+    }
   }
 
   Future<void> loadTables({bool silent = false}) async {
