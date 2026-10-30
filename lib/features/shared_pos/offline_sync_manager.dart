@@ -61,14 +61,30 @@ class OfflineSyncManager {
 
       debugPrint('🔄 [OFFLINE SYNC] Mengirim ${transactions.length} transaksi offline ke /v1/pos/offline-batch-sync...');
 
-      final res = await ApiClient.instance.dio.post(
-        '/v1/pos/offline-batch-sync',
-        data: {
-          'transactions': transactions,
-        },
-      );
+      final payload = {
+        'transactions': transactions,
+        'orders': transactions,
+      };
 
-      if (res.statusCode == 200) {
+      dynamic res;
+      try {
+        res = await ApiClient.instance.dio.post(
+          '/v1/pos/offline-batch-sync',
+          data: payload,
+        );
+      } catch (e) {
+        // Fallback endpoint baru dari commit 1c2e3e9c5
+        try {
+          res = await ApiClient.instance.dio.post(
+            '/retail/pos/checkout/batch-offline',
+            data: payload,
+          );
+        } catch (_) {
+          rethrow;
+        }
+      }
+
+      if (res != null && (res.statusCode == 200 || res.statusCode == 201)) {
         final syncedCount = transactions.length;
         await SessionStorage.instance.clearOfflineQueue();
         debugPrint('✅ [OFFLINE SYNC] Berhasil menyinkronkan $syncedCount transaksi offline ke server cloud');

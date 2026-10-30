@@ -87,7 +87,10 @@ class KitchenCubit extends Cubit<KitchenState> {
         }
         // Event canonical dari CafeKitchenOrderCreated.php & PosOrderPaid.php
         ReverbClient.instance.on('kitchen.order.created', _onRealtimeOrderEvent);
+        ReverbClient.instance.on('CafeKitchenOrderCreated', _onRealtimeOrderEvent);
+        ReverbClient.instance.on('kitchen.order.status_updated', _onRealtimeOrderEvent);
         ReverbClient.instance.on('PosOrderPaid', _onRealtimeOrderEvent);
+        ReverbClient.instance.on('table.status_changed', _onRealtimeOrderEvent);
         ReverbClient.instance.on('order.created', _onRealtimeOrderEvent);
         ReverbClient.instance.on('order.updated', _onRealtimeOrderEvent);
       }).catchError((_) {});
@@ -157,7 +160,10 @@ class KitchenCubit extends Cubit<KitchenState> {
     _timer?.cancel();
     if (_subscribedChannel != null) {
       ReverbClient.instance.off('kitchen.order.created', _onRealtimeOrderEvent);
+      ReverbClient.instance.off('CafeKitchenOrderCreated', _onRealtimeOrderEvent);
+      ReverbClient.instance.off('kitchen.order.status_updated', _onRealtimeOrderEvent);
       ReverbClient.instance.off('PosOrderPaid', _onRealtimeOrderEvent);
+      ReverbClient.instance.off('table.status_changed', _onRealtimeOrderEvent);
       ReverbClient.instance.off('order.created', _onRealtimeOrderEvent);
       ReverbClient.instance.off('order.updated', _onRealtimeOrderEvent);
       ReverbClient.instance.unsubscribe(_subscribedChannel!);

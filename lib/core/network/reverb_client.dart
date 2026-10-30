@@ -107,10 +107,18 @@ class ReverbClient {
         return;
       }
 
-      // Distribusikan ke listener yang terdaftar
-      final listeners = _eventListeners[event];
-      if (listeners != null && listeners.isNotEmpty) {
-        for (final listener in List.of(listeners)) {
+      // Distribusikan ke listener yang terdaftar (normalisasi dot prefix dari Laravel Echo)
+      final cleanEvent = event.startsWith('.') ? event.substring(1) : event;
+      final dotEvent = event.startsWith('.') ? event : '.$event';
+
+      final matchingListeners = <ReverbEventListener>{
+        ...?_eventListeners[event],
+        ...?_eventListeners[cleanEvent],
+        ...?_eventListeners[dotEvent],
+      };
+
+      if (matchingListeners.isNotEmpty) {
+        for (final listener in matchingListeners) {
           try {
             listener(data);
           } catch (e) {

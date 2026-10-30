@@ -106,6 +106,12 @@ class PosProduct {
       priceVal = json.getDouble('selling_price');
     }
     if (priceVal <= 0) {
+      priceVal = json.getDouble('selling_price_3');
+    }
+    if (priceVal <= 0) {
+      priceVal = json.getDouble('selling_price_2');
+    }
+    if (priceVal <= 0) {
       priceVal = json.getDouble('selling_price_1');
     }
 
