@@ -1,17 +1,20 @@
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
+import 'package:uuid/uuid.dart';
 import '../config/app_config.dart';
 import '../storage/session_storage.dart';
 
 class ApiClient {
   late final Dio dio;
   static late ApiClient instance;
+  static const _uuid = Uuid();
 
   static void init() {
     instance = ApiClient._();
   }
 
   static void Function()? onSessionExpired;
+  static void Function(String message)? onSubscriptionBlocked;
 
   ApiClient._() {
     dio = Dio(
@@ -47,8 +50,28 @@ class ApiClient {
 
           final deviceId = await SessionStorage.instance.getDeviceId();
           options.headers['X-Device-Id'] = deviceId;
+          options.headers.putIfAbsent('X-Terminal-Id', () => 'MOBILE-POS-01');
 
-          debugPrint('🌐 [API REQ] ${options.method} ${options.baseUrl}${options.path} -> data: ${options.data}');
+          // Context Bisnis (F&B, Farmasi, Retail, Sales, Customer)
+          final bizType = SessionStorage.instance.getBusinessType() ?? AppConfig.instance.flavor.name;
+          if (bizType.isNotEmpty) {
+            options.headers['X-Business-Type'] = bizType.toLowerCase();
+          }
+
+          // ⚡ IETF RFC 8935 Idempotency-Key untuk mengamankan transaksi mutasi dari dobel-kirim
+          final method = options.method.toUpperCase();
+          if (const ['POST', 'PUT', 'PATCH', 'DELETE'].contains(method)) {
+            if (!options.headers.containsKey('Idempotency-Key') && !options.headers.containsKey('X-Idempotency-Key')) {
+              options.headers['Idempotency-Key'] = _uuid.v4();
+            }
+          }
+
+          // 🔍 W3C Distributed Tracing / RFC 9457 Correlation ID
+          if (!options.headers.containsKey('X-Correlation-Id')) {
+            options.headers['X-Correlation-Id'] = _uuid.v4();
+          }
+
+          debugPrint('🌐 [API REQ] ${options.method} ${options.baseUrl}${options.path} (trace: ${options.headers['X-Correlation-Id']}) -> data: ${options.data}');
 
           return handler.next(options);
         },
@@ -57,7 +80,8 @@ class ApiClient {
           return handler.next(response);
         },
         onError: (DioException e, handler) async {
-          debugPrint('❌ [API ERR] ${e.response?.statusCode} ${e.requestOptions.path} -> data: ${e.response?.data} | msg: ${e.message}');
+          final traceId = e.response?.data is Map ? e.response?.data['trace_id'] : null;
+          debugPrint('❌ [API ERR] ${e.response?.statusCode} ${e.requestOptions.path} (trace: $traceId) -> data: ${e.response?.data} | msg: ${e.message}');
 
           // 1. Tangani 401 Unauthorized / Sesi Berakhir
           if (e.response?.statusCode == 401) {
@@ -65,7 +89,13 @@ class ApiClient {
             onSessionExpired?.call();
           }
 
-          // 2. Normalisasi pesan error agar tidak melempar HTML atau null crash ke UI
+          // 2. Tangani 402 / 403 Batasan Langganan & Kredit (SubscriptionGuard)
+          if (e.response?.statusCode == 402 || (e.response?.statusCode == 403 && e.response?.data is Map && (e.response?.data['code'] == 'SUBSCRIPTION_EXPIRED' || e.response?.data['code'] == 'CREDIT_LOCKED'))) {
+            final msg = (e.response?.data is Map ? e.response?.data['message'] : null) ?? 'Masa langganan atau kredit operasional toko telah berakhir.';
+            onSubscriptionBlocked?.call(msg.toString());
+          }
+
+          // 3. Normalisasi pesan error agar tidak melempar HTML atau null crash ke UI
           if (e.response?.statusCode == 502 || e.response?.statusCode == 503 || e.response?.statusCode == 504) {
             e = e.copyWith(
               message: 'Server sedang dalam pemeliharaan sementara. Silakan coba beberapa saat lagi.',
@@ -76,5 +106,20 @@ class ApiClient {
         },
       ),
     );
+  }
+
+  /// Cek kesehatan koneksi backend live (/api/health atau /api/up)
+  static Future<bool> checkHealth() async {
+    try {
+      final res = await instance.dio.get('/health');
+      return res.statusCode == 200;
+    } catch (_) {
+      try {
+        final res = await instance.dio.get('/up');
+        return res.statusCode == 200;
+      } catch (_) {
+        return false;
+      }
+    }
   }
 }
