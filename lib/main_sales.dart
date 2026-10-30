@@ -4,6 +4,7 @@ import 'core/config/app_config.dart';
 import 'core/config/app_theme.dart';
 import 'core/storage/session_storage.dart';
 import 'core/network/api_client.dart';
+import 'core/services/app_update_service.dart';
 import 'core/utils/app_locale.dart';
 import 'core/components/splash_screen.dart';
 import 'core/utils/fallback_localizations.dart';
@@ -25,6 +26,7 @@ void main() async {
     await initAppLocale();
     await SessionStorage.init();
     ApiClient.init();
+    AppUpdateService.init();
   } catch (e) {
     debugPrint('Bootstrap initialization error: $e');
   }
@@ -43,6 +45,7 @@ class VeloraSalesApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: AppUpdateService.navigatorKey,
       title: 'Velora Sales',
       debugShowCheckedModeBanner: false,
       locale: const Locale('id', 'ID'),

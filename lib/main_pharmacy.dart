@@ -15,6 +15,7 @@ import 'features/finance/expenses_screen.dart';
 import 'features/finance/return_screen.dart';
 import 'features/pharmacy/pharmacy_pos_screen.dart';
 import 'features/shared_pos/offline_sync_manager.dart';
+import 'core/services/app_update_service.dart';
 import 'features/shell/app_shell.dart';
 import 'features/shell/more_screen.dart';
 import 'features/settings/settings_screen.dart';
@@ -32,6 +33,7 @@ void main() async {
     await initAppLocale();
     await SessionStorage.init();
     ApiClient.init();
+    AppUpdateService.init();
     OfflineSyncManager.instance.startAutoSync();
   } catch (e) {
     debugPrint('Bootstrap initialization error: $e');
@@ -51,6 +53,7 @@ class VeloraPharmacyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: AppUpdateService.navigatorKey,
       title: 'Velora Pharmacy',
       debugShowCheckedModeBanner: false,
       locale: const Locale('id', 'ID'),

@@ -3,6 +3,7 @@ import 'core/config/app_config.dart';
 import 'core/config/app_theme.dart';
 import 'core/storage/session_storage.dart';
 import 'core/network/api_client.dart';
+import 'core/services/app_update_service.dart';
 import 'core/utils/app_locale.dart';
 import 'features/fnb_customer/customer_login_screen.dart';
 import 'core/utils/fallback_localizations.dart';
@@ -22,6 +23,7 @@ void main() async {
     await initAppLocale();
     await SessionStorage.init();
     ApiClient.init();
+    AppUpdateService.init();
   } catch (e) {
     debugPrint('Bootstrap customer app error: $e');
   }
@@ -59,6 +61,7 @@ class _CustomerSelfOrderAppState extends State<CustomerSelfOrderApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: AppUpdateService.navigatorKey,
       title: 'Velora Self-Order',
       debugShowCheckedModeBanner: false,
       locale: const Locale('id', 'ID'),

@@ -15,6 +15,7 @@ class ApiClient {
 
   static void Function()? onSessionExpired;
   static void Function(String message)? onSubscriptionBlocked;
+  static void Function()? onAppUpdateRequired;
 
   ApiClient._() {
     dio = Dio(
@@ -58,6 +59,11 @@ class ApiClient {
             options.headers['X-Business-Type'] = bizType.toLowerCase();
           }
 
+          // Versi Aplikasi & Flavor untuk Backward-Compatibility Guard di Server
+          options.headers.putIfAbsent('X-App-Flavor', () => AppConfig.instance.flavor.name);
+          options.headers.putIfAbsent('X-App-Version', () => '1.0.0');
+          options.headers.putIfAbsent('X-App-Version-Code', () => '1');
+
           // ⚡ IETF RFC 8935 Idempotency-Key untuk mengamankan transaksi mutasi dari dobel-kirim
           final method = options.method.toUpperCase();
           if (const ['POST', 'PUT', 'PATCH', 'DELETE'].contains(method)) {
@@ -95,7 +101,12 @@ class ApiClient {
             onSubscriptionBlocked?.call(msg.toString());
           }
 
-          // 3. Normalisasi pesan error agar tidak melempar HTML atau null crash ke UI
+          // 3. Tangani 426 Upgrade Required (Pembaruan Versi Play Store Wajib)
+          if (e.response?.statusCode == 426 || (e.response?.data is Map && e.response?.data['code'] == 'APP_UPDATE_REQUIRED')) {
+            onAppUpdateRequired?.call();
+          }
+
+          // 4. Normalisasi pesan error agar tidak melempar HTML atau null crash ke UI
           if (e.response?.statusCode == 502 || e.response?.statusCode == 503 || e.response?.statusCode == 504) {
             e = e.copyWith(
               message: 'Server sedang dalam pemeliharaan sementara. Silakan coba beberapa saat lagi.',

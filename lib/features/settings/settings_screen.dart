@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../core/config/app_config.dart';
 import '../../core/design/components.dart';
 import '../../core/design/tokens.dart';
+import '../../core/services/app_update_service.dart';
 import '../auth/auth_service.dart';
 import '../auth/cubit/auth_cubit.dart';
 import '../auth/cubit/auth_state.dart';
@@ -32,12 +34,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool? _hasPin;
   TenantSubscription? _subscription;
   bool _loadingSubscription = false;
+  AppVersionInfo? _versionInfo;
 
   @override
   void initState() {
     super.initState();
     _loadPin();
     _loadSubscription();
+    _loadVersionInfo();
+  }
+
+  Future<void> _loadVersionInfo() async {
+    final v = await AppUpdateService.instance.getAppVersion();
+    if (mounted) setState(() => _versionInfo = v);
   }
 
   Future<void> _loadPin() async {
@@ -301,6 +310,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           )
                         : null),
                 onTap: () => _manageSubscription(context),
+              ),
+              const SizedBox(height: Gap.xl),
+              const SectionHeader(title: 'Aplikasi & Pembaruan'),
+              const SizedBox(height: Gap.sm),
+              SettingsTile(
+                icon: Icons.system_update_rounded,
+                title: 'Periksa Pembaruan di Play Store',
+                subtitle: _versionInfo != null
+                    ? '${AppConfig.instance.appName} v${_versionInfo!.versionName} (Build ${_versionInfo!.versionCode})'
+                    : 'Memeriksa status versi...',
+                trailing: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: p.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.shopping_bag_outlined, size: 12, color: p.primary),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Play Store',
+                        style: text.bodySmall?.copyWith(color: p.primary, fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+                onTap: () => AppUpdateService.instance.checkAndPrompt(context, notifyIfUpToDate: true),
               ),
             ],
           ),
