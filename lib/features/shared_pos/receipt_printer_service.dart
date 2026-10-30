@@ -489,6 +489,146 @@ class ReceiptPrinterService {
     return await _sendToPrinterSocket(bytes);
   }
 
+  /// Mengonversi rekap kas berjalan (X-Report) ke format teks rapi untuk dibagikan via WhatsApp
+  String formatXReportPlainText(ShiftStatus status, {String? storeName}) {
+    final store = storeName ?? SessionStorage.instance.getTenantName() ?? 'VELORA POS';
+    final sb = StringBuffer();
+    String dateFmt(DateTime dt) =>
+        '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    final now = DateTime.now();
+
+    sb.writeln('================================');
+    sb.writeln('     REKAP KAS BERJALAN');
+    sb.writeln('           (X-REPORT)');
+    sb.writeln('       ${store.toUpperCase()}');
+    sb.writeln('================================');
+    sb.writeln('ID Shift    : #${status.shiftId ?? "-"}');
+    sb.writeln('Kasir       : ${status.cashierName ?? "Kasir"}');
+    if (status.openedAt != null) {
+      sb.writeln('Waktu Buka  : ${dateFmt(status.openedAt!)}');
+    }
+    sb.writeln('Waktu Audit : ${dateFmt(now)}');
+    sb.writeln('--------------------------------');
+    sb.writeln('POSISI KAS LACI SAAT INI');
+    sb.writeln('Modal Kas Awal  : ${CurrencyFormatter.format(status.startingCash ?? 0)}');
+    sb.writeln('Penjualan Tunai : ${CurrencyFormatter.format(status.cashSales)}');
+    if (status.cashIn > 0) {
+      sb.writeln('Kas Masuk (+)   : ${CurrencyFormatter.format(status.cashIn)}');
+    }
+    if (status.cashOut > 0) {
+      sb.writeln('Kas Keluar (-)  : ${CurrencyFormatter.format(status.cashOut)}');
+    }
+    sb.writeln('--------------------------------');
+    sb.writeln('Estimasi Uang Fisik di Laci : ${CurrencyFormatter.format(status.expectedCash)}');
+    sb.writeln('================================');
+    sb.writeln('RINGKASAN PENJUALAN SAAT INI');
+    sb.writeln('Total Omzet     : ${CurrencyFormatter.format(status.totalSales)}');
+    sb.writeln('Total Transaksi : ${status.totalTransactions} Pesanan');
+    sb.writeln('  - Tunai       : ${CurrencyFormatter.format(status.cashSales)}');
+    sb.writeln('  - QRIS        : ${CurrencyFormatter.format(status.qrisSales)}');
+    sb.writeln('  - Transfer    : ${CurrencyFormatter.format(status.transferSales)}');
+    sb.writeln('  - Kartu/EDC   : ${CurrencyFormatter.format(status.cardSales)}');
+    if (status.otherSales > 0) {
+      sb.writeln('  - Lainnya     : ${CurrencyFormatter.format(status.otherSales)}');
+    }
+    sb.writeln('================================');
+    sb.writeln('* CATATAN: Ini adalah audit X-Report.');
+    sb.writeln('  Shift kasir MASIH AKTIF dan belum ditutup.');
+    sb.writeln('Powered by Velora POS Cloud');
+    return sb.toString();
+  }
+
+  /// Menghasilkan format biner ESC/POS murni untuk X-Report printer thermal 58mm / 80mm
+  Uint8List generateXReportEscPosBytes(ShiftStatus status, {bool is80mm = false, String? storeName}) {
+    final store = storeName ?? SessionStorage.instance.getTenantName() ?? 'VELORA POS';
+    final int width = is80mm ? 48 : 32;
+    final List<int> bytes = [];
+    String dateFmt(DateTime dt) =>
+        '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    final now = DateTime.now();
+
+    void writeText(String text, {List<int>? align, bool bold = false, bool doubleSize = false}) {
+      if (align != null) bytes.addAll(align);
+      if (bold) bytes.addAll(cmdBoldOn);
+      if (doubleSize) bytes.addAll(cmdDoubleSize);
+      bytes.addAll(latin1.encode(text));
+      if (doubleSize) bytes.addAll(cmdNormalSize);
+      if (bold) bytes.addAll(cmdBoldOff);
+    }
+
+    void writeLine(String text, {List<int>? align, bool bold = false, bool doubleSize = false}) {
+      writeText('$text\n', align: align, bold: bold, doubleSize: doubleSize);
+    }
+
+    void writeDivider({String char = '-'}) {
+      writeLine(char * width, align: cmdAlignCenter);
+    }
+
+    void writeTwoCols(String left, String right, {bool bold = false}) {
+      final totalLen = left.length + right.length;
+      if (totalLen >= width) {
+        writeLine('$left $right', align: cmdAlignLeft, bold: bold);
+      } else {
+        final spaces = ' ' * (width - totalLen);
+        writeLine('$left$spaces$right', align: cmdAlignLeft, bold: bold);
+      }
+    }
+
+    bytes.addAll(cmdInit);
+    writeLine('REKAP KAS BERJALAN', align: cmdAlignCenter, bold: true);
+    writeLine('(X-REPORT / AUDIT)', align: cmdAlignCenter, bold: true);
+    writeLine(store.toUpperCase(), align: cmdAlignCenter, bold: true, doubleSize: true);
+    writeDivider(char: '=');
+    writeTwoCols('ID Shift: #${status.shiftId ?? "-"}', 'Kasir: ${status.cashierName ?? "Kasir"}');
+    if (status.openedAt != null) writeTwoCols('Buka: ${dateFmt(status.openedAt!)}', '');
+    writeTwoCols('Waktu Audit: ${dateFmt(now)}', '');
+    writeDivider();
+    writeLine('POSISI KAS LACI SAAT INI', align: cmdAlignCenter, bold: true);
+    writeTwoCols('Modal Awal', CurrencyFormatter.format(status.startingCash ?? 0));
+    writeTwoCols('Penjualan Kas', CurrencyFormatter.format(status.cashSales));
+    if (status.cashIn > 0) writeTwoCols('Kas Masuk (+)', CurrencyFormatter.format(status.cashIn));
+    if (status.cashOut > 0) writeTwoCols('Kas Keluar (-)', CurrencyFormatter.format(status.cashOut));
+    writeDivider();
+    writeTwoCols('Estimasi Uang Fisik', CurrencyFormatter.format(status.expectedCash), bold: true);
+    writeDivider(char: '=');
+    writeLine('RINGKASAN PENJUALAN', align: cmdAlignCenter, bold: true);
+    writeTwoCols('Total Penjualan', CurrencyFormatter.format(status.totalSales), bold: true);
+    writeTwoCols('Total Transaksi', '${status.totalTransactions} Pesanan');
+    writeTwoCols('  - Tunai', CurrencyFormatter.format(status.cashSales));
+    writeTwoCols('  - QRIS', CurrencyFormatter.format(status.qrisSales));
+    writeTwoCols('  - Transfer', CurrencyFormatter.format(status.transferSales));
+    writeTwoCols('  - EDC / Kartu', CurrencyFormatter.format(status.cardSales));
+    if (status.otherSales > 0) writeTwoCols('  - Lainnya', CurrencyFormatter.format(status.otherSales));
+    writeDivider();
+    writeLine('* SHIFT MASIH AKTIF (BELUM TUTUP)', align: cmdAlignCenter);
+    writeDivider(char: '=');
+    writeLine('Powered by Velora POS Cloud', align: cmdAlignCenter);
+    bytes.addAll(latin1.encode('\n\n\n'));
+    bytes.addAll(cmdCutPaper);
+
+    return Uint8List.fromList(bytes);
+  }
+
+  /// Mencetak laporan audit berjalan (X-Report) ke printer thermal
+  Future<bool> printXReport(ShiftStatus status, {bool is80mm = false, String? storeName}) async {
+    final bytes = generateXReportEscPosBytes(status, is80mm: is80mm, storeName: storeName);
+    if (kDebugMode) {
+      debugPrint('=== [ESC/POS PRINTER] DISPATCHING X-REPORT SHIFT #${status.shiftId} (${bytes.length} bytes) ===');
+    }
+    return await _sendToPrinterSocket(bytes);
+  }
+
+  /// Membagikan teks audit berjalan (X-Report) via Android ShareSheet / WhatsApp
+  Future<void> shareXReport(ShiftStatus status, {String? storeName}) async {
+    final text = formatXReportPlainText(status, storeName: storeName);
+    await SharePlus.instance.share(
+      ShareParams(
+        text: text,
+        subject: 'Rekap Kas Berjalan (X-Report) #${status.shiftId} - ${status.cashierName}',
+      ),
+    );
+  }
+
   /// Trigger cash drawer pulse without printing receipt (ESC p 0 25 250)
   Future<bool> openCashDrawer() async {
     if (kDebugMode) {

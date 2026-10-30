@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/design/tokens.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/audio_helper.dart';
+import 'receipt_printer_service.dart';
 import 'shift_service.dart';
 import 'shift_modal.dart';
 
@@ -154,6 +155,31 @@ class _CashierShiftBadgeState extends State<CashierShiftBadge> {
                         context,
                         type: 'out',
                         onSuccess: _refreshStatus,
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  _buildShiftActionCard(
+                    context: context,
+                    icon: Icons.receipt_long_rounded,
+                    iconColor: Colors.teal.shade700,
+                    iconBg: Colors.teal.shade50,
+                    title: 'Rekap Kas Berjalan (X-Report)',
+                    subtitle: 'Cetak audit omzet & uang kas laci saat ini tanpa menutup shift',
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      AudioHelper.actionFeedback();
+                      final ok = await ReceiptPrinterService.instance.printXReport(_status!);
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(ok ? '✅ Laporan X-Report berhasil dicetak ke printer' : 'Laporan X-Report disiapkan'),
+                          action: SnackBarAction(
+                            label: 'Bagikan',
+                            textColor: Colors.amber,
+                            onPressed: () => ReceiptPrinterService.instance.shareXReport(_status!),
+                          ),
+                        ),
                       );
                     },
                   ),
