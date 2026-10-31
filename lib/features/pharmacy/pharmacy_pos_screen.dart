@@ -22,6 +22,7 @@ import 'widgets/pharmacy_prescription_review_modal.dart';
 import 'widgets/pharmacy_medical_records_modal.dart';
 import 'widgets/pharmacy_receipt_dialog.dart';
 import 'pharmacy_service.dart';
+import 'pharmacy_checkout_screen.dart';
 
 class PharmacyPosScreen extends StatefulWidget {
   final VoidCallback? onLogout;
@@ -171,7 +172,18 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
             'batch': p.batches.isNotEmpty ? p.batches.first.batchNumber : '-',
             'ed': p.batches.isNotEmpty ? p.batches.first.expiryDate : '-',
             'stock': p.stock.toInt(),
-            'unit': 'TAB',
+            'unit': p.unit ?? 'TAB',
+            'imageUrl': p.imageUrl,
+            'image': p.imageUrl,
+            'description': p.description,
+            'batches': p.batches.map((b) => {
+              'id': b.id,
+              'batch': b.batchNumber,
+              'batch_number': b.batchNumber,
+              'ed': b.expiryDate,
+              'expiry_date': b.expiryDate,
+              'stock': b.stock,
+            }).toList(),
           }));
           _isLoadingCatalog = false;
           _syncError = null;
@@ -595,7 +607,18 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
   }
 
   void _showCheckoutDialog() {
-    final grandTotal = _totalPrice + (_totalPrice > 0 ? _tuslahFee : 0);
+    if (_cart.isEmpty) return;
+
+    final tuslah = _totalPrice > 0 ? PharmacyService.instance.tuslahFee.value : 0;
+    final isTaxOn = PharmacyService.instance.taxEnabled.value;
+    final taxRate = PharmacyService.instance.taxRate.value;
+    final taxName = PharmacyService.instance.taxName.value;
+    final isInclusive = PharmacyService.instance.taxInclusive.value;
+    final taxAmount = (_totalPrice > 0 && isTaxOn && !isInclusive)
+        ? (_totalPrice * (taxRate / 100))
+        : 0;
+    final grandTotal = _totalPrice + tuslah + taxAmount;
+
     final cartItems = _cart.entries.map((e) {
       final item = _drugItems.firstWhere(
         (m) => m['id'] == e.key,
@@ -611,52 +634,23 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
       );
     }).toList();
 
-    UniversalCheckoutDialog.show(
-      context,
-      items: cartItems,
-      subtotal: _totalPrice,
-      tax: 0,
-      grandTotal: grandTotal,
-      storeName: SessionStorage.instance.getTenantName() ?? SessionStorage.instance.getLocationName() ?? 'Velora Pharmacy',
-      storeAddress: SessionStorage.instance.getStoreAddress() ?? (SessionStorage.instance.getLocationName() ?? '-'),
-      storePhone: SessionStorage.instance.getStorePhone() ?? '-',
-      cashierName: SessionStorage.instance.getUserName() ?? 'Apoteker',
-      tableOrCustomer: '$_selectedPatient ($_queueNumber)',
-      accentColor: ClinicalPalette.primary,
-      onCompleted: (result) {
-        final paymentMethodName = _mobilePaymentMode == 0
-            ? 'QRIS'
-            : _mobilePaymentMode == 1
-                ? 'TUNAI'
-                : _mobilePaymentMode == 2
-                    ? 'DEBIT'
-                    : 'ASURANSI';
-
-        SalesHistoryDrawer.addRecord(
-          CompletedSaleRecord(
-            invoiceNumber: result.invoiceNumber,
-            time: DateTime.now(),
-            total: grandTotal,
-            paymentMethod: paymentMethodName,
-            tableOrCustomer: _selectedPatient,
-            items: cartItems,
-          ),
-        );
-
-        // Show Stitch Screen 7 Digital Receipt & Settlement Dialog
-        PharmacyReceiptDialog.show(
-          context: context,
-          result: result,
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (ctx) => PharmacyCheckoutScreen(
+          items: cartItems,
+          subtotal: _totalPrice,
+          tuslahFee: tuslah,
+          embalaseFee: 0,
+          taxAmount: taxAmount,
+          taxName: taxName,
+          grandTotal: grandTotal,
           patientName: _selectedPatient,
           queueNumber: _queueNumber,
           medicalRecordNumber: _medicalRecordNumber,
           doctorName: _selectedDoctor,
-          items: cartItems,
-          subtotal: _totalPrice,
-          tuslahFee: _totalPrice > 0 ? _tuslahFee : 0,
-          grandTotal: grandTotal,
-          paymentMethod: paymentMethodName,
-          onNewSale: () {
+          patientCategory: _patientCategory,
+          patientAllergies: _patientAllergies,
+          onCompleted: (result, paymentMethodName) {
             setState(() {
               _cart.clear();
               _totalPrice = 0;
@@ -669,14 +663,8 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
               _persistCart();
             });
           },
-        );
-
-        setState(() {
-          _cart.clear();
-          _totalPrice = 0;
-          _persistCart();
-        });
-      },
+        ),
+      ),
     );
   }
 

@@ -21,11 +21,26 @@ class PosProductBatch {
   });
 
   factory PosProductBatch.fromJson(Map<String, dynamic>? json) {
+    if (json == null) {
+      return PosProductBatch(id: '', batchNumber: '-', expiryDate: '-', stock: 0);
+    }
+    String bNo = json.getString('batch_number');
+    if (bNo.isEmpty || bNo == '-') bNo = json.getString('batch_no');
+    if (bNo.isEmpty || bNo == '-') bNo = json.getString('lot_number');
+    if (bNo.isEmpty || bNo == '-') bNo = json.getString('lot_no');
+    if (bNo.isEmpty || bNo == '-') bNo = json.getString('batch', fallback: '-');
+
+    String exp = json.getString('expiry_date');
+    if (exp.isEmpty || exp == '-') exp = json.getString('exp_date');
+    if (exp.isEmpty || exp == '-') exp = json.getString('expired_date');
+    if (exp.isEmpty || exp == '-') exp = json.getString('expired_at');
+    if (exp.isEmpty || exp == '-') exp = json.getString('exp', fallback: '-');
+
     return PosProductBatch(
       id: json.getString('id'),
-      batchNumber: json.getString('batch_number', fallback: '-'),
-      expiryDate: json.getString('expiry_date', fallback: '-'),
-      stock: json.getDouble('stock'),
+      batchNumber: bNo,
+      expiryDate: exp,
+      stock: json.getDouble('stock', fallback: json.getDouble('stock_qty')),
     );
   }
 }
@@ -42,6 +57,7 @@ class PosProduct {
   final String? imageUrl;
   final String? tag;
   final String? description;
+  final String? unit;
   final bool isPrescriptionOnly;
   final List<PosProductBatch> batches;
   final List<ModifierGroup> modifierGroups;
@@ -58,6 +74,7 @@ class PosProduct {
     this.imageUrl,
     this.tag,
     this.description,
+    this.unit,
     this.isPrescriptionOnly = false,
     this.batches = const [],
     this.modifierGroups = const [],
@@ -154,8 +171,49 @@ class PosProduct {
         categoryName.toLowerCase().contains('narkotika') ||
         categoryName.toLowerCase().contains('psikotropika');
 
-    final rawImage = json.getString('image_url');
-    final img = rawImage.isNotEmpty ? rawImage : json.getString('image');
+    // Root batch fallback when 'batches' array is empty or flat-mapped
+    var finalBatches = rawBatches;
+    if (finalBatches.isEmpty) {
+      String rootBatch = json.getString('batch_number');
+      if (rootBatch.isEmpty || rootBatch == '-') rootBatch = json.getString('batch_no');
+      if (rootBatch.isEmpty || rootBatch == '-') rootBatch = json.getString('lot_number');
+      if (rootBatch.isEmpty || rootBatch == '-') rootBatch = json.getString('lot_no');
+      if (rootBatch.isEmpty || rootBatch == '-') rootBatch = json.getString('batch');
+
+      String rootExp = json.getString('expiry_date');
+      if (rootExp.isEmpty || rootExp == '-') rootExp = json.getString('exp_date');
+      if (rootExp.isEmpty || rootExp == '-') rootExp = json.getString('expired_date');
+      if (rootExp.isEmpty || rootExp == '-') rootExp = json.getString('expired_at');
+      if (rootExp.isEmpty || rootExp == '-') rootExp = json.getString('exp');
+
+      if (rootBatch.isNotEmpty || rootExp.isNotEmpty) {
+        finalBatches = [
+          PosProductBatch(
+            id: json.getString('id'),
+            batchNumber: rootBatch.isNotEmpty ? rootBatch : '-',
+            expiryDate: rootExp.isNotEmpty ? rootExp : '-',
+            stock: stockVal,
+          ),
+        ];
+      }
+    }
+
+    // Image URL resolution across API naming conventions
+    String img = json.getString('image_url');
+    if (img.isEmpty || img == '-') img = json.getString('image');
+    if (img.isEmpty || img == '-') img = json.getString('photo');
+    if (img.isEmpty || img == '-') img = json.getString('photo_url');
+    if (img.isEmpty || img == '-') img = json.getString('thumbnail');
+    if (img.isEmpty || img == '-') img = json.getString('image_path');
+    if (img.isEmpty || img == '-') img = json.getString('picture');
+    if (img.isEmpty || img == '-') img = json.getString('img');
+
+    // Unit / Satuan resolution
+    String unitVal = json.getString('unit');
+    if (unitVal.isEmpty || unitVal == '-') unitVal = json.getString('satuan');
+    if (unitVal.isEmpty || unitVal == '-') unitVal = json.getString('packaging');
+    if (unitVal.isEmpty || unitVal == '-') unitVal = json.getString('package_unit');
+    if (unitVal.isEmpty || unitVal == '-') unitVal = json.getString('uom');
 
     String? productTag = json.getString('badge');
     if (productTag.isEmpty) productTag = json.getString('tag');
@@ -196,8 +254,9 @@ class PosProduct {
       imageUrl: img.isNotEmpty && img != '-' ? img : null,
       tag: productTag.isNotEmpty ? productTag : null,
       description: desc.isNotEmpty ? desc : null,
+      unit: unitVal.isNotEmpty && unitVal != '-' ? unitVal : null,
       isPrescriptionOnly: isRx,
-      batches: rawBatches,
+      batches: finalBatches,
       modifierGroups: modGroups,
     );
   }

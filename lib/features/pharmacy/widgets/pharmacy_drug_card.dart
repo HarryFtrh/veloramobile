@@ -173,30 +173,12 @@ class PharmacyDrugCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: isRx
-                            ? const Color(0xFFFFDAD6).withValues(alpha: 0.5)
-                            : isAlkes
-                                ? const Color(0xFFE0F2FE).withValues(alpha: 0.6)
-                                : const Color(0xFFF0FDF4),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        isRx
-                            ? Icons.medication_rounded
-                            : isAlkes
-                                ? Icons.devices_rounded
-                                : Icons.vaccines_rounded,
-                        size: 20,
-                        color: isRx
-                            ? const Color(0xFFBA1A1A)
-                            : isAlkes
-                                ? const Color(0xFF0284C7)
-                                : primaryEmerald,
-                      ),
+                    _DrugThumbnailWidget(
+                      item: item,
+                      isRx: isRx,
+                      isAlkes: isAlkes,
+                      size: 36,
+                      primaryEmerald: primaryEmerald,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -448,32 +430,13 @@ class PharmacyDrugRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: isRx
-                    ? const Color(0xFFFFDAD6)
-                    : isAlkes
-                        ? const Color(0xFFE0F2FE)
-                        : const Color(0xFFF0FDF4),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Center(
-                child: Text(
-                  isRx ? 'Rx' : isAlkes ? 'Alkes' : 'OTC',
-                  style: TextStyle(
-                    fontFamily: 'JetBrains Mono',
-                    color: isRx
-                        ? const Color(0xFFBA1A1A)
-                        : isAlkes
-                            ? const Color(0xFF0284C7)
-                            : primaryEmerald,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 10.5,
-                  ),
-                ),
-              ),
+            _DrugThumbnailWidget(
+              item: item,
+              isRx: isRx,
+              isAlkes: isAlkes,
+              size: 36,
+              primaryEmerald: primaryEmerald,
+              showTextBadge: true,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -618,3 +581,95 @@ class PharmacyDrugRow extends StatelessWidget {
     );
   }
 }
+
+class _DrugThumbnailWidget extends StatelessWidget {
+  final Map<String, dynamic> item;
+  final bool isRx;
+  final bool isAlkes;
+  final double size;
+  final Color primaryEmerald;
+  final bool showTextBadge;
+
+  const _DrugThumbnailWidget({
+    required this.item,
+    required this.isRx,
+    required this.isAlkes,
+    required this.size,
+    required this.primaryEmerald,
+    this.showTextBadge = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final rawUrl = item['imageUrl'] ?? item['image'] ?? item['photo'] ?? item['photo_url'];
+    final String? imgUrl = (rawUrl != null && rawUrl is String && rawUrl.trim().isNotEmpty && rawUrl.trim() != '-')
+        ? rawUrl.trim()
+        : null;
+
+    final fallback = Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: isRx
+            ? const Color(0xFFFFDAD6).withValues(alpha: 0.5)
+            : isAlkes
+                ? const Color(0xFFE0F2FE).withValues(alpha: 0.6)
+                : const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: showTextBadge
+          ? Center(
+              child: Text(
+                isRx ? 'Rx' : isAlkes ? 'Alkes' : 'OTC',
+                style: TextStyle(
+                  fontFamily: 'JetBrains Mono',
+                  color: isRx
+                      ? const Color(0xFFBA1A1A)
+                      : isAlkes
+                          ? const Color(0xFF0284C7)
+                          : primaryEmerald,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 10.5,
+                ),
+              ),
+            )
+          : Icon(
+              isRx
+                  ? Icons.medication_rounded
+                  : isAlkes
+                      ? Icons.devices_rounded
+                      : Icons.vaccines_rounded,
+              size: size * 0.55,
+              color: isRx
+                  ? const Color(0xFFBA1A1A)
+                  : isAlkes
+                      ? const Color(0xFF0284C7)
+                      : primaryEmerald,
+            ),
+    );
+
+    if (imgUrl == null) {
+      return fallback;
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: Image.network(
+          imgUrl,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => fallback,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return fallback;
+          },
+        ),
+      ),
+    );
+  }
+}
+

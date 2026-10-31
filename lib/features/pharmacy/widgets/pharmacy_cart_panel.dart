@@ -333,6 +333,9 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                           (item['category']?.toString().toLowerCase().contains('keras') ?? false);
                       final isAlkes = (item['category']?.toString().toLowerCase().contains('alkes') ?? false);
 
+                      final rawImg = item['imageUrl'] ?? item['image'];
+                      final String? imgUrl = (rawImg is String && rawImg.isNotEmpty && rawImg != '-') ? rawImg : null;
+
                       return Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
@@ -352,6 +355,19 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                                     children: [
                                       Row(
                                         children: [
+                                          if (imgUrl != null) ...[
+                                            ClipRRect(
+                                              borderRadius: BorderRadius.circular(5),
+                                              child: Image.network(
+                                                imgUrl,
+                                                width: 24,
+                                                height: 24,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 6),
+                                          ],
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                                             decoration: BoxDecoration(
@@ -654,10 +670,12 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                   height: 46,
                   child: ElevatedButton.icon(
                     onPressed: widget.cart.isNotEmpty ? widget.onCheckout : null,
-                    icon: const Icon(Icons.payments_rounded, size: 18),
-                    label: const Text(
-                      'Proses Pembayaran / Bayar Cepat',
-                      style: TextStyle(
+                    icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                    label: Text(
+                      widget.cart.isNotEmpty
+                          ? 'Lanjut ke Pembayaran (${CurrencyFormatter.format(effectiveGrandTotal)})'
+                          : 'Keranjang Masih Kosong',
+                      style: const TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
