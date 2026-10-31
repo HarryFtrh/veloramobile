@@ -413,43 +413,54 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 34,
-                        height: 34,
-                        decoration: BoxDecoration(
-                          color: primaryEmerald,
-                          borderRadius: BorderRadius.circular(10),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: primaryEmerald,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.shopping_basket_rounded, color: Colors.white, size: 18),
                         ),
-                        child: const Icon(Icons.shopping_basket_rounded, color: Colors.white, size: 18),
-                      ),
-                      const SizedBox(width: 10),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Keranjang Kasir',
-                            style: TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                              color: textPrimary,
-                            ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text(
+                                'Keranjang Kasir',
+                                style: TextStyle(
+                                  fontFamily: 'Plus Jakarta Sans',
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                  color: textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                widget.cart.isEmpty ? 'Keranjang kosong' : '${widget.cart.length} item dipilih',
+                                style: const TextStyle(
+                                  fontFamily: 'JetBrains Mono',
+                                  color: textMuted,
+                                  fontSize: 10.5,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
-                          Text(
-                            widget.cart.isEmpty ? 'Keranjang kosong' : '${widget.cart.length} item dipilih',
-                            style: const TextStyle(
-                              fontFamily: 'JetBrains Mono',
-                              color: textMuted,
-                              fontSize: 10.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 8),
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       if (widget.cart.isNotEmpty)
                         TextButton.icon(
@@ -970,39 +981,49 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
             border: Border(bottom: BorderSide(color: borderColor, width: 1)),
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back_rounded, size: 20, color: textPrimary),
-                    tooltip: 'Kembali ke Item Keranjang',
-                    onPressed: _switchToCartMode,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Tender Pembayaran',
-                        style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: textPrimary,
-                        ),
+              Expanded(
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_rounded, size: 20, color: textPrimary),
+                      tooltip: 'Kembali ke Item Keranjang',
+                      onPressed: _switchToCartMode,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'Tender Pembayaran',
+                            style: TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            'Pasien: ${widget.selectedPatient} (${widget.queueNumber})',
+                            style: const TextStyle(fontSize: 10.5, color: textMuted),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
-                      Text(
-                        'Pasien: ${widget.selectedPatient} (${widget.queueNumber})',
-                        style: const TextStyle(fontSize: 10.5, color: textMuted),
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 6),
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
                     icon: const Icon(Icons.label_important_rounded, size: 18, color: primaryEmerald),
