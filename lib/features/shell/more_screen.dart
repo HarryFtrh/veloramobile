@@ -140,8 +140,10 @@ class _MoreScreenState extends State<MoreScreen> {
                 ),
               ],
               bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(1),
-                child: Container(color: p.line, height: 1),
+                preferredSize: const Size.fromHeight(2),
+                child: _isLoading
+                    ? LinearProgressIndicator(minHeight: 2, color: brandPrimary, backgroundColor: p.line)
+                    : Container(color: p.line, height: 1),
               ),
             )
           : null,

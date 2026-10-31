@@ -670,6 +670,7 @@ class MenuService {
   List<ServerMenuItem>? _rawMenuItems;
 
   List<MoreEntry>? get cachedEntries => _cachedEntries;
+  List<ServerMenuItem>? get rawMenuItems => _rawMenuItems;
 
   String _getCacheNamespace() {
     final biz = SessionStorage.instance.getBusinessType()?.toLowerCase() ?? 'default';
