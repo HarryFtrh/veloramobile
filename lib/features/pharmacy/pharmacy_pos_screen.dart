@@ -1215,6 +1215,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                 },
               ),
               PopupMenuButton<String>(
+                constraints: const BoxConstraints(minWidth: 200, maxWidth: 260),
                 icon: const Icon(Icons.more_vert_rounded, size: 20, color: Color(0xFF6D7A72)),
                 tooltip: 'Menu Tambahan',
                 onSelected: (val) {
@@ -1250,7 +1251,9 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                       children: [
                         Icon(Icons.sync_rounded, size: 18, color: _isLoadingCatalog ? Colors.grey : emeraldPrimary),
                         const SizedBox(width: 10),
-                        const Text('Sinkronkan Katalog'),
+                        const Expanded(
+                          child: Text('Sinkronkan Katalog', overflow: TextOverflow.ellipsis),
+                        ),
                       ],
                     ),
                   ),
@@ -1261,7 +1264,9 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                         children: [
                           Icon(Icons.people_outline_rounded, size: 18, color: Color(0xFF0D9488)),
                           SizedBox(width: 10),
-                          Text('Antrean Pasien & Billing'),
+                          Expanded(
+                            child: Text('Antrean Pasien', overflow: TextOverflow.ellipsis),
+                          ),
                         ],
                       ),
                     ),
@@ -1271,7 +1276,9 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                       children: [
                         Icon(Icons.assignment_outlined, size: 18, color: Color(0xFF0D9488)),
                         SizedBox(width: 10),
-                        Text('Telaah Resep & Skrining'),
+                        Expanded(
+                          child: Text('Telaah Resep', overflow: TextOverflow.ellipsis),
+                        ),
                       ],
                     ),
                   ),
@@ -1281,7 +1288,9 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                       children: [
                         Icon(Icons.warning_amber_rounded, size: 18, color: Color(0xFFB45309)),
                         SizedBox(width: 10),
-                        Text('Alert Kedaluwarsa & Stok FEFO'),
+                        Expanded(
+                          child: Text('Alert Stok & FEFO', overflow: TextOverflow.ellipsis),
+                        ),
                       ],
                     ),
                   ),
@@ -1291,7 +1300,9 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                       children: [
                         Icon(Icons.print_outlined, size: 18, color: Color(0xFF6D7A72)),
                         SizedBox(width: 10),
-                        Text('Pengaturan Printer'),
+                        Expanded(
+                          child: Text('Pengaturan Printer', overflow: TextOverflow.ellipsis),
+                        ),
                       ],
                     ),
                   ),
@@ -1302,7 +1313,12 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                         children: [
                           const Icon(Icons.cloud_upload_outlined, size: 18, color: emeraldPrimary),
                           const SizedBox(width: 10),
-                          Text('Sync Offline (${PosCheckoutService.instance.pendingOfflineCount})'),
+                          Expanded(
+                            child: Text(
+                              'Sync Offline (${PosCheckoutService.instance.pendingOfflineCount})',
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -1313,7 +1329,13 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                         children: [
                           Icon(Icons.logout_rounded, size: 18, color: Color(0xFFBA1A1A)),
                           SizedBox(width: 10),
-                          Text('Keluar Kasir', style: TextStyle(color: Color(0xFFBA1A1A))),
+                          Expanded(
+                            child: Text(
+                              'Keluar Kasir',
+                              style: TextStyle(color: Color(0xFFBA1A1A)),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ],
                       ),
                     ),
