@@ -264,6 +264,7 @@ class SessionStorage {
 
   String? getUserEmail() => _getString(_userEmailKey);
   String? getBusinessType() => _getString(_businessTypeKey);
+  String? getBusinessRole() => getBusinessType() ?? getUserRole();
 
   Future<void> saveUserName(String name) async {
     await _setString(_userNameKey, name);

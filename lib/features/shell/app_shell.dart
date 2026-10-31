@@ -458,11 +458,17 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     final wide = MediaQuery.sizeOf(context).width >= _headerBreakpoint;
-    final bizType = (SessionStorage.instance.getBusinessRole() ?? '').toLowerCase();
+    final bizType = (SessionStorage.instance.getBusinessType() ?? '').toLowerCase();
+    final role = (SessionStorage.instance.getUserRole() ?? '').toLowerCase();
+    final tenantName = (SessionStorage.instance.getTenantName() ?? '').toLowerCase();
     final isPharmacy = AppConfig.instance.flavor == AppFlavor.pharmacy ||
         bizType.contains('pharmacy') ||
         bizType.contains('apotek') ||
-        bizType.contains('klinik');
+        bizType.contains('klinik') ||
+        role.contains('apoteker') ||
+        role.contains('pharmacy') ||
+        tenantName.contains('apotek') ||
+        tenantName.contains('pharmacy');
 
     final body = IndexedStack(
       index: _index,
