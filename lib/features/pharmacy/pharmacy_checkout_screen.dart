@@ -264,6 +264,7 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> {
                 invoiceNumber: res.invoiceNumber,
                 cashierName: SessionStorage.instance.getUserName() ?? 'Apoteker',
                 tableOrPatient: '${widget.patientName} (${widget.queueNumber})',
+                timestamp: DateTime.now(),
                 items: widget.items,
                 subtotal: widget.subtotal,
                 tax: widget.taxAmount,
@@ -1168,14 +1169,14 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> {
   // CASH FORM COMPONENT
   // ---------------------------------------------------------------------------
   Widget _buildCashPaymentForm({required num changeAmount, required num shortAmount}) {
-    final presets = <num>[
+    final presets = <num>{
       widget.grandTotal,
       (widget.grandTotal / 10000).ceil() * 10000,
       50000,
       100000,
       200000,
       500000,
-    ].toSet().where((amt) => amt >= widget.grandTotal || amt == widget.grandTotal).toList();
+    }.where((amt) => amt >= widget.grandTotal).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

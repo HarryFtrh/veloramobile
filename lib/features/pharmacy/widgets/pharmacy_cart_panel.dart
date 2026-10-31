@@ -61,7 +61,6 @@ class PharmacyCartPanel extends StatefulWidget {
 class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
   static const primaryEmerald = Color(0xFF059669); // Clinical Precision Primary
   static const secondaryTeal = Color(0xFF0D9488); // Clinical Precision Secondary
-  static const tertiaryCyan = Color(0xFF06B6D4); // Clinical Precision Tertiary
   static const borderColor = Color(0xFFE2E8F0);
   static const canvasColor = Color(0xFFFAF8FF);
   static const textPrimary = Color(0xFF0F172A); // Clinical Precision Neutral
@@ -289,6 +288,7 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                 invoiceNumber: res.invoiceNumber,
                 cashierName: SessionStorage.instance.getUserName() ?? 'Apoteker',
                 tableOrPatient: '${widget.selectedPatient} (${widget.queueNumber})',
+                timestamp: DateTime.now(),
                 items: cartItems,
                 subtotal: widget.totalPrice,
                 tax: 0,
@@ -949,14 +949,14 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
       patientAllergies: widget.patientAllergies,
     );
 
-    final cashPresets = <num>[
+    final cashPresets = <num>{
       grandTotal,
       (grandTotal / 10000).ceil() * 10000,
       50000,
       100000,
       200000,
       500000,
-    ].toSet().where((amt) => amt >= grandTotal || amt == grandTotal).toList();
+    }.where((amt) => amt >= grandTotal).toList();
 
     return Column(
       key: const ValueKey('TenderPaymentView'),
