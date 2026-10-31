@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
+import 'package:dio/dio.dart';
 import '../../core/network/api_client.dart';
 import '../../core/storage/session_storage.dart';
 
@@ -165,6 +166,29 @@ class OfflineSyncManager {
       }
     } catch (e) {
       _consecutiveFailures++;
+      if (e is DioException) {
+        final status = e.response?.statusCode;
+        final cfRay = e.response?.headers.value('cf-ray');
+        final rayInfo = cfRay != null ? ' (CF-Ray: $cfRay)' : '';
+
+        // Tangani Cloudflare Rate Limit 429 & Retry-After secara adaptif
+        if (status == 429) {
+          int backoffSeconds = 60;
+          final retryHeader = e.response?.headers.value('retry-after');
+          if (retryHeader != null) {
+            final parsed = int.tryParse(retryHeader);
+            if (parsed != null && parsed > 0) backoffSeconds = parsed;
+          }
+          debugPrint('⚠️ [OFFLINE SYNC] Terkena Cloudflare Rate Limit (HTTP 429)$rayInfo. Menunda sinkronisasi selama $backoffSeconds detik.');
+          _scheduleNextSync(backoffSeconds);
+          return 0;
+        }
+
+        // Tangani Cloudflare Origin Down (521-526)
+        if (status != null && status >= 520 && status <= 526) {
+          debugPrint('⚠️ [OFFLINE SYNC] Cloudflare Edge melaporkan origin server bermasalah (HTTP $status)$rayInfo. Menunggu server pulih...');
+        }
+      }
       debugPrint('⚠️ [OFFLINE SYNC] Sinkronisasi ditunda (koneksi/server belum siap, retry #$_consecutiveFailures): $e');
     } finally {
       _isSyncing = false;

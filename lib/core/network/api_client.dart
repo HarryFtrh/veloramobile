@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:uuid/uuid.dart';
 import '../config/app_config.dart';
 import '../storage/session_storage.dart';
+import '../services/app_update_service.dart';
 
 class ApiClient {
   late final Dio dio;
@@ -59,10 +60,20 @@ class ApiClient {
             options.headers['X-Business-Type'] = bizType.toLowerCase();
           }
 
-          // Versi Aplikasi & Flavor untuk Backward-Compatibility Guard di Server
-          options.headers.putIfAbsent('X-App-Flavor', () => AppConfig.instance.flavor.name);
-          options.headers.putIfAbsent('X-App-Version', () => '1.0.0');
-          options.headers.putIfAbsent('X-App-Version-Code', () => '1');
+          // Versi Aplikasi & Flavor untuk Cloudflare WAF & Backward-Compatibility Guard di Server
+          final flavorName = AppConfig.instance.flavor.name;
+          options.headers['X-App-Flavor'] = flavorName;
+
+          try {
+            final ver = await AppUpdateService.instance.getAppVersion();
+            options.headers['User-Agent'] = 'VeloraMobile/${ver.versionName} (Android; Flavor=$flavorName; Build=${ver.versionCode}; DeviceId=$deviceId)';
+            options.headers['X-App-Version'] = ver.versionName;
+            options.headers['X-App-Version-Code'] = ver.versionCode.toString();
+          } catch (_) {
+            options.headers['User-Agent'] = 'VeloraMobile/1.0.0 (Android; Flavor=$flavorName; DeviceId=$deviceId)';
+            options.headers.putIfAbsent('X-App-Version', () => '1.0.0');
+            options.headers.putIfAbsent('X-App-Version-Code', () => '1');
+          }
 
           // ⚡ IETF RFC 8935 Idempotency-Key untuk mengamankan transaksi mutasi dari dobel-kirim
           final method = options.method.toUpperCase();
@@ -72,7 +83,7 @@ class ApiClient {
             }
           }
 
-          // 🔍 W3C Distributed Tracing / RFC 9457 Correlation ID
+          // 🔍 W3C Distributed Tracing / RFC 9457 Correlation ID untuk pelacakan end-to-end di Cloudflare & backend
           if (!options.headers.containsKey('X-Correlation-Id')) {
             options.headers['X-Correlation-Id'] = _uuid.v4();
           }
@@ -85,36 +96,48 @@ class ApiClient {
           return handler.next(options);
         },
         onResponse: (response, handler) {
+          final cfRay = response.headers.value('cf-ray');
+          final cfCache = response.headers.value('cf-cache-status');
           if (kDebugMode) {
-            debugPrint('✅ [API RES] ${response.statusCode} ${response.requestOptions.path} -> ${_sanitizeData(response.data)}');
+            final cfInfo = cfRay != null ? ' [CF-Ray: $cfRay, Cache: $cfCache]' : '';
+            debugPrint('✅ [API RES] ${response.statusCode} ${response.requestOptions.path}$cfInfo -> ${_sanitizeData(response.data)}');
           }
           return handler.next(response);
         },
         onError: (DioException e, handler) async {
           final traceId = e.response?.data is Map ? e.response?.data['trace_id'] : null;
+          final cfRay = e.response?.headers.value('cf-ray');
+          final statusCode = e.response?.statusCode;
+
           if (kDebugMode) {
-            debugPrint('❌ [API ERR] ${e.response?.statusCode} ${e.requestOptions.path} (trace: $traceId) -> data: ${_sanitizeData(e.response?.data)} | msg: ${e.message}');
+            final cfInfo = cfRay != null ? ' [CF-Ray: $cfRay]' : '';
+            debugPrint('❌ [API ERR] $statusCode ${e.requestOptions.path}$cfInfo (trace: $traceId) -> data: ${_sanitizeData(e.response?.data)} | msg: ${e.message}');
           }
 
           // 1. Tangani 401 Unauthorized / Sesi Berakhir
-          if (e.response?.statusCode == 401) {
+          if (statusCode == 401) {
             await SessionStorage.instance.clearAuthToken();
             onSessionExpired?.call();
           }
 
           // 2. Tangani 402 / 403 Batasan Langganan & Kredit (SubscriptionGuard)
-          if (e.response?.statusCode == 402 || (e.response?.statusCode == 403 && e.response?.data is Map && (e.response?.data['code'] == 'SUBSCRIPTION_EXPIRED' || e.response?.data['code'] == 'CREDIT_LOCKED'))) {
+          if (statusCode == 402 || (statusCode == 403 && e.response?.data is Map && (e.response?.data['code'] == 'SUBSCRIPTION_EXPIRED' || e.response?.data['code'] == 'CREDIT_LOCKED'))) {
             final msg = (e.response?.data is Map ? e.response?.data['message'] : null) ?? 'Masa langganan atau kredit operasional toko telah berakhir.';
             onSubscriptionBlocked?.call(msg.toString());
           }
 
           // 3. Tangani 426 Upgrade Required (Pembaruan Versi Play Store Wajib)
-          if (e.response?.statusCode == 426 || (e.response?.data is Map && e.response?.data['code'] == 'APP_UPDATE_REQUIRED')) {
+          if (statusCode == 426 || (e.response?.data is Map && e.response?.data['code'] == 'APP_UPDATE_REQUIRED')) {
             onAppUpdateRequired?.call();
           }
 
-          // 4. Normalisasi pesan error agar tidak melempar HTML atau null crash ke UI
-          if (e.response?.statusCode == 502 || e.response?.statusCode == 503 || e.response?.statusCode == 504) {
+          // 4. Normalisasi pesan error Cloudflare (520-526) & Gateway Timeout agar tidak melempar HTML atau null crash ke UI
+          if (statusCode != null && statusCode >= 520 && statusCode <= 526) {
+            final cfMsg = statusCode == 521
+                ? 'Server pusat Velora sedang offline (Cloudflare 521 Web Server Down). Mengalihkan ke transaksi offline.'
+                : 'Layanan cloud pusat sedang mengalami gangguan perantara Cloudflare (Status $statusCode).';
+            e = e.copyWith(message: cfMsg);
+          } else if (statusCode == 502 || statusCode == 503 || statusCode == 504) {
             e = e.copyWith(
               message: 'Server sedang dalam pemeliharaan sementara. Silakan coba beberapa saat lagi.',
             );

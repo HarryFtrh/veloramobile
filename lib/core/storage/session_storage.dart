@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -26,6 +27,7 @@ class SessionStorage {
   static const _printerConnectionTypeKey = 'velora_printer_conn_type';
   static const _printerAddressKey = 'velora_printer_address';
   static const _offlineSalesQueueKey = 'velora_offline_sales_queue';
+  static const _offlineSalesQueueEncKey = 'velora_offline_sales_queue_keystore_v1';
   static const _subscriptionCacheKey = 'velora_subscription_cache';
 
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
@@ -54,8 +56,37 @@ class SessionStorage {
     final storage = instance;
     try {
       storage._prefs = await SharedPreferences.getInstance();
+      await storage._loadSecureOfflineQueue();
     } catch (_) {
       // In-memory cache tetap berjalan jika SharedPreferences gagal atau tertunda
+    }
+  }
+
+  /// Memuat antrean transaksi offline dari Android Keystore terenkripsi pada saat cold-boot.
+  /// Juga melakukan auto-migrasi aman jika masih ada antrean legacy di plaintext SharedPreferences XML.
+  Future<void> _loadSecureOfflineQueue() async {
+    try {
+      // 1. Coba baca antrean dari Android Keystore
+      final rawEnc = await _secureStorage.read(key: _offlineSalesQueueEncKey);
+      if (rawEnc != null && rawEnc.isNotEmpty) {
+        final decoded = jsonDecode(rawEnc);
+        if (decoded is List) {
+          _memCache[_offlineSalesQueueKey] = decoded.map((e) => e.toString()).toList();
+          return;
+        }
+      }
+
+      // 2. Fallback migrasi jika ada antrean lama di plaintext SharedPreferences
+      final legacy = _prefs?.getStringList(_offlineSalesQueueKey);
+      if (legacy != null && legacy.isNotEmpty) {
+        _memCache[_offlineSalesQueueKey] = List<String>.from(legacy);
+        // Migrasi ke Keystore hardware dan hapus dari plaintext XML
+        await _secureStorage.write(key: _offlineSalesQueueEncKey, value: jsonEncode(legacy));
+        await _prefs?.remove(_offlineSalesQueueKey);
+        debugPrint('[SessionStorage] Migrasi ${legacy.length} transaksi offline ke Android Keystore berhasil.');
+      }
+    } catch (e) {
+      debugPrint('[SessionStorage] Load secure offline queue error: $e');
     }
   }
 
@@ -303,10 +334,11 @@ class SessionStorage {
   String? getPrinterAddress() => _getString(_printerAddressKey);
 
   List<String> getOfflineQueue() {
-    final fromPrefs = _prefs?.getStringList(_offlineSalesQueueKey);
-    if (fromPrefs != null) return fromPrefs;
     final fromMem = _memCache[_offlineSalesQueueKey];
     if (fromMem is List<String>) return fromMem;
+    if (fromMem is List) return fromMem.map((e) => e.toString()).toList();
+    final fromPrefs = _prefs?.getStringList(_offlineSalesQueueKey);
+    if (fromPrefs != null) return fromPrefs;
     return [];
   }
 
@@ -314,11 +346,22 @@ class SessionStorage {
     final queue = List<String>.from(getOfflineQueue());
     queue.add(jsonSale);
     _memCache[_offlineSalesQueueKey] = queue;
-    await _prefs?.setStringList(_offlineSalesQueueKey, queue);
+    try {
+      // Enkripsi dan simpan di Android Keystore
+      await _secureStorage.write(key: _offlineSalesQueueEncKey, value: jsonEncode(queue));
+      // Bersihkan duplikat plaintext di SharedPreferences
+      await _prefs?.remove(_offlineSalesQueueKey);
+    } catch (e) {
+      debugPrint('[SessionStorage] Keystore write queue failed, fallback to prefs: $e');
+      await _prefs?.setStringList(_offlineSalesQueueKey, queue);
+    }
   }
 
   Future<void> clearOfflineQueue() async {
     _memCache.remove(_offlineSalesQueueKey);
+    try {
+      await _secureStorage.delete(key: _offlineSalesQueueEncKey);
+    } catch (_) {}
     await _prefs?.remove(_offlineSalesQueueKey);
   }
 

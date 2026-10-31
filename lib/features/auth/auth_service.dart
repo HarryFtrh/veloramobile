@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import '../../core/config/app_config.dart';
@@ -863,10 +865,29 @@ class AuthService {
     return ok;
   }
 
+  /// Komputasi hash kriptografis PIN dengan salt berbasis Device ID kasir
+  static String hashPin(String pin, String salt) {
+    final bytes = utf8.encode('$pin:$salt:velora_pos_salt_v1');
+    return sha256.convert(bytes).toString();
+  }
+
   Future<bool> _verifyQuickPinInternal(String pin) async {
-    final savedPin = await SessionStorage.instance.getUserPin();
-    if (savedPin != null && savedPin.isNotEmpty && _constantTimeEquals(pin, savedPin)) {
-      return true;
+    final savedPinOrHash = await SessionStorage.instance.getUserPin();
+    final deviceId = await SessionStorage.instance.getDeviceId();
+    final computedHash = hashPin(pin, deviceId);
+
+    if (savedPinOrHash != null && savedPinOrHash.isNotEmpty) {
+      // 1. Verifikasi jika sudah berupa hash SHA-256 (panjang 64 karakter hex)
+      if (savedPinOrHash.length == 64 && _constantTimeEquals(computedHash, savedPinOrHash)) {
+        return true;
+      }
+
+      // 2. Backward compatibility: Jika masih berupa plaintext PIN lama
+      if (savedPinOrHash.length != 64 && _constantTimeEquals(pin, savedPinOrHash)) {
+        // Otomatis upgrade ke salted SHA-256 hash di Keystore
+        await SessionStorage.instance.saveUserPin(computedHash);
+        return true;
+      }
     }
 
     // Jika belum tersimpan lokal atau tidak cocok, coba verifikasi ke backend
@@ -878,7 +899,7 @@ class AuthService {
       final body = response.data;
       final isValid = body is Map && (body['valid'] == true || body['status'] == 'success');
       if (isValid) {
-        await SessionStorage.instance.saveUserPin(pin);
+        await SessionStorage.instance.saveUserPin(computedHash);
         return true;
       }
     } catch (e) {
@@ -888,9 +909,11 @@ class AuthService {
     return false;
   }
 
-  /// Simpan PIN kasir ke secure storage lokal dan sinkronisasi ke backend
+  /// Simpan hash PIN kasir ke secure storage lokal dan sinkronisasi PIN ke backend
   Future<void> setQuickPin(String pin) async {
-    await SessionStorage.instance.saveUserPin(pin);
+    final deviceId = await SessionStorage.instance.getDeviceId();
+    final pinHash = hashPin(pin, deviceId);
+    await SessionStorage.instance.saveUserPin(pinHash);
     try {
       await ApiClient.instance.dio.post(
         '/v1/auth/pin',
