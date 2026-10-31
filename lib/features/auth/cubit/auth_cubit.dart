@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dio/dio.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/network/reverb_client.dart';
 import '../../../core/storage/session_storage.dart';
 import '../auth_service.dart';
 import 'auth_state.dart';
@@ -150,6 +151,9 @@ class AuthCubit extends Cubit<AuthState> {
   /// Graceful logout
   Future<void> logout() async {
     emit(const AuthLoading(message: 'Menutup sesi kasir...'));
+    try {
+      ReverbClient.instance.disconnect();
+    } catch (_) {}
     await _authService.logout();
     await SessionStorage.instance.clearAll();
     emit(const Unauthenticated());

@@ -38,7 +38,8 @@ class ReverbClient {
       return;
     }
 
-    if (_isConnected || _isDisposed) return;
+    if (_isConnected) return;
+    _isDisposed = false;
 
     try {
       final scheme = port == 443 ? 'wss' : 'ws';
