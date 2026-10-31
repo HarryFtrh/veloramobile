@@ -23,7 +23,7 @@ class AppTheme {
       case AppFlavor.customer:
         return const Color(0xFF7A431D);
       case AppFlavor.pharmacy:
-        return const Color(0xFF0F9D6E);
+        return const Color(0xFF059669);
       case AppFlavor.sales:
         return const Color(0xFF4F46E5);
       case AppFlavor.marketplace:
@@ -35,17 +35,31 @@ class AppTheme {
   static ThemeData build(AppFlavor flavor, Brightness brightness) {
     final isDark = brightness == Brightness.dark;
     final isWarm = (flavor == AppFlavor.fnb || flavor == AppFlavor.customer) && !isDark;
-    final basePalette = isDark ? AppPalette.dark : (isWarm ? AppPalette.warm : AppPalette.light);
-    final accent = isWarm ? basePalette.primary : getAccentColor(flavor);
-    final palette = isWarm ? basePalette : basePalette.copyWith(primary: accent);
+    final isPharmacy = flavor == AppFlavor.pharmacy && !isDark;
+    final basePalette = isDark
+        ? AppPalette.dark
+        : (isWarm ? AppPalette.warm : (isPharmacy ? AppPalette.clinical : AppPalette.light));
+    final accent = isWarm ? basePalette.primary : (isPharmacy ? ClinicalPalette.primary : getAccentColor(flavor));
+    final palette = (isWarm || isPharmacy) ? basePalette : basePalette.copyWith(primary: accent);
     final onAccent = accent.computeLuminance() > 0.4 ? Colors.black : Colors.white;
     final buttonShape = isWarm ? const StadiumBorder() : RoundedRectangleBorder(borderRadius: Corner.medium);
     final base = isDark ? ThemeData.dark() : ThemeData.light();
-    final fontFamily = GoogleFonts.plusJakartaSans().fontFamily;
+    final headlineFont = GoogleFonts.plusJakartaSans().fontFamily;
+    final bodyFont = isPharmacy ? GoogleFonts.inter().fontFamily : headlineFont;
     final textTheme = base.textTheme.apply(
-      fontFamily: fontFamily,
+      fontFamily: bodyFont,
       bodyColor: palette.textPrimary,
       displayColor: palette.textPrimary,
+    ).copyWith(
+      displayLarge: TextStyle(fontFamily: headlineFont),
+      displayMedium: TextStyle(fontFamily: headlineFont),
+      displaySmall: TextStyle(fontFamily: headlineFont),
+      headlineLarge: TextStyle(fontFamily: headlineFont),
+      headlineMedium: TextStyle(fontFamily: headlineFont),
+      headlineSmall: TextStyle(fontFamily: headlineFont),
+      titleLarge: TextStyle(fontFamily: headlineFont),
+      titleMedium: TextStyle(fontFamily: headlineFont),
+      titleSmall: TextStyle(fontFamily: headlineFont),
     );
 
     OutlineInputBorder inputBorder(Color color, [double width = 1]) =>

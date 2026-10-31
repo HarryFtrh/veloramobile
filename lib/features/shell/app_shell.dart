@@ -284,7 +284,7 @@ class _AppShellState extends State<AppShell> {
   Widget _buildPharmacyLeftDock(BuildContext context) {
     const dockBg = Color(0xFFFFFFFF);
     const borderColor = Color(0xFFE2E8F0);
-    const emeraldPrimary = Color(0xFF006948);
+    const emeraldPrimary = ClinicalPalette.primary;
     const activeBg = Color(0xFF86F2E4);
     const activeFg = Color(0xFF006F66);
     const inactiveFg = Color(0xFF6D7A72);

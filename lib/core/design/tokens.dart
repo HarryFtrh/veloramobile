@@ -45,6 +45,31 @@ abstract final class WarmPalette {
   static const Color border = line;
 }
 
+/// Token warna paten "Clinical Precision" untuk Pharmacy sesuai panduan desain:
+/// Primary #059669 (Emerald), Secondary #0D9488 (Teal), Tertiary #06B6D4 (Cyan), Neutral #0F172A.
+abstract final class ClinicalPalette {
+  static const Color primary = Color(0xFF059669); // Emerald
+  static const Color secondary = Color(0xFF0D9488); // Medical Teal
+  static const Color tertiary = Color(0xFF06B6D4); // Medical Cyan
+  static const Color neutral = Color(0xFF0F172A); // Slate Dark
+  static const Color canvas = Color(0xFFFAF8FF); // Sterile Canvas
+  static const Color surface = Color(0xFFFFFFFF);
+  static const Color surfaceMuted = Color(0xFFF2F3FF);
+  static const Color line = Color(0xFFE2E8F0);
+  static const Color textPrimary = Color(0xFF131B2E);
+  static const Color textSecondary = Color(0xFF3D4A42);
+  static const Color textTertiary = Color(0xFF6D7A72);
+  static const Color danger = Color(0xFFBA1A1A);
+  static const Color error = danger;
+  static const Color warning = Color(0xFFB45309);
+  static const Color warningBg = Color(0xFFFEF3C7);
+  static const Color success = Color(0xFF059669);
+  static const Color info = Color(0xFF06B6D4);
+
+  static const Color surfaceDim = Color(0xFFD2D9F4);
+  static const Color border = line;
+}
+
 typedef RadiusToken = Corner;
 
 /// Warna semantik di luar `ColorScheme` (status, teks sekunder, dsb).
@@ -104,6 +129,26 @@ class AppPalette extends ThemeExtension<AppPalette> {
     warning: Color(0xFFD97706),
     danger: Color(0xFFDC2626),
     info: Color(0xFF2563EB),
+  );
+
+  /// "Clinical Precision" — khusus Pharmacy / Healthcare (mode terang).
+  /// Sesuai spesifikasi palet warna Velora Pharmacy:
+  /// Primary #059669 (Emerald), Secondary #0D9488 (Teal), Tertiary #06B6D4 (Cyan), Neutral #0F172A.
+  static const clinical = AppPalette(
+    primary: Color(0xFF059669),
+    secondary: Color(0xFF0D9488),
+    tertiary: Color(0xFF06B6D4),
+    canvas: Color(0xFFFAF8FF),
+    surface: Color(0xFFFFFFFF),
+    surfaceMuted: Color(0xFFF2F3FF),
+    line: Color(0xFFE2E8F0),
+    textPrimary: Color(0xFF131B2E),
+    textSecondary: Color(0xFF3D4A42),
+    textTertiary: Color(0xFF6D7A72),
+    success: Color(0xFF059669),
+    warning: Color(0xFFB45309),
+    danger: Color(0xFFBA1A1A),
+    info: Color(0xFF06B6D4),
   );
 
   /// "Warm Roasted Modernity" — khusus F&B / Cafe (mode terang).

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import '../../core/design/tokens.dart';
 import '../../core/utils/audio_helper.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/storage/session_storage.dart';
@@ -621,7 +622,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
       storePhone: SessionStorage.instance.getStorePhone() ?? '-',
       cashierName: SessionStorage.instance.getUserName() ?? 'Apoteker',
       tableOrCustomer: '$_selectedPatient ($_queueNumber)',
-      accentColor: const Color(0xFF006948),
+      accentColor: ClinicalPalette.primary,
       onCompleted: (result) {
         final paymentMethodName = _mobilePaymentMode == 0
             ? 'QRIS'
@@ -898,7 +899,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
 
   // Top App Bar Header
   Widget _buildTopHeader(bool isMobile, double screenWidth) {
-    const emeraldPrimary = Color(0xFF006948);
+    const emeraldPrimary = ClinicalPalette.primary;
     const borderColor = Color(0xFFE2E8F0);
     final tenant = SessionStorage.instance.getTenantName() ?? 'Velora Pharmacy';
     final location = SessionStorage.instance.getLocationName() ?? tenant;
@@ -1249,7 +1250,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
 
   // Clinical Context Patient Strip
   Widget _buildPatientContextStrip() {
-    const emeraldPrimary = Color(0xFF006948);
+    const emeraldPrimary = ClinicalPalette.primary;
     const borderColor = Color(0xFFE2E8F0);
 
     return Container(
@@ -1453,7 +1454,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
 
   // Search & Barcode Input
   Widget _buildSearchField() {
-    const emeraldPrimary = Color(0xFF006948);
+    const emeraldPrimary = ClinicalPalette.primary;
     const borderColor = Color(0xFFE2E8F0);
 
     return Padding(
@@ -1523,7 +1524,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
   // Horizontal Category Tabs
   Widget _buildCategoryTabs() {
     final allCategories = [..._baseCategories, ..._dynamicCategories];
-    const emeraldPrimary = Color(0xFF006948);
+    const emeraldPrimary = ClinicalPalette.primary;
     const borderColor = Color(0xFFE2E8F0);
 
     return Container(
