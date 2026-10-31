@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Khusus mode Debug / Development:
+         Mengizinkan koneksi langsung tanpa Cloudflare Tunnel (misal: http://192.168.x.x:8000,
+         http://10.0.2.2:8000, atau server staging langsung).
+         Di mode Release, konfigurasi ini otomatis digantikan oleh src/main/res/xml/network_security_config.xml
+         yang menerapkan SPKI CA Pinning ketat dan melarang cleartext HTTP. -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
