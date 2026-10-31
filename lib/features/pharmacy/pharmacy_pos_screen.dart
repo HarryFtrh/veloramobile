@@ -1026,10 +1026,17 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
         : 'Shift Tutup';
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 20, vertical: 10),
+      padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 18, vertical: 8),
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(bottom: BorderSide(color: borderColor, width: 1)),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x04000000),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1039,14 +1046,24 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
             child: Row(
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
-                    color: emeraldPrimary.withValues(alpha: 0.1),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF059669), Color(0xFF0D9488)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: emeraldPrimary.withValues(alpha: 0.2)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: emeraldPrimary.withValues(alpha: 0.2),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  child: const Icon(Icons.local_hospital_rounded, color: emeraldPrimary, size: 20),
+                  child: const Icon(Icons.local_hospital_rounded, color: Colors.white, size: 20),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -1060,16 +1077,35 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontFamily: 'Plus Jakarta Sans',
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          color: emeraldPrimary,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14.5,
+                          color: Color(0xFF0F172A),
+                          letterSpacing: -0.2,
                         ),
                       ),
-                      Text(
-                        location,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 10.5, color: Color(0xFF6D7A72)),
+                      const SizedBox(height: 1),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              location,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontFamily: 'JetBrains Mono',
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF475569),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -1083,104 +1119,116 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (!isMobile && screenWidth >= 1050) ...[
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      cashier,
-                      style: const TextStyle(
-                        fontFamily: 'JetBrains Mono',
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF0F172A),
-                      ),
-                    ),
-                    Text(
-                      shiftText,
-                      style: const TextStyle(fontSize: 9.5, color: Color(0xFF6D7A72)),
-                    ),
-                  ],
-                ),
-                const SizedBox(width: 8),
-              ],
-              if (!isMobile && screenWidth >= 950) ...[
+              if (!isMobile && screenWidth >= 980) ...[
                 InkWell(
                   onTap: _openShiftReportModal,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(20),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: isShiftOpen
-                          ? const Color(0xFF0D9488).withValues(alpha: 0.15)
-                          : Colors.orange.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: borderColor),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        Icon(
+                          Icons.badge_outlined,
+                          size: 14,
+                          color: isShiftOpen ? const Color(0xFF0D9488) : Colors.orange.shade800,
+                        ),
+                        const SizedBox(width: 6),
                         Text(
-                          shiftBadge,
-                          style: TextStyle(
+                          cashier,
+                          style: const TextStyle(
                             fontFamily: 'JetBrains Mono',
-                            fontSize: 10,
+                            fontSize: 10.5,
                             fontWeight: FontWeight.bold,
-                            color: isShiftOpen ? const Color(0xFF0D9488) : Colors.deepOrange.shade800,
+                            color: Color(0xFF0F172A),
                           ),
                         ),
-                        const SizedBox(width: 3),
-                        Icon(
-                          Icons.expand_more_rounded,
-                          size: 13,
-                          color: isShiftOpen ? const Color(0xFF0D9488) : Colors.deepOrange.shade800,
+                        const SizedBox(width: 6),
+                        Container(
+                          width: 1,
+                          height: 12,
+                          color: borderColor,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          shiftText,
+                          style: TextStyle(
+                            fontFamily: 'JetBrains Mono',
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w600,
+                            color: isShiftOpen ? const Color(0xFF0D9488) : Colors.deepOrange.shade800,
+                          ),
                         ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 8),
               ],
               const OfflineSyncBadge(showClock: false),
-              const SizedBox(width: 4),
-              if (!isMobile) ...[
-                IconButton(
-                  icon: const Icon(Icons.people_outline_rounded, size: 20, color: Color(0xFF0D9488)),
-                  tooltip: 'Antrean Pasien & Billing',
-                  onPressed: _openQueueModal,
+              const SizedBox(width: 6),
+
+              // Segmented Action Bar
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: borderColor),
                 ),
-              ],
-              IconButton(
-                icon: const Icon(Icons.receipt_long_rounded, size: 20, color: Color(0xFF6D7A72)),
-                tooltip: 'Riwayat Transaksi',
-                onPressed: () {
-                  AudioHelper.tapFeedback();
-                  SalesHistoryDrawer.show(
-                    context,
-                    storeName: SessionStorage.instance.getTenantName() ?? 'Velora Pharmacy',
-                    storeAddress: SessionStorage.instance.getStoreAddress() ?? '',
-                    storePhone: SessionStorage.instance.getStorePhone() ?? '-',
-                    cashierName: SessionStorage.instance.getUserName() ?? 'Apoteker',
-                    accentColor: emeraldPrimary,
-                  );
-                },
-              ),
-              IconButton(
-                icon: Icon(
-                  _isGridView ? Icons.grid_view_rounded : Icons.view_list_rounded,
-                  size: 20,
-                  color: const Color(0xFF0D9488),
-                ),
-                tooltip: _isGridView ? 'Beralih ke List' : 'Beralih ke Grid',
-                onPressed: () {
-                  AudioHelper.tapFeedback();
-                  setState(() => _isGridView = !_isGridView);
-                },
-              ),
-              PopupMenuButton<String>(
-                constraints: const BoxConstraints(minWidth: 200, maxWidth: 260),
-                icon: const Icon(Icons.more_vert_rounded, size: 20, color: Color(0xFF6D7A72)),
-                tooltip: 'Menu Tambahan',
-                onSelected: (val) {
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (!isMobile) ...[
+                      IconButton(
+                        icon: const Icon(Icons.people_outline_rounded, size: 18, color: Color(0xFF0D9488)),
+                        tooltip: 'Antrean Pasien & Billing',
+                        constraints: const BoxConstraints(minWidth: 36, minHeight: 34),
+                        padding: EdgeInsets.zero,
+                        onPressed: _openQueueModal,
+                      ),
+                    ],
+                    IconButton(
+                      icon: const Icon(Icons.receipt_long_rounded, size: 18, color: Color(0xFF64748B)),
+                      tooltip: 'Riwayat Transaksi',
+                      constraints: const BoxConstraints(minWidth: 36, minHeight: 34),
+                      padding: EdgeInsets.zero,
+                      onPressed: () {
+                        AudioHelper.tapFeedback();
+                        SalesHistoryDrawer.show(
+                          context,
+                          storeName: SessionStorage.instance.getTenantName() ?? 'Velora Pharmacy',
+                          storeAddress: SessionStorage.instance.getStoreAddress() ?? '',
+                          storePhone: SessionStorage.instance.getStorePhone() ?? '-',
+                          cashierName: SessionStorage.instance.getUserName() ?? 'Apoteker',
+                          accentColor: emeraldPrimary,
+                        );
+                      },
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        _isGridView ? Icons.grid_view_rounded : Icons.view_list_rounded,
+                        size: 18,
+                        color: const Color(0xFF0D9488),
+                      ),
+                      tooltip: _isGridView ? 'Beralih ke List' : 'Beralih ke Grid',
+                      constraints: const BoxConstraints(minWidth: 36, minHeight: 34),
+                      padding: EdgeInsets.zero,
+                      onPressed: () {
+                        AudioHelper.tapFeedback();
+                        setState(() => _isGridView = !_isGridView);
+                      },
+                    ),
+                    PopupMenuButton<String>(
+                      constraints: const BoxConstraints(minWidth: 200, maxWidth: 260),
+                      icon: const Icon(Icons.more_vert_rounded, size: 18, color: Color(0xFF64748B)),
+                      tooltip: 'Menu Tambahan',
+                      padding: EdgeInsets.zero,
+                      onSelected: (val) {
                   AudioHelper.tapFeedback();
                   switch (val) {
                     case 'sync':
@@ -1552,9 +1600,20 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
     const borderColor = Color(0xFFE2E8F0);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: SizedBox(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Container(
         height: 42,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x06000000),
+              blurRadius: 4,
+              offset: Offset(0, 1),
+            ),
+          ],
+        ),
         child: TextField(
           controller: _searchController,
           onChanged: (val) => setState(() => _searchQuery = val),
@@ -1571,26 +1630,51 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
               }
             }
           },
-          style: const TextStyle(fontSize: 13, color: Color(0xFF0F172A)),
+          style: const TextStyle(fontSize: 12.5, color: Color(0xFF0F172A), fontWeight: FontWeight.w500),
           decoration: InputDecoration(
             hintText: 'Cari obat, SKU, kandungan zat aktif, atau scan barcode...',
-            hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF6D7A72)),
-            prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Color(0xFF6D7A72)),
+            hintStyle: const TextStyle(fontSize: 11.5, color: Color(0xFF94A3B8)),
+            prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Color(0xFF94A3B8)),
             suffixIcon: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (_searchQuery.isNotEmpty)
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 16, color: Color(0xFF6D7A72)),
+                    icon: const Icon(Icons.close_rounded, size: 15, color: Color(0xFF94A3B8)),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                     onPressed: () {
                       _searchController.clear();
                       setState(() => _searchQuery = '');
                     },
                   ),
-                IconButton(
-                  icon: const Icon(Icons.qr_code_scanner_rounded, size: 18, color: emeraldPrimary),
-                  tooltip: 'Scan Barcode',
-                  onPressed: _openBarcodeScanner,
+                InkWell(
+                  onTap: _openBarcodeScanner,
+                  borderRadius: BorderRadius.circular(6),
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: emeraldPrimary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.qr_code_scanner_rounded, size: 15, color: emeraldPrimary),
+                        SizedBox(width: 4),
+                        Text(
+                          'Scan',
+                          style: TextStyle(
+                            fontFamily: 'JetBrains Mono',
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: emeraldPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -1621,8 +1705,8 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
     const borderColor = Color(0xFFE2E8F0);
 
     return Container(
-      height: 44,
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      height: 42,
+      padding: const EdgeInsets.only(bottom: 6),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1642,20 +1726,28 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(
-                  color: isSelected ? emeraldPrimary : Colors.white,
+                  gradient: isSelected
+                      ? const LinearGradient(
+                          colors: [Color(0xFF059669), Color(0xFF0D9488)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : null,
+                  color: isSelected ? null : Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: isSelected ? emeraldPrimary : borderColor,
+                    color: isSelected ? Colors.transparent : borderColor,
+                    width: 1,
                   ),
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: emeraldPrimary.withValues(alpha: 0.2),
+                            color: emeraldPrimary.withValues(alpha: 0.25),
                             blurRadius: 4,
-                            offset: const Offset(0, 1),
-                          )
+                            offset: const Offset(0, 2),
+                          ),
                         ]
                       : null,
                 ),
@@ -1667,19 +1759,19 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                         width: 6,
                         height: 6,
                         decoration: const BoxDecoration(
-                          color: Color(0xFFBA1A1A),
+                          color: Color(0xFFDC2626),
                           shape: BoxShape.circle,
                         ),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 5),
                     ],
                     Text(
                       catName,
                       style: TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
-                        color: isSelected ? Colors.white : const Color(0xFF3D4A42),
+                        fontSize: 11,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                        fontSize: 12,
+                        color: isSelected ? Colors.white : const Color(0xFF475569),
                       ),
                     ),
                   ],

@@ -498,11 +498,11 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
       key: const ValueKey('CartItemsView'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header: Keranjang Kasir & Order Meta
+        // Header: Keranjang Kasir & Order Meta (Clinical Precision)
         Container(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-          decoration: BoxDecoration(
-            color: canvasColor,
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          decoration: const BoxDecoration(
+            color: Colors.white,
             border: Border(bottom: BorderSide(color: borderColor, width: 1)),
           ),
           child: Column(
@@ -515,11 +515,22 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                     child: Row(
                       children: [
                         Container(
-                          width: 34,
-                          height: 34,
+                          width: 36,
+                          height: 36,
                           decoration: BoxDecoration(
-                            color: primaryEmerald,
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF059669), Color(0xFF0D9488)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
                             borderRadius: BorderRadius.circular(10),
+                            boxShadow: [
+                              BoxShadow(
+                                color: primaryEmerald.withValues(alpha: 0.2),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
                           child: const Icon(Icons.shopping_basket_rounded, color: Colors.white, size: 18),
                         ),
@@ -529,23 +540,47 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Text(
-                                'Keranjang Kasir',
-                                style: TextStyle(
-                                  fontFamily: 'Plus Jakarta Sans',
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                  color: textPrimary,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                              Row(
+                                children: [
+                                  const Text(
+                                    'Keranjang Kasir',
+                                    style: TextStyle(
+                                      fontFamily: 'Plus Jakarta Sans',
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 14.5,
+                                      color: textPrimary,
+                                      letterSpacing: -0.2,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  if (widget.cart.isNotEmpty) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                      decoration: BoxDecoration(
+                                        color: primaryEmerald.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Text(
+                                        '${widget.cart.length} Jenis',
+                                        style: const TextStyle(
+                                          fontFamily: 'JetBrains Mono',
+                                          color: primaryEmerald,
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                               Text(
-                                widget.cart.isEmpty ? 'Keranjang kosong' : '${widget.cart.length} item dipilih',
+                                widget.cart.isEmpty ? 'Belum ada item dipilih' : '$totalQty total kuantitas obat',
                                 style: const TextStyle(
                                   fontFamily: 'JetBrains Mono',
                                   color: textMuted,
-                                  fontSize: 10.5,
+                                  fontSize: 10,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -561,32 +596,42 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (widget.cart.isNotEmpty)
-                        TextButton.icon(
-                          onPressed: () {
+                        InkWell(
+                          onTap: () {
                             AudioHelper.actionFeedback();
                             widget.onClearCart();
                           },
-                          icon: const Icon(Icons.delete_sweep_rounded, size: 16, color: Color(0xFFBA1A1A)),
-                          label: const Text(
-                            'Reset',
-                            style: TextStyle(
-                              color: Color(0xFFBA1A1A),
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          style: TextButton.styleFrom(
+                          borderRadius: BorderRadius.circular(6),
+                          child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFEF2F2),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: const Color(0xFFFEE2E2)),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.delete_sweep_rounded, size: 14, color: Color(0xFFDC2626)),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Reset',
+                                  style: TextStyle(
+                                    color: Color(0xFFDC2626),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       if (widget.onClose != null) ...[
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 6),
                         IconButton(
-                          icon: const Icon(Icons.close_rounded, size: 20, color: textMuted),
+                          icon: const Icon(Icons.close_rounded, size: 18, color: textMuted),
                           padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
+                          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                           onPressed: widget.onClose,
                         ),
                       ],
@@ -607,28 +652,21 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                     borderRadius: BorderRadius.circular(12),
                     onTap: widget.onChangePatient,
                     child: Container(
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: const Color(0xFFF8FAFC),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: borderColor),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF0F172A).withValues(alpha: 0.03),
-                            blurRadius: 4,
-                            offset: const Offset(0, 1),
-                          ),
-                        ],
                       ),
                       child: Row(
                         children: [
                           Container(
-                            width: 32,
-                            height: 32,
+                            width: 34,
+                            height: 34,
                             decoration: BoxDecoration(
                               color: isWalkIn
                                   ? primaryEmerald.withValues(alpha: 0.1)
-                                  : secondaryTeal.withValues(alpha: 0.1),
+                                  : secondaryTeal.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
@@ -683,10 +721,30 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                                   isWalkIn
                                       ? 'Penjualan langsung tanpa resep dokter'
                                       : 'RM: ${widget.medicalRecordNumber} • ${widget.selectedDoctor != '-' && widget.selectedDoctor.isNotEmpty ? widget.selectedDoctor : 'Resep Luar'}',
-                                  style: const TextStyle(fontSize: 10.5, color: textMuted),
+                                  style: const TextStyle(fontSize: 10, color: textMuted),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
+                                if (widget.patientAllergies.isNotEmpty) ...[
+                                  const SizedBox(height: 3),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFEF2F2),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(color: const Color(0xFFFEE2E2)),
+                                    ),
+                                    child: Text(
+                                      'Alergi: ${widget.patientAllergies}',
+                                      style: const TextStyle(
+                                        fontFamily: 'JetBrains Mono',
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFFDC2626),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
@@ -694,7 +752,7 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: canvasColor,
+                              color: Colors.white,
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(color: borderColor),
                             ),
@@ -711,7 +769,7 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                                   isWalkIn ? 'Pilih' : 'Ganti',
                                   style: const TextStyle(
                                     color: primaryEmerald,
-                                    fontSize: 11,
+                                    fontSize: 10.5,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -738,18 +796,25 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
-                          width: 64,
-                          height: 64,
+                          width: 68,
+                          height: 68,
                           decoration: BoxDecoration(
-                            color: canvasColor,
+                            gradient: LinearGradient(
+                              colors: [
+                                primaryEmerald.withValues(alpha: 0.08),
+                                secondaryTeal.withValues(alpha: 0.04),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
                             shape: BoxShape.circle,
-                            border: Border.all(color: borderColor),
+                            border: Border.all(color: primaryEmerald.withValues(alpha: 0.15)),
                           ),
-                          child: const Icon(Icons.receipt_long_outlined, size: 30, color: textMuted),
+                          child: const Icon(Icons.shopping_basket_outlined, size: 30, color: primaryEmerald),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 14),
                         const Text(
-                          'Keranjang Resep Kosong',
+                          'Keranjang Masih Kosong',
                           style: TextStyle(
                             fontFamily: 'Plus Jakarta Sans',
                             fontWeight: FontWeight.bold,
@@ -759,9 +824,9 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                         ),
                         const SizedBox(height: 4),
                         const Text(
-                          'Pilih sediaan obat dari katalog atau scan barcode untuk memuat resep.',
+                          'Pilih sediaan obat dari katalog di samping atau scan barcode kemasan untuk memuat obat.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 11.5, color: textMuted),
+                          style: TextStyle(fontSize: 11.5, color: textMuted, height: 1.4),
                         ),
                       ],
                     ),
@@ -852,9 +917,16 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                     return Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(10),
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: borderColor),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x04000000),
+                            blurRadius: 6,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -870,11 +942,11 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                                       children: [
                                         if (imgUrl != null) ...[
                                           ClipRRect(
-                                            borderRadius: BorderRadius.circular(5),
+                                            borderRadius: BorderRadius.circular(6),
                                             child: Image.network(
                                               imgUrl,
-                                              width: 24,
-                                              height: 24,
+                                              width: 26,
+                                              height: 26,
                                               fit: BoxFit.cover,
                                               errorBuilder: (_, _, _) => const SizedBox.shrink(),
                                             ),
@@ -885,11 +957,18 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                                           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                                           decoration: BoxDecoration(
                                             color: isRx
-                                                ? const Color(0xFFFFDAD6)
+                                                ? const Color(0xFFFEE2E2)
                                                 : isAlkes
                                                     ? const Color(0xFFE0F2FE)
-                                                    : const Color(0xFFE2E7FF),
+                                                    : const Color(0xFFECFDF5),
                                             borderRadius: BorderRadius.circular(4),
+                                            border: Border.all(
+                                              color: isRx
+                                                  ? const Color(0xFFFECACA)
+                                                  : isAlkes
+                                                      ? const Color(0xFFBAE6FD)
+                                                      : const Color(0xFFA7F3D0),
+                                            ),
                                           ),
                                           child: Text(
                                             isRx ? 'Rx' : isAlkes ? 'Alkes' : 'OTC',
@@ -898,10 +977,10 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                                               fontSize: 9,
                                               fontWeight: FontWeight.bold,
                                               color: isRx
-                                                  ? const Color(0xFFBA1A1A)
+                                                  ? const Color(0xFFDC2626)
                                                   : isAlkes
                                                       ? const Color(0xFF0284C7)
-                                                      : const Color(0xFF3D4A42),
+                                                      : primaryEmerald,
                                             ),
                                           ),
                                         ),
@@ -921,7 +1000,7 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 2),
+                                    const SizedBox(height: 3),
                                     Wrap(
                                       crossAxisAlignment: WrapCrossAlignment.center,
                                       spacing: 6,
@@ -940,9 +1019,9 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                                           child: Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                                             decoration: BoxDecoration(
-                                              color: primaryEmerald.withValues(alpha: 0.1),
+                                              color: primaryEmerald.withValues(alpha: 0.08),
                                               borderRadius: BorderRadius.circular(4),
-                                              border: Border.all(color: primaryEmerald.withValues(alpha: 0.3)),
+                                              border: Border.all(color: primaryEmerald.withValues(alpha: 0.25)),
                                             ),
                                             child: Row(
                                               mainAxisSize: MainAxisSize.min,
@@ -958,8 +1037,8 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                                                 ),
                                                 const SizedBox(width: 2),
                                                 const Icon(
-                                                  Icons.arrow_drop_down_rounded,
-                                                  size: 14,
+                                                  Icons.keyboard_arrow_down_rounded,
+                                                  size: 13,
                                                   color: primaryEmerald,
                                                 ),
                                               ],
@@ -975,8 +1054,8 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                                 onTap: () => widget.onRemoveFromCart(cartKey),
                                 borderRadius: BorderRadius.circular(4),
                                 child: const Padding(
-                                  padding: EdgeInsets.all(2),
-                                  child: Icon(Icons.close_rounded, size: 16, color: Color(0xFF6D7A72)),
+                                  padding: EdgeInsets.all(3),
+                                  child: Icon(Icons.close_rounded, size: 16, color: Color(0xFF94A3B8)),
                                 ),
                               ),
                             ],
@@ -988,7 +1067,7 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                               Container(
                                 height: 28,
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: const Color(0xFFF8FAFC),
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(color: borderColor),
                                 ),
@@ -1000,18 +1079,25 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                                         AudioHelper.tapFeedback();
                                         widget.onRemoveFromCart(cartKey);
                                       },
-                                      child: const Padding(
-                                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                        child: Icon(Icons.remove, size: 14, color: textPrimary),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                                        child: Icon(
+                                          qty <= 1 ? Icons.delete_outline_rounded : Icons.remove_rounded,
+                                          size: 14,
+                                          color: qty <= 1 ? const Color(0xFFDC2626) : textPrimary,
+                                        ),
                                       ),
                                     ),
-                                    Text(
-                                      '$qty',
-                                      style: const TextStyle(
-                                        fontFamily: 'JetBrains Mono',
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                        color: textPrimary,
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                                      child: Text(
+                                        '$qty',
+                                        style: const TextStyle(
+                                          fontFamily: 'JetBrains Mono',
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                          color: textPrimary,
+                                        ),
                                       ),
                                     ),
                                     InkWell(
@@ -1020,8 +1106,8 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                                         widget.onAddToCart(cartKey);
                                       },
                                       child: const Padding(
-                                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                        child: Icon(Icons.add, size: 14, color: primaryEmerald),
+                                        padding: EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                                        child: Icon(Icons.add_rounded, size: 14, color: primaryEmerald),
                                       ),
                                     ),
                                   ],
@@ -1048,8 +1134,8 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
         // Financial Calculation & Action CTA Footer
         Container(
           padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: canvasColor,
+          decoration: const BoxDecoration(
+            color: Colors.white,
             border: Border(top: BorderSide(color: borderColor, width: 1)),
           ),
           child: Column(
@@ -1095,58 +1181,94 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                 ),
                 const SizedBox(height: 3),
               ],
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
-                child: Divider(color: borderColor, height: 1),
-              ),
+              const SizedBox(height: 10),
 
-              // Grand Total Highlight
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'TOTAL TAGIHAN',
-                        style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 10, letterSpacing: 0.5, fontWeight: FontWeight.bold, color: textMuted),
-                      ),
-                      Text(
-                        CurrencyFormatter.format(grandTotal),
-                        style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 20, fontWeight: FontWeight.w800, color: primaryEmerald),
-                      ),
-                    ],
+              // Grand Total Hero Card
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF047857), Color(0xFF0D9488)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: primaryEmerald.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: primaryEmerald.withValues(alpha: 0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
                     ),
-                    child: Text(
-                      '$totalQty Qty Total',
-                      style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11, fontWeight: FontWeight.bold, color: primaryEmerald),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'TOTAL TAGIHAN',
+                          style: TextStyle(
+                            fontFamily: 'JetBrains Mono',
+                            fontSize: 9.5,
+                            letterSpacing: 0.8,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white70,
+                          ),
+                        ),
+                        const SizedBox(height: 1),
+                        Text(
+                          CurrencyFormatter.format(grandTotal),
+                          style: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '$totalQty Item',
+                        style: const TextStyle(
+                          fontFamily: 'JetBrains Mono',
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
 
               // In-Place Morph Trigger Button
               SizedBox(
                 width: double.infinity,
-                height: 48,
+                height: 46,
                 child: ElevatedButton.icon(
                   onPressed: widget.cart.isNotEmpty ? () => _switchToTenderMode(grandTotal) : null,
                   icon: const Icon(Icons.payments_rounded, size: 18),
                   label: Text(
                     widget.cart.isNotEmpty
-                        ? 'Lanjut ke Pembayaran (${CurrencyFormatter.format(grandTotal)})'
+                        ? 'Lanjut ke Pembayaran'
                         : 'Keranjang Masih Kosong',
-                    style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 13),
+                    style: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryEmerald,
+                    backgroundColor: const Color(0xFF0F172A),
                     foregroundColor: Colors.white,
                     disabledBackgroundColor: const Color(0xFFE2E8F0),
                     disabledForegroundColor: const Color(0xFF94A3B8),
