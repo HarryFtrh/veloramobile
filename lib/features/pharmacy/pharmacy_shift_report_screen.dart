@@ -16,12 +16,12 @@ class PharmacyShiftReportScreen extends StatefulWidget {
 
 class _PharmacyShiftReportScreenState extends State<PharmacyShiftReportScreen> {
   bool _isLoading = true;
-  num _openingCash = 500000;
-  num _cashRevenue = 2800000;
-  num _qrisRevenue = 3650000;
-  num _debitRevenue = 1200000;
-  num _insuranceRevenue = 800000;
-  int _transactionCount = 34;
+  num _openingCash = 0;
+  num _cashRevenue = 0;
+  num _qrisRevenue = 0;
+  num _debitRevenue = 0;
+  num _insuranceRevenue = 0;
+  int _transactionCount = 0;
 
   final TextEditingController _countedCashController = TextEditingController();
   num? _countedCash;

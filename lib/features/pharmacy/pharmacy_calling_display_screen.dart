@@ -16,8 +16,8 @@ class _PharmacyCallingDisplayScreenState extends State<PharmacyCallingDisplayScr
   Timer? _queuePollTimer;
   DateTime _now = DateTime.now();
 
-  String _currentCallingToken = '#A-042';
-  String _currentCallingPatient = 'Ny. Dewi Lestari';
+  String _currentCallingToken = '-';
+  String _currentCallingPatient = 'Menunggu Panggilan Antrean';
   String _currentCallingDestination = 'Loket 1 (Penyerahan Obat & Konseling)';
 
   List<Map<String, String>> _counterStations = [];
@@ -63,34 +63,36 @@ class _PharmacyCallingDisplayScreenState extends State<PharmacyCallingDisplayScr
             stations.add({
               'counter': 'LOKET $loketNum',
               'title': title,
-              'token': item?.queueNumber ?? '#A-${(42 + i).toString().padLeft(3, '0')}',
-              'patient': item?.patientName ?? (i == 0 ? 'Ny. Dewi Lestari' : (i == 1 ? 'Tn. Budi Santoso' : 'Ny. Siti Aminah')),
+              'token': item?.queueNumber ?? '-',
+              'patient': item?.patientName ?? 'Standby',
               'status': item != null ? (item.status == 'ready' ? 'Siap Dilayani' : 'Sedang Diproses') : 'Standby',
             });
           }
           _counterStations = stations;
         } else {
+          _currentCallingToken = '-';
+          _currentCallingPatient = 'Tidak Ada Antrean Aktif';
           _counterStations = [
             {
               'counter': 'LOKET 1',
               'title': 'Penyerahan Obat & Konseling',
-              'token': '#A-042',
-              'patient': 'Ny. Dewi Lestari',
-              'status': 'Sedang Dilayani',
+              'token': '-',
+              'patient': 'Standby',
+              'status': 'Menunggu Antrean',
             },
             {
               'counter': 'LOKET 2',
               'title': 'Kasir & Pembayaran Billing',
-              'token': '#A-043',
-              'patient': 'Tn. Budi Santoso',
-              'status': 'Menuju Kasir',
+              'token': '-',
+              'patient': 'Standby',
+              'status': 'Menunggu Antrean',
             },
             {
               'counter': 'LOKET 3',
               'title': 'Penerimaan Resep & Telaah',
-              'token': '#A-044',
-              'patient': 'Ny. Siti Aminah',
-              'status': 'Pemeriksaan Resep',
+              'token': '-',
+              'patient': 'Standby',
+              'status': 'Menunggu Antrean',
             },
           ];
         }

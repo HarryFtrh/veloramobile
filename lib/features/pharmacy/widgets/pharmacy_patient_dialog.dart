@@ -12,8 +12,8 @@ class PharmacyPatientData {
   const PharmacyPatientData({
     required this.patient,
     required this.doctor,
-    this.queueNumber = '#A-042',
-    this.medicalRecordNumber = 'RM-99201',
+    this.queueNumber = '-',
+    this.medicalRecordNumber = '-',
     this.patientCategory = 'Umum',
     this.allergies = '',
   });
@@ -83,8 +83,8 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
     super.initState();
     _patientController = TextEditingController(text: widget.initialPatient);
     _doctorController = TextEditingController(text: widget.initialDoctor);
-    _queueController = TextEditingController(text: widget.initialQueueNumber ?? '#A-042');
-    _rmController = TextEditingController(text: widget.initialMedicalRecordNumber ?? 'RM-99201');
+    _queueController = TextEditingController(text: widget.initialQueueNumber ?? '');
+    _rmController = TextEditingController(text: widget.initialMedicalRecordNumber ?? '');
     _allergiesController = TextEditingController(text: widget.initialAllergies ?? '');
     _selectedCategory = 'Umum';
     for (final cat in presetCategories) {
@@ -303,7 +303,7 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
                 decoration: InputDecoration(
                   labelText: 'Dokter Pemeriksa & SIP',
                   labelStyle: const TextStyle(color: Color(0xFF6D7A72), fontSize: 11.5),
-                  hintText: 'Contoh: dr. Hendra Sp.A (SIP: 446/SIP/2023)',
+                  hintText: 'Contoh: dr. Spesialis Poli (SIP: 446/SIP/2026)',
                   hintStyle: const TextStyle(color: Color(0xFFBCCAC0), fontSize: 12),
                   prefixIcon: const Icon(Icons.medical_services_outlined, size: 18, color: Color(0xFF6D7A72)),
                   filled: true,
@@ -379,8 +379,8 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
               PharmacyPatientData(
                 patient: patientText.isNotEmpty ? patientText : 'Pelanggan Umum (Walk-in)',
                 doctor: doctorText.isNotEmpty ? doctorText : widget.initialDoctor,
-                queueNumber: queueText.isNotEmpty ? queueText : '#A-042',
-                medicalRecordNumber: rmText.isNotEmpty ? rmText : 'RM-99201',
+                queueNumber: queueText.isNotEmpty ? queueText : '-',
+                medicalRecordNumber: rmText.isNotEmpty ? rmText : '-',
                 patientCategory: _selectedCategory,
                 allergies: allergiesText,
               ),

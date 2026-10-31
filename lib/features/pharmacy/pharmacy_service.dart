@@ -162,10 +162,10 @@ class PharmacyService {
                 insurance: m['insurance']?.toString() ?? (m['is_bpjs'] == true ? 'BPJS Kesehatan' : 'Umum / Mandiri'),
                 allergy: m['allergy']?.toString() ?? m['allergies']?.toString(),
                 status: m['status']?.toString() ?? 'ready',
-                estimatedTotal: (m['estimated_total'] ?? m['total'] as num?) ?? 85000,
+                estimatedTotal: (m['estimated_total'] ?? m['total'] as num?) ?? 0,
                 prescribedDrugs: m['prescribed_drugs'] is List
                     ? List<String>.from(m['prescribed_drugs'])
-                    : ['Paracetamol 500mg', 'Amoxicillin 500mg'],
+                    : <String>[],
               );
             }).toList();
 
@@ -177,60 +177,7 @@ class PharmacyService {
       }
     }
 
-    if (anyEndpointResponded && _localPrescriptions.isNotEmpty) {
-      return _localPrescriptions;
-    }
-
-    // Fallback data terkalibrasi Stitch jika offline atau backend belum sediakan data antrean
-    return [
-      ..._localPrescriptions,
-      const ClinicPatientQueueItem(
-        queueNumber: '#A-042',
-        patientName: 'Ny. Dewi Lestari',
-        medicalRecordNumber: 'RM-08234',
-        doctorName: 'dr. Hendra Sp.PD',
-        department: 'Poli Penyakit Dalam',
-        insurance: 'BPJS Kesehatan',
-        allergy: 'Alergi Penisilin (Kritis)',
-        status: 'ready',
-        estimatedTotal: 135000,
-        prescribedDrugs: ['Cefixime 100mg Kapsul', 'Paracetamol 500mg', 'Pulveres Batuk / Racikan'],
-      ),
-      const ClinicPatientQueueItem(
-        queueNumber: '#A-043',
-        patientName: 'Tn. Budi Santoso',
-        medicalRecordNumber: 'RM-09112',
-        doctorName: 'dr. Anita Wijaya Sp.A',
-        department: 'Poli Anak',
-        insurance: 'Asuransi Mandiri Inhealth',
-        status: 'pending',
-        estimatedTotal: 84000,
-        prescribedDrugs: ['Cetirizine Sirup 60ml', 'Sanmol Drop 15ml'],
-      ),
-      const ClinicPatientQueueItem(
-        queueNumber: '#A-044',
-        patientName: 'Ny. Siti Aminah',
-        medicalRecordNumber: 'RM-04419',
-        doctorName: 'dr. Bambang Sp.JP',
-        department: 'Poli Jantung & Pembuluh',
-        insurance: 'Umum / Pribadi',
-        allergy: 'Alergi Aspirin',
-        status: 'ready',
-        estimatedTotal: 245000,
-        prescribedDrugs: ['Amlodipine 10mg', 'Atorvastatin 20mg', 'Concor 2.5mg'],
-      ),
-      const ClinicPatientQueueItem(
-        queueNumber: '#A-045',
-        patientName: 'An. Kevin Pratama',
-        medicalRecordNumber: 'RM-11209',
-        doctorName: 'dr. Anita Wijaya Sp.A',
-        department: 'Poli Anak',
-        insurance: 'BPJS Kesehatan',
-        status: 'ready',
-        estimatedTotal: 65000,
-        prescribedDrugs: ['Amoxicillin Sirup Kering', 'Paracetamol Sirup'],
-      ),
-    ];
+    return _localPrescriptions;
   }
 
   /// Kirim e-Resep dari Workstation Dokter langsung ke antrean loket farmasi
@@ -251,7 +198,7 @@ class PharmacyService {
       insurance: 'Umum / Resep Dokter',
       allergy: null,
       status: 'ready',
-      estimatedTotal: 125000,
+      estimatedTotal: 0,
       prescribedDrugs: prescribedDrugs,
     );
     _localPrescriptions.insert(0, newItem);
@@ -329,64 +276,7 @@ class PharmacyService {
       debugPrint('⚠️ [PharmacyService] Error parsing catalog batches: $e');
     }
 
-    // Default fallback alerts terkalibrasi Stitch
-    return const [
-      PharmacyStockAlertItem(
-        name: 'Amoxicillin 500mg Kaplet',
-        category: 'Obat Keras (Rx)',
-        batchNumber: 'AMX-774-B',
-        expiryDate: '2026-11-15',
-        daysToExpiry: 15,
-        stock: 48,
-        unit: 'KAPLET',
-        price: 16000,
-        isHardDrug: true,
-      ),
-      PharmacyStockAlertItem(
-        name: 'Cefixime 100mg Kapsul',
-        category: 'Obat Keras (Rx)',
-        batchNumber: 'CFX-2024-X1',
-        expiryDate: '2026-11-28',
-        daysToExpiry: 28,
-        stock: 35,
-        unit: 'KAPSUL',
-        price: 28500,
-        isHardDrug: true,
-      ),
-      PharmacyStockAlertItem(
-        name: 'Cetirizine HCl 10mg',
-        category: 'Obat Bebas Terbatas (W)',
-        batchNumber: 'CTZ-552-L',
-        expiryDate: '2026-12-10',
-        daysToExpiry: 40,
-        stock: 85,
-        unit: 'TABLET',
-        price: 11000,
-        isHardDrug: false,
-      ),
-      PharmacyStockAlertItem(
-        name: 'Betadine Antiseptik Cair 30ml',
-        category: 'Alat Kesehatan & Antiseptik',
-        batchNumber: 'BTD-019-X',
-        expiryDate: '2026-12-25',
-        daysToExpiry: 55,
-        stock: 29,
-        unit: 'BOTOL',
-        price: 23500,
-        isHardDrug: false,
-      ),
-      PharmacyStockAlertItem(
-        name: 'Glukometer Kit Medis + 25 Strip',
-        category: 'Alat Kesehatan Medis',
-        batchNumber: 'GLU-990-K',
-        expiryDate: '2027-01-30',
-        daysToExpiry: 90,
-        stock: 4,
-        unit: 'KIT',
-        price: 102000,
-        isHardDrug: false,
-      ),
-    ];
+    return const [];
   }
 
   /// 3. Ambil Rekap Shift & Rekonsiliasi Kas (Stitch Screen 4) dari API (/v1/pos/shift-status & /v1/pos/dashboard/overview)
@@ -419,15 +309,15 @@ class PharmacyService {
     } catch (_) {}
 
     return PharmacyShiftReconciliation(
-      startingCash: startingCash > 0 ? startingCash : 500000,
-      cashSales: cashSales > 0 ? cashSales : 2800000,
-      qrisSales: qrisSales > 0 ? qrisSales : 3650000,
-      debitSales: debitSales > 0 ? debitSales : 1200000,
-      insuranceSales: insuranceSales > 0 ? insuranceSales : 800000,
-      expectedTotalDrawer: (startingCash > 0 ? startingCash : 500000) + (cashSales > 0 ? cashSales : 2800000),
-      transactionCount: txCount > 0 ? txCount : 34,
-      shiftName: 'Shift 1 (07:00 - 15:00 WIB)',
-      cashierName: SessionStorage.instance.getUserName() ?? 'Siti Rahma',
+      startingCash: startingCash,
+      cashSales: cashSales,
+      qrisSales: qrisSales,
+      debitSales: debitSales,
+      insuranceSales: insuranceSales,
+      expectedTotalDrawer: startingCash + cashSales,
+      transactionCount: txCount,
+      shiftName: 'Shift Berjalan',
+      cashierName: SessionStorage.instance.getUserName() ?? 'Kasir',
     );
   }
 
@@ -455,12 +345,12 @@ class PharmacyService {
               final m = e is Map<String, dynamic> ? e : Map<String, dynamic>.from(e as Map);
               return PharmacyPbfOrder(
                 poNumber: m['po_number']?.toString() ?? 'PO-PBF-${m['id']}',
-                pbfName: m['pbf_name']?.toString() ?? m['supplier_name']?.toString() ?? 'PBF Kimia Farma',
-                date: m['date']?.toString() ?? '2026-10-30',
-                dueDate: m['due_date']?.toString() ?? '2026-11-06',
-                totalAmount: (m['total_amount'] as num?) ?? 14200000,
-                status: m['status']?.toString() ?? 'due_soon',
-                itemCount: (m['item_count'] as num?)?.toInt() ?? 8,
+                pbfName: m['pbf_name']?.toString() ?? m['supplier_name']?.toString() ?? 'PBF Mitra',
+                date: m['date']?.toString() ?? m['created_at']?.toString() ?? '-',
+                dueDate: m['due_date']?.toString() ?? '-',
+                totalAmount: (m['total_amount'] as num?) ?? (m['grand_total'] as num?) ?? 0,
+                status: m['status']?.toString() ?? 'pending',
+                itemCount: (m['item_count'] as num?)?.toInt() ?? (m['items'] is List ? (m['items'] as List).length : 0),
               );
             }).toList();
           }
@@ -468,35 +358,7 @@ class PharmacyService {
       } catch (_) {}
     }
 
-    return const [
-      PharmacyPbfOrder(
-        poNumber: 'PO-2024-10-092',
-        pbfName: 'PT. Kimia Farma Trading & Distribution',
-        date: '24 Okt 2024',
-        dueDate: '31 Okt 2024 (Jatuh Tempo 7 Hari)',
-        totalAmount: 14200000,
-        status: 'due_soon',
-        itemCount: 12,
-      ),
-      PharmacyPbfOrder(
-        poNumber: 'PO-2024-10-088',
-        pbfName: 'PT. Kalbe Farma Tbk (Enseval Putera)',
-        date: '22 Okt 2024',
-        dueDate: '15 Nov 2024',
-        totalAmount: 28300000,
-        status: 'sent',
-        itemCount: 18,
-      ),
-      PharmacyPbfOrder(
-        poNumber: 'PO-2024-10-079',
-        pbfName: 'PT. Mensa Bina Sukses',
-        date: '18 Okt 2024',
-        dueDate: '02 Nov 2024',
-        totalAmount: 8500000,
-        status: 'pending',
-        itemCount: 6,
-      ),
-    ];
+    return const [];
   }
 
   /// 5. Ambil Riwayat Rekam Medis & Histori Obat Pasien (Stitch Screen 8)
@@ -521,12 +383,16 @@ class PharmacyService {
             return items.map((e) {
               final m = e is Map<String, dynamic> ? e : Map<String, dynamic>.from(e as Map);
               return PharmacyPatientHistory(
-                visitDate: m['visit_date']?.toString() ?? '24 Okt 2024',
-                invoiceNumber: m['invoice_number']?.toString() ?? 'INV-0912',
-                doctorName: m['doctor_name']?.toString() ?? 'dr. Hendra Sp.PD',
-                diagnosis: m['diagnosis']?.toString() ?? 'Faringitis Akut (J02.9)',
-                medicines: m['medicines'] is List ? List<String>.from(m['medicines']) : ['Cefixime', 'Paracetamol'],
-                total: (m['total'] as num?) ?? 135000,
+                visitDate: m['visit_date']?.toString() ?? m['created_at']?.toString() ?? 'Hari ini',
+                invoiceNumber: m['invoice_number']?.toString() ?? m['order_number']?.toString() ?? '-',
+                doctorName: m['doctor_name']?.toString() ?? 'dr. Spesialis Poli',
+                diagnosis: m['diagnosis']?.toString() ?? 'Pemeriksaan Poli',
+                medicines: m['medicines'] is List
+                    ? List<String>.from(m['medicines'])
+                    : (m['items'] is List
+                        ? (m['items'] as List).map((it) => it is Map ? (it['name']?.toString() ?? '') : it.toString()).where((s) => s.isNotEmpty).toList()
+                        : <String>[]),
+                total: (m['total'] as num?) ?? (m['grand_total'] as num?) ?? 0,
               );
             }).toList();
           }
@@ -534,32 +400,7 @@ class PharmacyService {
       } catch (_) {}
     }
 
-    return const [
-      PharmacyPatientHistory(
-        visitDate: '24 Okt 2024 (10:24 WIB)',
-        invoiceNumber: 'INV/2024/10/0192',
-        doctorName: 'dr. Hendra Sp.PD (SIP: 446/2021/SIP.DOK)',
-        diagnosis: 'Faringitis Akut (J02.9)',
-        medicines: ['Cefixime 100mg (10 Kaplet)', 'Paracetamol 500mg (10 Tab)', 'Pulveres Batuk Racikan (15 Kapsul)'],
-        total: 135000,
-      ),
-      PharmacyPatientHistory(
-        visitDate: '12 Sep 2024 (14:10 WIB)',
-        invoiceNumber: 'INV/2024/09/0814',
-        doctorName: 'dr. Anita Wijaya Sp.A',
-        diagnosis: 'ISPA & Demam',
-        medicines: ['Amoxicillin Sirup Kering', 'Sanmol Drop 15ml'],
-        total: 78000,
-      ),
-      PharmacyPatientHistory(
-        visitDate: '04 Agu 2024 (09:45 WIB)',
-        invoiceNumber: 'INV/2024/08/0321',
-        doctorName: 'dr. Hendra Sp.PD',
-        diagnosis: 'Gastritis Akut',
-        medicines: ['Omeprazole 20mg (14 Kapsul)', 'Antasida Doen (10 Tab)'],
-        total: 95000,
-      ),
-    ];
+    return const [];
   }
 
   /// 6. Ambil Analitik Eksekutif Laba Rugi dari API (/v1/pharmacy/dashboard/analytics)
@@ -619,7 +460,7 @@ class PharmacyService {
                 return {
                   'name': m['category_name']?.toString() ?? m['name']?.toString() ?? 'Lainnya',
                   'value': (m['total'] as num?) ?? 0,
-                  'pct': (m['percentage'] as num?)?.toInt() ?? 25,
+                  'pct': (m['percentage'] as num?)?.toInt() ?? 0,
                   'color': const Color(0xFF006948),
                 };
               }).toList();
@@ -631,9 +472,9 @@ class PharmacyService {
                 final m = e is Map ? e : {};
                 return {
                   'name': m['name']?.toString() ?? 'Obat',
-                  'sales': '${m['total_quantity'] ?? m['qty'] ?? 100} Unit',
+                  'sales': '${m['total_quantity'] ?? m['qty'] ?? 0} Unit',
                   'revenue': (m['total_sales'] as num?) ?? (m['revenue'] as num?) ?? 0,
-                  'growth': m['growth']?.toString() ?? '+5%',
+                  'growth': m['growth']?.toString() ?? '-',
                 };
               }).toList();
             }
@@ -657,8 +498,8 @@ class PharmacyService {
           topMedicines = catalog.products.take(5).map((p) => {
             'name': p.name,
             'sales': '${p.stock.toInt()} Stok',
-            'revenue': (p.price * 10).round(),
-            'growth': '+8%',
+            'revenue': (p.price * (p.stock > 0 ? p.stock : 1)).round(),
+            'growth': 'Tersedia',
           }).toList();
         }
       } catch (_) {}
@@ -668,28 +509,13 @@ class PharmacyService {
     final marginPct = revenue > 0 ? (grossProfit / revenue) * 100 : 0.0;
 
     return PharmacyExecutiveData(
-      grossRevenue: revenue > 0 ? revenue : 148500000,
-      cogs: cogs > 0 ? cogs : 106326000,
-      operationalExpense: operationalExpense > 0 ? operationalExpense : 14200000,
-      netProfit: netProfit > 0 ? netProfit : 27974000,
-      grossMarginPct: marginPct > 0 ? marginPct : 28.4,
-      categoryShare: categoryShare.isNotEmpty
-          ? categoryShare
-          : [
-              {'name': 'Obat Keras (Rx) & Resep', 'value': 74250000, 'pct': 50, 'color': const Color(0xFFBA1A1A)},
-              {'name': 'Obat Bebas (OTC)', 'value': 41580000, 'pct': 28, 'color': const Color(0xFF006948)},
-              {'name': 'Alat Kesehatan & Medis', 'value': 22275000, 'pct': 15, 'color': const Color(0xFF006577)},
-              {'name': 'Racikan Pulveres & Kapsul', 'value': 10395000, 'pct': 7, 'color': const Color(0xFF6366F1)},
-            ],
-      topMedicines: topMedicines.isNotEmpty
-          ? topMedicines
-          : [
-              {'name': 'Amoxicillin 500mg Kaplet', 'sales': '1.240 Strip', 'revenue': 19840000, 'growth': '+12%'},
-              {'name': 'Paracetamol 500mg Tablet', 'sales': '2.100 Strip', 'revenue': 17850000, 'growth': '+8%'},
-              {'name': 'Cefixime 100mg Kapsul', 'sales': '480 Box', 'revenue': 13680000, 'growth': '+15%'},
-              {'name': 'Amlodipine 10mg Tablet', 'sales': '890 Strip', 'revenue': 11570000, 'growth': '+5%'},
-              {'name': 'Cetirizine 10mg Tablet', 'sales': '650 Strip', 'revenue': 7150000, 'growth': '+3%'},
-            ],
+      grossRevenue: revenue,
+      cogs: cogs,
+      operationalExpense: operationalExpense,
+      netProfit: netProfit,
+      grossMarginPct: marginPct,
+      categoryShare: categoryShare,
+      topMedicines: topMedicines,
     );
   }
 }

@@ -21,6 +21,7 @@ import 'widgets/pharmacy_queue_modal.dart';
 import 'widgets/pharmacy_stock_alert_modal.dart';
 import 'widgets/pharmacy_shift_report_modal.dart';
 import 'widgets/pharmacy_prescription_review_modal.dart';
+import 'widgets/pharmacy_medical_records_modal.dart';
 import 'widgets/pharmacy_receipt_dialog.dart';
 import 'pharmacy_service.dart';
 
@@ -43,8 +44,8 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
   // Clinical Patient Context
   String _selectedPatient = 'Pelanggan Umum (Walk-in)';
   String _selectedDoctor = 'dr. Resep Luar (Umum)';
-  String _queueNumber = '#A-042';
-  String _medicalRecordNumber = 'RM-99201';
+  String _queueNumber = '-';
+  String _medicalRecordNumber = '-';
   String _patientCategory = 'Umum';
   String _patientAllergies = '';
 
@@ -355,14 +356,56 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
 
   void _openPrescriptionReviewModal() {
     AudioHelper.tapFeedback();
+    final patientData = PharmacyPatientData(
+      patient: _selectedPatient,
+      doctor: _selectedDoctor,
+      queueNumber: _queueNumber,
+      medicalRecordNumber: _medicalRecordNumber,
+      patientCategory: _patientCategory,
+      allergies: _patientAllergies,
+    );
+    final cartItems = _cart.entries.map((e) {
+      final item = _drugItems.firstWhere(
+        (m) => m['id'] == e.key,
+        orElse: () => <String, dynamic>{'id': e.key, 'name': 'Obat', 'price': 0},
+      );
+      return PosCartItem(
+        productId: e.key,
+        name: item['name']?.toString() ?? 'Obat',
+        price: (item['price'] as num?) ?? 0,
+        quantity: e.value,
+        batchNumber: item['batch']?.toString(),
+        expiryDate: (item['ed'] ?? item['exp'])?.toString(),
+      );
+    }).toList();
+
     PharmacyPrescriptionReviewModal.show(
       context,
+      patientData: patientData,
+      cartItems: cartItems,
       onApprove: () {
-        // Automatically add common prescribed items to cart if desired
-        if (_drugItems.isNotEmpty) {
+        if (_cart.isEmpty && _drugItems.isNotEmpty) {
           _addToCart(_drugItems.first['id'].toString());
         }
       },
+    );
+  }
+
+  void _openMedicalRecordsModal() {
+    AudioHelper.tapFeedback();
+    final patientData = PharmacyPatientData(
+      patient: _selectedPatient,
+      doctor: _selectedDoctor,
+      queueNumber: _queueNumber,
+      medicalRecordNumber: _medicalRecordNumber,
+      patientCategory: _patientCategory,
+      allergies: _patientAllergies,
+    );
+    PharmacyMedicalRecordsModal.show(
+      context,
+      initialRm: _medicalRecordNumber,
+      patientName: _selectedPatient,
+      patientData: patientData,
     );
   }
 
@@ -617,8 +660,8 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
               _totalPrice = 0;
               _selectedPatient = 'Pelanggan Umum (Walk-in)';
               _selectedDoctor = 'dr. Resep Luar (Umum)';
-              _queueNumber = '#A-042';
-              _medicalRecordNumber = 'RM-99201';
+              _queueNumber = '-';
+              _medicalRecordNumber = '-';
               _patientCategory = 'Umum';
               _patientAllergies = '';
               _persistCart();
@@ -858,7 +901,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
     const borderColor = Color(0xFFE2E8F0);
     final tenant = SessionStorage.instance.getTenantName() ?? 'Velora Pharmacy';
     final location = SessionStorage.instance.getLocationName() ?? 'Apotek & Klinik Utama Medika';
-    final cashier = SessionStorage.instance.getUserName() ?? 'Siti Rahma, S.Farm';
+    final cashier = SessionStorage.instance.getUserName() ?? 'Apoteker / Kasir';
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 20, vertical: 10),
@@ -1255,6 +1298,34 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
               ],
             ),
           ),
+          InkWell(
+            onTap: _openMedicalRecordsModal,
+            borderRadius: BorderRadius.circular(6),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFAF8FF),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: borderColor),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.clinical_notes_rounded, size: 14, color: Color(0xFF006577)),
+                  SizedBox(width: 4),
+                  Text(
+                    'Rekam Medis',
+                    style: TextStyle(
+                      color: Color(0xFF006577),
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
           InkWell(
             onTap: _showChangePatientOptions,
             borderRadius: BorderRadius.circular(6),

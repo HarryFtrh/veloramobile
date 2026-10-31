@@ -1,12 +1,28 @@
 import 'package:flutter/material.dart';
+import '../pharmacy_service.dart';
+import 'pharmacy_patient_dialog.dart';
+import '../../shared_pos/pos_checkout_service.dart';
 
 class PharmacyPrescriptionReviewModal extends StatefulWidget {
   final VoidCallback? onApprove;
   final bool showDragHandle;
+  final PharmacyPatientData? patientData;
+  final List<PosCartItem>? cartItems;
 
-  const PharmacyPrescriptionReviewModal({super.key, this.onApprove, this.showDragHandle = true});
+  const PharmacyPrescriptionReviewModal({
+    super.key,
+    this.onApprove,
+    this.showDragHandle = true,
+    this.patientData,
+    this.cartItems,
+  });
 
-  static Future<void> show(BuildContext context, {VoidCallback? onApprove}) {
+  static Future<void> show(
+    BuildContext context, {
+    VoidCallback? onApprove,
+    PharmacyPatientData? patientData,
+    List<PosCartItem>? cartItems,
+  }) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -21,7 +37,11 @@ class PharmacyPrescriptionReviewModal extends StatefulWidget {
             color: Color(0xFFFAF8FF),
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
-          child: PharmacyPrescriptionReviewModal(onApprove: onApprove),
+          child: PharmacyPrescriptionReviewModal(
+            onApprove: onApprove,
+            patientData: patientData,
+            cartItems: cartItems,
+          ),
         ),
       ),
     );
@@ -115,228 +135,286 @@ class _PharmacyPrescriptionReviewModalState extends State<PharmacyPrescriptionRe
           ),
         const Divider(height: 1, color: borderColor),
 
-        // Scrollable Body
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              // Ticket Status Banner
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: borderColor),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          'E-PRESCRIPTION #ERX-2024-8841',
-                          style: TextStyle(
-                            fontFamily: 'JetBrains Mono',
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF006577),
-                          ),
-                        ),
-                        Text(
-                          'Poli Penyakit Dalam • Waktu: 10:24 WIB',
-                          style: TextStyle(fontSize: 11, color: textMuted),
-                        ),
-                      ],
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF86F2E4).withValues(alpha: 0.4),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.circle, size: 6, color: Color(0xFF006F66)),
-                          SizedBox(width: 4),
-                          Text(
-                            'Dalam Telaah',
-                            style: TextStyle(
-                              fontFamily: 'JetBrains Mono',
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF006F66),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
+        Builder(
+          builder: (context) {
+            final active = widget.patientData ?? PharmacyService.instance.activePatient.value;
+            final patientName = (active?.patient.isNotEmpty == true) ? active!.patient : 'Pelanggan Umum (Walk-in)';
+            final doctorName = (active?.doctor.isNotEmpty == true) ? active!.doctor : 'dr. Resep Luar / DPJP';
+            final queueNum = (active?.queueNumber.isNotEmpty == true && active!.queueNumber != '-') ? active.queueNumber : '#A-REG';
+            final rmNumber = (active?.medicalRecordNumber.isNotEmpty == true && active!.medicalRecordNumber != '-')
+                ? active.medicalRecordNumber
+                : 'RM-UMUM';
+            final category = (active?.patientCategory.isNotEmpty == true) ? active!.patientCategory : 'Umum';
+            final allergies = (active?.allergies.trim().isNotEmpty == true) ? active!.allergies.trim() : '';
 
-              // Patient & Physician Card
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: borderColor),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+            final initials = patientName
+                .trim()
+                .split(' ')
+                .where((w) => w.isNotEmpty)
+                .map((w) => w[0])
+                .take(2)
+                .join()
+                .toUpperCase();
+            final displayInitials = initials.isNotEmpty ? initials : 'PX';
+
+            final items = widget.cartItems ?? [];
+
+            return Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  // Ticket Status Banner
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: borderColor),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE2E7FF),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Center(
-                            child: Text(
-                              'DL',
-                              style: TextStyle(
-                                fontFamily: 'Plus Jakarta Sans',
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'E-RESEP $queueNum',
+                              style: const TextStyle(
+                                fontFamily: 'JetBrains Mono',
+                                fontSize: 11,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF006948),
+                                color: Color(0xFF006577),
                               ),
                             ),
-                          ),
+                            Text(
+                              'Validasi Resep Klinis • $category',
+                              style: const TextStyle(fontSize: 11, color: textMuted),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF86F2E4).withValues(alpha: 0.4),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.circle, size: 6, color: Color(0xFF006F66)),
+                              SizedBox(width: 4),
                               Text(
-                                'Ny. Dewi Lestari (P / 34 th)',
+                                'Dalam Telaah',
                                 style: TextStyle(
-                                  fontFamily: 'Plus Jakarta Sans',
-                                  fontSize: 13.5,
+                                  fontFamily: 'JetBrains Mono',
+                                  fontSize: 10,
                                   fontWeight: FontWeight.bold,
-                                  color: textPrimary,
+                                  color: Color(0xFF006F66),
                                 ),
-                              ),
-                              Text(
-                                'No. Rekam Medis: RM-08234 • BPJS Kesehatan',
-                                style: TextStyle(fontSize: 11, color: textMuted),
                               ),
                             ],
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        children: const [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('Diagnosis DPJP:', style: TextStyle(fontSize: 11, color: textMuted)),
-                              Text('Faringitis Akut (J02.9)', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: textPrimary)),
-                            ],
-                          ),
-                          SizedBox(height: 4),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('Dokter Perujuk:', style: TextStyle(fontSize: 11, color: textMuted)),
-                              Text('dr. Hendra Sp.PD (SIP: 446/2021/SIP.DOK)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textPrimary)),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
+                  ),
+                  const SizedBox(height: 12),
 
-                    // Allergy Safety Banner
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFDAD6).withValues(alpha: 0.35),
-                        borderRadius: BorderRadius.circular(8),
-                        border: const Border(left: BorderSide(color: Color(0xFFBA1A1A), width: 3)),
-                      ),
-                      child: Row(
-                        children: const [
-                          Icon(Icons.warning_amber_rounded, size: 18, color: Color(0xFFBA1A1A)),
-                          SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Alergi Terdaftar: Penicillin',
-                                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFFBA1A1A)),
+                  // Patient & Physician Card
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: borderColor),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE2E7FF),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  displayInitials,
+                                  style: const TextStyle(
+                                    fontFamily: 'Plus Jakarta Sans',
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF006948),
+                                  ),
                                 ),
-                                Text(
-                                  'Pemeriksaan keamanan: Tidak ada golongan penicillin dalam R/ ini. Aman disiapkan.',
-                                  style: TextStyle(fontSize: 10.5, color: textMuted),
-                                ),
-                              ],
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    patientName,
+                                    style: const TextStyle(
+                                      fontFamily: 'Plus Jakarta Sans',
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.bold,
+                                      color: textPrimary,
+                                    ),
+                                  ),
+                                  Text(
+                                    'No. Rekam Medis: $rmNumber • $category',
+                                    style: const TextStyle(fontSize: 11, color: textMuted),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            children: [
+                              const Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('Layanan:', style: TextStyle(fontSize: 11, color: textMuted)),
+                                  Text('Dispensasi Obat Farmasi', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: textPrimary)),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text('Dokter Perujuk:', style: TextStyle(fontSize: 11, color: textMuted)),
+                                  Text(doctorName, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textPrimary)),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+
+                        // Allergy Safety Banner
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: allergies.isNotEmpty
+                                ? const Color(0xFFFFDAD6).withValues(alpha: 0.35)
+                                : const Color(0xFF006948).withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border(
+                              left: BorderSide(
+                                color: allergies.isNotEmpty ? const Color(0xFFBA1A1A) : const Color(0xFF006948),
+                                width: 3,
+                              ),
                             ),
                           ),
-                        ],
+                          child: Row(
+                            children: [
+                              Icon(
+                                allergies.isNotEmpty ? Icons.warning_amber_rounded : Icons.check_circle_outline_rounded,
+                                size: 18,
+                                color: allergies.isNotEmpty ? const Color(0xFFBA1A1A) : const Color(0xFF006948),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      allergies.isNotEmpty
+                                          ? 'Alergi Terdaftar: $allergies'
+                                          : 'Tidak Ada Riwayat Alergi (Aman)',
+                                      style: TextStyle(
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: allergies.isNotEmpty ? const Color(0xFFBA1A1A) : const Color(0xFF006948),
+                                      ),
+                                    ),
+                                    Text(
+                                      allergies.isNotEmpty
+                                          ? 'Pemeriksaan keamanan: Verifikasi interaksi & kontraindikasi obat sebelum penyerahan.'
+                                          : 'Pemeriksaan keamanan: Pasien tidak memiliki riwayat alergi obat terdaftar.',
+                                      style: const TextStyle(fontSize: 10.5, color: textMuted),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Prescribed Medicines Section
+                  Text(
+                    'Daftar R/ Obat Pasien (${items.length} Item)',
+                    style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 13.5),
+                  ),
+                  const SizedBox(height: 8),
+
+                  if (items.isNotEmpty)
+                    ...items.asMap().entries.map((entry) {
+                      final idx = entry.key;
+                      final item = entry.value;
+                      final isRacikan = item.name.toLowerCase().contains('racik') ||
+                          item.name.toLowerCase().contains('pulveres') ||
+                          item.name.toLowerCase().contains('puyer');
+                      final batchNum = item.batchNumber?.isNotEmpty == true ? item.batchNumber! : 'BATCH-REG';
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _buildPrescriptionItem(
+                          rxNumber: 'Rx ${idx + 1}${isRacikan ? " RACIKAN" : ""}',
+                          title: item.name,
+                          qty: 'Jumlah: ${item.quantity} Sediaan',
+                          signa: 'S. Sesuai Resep Dokter',
+                          signaDesc: 'Gunakan sesuai instruksi etiket & aturan pakai DPJP.',
+                          batch: batchNum,
+                          isRacikan: isRacikan,
+                        ),
+                      );
+                    })
+                  else
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: borderColor),
+                      ),
+                      child: const Center(
+                        child: Column(
+                          children: [
+                            Icon(Icons.medication_outlined, size: 36, color: textMuted),
+                            SizedBox(height: 8),
+                            Text(
+                              'Belum ada obat dalam keranjang resep',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'Pilih obat dari katalog POS atau muat antrean pasien e-resep dokter.',
+                              style: TextStyle(fontSize: 11, color: textMuted),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Prescribed Medicines Section
-              const Text(
-                'Daftar R/ Obat Pasien (3 Item)',
-                style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 13.5),
-              ),
-              const SizedBox(height: 8),
-
-              // Rx 1: Cefixime
-              _buildPrescriptionItem(
-                rxNumber: 'Rx 1',
-                title: 'Cefixime 100mg Kapsul',
-                qty: 'Jumlah: 10 Kapsul',
-                signa: 'S 2 dd 1 cap pc (Habiskan)',
-                signaDesc: 'Diminum 2x sehari 1 kaplet setelah makan. Harus dihabiskan.',
-                batch: 'CFX-2024A',
-                isRacikan: false,
-              ),
-              const SizedBox(height: 8),
-
-              // Rx 2: Paracetamol
-              _buildPrescriptionItem(
-                rxNumber: 'Rx 2',
-                title: 'Paracetamol 500mg',
-                qty: 'Jumlah: 10 Tablet',
-                signa: 'S 3 dd 1 tab prn (Bila demam/nyeri)',
-                signaDesc: 'Diminum 3x sehari 1 tablet hanya jika demam / nyeri.',
-                batch: 'PCT-9921B',
-                isRacikan: false,
-              ),
-              const SizedBox(height: 8),
-
-              // Rx 3: Racikan Pulveres
-              _buildPrescriptionItem(
-                rxNumber: 'Rx 3 RACIKAN',
-                title: 'Pulveres Batuk / Puyer Perkamen',
-                qty: 'Kemasan: 15 Bungkus (Etiket Putih)',
-                signa: 'S 3 dd 1 pulv pc',
-                signaDesc: 'Formula: Ambroxol 30mg (7.5 Tab), Dexamethasone 0.5mg (7.5 Tab), Cetirizine 10mg (5 Tab). Haluskan homogen.',
-                batch: 'RACIK-P01',
-                isRacikan: true,
-              ),
-              const SizedBox(height: 14),
+                  const SizedBox(height: 6),
 
               // Skrining 7 Benar Checklist
               Container(
@@ -412,7 +490,9 @@ class _PharmacyPrescriptionReviewModalState extends State<PharmacyPrescriptionRe
               ),
             ],
           ),
-        ),
+        );
+      },
+    ),
 
         // Bottom CTA
         Container(

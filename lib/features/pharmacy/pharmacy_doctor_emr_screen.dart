@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/storage/session_storage.dart';
 import '../../core/utils/audio_helper.dart';
 import '../shared_pos/product_catalog_service.dart';
 import 'pharmacy_service.dart';
@@ -13,28 +14,23 @@ class PharmacyDoctorEmrScreen extends StatefulWidget {
 }
 
 class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
-  String _doctorName = 'dr. Hendra Sp.PD';
-  String _sip = '446/2021/SIP.DOK';
-  String _department = 'Poli Penyakit Dalam';
+  late String _doctorName;
+  late String _sip;
+  String _department = 'Poli Spesialis';
 
   // Active Patient Context
-  String _patientName = 'Ny. Dewi Lestari';
-  String _queueNumber = '#A-042';
-  String _medicalRecordNumber = 'RM-08234';
+  String _patientName = 'Pilih Pasien';
+  String _queueNumber = '-';
+  String _medicalRecordNumber = '-';
   String _bp = '120/80 mmHg';
-  String _pulse = '78 bpm';
-  String _temp = '36.8 °C';
-  String _allergies = 'Alergi Penisilin (Kritis)';
+  String _pulse = '76 bpm';
+  String _temp = '36.5 °C';
+  String _allergies = 'Tidak ada riwayat alergi obat';
 
-  final TextEditingController _anamnesisController =
-      TextEditingController(text: 'Pasien mengeluhkan demam sejak 2 hari lalu disertai nyeri menelan dan batuk berdahak.');
-  String _diagnosis = 'Faringitis Akut (ICD-10: J02.9)';
+  final TextEditingController _anamnesisController = TextEditingController();
+  String _diagnosis = 'Pemeriksaan Klinis Rawat Jalan';
 
-  final List<Map<String, String>> _prescribedItems = [
-    {'name': 'Cefixime 100mg Kapsul', 'dose': '10 Kapsul', 'signa': '2 x Sehari 1 Kapsul Sesudah Makan (Habiskan)'},
-    {'name': 'Paracetamol 500mg Kaplet', 'dose': '10 Kaplet', 'signa': '3 x Sehari 1 Kaplet Jika Demam / Nyeri'},
-    {'name': 'Pulveres Racikan Batuk', 'dose': '15 Bungkus', 'signa': '3 x Sehari 1 Bungkus Sesudah Makan'},
-  ];
+  final List<Map<String, String>> _prescribedItems = [];
 
   List<ClinicPatientQueueItem> _liveQueue = [];
   bool _isLoading = true;
@@ -42,6 +38,16 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
   @override
   void initState() {
     super.initState();
+    _doctorName = SessionStorage.instance.getUserName() ?? 'dr. Spesialis Poli';
+    _sip = SessionStorage.instance.getUserRole() ?? 'SIP: Aktif';
+    final active = PharmacyService.instance.activePatient.value;
+    if (active != null) {
+      _patientName = active.patient;
+      _queueNumber = active.queueNumber;
+      _medicalRecordNumber = active.medicalRecordNumber;
+      _allergies = active.allergies.isNotEmpty ? active.allergies : 'Tidak ada riwayat alergi obat';
+      if (active.doctor.isNotEmpty) _doctorName = active.doctor;
+    }
     _fetchLivePatients();
   }
 
@@ -51,7 +57,7 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
     if (mounted) {
       setState(() {
         _liveQueue = list;
-        if (list.isNotEmpty) {
+        if (list.isNotEmpty && _patientName == 'Pilih Pasien') {
           final first = list.first;
           _patientName = first.patientName;
           _queueNumber = first.queueNumber;
@@ -59,6 +65,16 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
           _allergies = first.allergy ?? 'Tidak ada riwayat alergi obat';
           _department = first.department;
           _doctorName = first.doctorName;
+          if (first.prescribedDrugs.isNotEmpty) {
+            _prescribedItems.clear();
+            for (final d in first.prescribedDrugs) {
+              _prescribedItems.add({
+                'name': d,
+                'dose': '10 Sediaan',
+                'signa': '3 x Sehari 1 Sesudah Makan',
+              });
+            }
+          }
         }
         _isLoading = false;
       });
@@ -74,6 +90,14 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
       _allergies = item.allergy ?? 'Tidak ada riwayat alergi obat';
       _department = item.department;
       _doctorName = item.doctorName;
+      _prescribedItems.clear();
+      for (final d in item.prescribedDrugs) {
+        _prescribedItems.add({
+          'name': d,
+          'dose': '10 Sediaan',
+          'signa': '3 x Sehari 1 Sesudah Makan',
+        });
+      }
     });
   }
 
@@ -384,46 +408,105 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('R/ Lembar Peresepan Digital (e-Resep)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
-                        Text('Formularium Terpadu', style: TextStyle(fontSize: 11, color: emeraldPrimary, fontWeight: FontWeight.bold)),
+                        const Text('R/ Lembar Peresepan Digital (e-Resep)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                        InkWell(
+                          onTap: () async {
+                            final catalog = await ProductCatalogService.instance.fetchCatalog();
+                            if (!mounted) return;
+                            showModalBottomSheet(
+                              context: context,
+                              builder: (ctx) => Container(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('Pilih Obat dari Formularium POS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                    const SizedBox(height: 10),
+                                    Expanded(
+                                      child: ListView(
+                                        children: catalog.products.map((p) => ListTile(
+                                          leading: const Icon(Icons.medication_rounded, color: emeraldPrimary),
+                                          title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                                          subtitle: Text(p.category, style: const TextStyle(fontSize: 11)),
+                                          onTap: () {
+                                            setState(() {
+                                              _prescribedItems.add({
+                                                'name': p.name,
+                                                'dose': '10 ${p.unit.isNotEmpty ? p.unit : "Unit"}',
+                                                'signa': '3 x Sehari 1 Sesudah Makan',
+                                              });
+                                            });
+                                            Navigator.pop(ctx);
+                                          },
+                                        )).toList(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                            child: Row(
+                              children: [
+                                Icon(Icons.add_circle_outline_rounded, size: 14, color: emeraldPrimary),
+                                SizedBox(width: 4),
+                                Text('+ Tambah Obat', style: TextStyle(fontSize: 11.5, color: emeraldPrimary, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 10),
 
-                    ..._prescribedItems.map((item) {
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: borderColor),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.medication_liquid_outlined, color: emeraldPrimary, size: 20),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(item['name']!, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                                  Text(item['signa']!, style: const TextStyle(fontSize: 11, color: textMuted)),
-                                ],
+                    if (_prescribedItems.isNotEmpty)
+                      ..._prescribedItems.map((item) {
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: borderColor),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.medication_liquid_outlined, color: emeraldPrimary, size: 20),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(item['name']!, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                    Text(item['signa']!, style: const TextStyle(fontSize: 11, color: textMuted)),
+                                  ],
+                                ),
                               ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(color: const Color(0xFFE2E8F0), borderRadius: BorderRadius.circular(4)),
-                              child: Text(item['dose']!, style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11, fontWeight: FontWeight.bold)),
-                            ),
-                          ],
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(color: const Color(0xFFE2E8F0), borderRadius: BorderRadius.circular(4)),
+                                child: Text(item['dose']!, style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11, fontWeight: FontWeight.bold)),
+                              ),
+                            ],
+                          ),
+                        );
+                      })
+                    else
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        alignment: Alignment.center,
+                        child: const Text(
+                          'Belum ada obat yang diresepkan. Klik "+ Tambah Obat" untuk memilih dari formularium katalog.',
+                          style: TextStyle(color: textMuted, fontSize: 12),
+                          textAlign: TextAlign.center,
                         ),
-                      );
-                    }),
+                      ),
                   ],
                 ),
               ),

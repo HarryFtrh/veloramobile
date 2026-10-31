@@ -225,7 +225,7 @@ class _PharmacyStockAlertScreenState extends State<PharmacyStockAlertScreen> {
                     controller: _searchController,
                     onChanged: (val) => setState(() => _searchQuery = val.trim()),
                     decoration: InputDecoration(
-                      hintText: 'Cari Nama Obat, No. Batch (e.g. AMX-774-B), Kategori...',
+                      hintText: 'Cari Nama Obat, No. Batch, Kategori...',
                       hintStyle: const TextStyle(fontSize: 12.5, color: textMuted),
                       prefixIcon: const Icon(Icons.search_rounded, size: 20, color: textMuted),
                       suffixIcon: _searchQuery.isNotEmpty

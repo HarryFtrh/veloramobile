@@ -1,25 +1,29 @@
 import 'package:flutter/material.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../pharmacy_service.dart';
+import 'pharmacy_patient_dialog.dart';
 
 class PharmacyMedicalRecordsModal extends StatefulWidget {
-  final String initialRm;
-  final String patientName;
+  final String? initialRm;
+  final String? patientName;
+  final PharmacyPatientData? patientData;
   final Function(List<String> medicines)? onRepeatPrescription;
   final bool showDragHandle;
 
   const PharmacyMedicalRecordsModal({
     super.key,
-    this.initialRm = 'RM-08234',
-    this.patientName = 'Ny. Dewi Lestari',
+    this.initialRm,
+    this.patientName,
+    this.patientData,
     this.onRepeatPrescription,
     this.showDragHandle = true,
   });
 
   static Future<void> show(
     BuildContext context, {
-    String initialRm = 'RM-08234',
-    String patientName = 'Ny. Dewi Lestari',
+    String? initialRm,
+    String? patientName,
+    PharmacyPatientData? patientData,
     Function(List<String> medicines)? onRepeatPrescription,
   }) {
     return showModalBottomSheet(
@@ -39,6 +43,7 @@ class PharmacyMedicalRecordsModal extends StatefulWidget {
           child: PharmacyMedicalRecordsModal(
             initialRm: initialRm,
             patientName: patientName,
+            patientData: patientData,
             onRepeatPrescription: onRepeatPrescription,
           ),
         ),
@@ -61,7 +66,9 @@ class _PharmacyMedicalRecordsModalState extends State<PharmacyMedicalRecordsModa
   }
 
   Future<void> _loadHistory() async {
-    final list = await PharmacyService.instance.fetchPatientMedicationHistory(widget.initialRm);
+    final active = widget.patientData ?? PharmacyService.instance.activePatient.value;
+    final rm = widget.initialRm ?? (active?.medicalRecordNumber.isNotEmpty == true ? active!.medicalRecordNumber : '');
+    final list = await PharmacyService.instance.fetchPatientMedicationHistory(rm.isNotEmpty ? rm : 'active');
     if (mounted) {
       setState(() {
         _history = list;
@@ -140,128 +147,152 @@ class _PharmacyMedicalRecordsModalState extends State<PharmacyMedicalRecordsModa
           ),
         const Divider(height: 1, color: borderColor),
 
-        // Scrollable Body
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              // Patient Profile Card
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: borderColor),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+        Builder(
+          builder: (context) {
+            final active = widget.patientData ?? PharmacyService.instance.activePatient.value;
+            final patientName = (widget.patientName != null && widget.patientName!.isNotEmpty)
+                ? widget.patientName!
+                : (active?.patient.isNotEmpty == true ? active!.patient : 'Pelanggan Umum (Walk-in)');
+            final rmNumber = (widget.initialRm != null && widget.initialRm!.isNotEmpty && widget.initialRm != '-')
+                ? widget.initialRm!
+                : (active?.medicalRecordNumber.isNotEmpty == true && active!.medicalRecordNumber != '-' ? active.medicalRecordNumber : '-');
+            final category = (active?.patientCategory.isNotEmpty == true) ? active!.patientCategory : 'Umum';
+            final allergies = (active?.allergies.trim().isNotEmpty == true) ? active!.allergies.trim() : '';
+
+            return Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  // Patient Profile Card
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: borderColor),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          width: 42,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE2E7FF),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Center(
-                            child: Icon(Icons.person, color: emeraldPrimary, size: 24),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
+                        Row(
+                          children: [
+                            Container(
+                              width: 42,
+                              height: 42,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE2E7FF),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Center(
+                                child: Icon(Icons.person, color: emeraldPrimary, size: 24),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    widget.patientName,
-                                    style: const TextStyle(
-                                      fontFamily: 'Plus Jakarta Sans',
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: textPrimary,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF86F2E4).withValues(alpha: 0.4),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      widget.initialRm,
-                                      style: const TextStyle(
-                                        fontFamily: 'JetBrains Mono',
-                                        fontSize: 9.5,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF006F66),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        patientName,
+                                        style: const TextStyle(
+                                          fontFamily: 'Plus Jakarta Sans',
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: textPrimary,
+                                        ),
                                       ),
-                                    ),
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF86F2E4).withValues(alpha: 0.4),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          rmNumber,
+                                          style: const TextStyle(
+                                            fontFamily: 'JetBrains Mono',
+                                            fontSize: 9.5,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF006F66),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Kategori: $category • No. RM: $rmNumber',
+                                    style: const TextStyle(fontSize: 11, color: textMuted),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 2),
-                              const Text(
-                                'Perempuan • 34 Tahun • BPJS Kesehatan / Umum',
-                                style: TextStyle(fontSize: 11, color: textMuted),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Allergy Alert Ribbon
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: allergies.isNotEmpty
+                                ? const Color(0xFFFFDAD6).withValues(alpha: 0.35)
+                                : const Color(0xFF006948).withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border(
+                              left: BorderSide(
+                                color: allergies.isNotEmpty ? const Color(0xFFBA1A1A) : const Color(0xFF006948),
+                                width: 3,
+                              ),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                allergies.isNotEmpty ? Icons.warning_amber_rounded : Icons.check_circle_outline_rounded,
+                                size: 18,
+                                color: allergies.isNotEmpty ? const Color(0xFFBA1A1A) : const Color(0xFF006948),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  allergies.isNotEmpty
+                                      ? 'Alergi Terdaftar: $allergies (Kritis)'
+                                      : 'Tidak ada riwayat alergi obat terdaftar (Aman)',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: allergies.isNotEmpty ? const Color(0xFFBA1A1A) : const Color(0xFF006948),
+                                  ),
+                                ),
                               ),
                             ],
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                  ),
+                  const SizedBox(height: 14),
 
-                    // Allergy Alert Ribbon
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFDAD6).withValues(alpha: 0.35),
-                        borderRadius: BorderRadius.circular(8),
-                        border: const Border(left: BorderSide(color: Color(0xFFBA1A1A), width: 3)),
-                      ),
-                      child: Row(
-                        children: const [
-                          Icon(Icons.warning_amber_rounded, size: 18, color: Color(0xFFBA1A1A)),
-                          SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Alergi Terdaftar: Golongan Penicillin & Amoksisilin (Kritis)',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFFBA1A1A),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                  // Medication History Header
+                  const Text(
+                    'Riwayat Pengambilan Obat & Kunjungan Poli',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.bold,
+                      color: textPrimary,
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
+                  ),
+                  const SizedBox(height: 8),
 
-              // Medication History Header
-              const Text(
-                'Riwayat Pengambilan Obat & Kunjungan Poli',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.bold,
-                  color: textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              if (_isLoading)
-                const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator(color: emeraldPrimary)))
-              else
-                ..._history.map((hist) {
+                  if (_isLoading)
+                    const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator(color: emeraldPrimary)))
+                  else if (_history.isNotEmpty)
+                    ..._history.map((hist) {
                   return Container(
                     margin: const EdgeInsets.only(bottom: 10),
                     padding: const EdgeInsets.all(12),
@@ -373,10 +404,40 @@ class _PharmacyMedicalRecordsModalState extends State<PharmacyMedicalRecordsModa
                       ],
                     ),
                   );
-                }),
+                })
+              else
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  margin: const EdgeInsets.only(top: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: const Center(
+                    child: Column(
+                      children: [
+                        Icon(Icons.history_toggle_off_rounded, size: 36, color: textMuted),
+                        SizedBox(height: 8),
+                        Text(
+                          'Belum ada riwayat rekam medis pasien',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Histori kunjungan poli dan pengambilan obat pasien akan tercatat secara otomatis setelah transaksi selesai.',
+                          style: TextStyle(fontSize: 11, color: textMuted),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           ),
-        ),
+        );
+      },
+    ),
       ],
     );
   }
@@ -384,13 +445,13 @@ class _PharmacyMedicalRecordsModalState extends State<PharmacyMedicalRecordsModa
 
 /// Standalone Full Page Version for AppShell MoreScreen
 class PharmacyMedicalRecordsPage extends StatelessWidget {
-  final String initialRm;
-  final String patientName;
+  final String? initialRm;
+  final String? patientName;
 
   const PharmacyMedicalRecordsPage({
     super.key,
-    this.initialRm = 'RM-08234',
-    this.patientName = 'Ny. Dewi Lestari',
+    this.initialRm,
+    this.patientName,
   });
 
   @override

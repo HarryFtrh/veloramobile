@@ -39,13 +39,12 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
   bool _isLoading = true;
   ShiftStatus? _shiftStatus;
 
-  // Mocked/calculated aggregates aligned with Velora POS
-  num _openingCash = 500000;
-  num _cashRevenue = 2800000;
-  num _qrisRevenue = 3650000;
-  num _debitRevenue = 1200000;
-  num _insuranceRevenue = 800000;
-  int _transactionCount = 34;
+  num _openingCash = 0;
+  num _cashRevenue = 0;
+  num _qrisRevenue = 0;
+  num _debitRevenue = 0;
+  num _insuranceRevenue = 0;
+  int _transactionCount = 0;
 
   @override
   void initState() {
@@ -86,8 +85,8 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
     final totalDrawerCash = _openingCash + _cashRevenue;
     final avgTrx = _transactionCount > 0 ? (totalRevenue / _transactionCount).round() : 0;
 
-    final cashierName = SessionStorage.instance.getUserName() ?? 'Siti Rahma';
-    final branchName = SessionStorage.instance.getLocationName() ?? 'Apotek & Klinik Cab. Utama';
+    final cashierName = SessionStorage.instance.getUserName() ?? 'Kasir Shift';
+    final branchName = SessionStorage.instance.getLocationName() ?? SessionStorage.instance.getTenantName() ?? 'Apotek';
 
     return Column(
       children: [

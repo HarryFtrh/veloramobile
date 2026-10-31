@@ -16,11 +16,11 @@ class _PharmacyExecutiveAnalyticsScreenState extends State<PharmacyExecutiveAnal
   bool _isLoading = true;
   PharmacyExecutiveData? _analyticsData;
 
-  num get _grossRevenue => _analyticsData?.grossRevenue ?? 148500000;
-  num get _cogs => _analyticsData?.cogs ?? 106326000;
+  num get _grossRevenue => _analyticsData?.grossRevenue ?? 0;
+  num get _cogs => _analyticsData?.cogs ?? 0;
   num get _grossProfit => _grossRevenue - _cogs;
   double get _grossMarginPct => _analyticsData?.grossMarginPct ?? (_grossRevenue > 0 ? (_grossProfit / _grossRevenue) * 100 : 0.0);
-  num get _operationalExpense => _analyticsData?.operationalExpense ?? 14200000;
+  num get _operationalExpense => _analyticsData?.operationalExpense ?? 0;
   num get _netProfit => _analyticsData?.netProfit ?? (_grossProfit - _operationalExpense);
 
   List<Map<String, dynamic>> get _categoryShare => _analyticsData?.categoryShare ?? [];
@@ -179,7 +179,7 @@ class _PharmacyExecutiveAnalyticsScreenState extends State<PharmacyExecutiveAnal
                         child: _buildFinancialCard(
                           title: 'Omzet Kotor (Revenue)',
                           value: CurrencyFormatter.format(_grossRevenue),
-                          subtitle: '+14.2% vs bulan lalu',
+                          subtitle: _grossRevenue > 0 ? 'Omzet terakumulasi' : 'Belum ada transaksi',
                           accentColor: emeraldPrimary,
                           icon: Icons.trending_up_rounded,
                         ),
@@ -189,7 +189,7 @@ class _PharmacyExecutiveAnalyticsScreenState extends State<PharmacyExecutiveAnal
                         child: _buildFinancialCard(
                           title: 'HPP Obat (COGS)',
                           value: CurrencyFormatter.format(_cogs),
-                          subtitle: '71.6% dari total omzet',
+                          subtitle: _grossRevenue > 0 ? '${((_cogs / _grossRevenue) * 100).toStringAsFixed(1)}% dari omzet' : '0% dari omzet',
                           accentColor: const Color(0xFF006577),
                           icon: Icons.inventory_2_outlined,
                         ),
@@ -209,7 +209,7 @@ class _PharmacyExecutiveAnalyticsScreenState extends State<PharmacyExecutiveAnal
                         child: _buildFinancialCard(
                           title: 'Laba Bersih (Net Profit)',
                           value: CurrencyFormatter.format(_netProfit),
-                          subtitle: 'Setelah biaya op. 14.2jt',
+                          subtitle: 'Beban op. ${CurrencyFormatter.format(_operationalExpense)}',
                           accentColor: const Color(0xFF6366F1),
                           icon: Icons.account_balance_rounded,
                         ),
@@ -240,35 +240,43 @@ class _PharmacyExecutiveAnalyticsScreenState extends State<PharmacyExecutiveAnal
                     ),
                     const SizedBox(height: 14),
 
-                    // Multi-segment progress bar
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: Row(
-                        children: _categoryShare.map((cat) {
-                          return Expanded(
-                            flex: cat['pct'] as int,
-                            child: Container(height: 12, color: cat['color'] as Color),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    ..._categoryShare.map((cat) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
+                    if (_categoryShare.isNotEmpty) ...[
+                      // Multi-segment progress bar
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
                         child: Row(
-                          children: [
-                            Container(width: 10, height: 10, decoration: BoxDecoration(color: cat['color'] as Color, shape: BoxShape.circle)),
-                            const SizedBox(width: 8),
-                            Expanded(child: Text(cat['name'] as String, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600))),
-                            Text(cat['pct'].toString() + '%', style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11, fontWeight: FontWeight.bold)),
-                            const SizedBox(width: 12),
-                            Text(CurrencyFormatter.format(cat['value'] as num), style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 12, fontWeight: FontWeight.bold)),
-                          ],
+                          children: _categoryShare.map((cat) {
+                            final pct = (cat['pct'] as int?) ?? 1;
+                            return Expanded(
+                              flex: pct > 0 ? pct : 1,
+                              child: Container(height: 12, color: cat['color'] as Color),
+                            );
+                          }).toList(),
                         ),
-                      );
-                    }),
+                      ),
+                      const SizedBox(height: 14),
+
+                      ..._categoryShare.map((cat) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            children: [
+                              Container(width: 10, height: 10, decoration: BoxDecoration(color: cat['color'] as Color, shape: BoxShape.circle)),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text(cat['name'] as String, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600))),
+                              Text(cat['pct'].toString() + '%', style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11, fontWeight: FontWeight.bold)),
+                              const SizedBox(width: 12),
+                              Text(CurrencyFormatter.format(cat['value'] as num), style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 12, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        );
+                      }),
+                    ] else
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        alignment: Alignment.center,
+                        child: const Text('Belum ada data penjualan obat per kategori pada periode ini.', style: TextStyle(color: textMuted, fontSize: 12)),
+                      ),
                   ],
                 ),
               ),
@@ -289,44 +297,51 @@ class _PharmacyExecutiveAnalyticsScreenState extends State<PharmacyExecutiveAnal
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('Top Fast-Moving Medicines', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 14)),
-                        Text('Tren Q4', style: TextStyle(fontSize: 11, color: emeraldPrimary, fontWeight: FontWeight.bold)),
+                        Text('Performa Live', style: TextStyle(fontSize: 11, color: emeraldPrimary, fontWeight: FontWeight.bold)),
                       ],
                     ),
                     const SizedBox(height: 12),
 
-                    ..._topMedicines.map((med) {
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: borderColor),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(med['name'] as String, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                                Text('Volume: ${med['sales']}', style: const TextStyle(fontSize: 11, color: textMuted)),
-                              ],
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  CurrencyFormatter.format(med['revenue'] as num),
-                                  style: const TextStyle(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.bold, fontSize: 13),
-                                ),
-                                Text(med['growth'] as String, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: emeraldPrimary)),
-                              ],
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
+                    if (_topMedicines.isNotEmpty)
+                      ..._topMedicines.map((med) {
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: borderColor),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(med['name'] as String, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                  Text('Volume: ${med['sales']}', style: const TextStyle(fontSize: 11, color: textMuted)),
+                                ],
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    CurrencyFormatter.format(med['revenue'] as num),
+                                    style: const TextStyle(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.bold, fontSize: 13),
+                                  ),
+                                  Text(med['growth'] as String, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: emeraldPrimary)),
+                                ],
+                              ),
+                            ],
+                          ),
+                        );
+                      })
+                    else
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        alignment: Alignment.center,
+                        child: const Text('Belum ada obat terjual pada periode ini.', style: TextStyle(color: textMuted, fontSize: 12)),
+                      ),
                   ],
                 ),
               ),

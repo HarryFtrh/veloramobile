@@ -13,8 +13,8 @@ class PharmacyCompoundingScreen extends StatefulWidget {
 }
 
 class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
-  String _selectedPatient = 'Ny. Dewi Lestari (#A-042)';
-  String _recipeName = 'Pulveres Batuk Pilek Racikan Anak';
+  String _selectedPatient = 'Pilih Pasien Resep';
+  String _recipeName = 'Pulveres Racikan Obat';
   int _packageCount = 15;
   String _dosageForm = 'Pulveres (Puyer)';
   String _signa = '3 x Sehari 1 Bungkus Sesudah Makan';
@@ -28,6 +28,10 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
   @override
   void initState() {
     super.initState();
+    final active = PharmacyService.instance.activePatient.value;
+    if (active != null) {
+      _selectedPatient = '${active.patient} (${active.queueNumber})';
+    }
     _loadLiveIngredientsAndQueue();
   }
 
@@ -41,7 +45,9 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
         for (final q in queue) {
           _patientOptions.add('${q.patientName} (${q.queueNumber})');
         }
-        _selectedPatient = _patientOptions.first;
+        if (_selectedPatient == 'Pilih Pasien Resep') {
+          _selectedPatient = _patientOptions.first;
+        }
       }
 
       // Ambil katalog obat live dari API (/v1/pos/products)
@@ -63,13 +69,6 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
           _ingredients.clear();
           if (ingList.isNotEmpty) {
             _ingredients.addAll(ingList);
-          } else {
-            _ingredients.addAll([
-              {'name': 'Paracetamol 500mg', 'dosePerPack': '250 mg', 'totalNeeded': '3.750 mg (7.5 Tab)', 'stockUnit': 'Kaplet'},
-              {'name': 'Dextromethorphan HBr 15mg', 'dosePerPack': '7.5 mg', 'totalNeeded': '112.5 mg (7.5 Tab)', 'stockUnit': 'Tablet'},
-              {'name': 'Chlorpheniramine Maleate (CTM) 4mg', 'dosePerPack': '2 mg', 'totalNeeded': '30 mg (7.5 Tab)', 'stockUnit': 'Tablet'},
-              {'name': 'Saccharum Lactis (SL)', 'dosePerPack': 'q.s.', 'totalNeeded': '1.500 mg', 'stockUnit': 'Serbuk'},
-            ]);
           }
           _isLoading = false;
         });
@@ -297,7 +296,8 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
                           ),
                           const SizedBox(height: 12),
 
-                          ..._ingredients.map((ing) {
+                          if (_ingredients.isNotEmpty)
+                            ..._ingredients.map((ing) {
                             return Container(
                               margin: const EdgeInsets.only(bottom: 8),
                               padding: const EdgeInsets.all(10),
@@ -346,7 +346,17 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
                                 ],
                               ),
                             );
-                          }),
+                          })
+                        else
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            alignment: Alignment.center,
+                            child: const Text(
+                              'Belum ada bahan obat terdaftar di katalog. Tambahkan obat di POS untuk memulai racikan.',
+                              style: TextStyle(color: textMuted, fontSize: 12),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -396,10 +406,16 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
                             ],
                           ),
                           const Divider(height: 14),
-                          const Text('APOTEK & KLINIK UTAMA VELORA', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                          const Text('SIA: 446/092/SIA/2023 • SIPA: 19890214/SIPA_32.73/2021/2001', style: TextStyle(fontSize: 9.5, color: textMuted)),
+                          Text(
+                            (SessionStorage.instance.getTenantName() ?? SessionStorage.instance.getLocationName() ?? 'APOTEK VELORA').toUpperCase(),
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                          const Text('SIP & Surat Izin Apotek Aktif Berizin Resmi', style: TextStyle(fontSize: 9.5, color: textMuted)),
                           const SizedBox(height: 8),
-                          Text('No. Resep: R/202410-092  •  Tgl: 24 Okt 2024', style: const TextStyle(fontSize: 10.5, fontFamily: 'JetBrains Mono')),
+                          Text(
+                            'No. Resep: R/${DateTime.now().year}${DateTime.now().month.toString().padLeft(2, "0")}-${DateTime.now().second.toString().padLeft(3, "0")}  •  Tgl: ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                            style: const TextStyle(fontSize: 10.5, fontFamily: 'JetBrains Mono'),
+                          ),
                           Text('Pasien: $_selectedPatient', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
                           const SizedBox(height: 6),
                           Container(
