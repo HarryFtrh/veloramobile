@@ -280,7 +280,7 @@ class PharmacyDrugCard extends StatelessWidget {
 
             // Bottom Section: Price & Action Stepper
             Padding(
-              padding: const EdgeInsets.top(8),
+              padding: const EdgeInsets.only(top: 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

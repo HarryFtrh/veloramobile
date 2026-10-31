@@ -153,7 +153,7 @@ class VeloraPharmacyApp extends StatelessWidget {
                         builder: (_) => const PharmacyStockOpnameScreen(),
                       ),
                       MoreEntry(
-                        icon: Icons.stethoscope,
+                        icon: Icons.medical_services_outlined,
                         title: 'Workstation Dokter & e-Resep',
                         subtitle: 'EMR pasien, ICD-10, dan peresepan digital',
                         builder: (_) => const PharmacyDoctorEmrScreen(),

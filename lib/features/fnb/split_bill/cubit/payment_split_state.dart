@@ -129,7 +129,7 @@ class PaymentSplitState extends Equatable {
     List<Map<String, dynamic>>? billItems,
     BillingSettings? billingSettings,
     BillBreakdown? activeBill,
-    DynamicQrisInvoice? qrisInvoice,
+    QrisInvoiceData? qrisInvoice,
     String? error,
     bool clearError = false,
     bool? checkoutSuccess,

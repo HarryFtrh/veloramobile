@@ -15,6 +15,7 @@ class AppConfig {
   final String reverbAppKey;
 
   static late AppConfig instance;
+  static AppFlavor get flavor => instance.flavor;
 
   AppConfig({
     required this.flavor,

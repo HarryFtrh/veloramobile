@@ -1315,7 +1315,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.clinical_notes_rounded, size: 14, color: Color(0xFF006577)),
+                  Icon(Icons.assignment_outlined, size: 14, color: Color(0xFF006577)),
                   SizedBox(width: 4),
                   Text(
                     'Rekam Medis',

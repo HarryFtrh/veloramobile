@@ -49,6 +49,8 @@ class CustomerCartItem {
 
   int get unitPrice => product.basePrice + sizePrice + toppingsPrice;
   int get totalPrice => unitPrice * quantity;
+  String get name => product.name;
+  int get subtotal => totalPrice;
 
   CustomerCartItem copyWith({int? quantity, String? notes}) {
     return CustomerCartItem(

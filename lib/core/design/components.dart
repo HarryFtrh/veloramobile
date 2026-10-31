@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'tokens.dart';
 
+export '../components/velora_logo.dart';
+
 /// Kartu datar dengan border 1px. Dipakai sebagai pembungkus konten utama.
 class AppCard extends StatelessWidget {
   const AppCard({

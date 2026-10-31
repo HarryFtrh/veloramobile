@@ -553,13 +553,16 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
                 width: double.infinity,
                 height: 46,
                 child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context);
+                  onPressed: () async {
+                    final navigator = Navigator.of(context);
+                    final rootContext = navigator.context;
+                    final status = _shiftStatus ?? await ShiftService.instance.getShiftStatus();
+                    navigator.pop();
+                    if (!rootContext.mounted) return;
                     ShiftDialogs.showCloseShiftDialog(
-                      context,
-                      onClosed: (_) {
-                        widget.onShiftClosed?.call();
-                      },
+                      rootContext,
+                      status,
+                      onClosed: () => widget.onShiftClosed?.call(),
                     );
                   },
                   icon: const Icon(Icons.print_rounded, size: 18),

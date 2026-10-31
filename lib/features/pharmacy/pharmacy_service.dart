@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/painting.dart' show Color;
 import '../../core/network/api_client.dart';
 import '../../core/storage/session_storage.dart';
 import '../../core/utils/safe_json.dart';
@@ -319,9 +320,9 @@ class PharmacyService {
 
     try {
       final status = await ShiftService.instance.getShiftStatus();
-      startingCash = status.startingCash;
-      if (status.expectedCash >= status.startingCash) {
-        cashSales = status.expectedCash - status.startingCash;
+      startingCash = status.startingCash ?? 0;
+      if (status.expectedCash >= startingCash) {
+        cashSales = status.expectedCash - startingCash;
       }
 
       final res = await _dio.get('/v1/pos/dashboard/overview', queryParameters: _locationQuery());

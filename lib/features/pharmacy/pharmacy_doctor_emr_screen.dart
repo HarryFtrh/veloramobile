@@ -186,7 +186,7 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
                         color: emeraldPrimary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.stethoscope, color: emeraldPrimary, size: 24),
+                      child: const Icon(Icons.medical_services_outlined, color: emeraldPrimary, size: 24),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -439,7 +439,7 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
                                             setState(() {
                                               _prescribedItems.add({
                                                 'name': p.name,
-                                                'dose': '10 ${p.unit.isNotEmpty ? p.unit : "Unit"}',
+                                                'dose': '10 Unit',
                                                 'signa': '3 x Sehari 1 Sesudah Makan',
                                               });
                                             });

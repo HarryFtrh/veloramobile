@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/storage/session_storage.dart';
 import '../../core/utils/audio_helper.dart';
 import '../shared_pos/receipt_printer_service.dart';
 import '../shared_pos/product_catalog_service.dart';

@@ -449,7 +449,7 @@ class _PharmacyStockAlertModalState extends State<PharmacyStockAlertModal> {
               ),
               Text(
                 CurrencyFormatter.format(item.price),
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'JetBrains Mono',
                   fontWeight: FontWeight.w700,
                   fontSize: 13,

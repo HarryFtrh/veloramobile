@@ -403,19 +403,25 @@ class PharmacyReceiptDialog extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () {
+                      final session = SessionStorage.instance;
                       ReceiptPrinterService.instance.printReceipt(
-                        orderId: result.invoiceNumber,
-                        items: items.map((e) => {
-                          'name': e.name,
-                          'qty': e.quantity,
-                          'price': e.price,
-                          'subtotal': e.price * e.quantity,
-                          'batch': e.batchNumber ?? '-',
-                        }).toList(),
-                        total: grandTotal,
-                        paymentMethod: paymentMethod,
-                        customerName: '$patientName ($queueNumber)',
-                        cashierName: SessionStorage.instance.getUserName() ?? 'Apoteker',
+                        ReceiptData(
+                          storeName: session.getTenantName() ?? session.getLocationName() ?? 'Apotek',
+                          storeAddress: session.getStoreAddress() ?? session.getLocationName() ?? '-',
+                          storePhone: session.getStorePhone() ?? '-',
+                          invoiceNumber: result.invoiceNumber,
+                          cashierName: session.getUserName() ?? 'Apoteker',
+                          tableOrPatient: '$patientName ($queueNumber)',
+                          timestamp: DateTime.now(),
+                          items: items,
+                          subtotal: subtotal,
+                          tax: tuslahFee,
+                          grandTotal: grandTotal,
+                          paidAmount: result.paidAmount,
+                          changeAmount: result.changeAmount,
+                          paymentMethod: paymentMethod,
+                          qrData: result.qrData,
+                        ),
                       );
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Struk resep dikirim ke printer thermal kasir.')),

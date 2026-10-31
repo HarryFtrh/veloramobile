@@ -165,7 +165,7 @@ class AppUpdateService {
       builder: (ctx) => PopScope(
         canPop: !result.isForceUpdate,
         child: AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(RadiusToken.lg)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Corner.lg)),
           title: Row(
             children: [
               Container(

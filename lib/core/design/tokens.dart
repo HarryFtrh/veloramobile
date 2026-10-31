@@ -37,11 +37,15 @@ abstract final class WarmPalette {
   static const Color textSecondary = Color(0xFF70655E);
   static const Color textTertiary = Color(0xFFA09389);
   static const Color danger = Color(0xFFBA1A1A);
+  static const Color error = danger;
+  static const Color success = Color(0xFF2E7D32);
 
   /// Alias semantik untuk surfaceMuted dan line
   static const Color surfaceDim = surfaceMuted;
   static const Color border = line;
 }
+
+typedef RadiusToken = Corner;
 
 /// Warna semantik di luar `ColorScheme` (status, teks sekunder, dsb).
 /// Diakses lewat `context.palette`.

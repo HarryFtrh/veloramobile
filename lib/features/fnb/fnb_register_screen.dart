@@ -76,7 +76,7 @@ class _FnbRegisterScreenState extends State<FnbRegisterScreen> {
           totalAmount: _ctrl.bill?.total.round() ?? _ctrl.subtotal.round(),
           lines: List.from(_ctrl.lines),
           bill: _ctrl.bill,
-          shiftId: _ctrl.shiftId,
+          shiftId: int.tryParse(_ctrl.shiftId ?? ''),
           customerName: _ctrl.customerName,
           onPaymentComplete: () {
             _ctrl.reset();

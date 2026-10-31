@@ -113,7 +113,7 @@ class _PharmacyMedicalRecordsModalState extends State<PharmacyMedicalRecordsModa
                             color: const Color(0xFF006A61).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(Icons.clinical_notes_rounded, color: Color(0xFF006A61), size: 20),
+                          child: const Icon(Icons.assignment_outlined, color: Color(0xFF006A61), size: 20),
                         ),
                         const SizedBox(width: 10),
                         const Column(

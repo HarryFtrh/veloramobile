@@ -29,24 +29,51 @@ class ReceiptData {
   final num changeAmount;
   final String paymentMethod;
   final String? qrData;
+  final String? note;
 
   ReceiptData({
     required this.storeName,
-    required this.storeAddress,
-    required this.storePhone,
-    required this.invoiceNumber,
+    String? storeAddress,
+    String? storePhone,
+    String? invoiceNumber,
+    String? orderNumber,
     required this.cashierName,
-    this.tableOrPatient,
+    String? tableOrPatient,
+    String? tableName,
+    String? customerName,
     required this.timestamp,
     required this.items,
-    required this.subtotal,
-    required this.tax,
-    required this.grandTotal,
-    required this.paidAmount,
-    required this.changeAmount,
-    required this.paymentMethod,
+    num? subtotal,
+    num? tax,
+    num? grandTotal,
+    num? total,
+    num? paidAmount,
+    num? received,
+    num? changeAmount,
+    num? change,
+    String? paymentMethod,
     this.qrData,
-  });
+    this.note,
+  })  : storeAddress = storeAddress ?? SessionStorage.instance.getStoreAddress() ?? '',
+        storePhone = storePhone ?? SessionStorage.instance.getStorePhone() ?? '',
+        invoiceNumber = invoiceNumber ?? orderNumber ?? '-',
+        tableOrPatient = tableOrPatient ??
+            (tableName != null && customerName != null
+                ? '$tableName ($customerName)'
+                : (tableName ?? customerName)),
+        subtotal = subtotal ?? grandTotal ?? total ?? 0,
+        tax = tax ?? 0,
+        grandTotal = grandTotal ?? total ?? 0,
+        paidAmount = paidAmount ?? received ?? grandTotal ?? total ?? 0,
+        changeAmount = changeAmount ?? change ?? 0,
+        paymentMethod = paymentMethod ?? 'TUNAI';
+
+  String get orderNumber => invoiceNumber;
+  num get total => grandTotal;
+  num get received => paidAmount;
+  num get change => changeAmount;
+  String? get tableName => tableOrPatient;
+  String? get customerName => tableOrPatient;
 }
 
 class ReceiptPrinterService {

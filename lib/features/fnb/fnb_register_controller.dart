@@ -420,8 +420,9 @@ class RegisterController extends ChangeNotifier {
                 price: 0,
               );
 
-              if (!matchedOpts.any((existing) => existing.name.toLowerCase() == matched.name.toLowerCase())) {
-                matchedOpts.add(matched);
+              final finalMatched = matched;
+              if (!matchedOpts.any((existing) => existing.name.toLowerCase() == finalMatched.name.toLowerCase())) {
+                matchedOpts.add(finalMatched);
               }
             }
 
@@ -511,8 +512,9 @@ class RegisterController extends ChangeNotifier {
             price: 0,
           );
 
-          if (!matchedOpts.any((existing) => existing.name.toLowerCase() == matched.name.toLowerCase())) {
-            matchedOpts.add(matched);
+          final finalMatched = matched;
+          if (!matchedOpts.any((existing) => existing.name.toLowerCase() == finalMatched.name.toLowerCase())) {
+            matchedOpts.add(finalMatched);
           }
         }
 

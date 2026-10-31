@@ -4,6 +4,7 @@ import '../../core/utils/audio_helper.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../shared_pos/receipt_printer_service.dart';
 import '../shared_pos/shift_modal.dart';
+import '../shared_pos/shift_service.dart';
 import 'pharmacy_service.dart';
 
 /// Screen 4: Laporan Shift & Kas Masuk (Google Stitch "Clinical Precision")
@@ -73,13 +74,14 @@ class _PharmacyShiftReportScreenState extends State<PharmacyShiftReportScreen> {
     }
   }
 
-  void _openCloseShiftDialog() {
+  Future<void> _openCloseShiftDialog() async {
     AudioHelper.tapFeedback();
+    final status = await ShiftService.instance.getShiftStatus();
+    if (!mounted) return;
     ShiftDialogs.showCloseShiftDialog(
       context,
-      onClosed: (_) {
-        _loadShiftData();
-      },
+      status,
+      onClosed: _loadShiftData,
     );
   }
 

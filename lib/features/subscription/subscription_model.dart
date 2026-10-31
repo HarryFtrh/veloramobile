@@ -78,6 +78,8 @@ class TenantSubscription {
     return false;
   }
 
+  DateTime? get expiresAt => validUntil;
+
   int? get daysRemaining {
     if (validUntil == null) return null;
     final diff = validUntil!.difference(DateTime.now()).inDays;

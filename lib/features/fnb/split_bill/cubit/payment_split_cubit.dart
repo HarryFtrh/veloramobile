@@ -189,7 +189,7 @@ class PaymentSplitCubit extends Cubit<PaymentSplitState> {
       final invoice = await QrisPaymentService.instance.generateDynamicQris(
         amount: amount,
         orderId: orderId,
-        tableName: tableName,
+        tableNumber: tableName,
       );
       emit(state.copyWith(qrisInvoice: invoice, generatingQris: false));
     } catch (e) {
@@ -326,7 +326,8 @@ class PaymentSplitCubit extends Cubit<PaymentSplitState> {
 
       final outcome = await FnbRegisterService.instance.checkout(
         lines: selectedLines,
-        paymentMethod: state.selectedMethod,
+        bill: calculatedBill,
+        method: state.selectedMethod,
         paid: state.selectedMethod == 'cash'
             ? state.cashReceived.toDouble()
             : (state.isSplitBill
@@ -335,7 +336,7 @@ class PaymentSplitCubit extends Cubit<PaymentSplitState> {
         orderId: orderId,
         tableId: tableId,
         customerName: customerName,
-        shiftId: shiftId,
+        shiftId: shiftId?.toString(),
       );
 
       if (outcome.invoice.isNotEmpty) {

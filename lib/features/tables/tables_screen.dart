@@ -160,20 +160,19 @@ class _TablesScreenState extends State<TablesScreen> {
     }
 
     await showTransferTableSheet(
-      context: context,
+      context,
       fromTable: fromTable,
       availableTables: availableTables,
       onTransferred: (target) {
         _toast('✓ Meja ${fromTable.name} berhasil dipindah ke ${target.name}');
         _cubit.loadTables();
       },
-      onError: (msg) => _toast(msg),
     );
   }
 
   void _showAddTableDialog() {
     showAddTableDialog(
-      context: context,
+      context,
       onTableAdded: (name) {
         _toast('✓ $name berhasil ditambahkan');
         _cubit.loadTables();
@@ -618,7 +617,11 @@ class _TablesScreenState extends State<TablesScreen> {
                             onPrintBill: (tbl) => _printBill(tbl, selectedActiveOrder),
                             onTransferTable: (tbl) => _showTransferTableDialog(tbl, tables),
                             onReleaseTable: _releaseTable,
-                            onDirectPayment: selectedTable != null ? () => _openPayment(selectedTable, selectedActiveOrder) : null,
+                            onDirectPayment: () {
+                              if (selectedTable != null) {
+                                _openPayment(selectedTable, selectedActiveOrder);
+                              }
+                            },
                           ),
                         ),
                       ),
