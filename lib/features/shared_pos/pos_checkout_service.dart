@@ -9,6 +9,7 @@ class PosCartItem {
   final String name;
   final num price;
   final int quantity;
+  final String? unit;
   final String? batchNumber;
   final String? expiryDate;
   final Map<String, dynamic>? modifiers;
@@ -19,6 +20,7 @@ class PosCartItem {
     required this.name,
     required this.price,
     required this.quantity,
+    this.unit,
     this.batchNumber,
     this.expiryDate,
     this.modifiers,
@@ -37,6 +39,8 @@ class PosCartItem {
       'quantity': effectiveQty,
       'qty': effectiveQty,
       'subtotal': effectiveSubtotal,
+      if (unit != null && unit!.isNotEmpty) 'unit': unit,
+      if (unit != null && unit!.isNotEmpty) 'satuan': unit,
       'batch_number': ?batchNumber,
       'expiry_date': ?expiryDate,
       'modifiers': ?modifiers,

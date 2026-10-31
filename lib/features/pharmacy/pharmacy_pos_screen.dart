@@ -72,13 +72,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
   // Selected quick payment mode in mobile floating drawer
   int _mobilePaymentMode = 0; // 0: Tunai, 1: QRIS, 2: Debit, 3: Asuransi
 
-  final List<String> _baseCategories = [
-    'Semua',
-    'Obat Bebas (OTC)',
-    'Obat Keras (Rx)',
-    'Alat Kesehatan',
-  ];
-  final List<String> _dynamicCategories = [];
+  List<String> _categories = const ['Semua'];
   final List<Map<String, dynamic>> _drugItems = [];
 
   /// Tuslah/embalase dari konfigurasi tenant (/v1/pos/config), bukan hardcode.
@@ -170,12 +164,8 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
       final catalog = await ProductCatalogService.instance.fetchCatalog();
       if (mounted) {
         setState(() {
-          _dynamicCategories.clear();
-          for (final c in catalog.categories) {
-            if (!_baseCategories.contains(c) && !_dynamicCategories.contains(c)) {
-              _dynamicCategories.add(c);
-            }
-          }
+          _categories = catalog.categories.isNotEmpty ? catalog.categories : const ['Semua'];
+          _selectedCategoryIndex = 0;
           _drugItems.clear();
           _drugItems.addAll(catalog.products.map((p) => {
             'id': p.id,
@@ -654,6 +644,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
       return PosCartItem(
         productId: baseId,
         name: '${item['name']?.toString() ?? 'Obat'} ($unit)',
+        unit: unit,
         price: price,
         quantity: e.value,
         batchNumber: item['batch']?.toString(),
@@ -700,11 +691,19 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
   void _removeFromCart(String key) {
     AudioHelper.tapFeedback();
     setState(() {
-      final current = _cart[key] ?? 0;
+      String actualKey = key;
+      if (!_cart.containsKey(key)) {
+        final match = _cart.keys.firstWhere(
+          (k) => k == key || k.startsWith('$key:'),
+          orElse: () => '',
+        );
+        if (match.isNotEmpty) actualKey = match;
+      }
+      final current = _cart[actualKey] ?? 0;
       if (current <= 1) {
-        _cart.remove(key);
+        _cart.remove(actualKey);
       } else {
-        _cart[key] = current - 1;
+        _cart[actualKey] = current - 1;
       }
       _calculateTotal();
       _persistCart();
@@ -1634,7 +1633,6 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
 
   // Horizontal Category Tabs
   Widget _buildCategoryTabs() {
-    final allCategories = [..._baseCategories, ..._dynamicCategories];
     const emeraldPrimary = ClinicalPalette.primary;
     const borderColor = Color(0xFFE2E8F0);
 
@@ -1644,10 +1642,10 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: allCategories.length,
+        itemCount: _categories.length,
         itemBuilder: (context, idx) {
           final isSelected = idx == _selectedCategoryIndex;
-          final catName = allCategories[idx];
+          final catName = _categories[idx];
           final isRx = catName.contains('Keras') || catName.contains('Rx');
 
           return Padding(
@@ -1716,23 +1714,21 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
     final isWide = screenWidth >= 768;
     final isMobile = screenWidth < 600;
 
-    final allCategories = [..._baseCategories, ..._dynamicCategories];
-    final selectedCategoryName = _selectedCategoryIndex < allCategories.length
-        ? allCategories[_selectedCategoryIndex]
+    final selectedCategoryName = _selectedCategoryIndex < _categories.length
+        ? _categories[_selectedCategoryIndex]
         : 'Semua';
 
     final filteredItems = _drugItems.where((item) {
       bool matchesCategory = true;
-      if (_selectedCategoryIndex > 0) {
-        if (selectedCategoryName == 'Obat Bebas (OTC)') {
-          matchesCategory = item['isDotRed'] != true && item['isPrescriptionOnly'] != true;
-        } else if (selectedCategoryName == 'Obat Keras (Rx)') {
-          matchesCategory = item['isDotRed'] == true || item['isPrescriptionOnly'] == true;
-        } else if (selectedCategoryName == 'Alat Kesehatan') {
-          matchesCategory = (item['category']?.toString().toLowerCase().contains('alkes') ?? false) ||
-              (item['category']?.toString().toLowerCase().contains('alat') ?? false);
+      if (_selectedCategoryIndex > 0 && selectedCategoryName != 'Semua') {
+        final itemCat = (item['category'] ?? '').toString().toLowerCase().trim();
+        final selCat = selectedCategoryName.toLowerCase().trim();
+        if (selCat == 'obat keras (rx)' || selCat == 'obat keras' || selCat == 'rx') {
+          matchesCategory = item['isDotRed'] == true || item['isPrescriptionOnly'] == true || itemCat.contains('keras');
+        } else if (selCat == 'obat bebas (otc)' || selCat == 'obat bebas' || selCat == 'otc') {
+          matchesCategory = item['isDotRed'] != true && item['isPrescriptionOnly'] != true && (itemCat.contains('bebas') || itemCat.isEmpty);
         } else {
-          matchesCategory = item['category'] == selectedCategoryName;
+          matchesCategory = itemCat == selCat || itemCat.contains(selCat);
         }
       }
 

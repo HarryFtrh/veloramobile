@@ -26,6 +26,9 @@ class PosProductBatch {
     }
     String bNo = json.getString('batch_number');
     if (bNo.isEmpty || bNo == '-') bNo = json.getString('batch_no');
+    if (bNo.isEmpty || bNo == '-') bNo = json.getString('no_batch');
+    if (bNo.isEmpty || bNo == '-') bNo = json.getString('nomor_batch');
+    if (bNo.isEmpty || bNo == '-') bNo = json.getString('kode_batch');
     if (bNo.isEmpty || bNo == '-') bNo = json.getString('lot_number');
     if (bNo.isEmpty || bNo == '-') bNo = json.getString('lot_no');
     if (bNo.isEmpty || bNo == '-') bNo = json.getString('batch', fallback: '-');
@@ -33,6 +36,9 @@ class PosProductBatch {
     String exp = json.getString('expiry_date');
     if (exp.isEmpty || exp == '-') exp = json.getString('exp_date');
     if (exp.isEmpty || exp == '-') exp = json.getString('expired_date');
+    if (exp.isEmpty || exp == '-') exp = json.getString('kadaluwarsa');
+    if (exp.isEmpty || exp == '-') exp = json.getString('tgl_kadaluarsa');
+    if (exp.isEmpty || exp == '-') exp = json.getString('tanggal_kadaluwarsa');
     if (exp.isEmpty || exp == '-') exp = json.getString('expired_at');
     if (exp.isEmpty || exp == '-') exp = json.getString('exp', fallback: '-');
 
@@ -40,7 +46,9 @@ class PosProductBatch {
       id: json.getString('id'),
       batchNumber: bNo,
       expiryDate: exp,
-      stock: json.getDouble('stock', fallback: json.getDouble('stock_qty')),
+      stock: json.getDouble('stock',
+          fallback: json.getDouble('stock_qty',
+              fallback: json.getDouble('stok', fallback: json.getDouble('qty')))),
     );
   }
 }
@@ -143,62 +151,71 @@ class PosProduct {
       return PosProduct(id: '', name: '', category: '', price: 0, stock: 0, sku: '', barcode: '');
     }
 
-    final rawBatches = json.getList<PosProductBatch>(
+    var rawBatches = json.getList<PosProductBatch>(
       'batches',
       (item) => PosProductBatch.fromJson(item is Map<String, dynamic> ? item : null),
     );
+    if (rawBatches.isEmpty) {
+      rawBatches = json.getList<PosProductBatch>(
+        'product_batches',
+        (item) => PosProductBatch.fromJson(item is Map<String, dynamic> ? item : null),
+      );
+    }
+    if (rawBatches.isEmpty) {
+      rawBatches = json.getList<PosProductBatch>(
+        'batches_list',
+        (item) => PosProductBatch.fromJson(item is Map<String, dynamic> ? item : null),
+      );
+    }
+    if (rawBatches.isEmpty) {
+      rawBatches = json.getList<PosProductBatch>(
+        'lots',
+        (item) => PosProductBatch.fromJson(item is Map<String, dynamic> ? item : null),
+      );
+    }
 
-    // Product name: handles Cafe/Retail 'name' and Pharmacy 'custom_name'/'name_main'
+    // Product name: handles Cafe/Retail/Pharmacy keys
     String productName = json.getString('name');
-    if (productName.isEmpty || productName == '-') {
-      productName = json.getString('custom_name');
-    }
-    if (productName.isEmpty || productName == '-') {
-      productName = json.getString('name_main', fallback: 'Produk');
-    }
+    if (productName.isEmpty || productName == '-') productName = json.getString('custom_name');
+    if (productName.isEmpty || productName == '-') productName = json.getString('name_main');
+    if (productName.isEmpty || productName == '-') productName = json.getString('nama_obat');
+    if (productName.isEmpty || productName == '-') productName = json.getString('nama_produk');
+    if (productName.isEmpty || productName == '-') productName = json.getString('medicine_name');
+    if (productName.isEmpty || productName == '-') productName = json.getString('drug_name');
+    if (productName.isEmpty || productName == '-') productName = json.getString('item_name');
+    if (productName.isEmpty || productName == '-') productName = 'Produk';
     productName = sanitizeDisplayName(productName);
 
-    // Category name: handles Cafe/Retail 'category' and Pharmacy 'golongan'/'klasifikasi'/'fungsi'
+    // Category name: handles Cafe/Retail/Pharmacy keys
     String categoryName = '';
-    final rawCat = json['category'];
+    final rawCat = json['category'] ?? json['kategori'] ?? json['golongan'] ?? json['klasifikasi'] ?? json['jenis'];
     if (rawCat is Map) {
       categoryName = sanitizeDisplayName(rawCat);
-    } else {
-      categoryName = json.getString('category');
+    } else if (rawCat is String) {
+      categoryName = rawCat;
     }
-    if (categoryName.isEmpty || categoryName == '-') {
-      categoryName = json.getString('golongan');
-    }
-    if (categoryName.isEmpty || categoryName == '-') {
-      categoryName = json.getString('klasifikasi');
-    }
-    if (categoryName.isEmpty || categoryName == '-') {
-      categoryName = 'Umum';
-    }
+    if (categoryName.isEmpty || categoryName == '-') categoryName = json.getString('category_name');
+    if (categoryName.isEmpty || categoryName == '-') categoryName = json.getString('golongan_obat');
+    if (categoryName.isEmpty || categoryName == '-') categoryName = json.getString('category');
+    if (categoryName.isEmpty || categoryName == '-') categoryName = 'Umum';
     categoryName = sanitizeDisplayName(categoryName);
 
-    // Selling price: handles 'price', 'selling_price', or tiered 'selling_price_1'
+    // Selling price: handles 'price', 'selling_price', 'harga', 'harga_jual', or tiered prices
     double priceVal = json.getDouble('price');
-    if (priceVal <= 0) {
-      priceVal = json.getDouble('selling_price');
-    }
-    if (priceVal <= 0) {
-      priceVal = json.getDouble('selling_price_3');
-    }
-    if (priceVal <= 0) {
-      priceVal = json.getDouble('selling_price_2');
-    }
-    if (priceVal <= 0) {
-      priceVal = json.getDouble('selling_price_1');
-    }
+    if (priceVal <= 0) priceVal = json.getDouble('selling_price');
+    if (priceVal <= 0) priceVal = json.getDouble('harga');
+    if (priceVal <= 0) priceVal = json.getDouble('harga_jual');
+    if (priceVal <= 0) priceVal = json.getDouble('unit_price');
+    if (priceVal <= 0) priceVal = json.getDouble('selling_price_1');
+    if (priceVal <= 0) priceVal = json.getDouble('selling_price_2');
+    if (priceVal <= 0) priceVal = json.getDouble('selling_price_3');
 
-    // Stock: handles 'stock' or 'stock_qty'
-    // Pada bisnis FnB (Cafe/Resto), menu makanan & minuman dibuat berdasarkan resep/bahan baku
-    // dan tidak selalu memiliki kuantitas stok fisik terbatas di JSON sinkronisasi.
-    // Jika backend tidak menyertakan field stok, produk dianggap selalu TERSEDIA (default 99).
-    // Produk hanya berstatus habis jika backend secara eksplisit mengirimkan stock = 0 atau is_available = false.
+    // Stock: handles 'stock', 'stock_qty', 'stok', 'current_stock', 'qty'
     final bool hasStockField = (json.containsKey('stock') && json['stock'] != null) ||
-        (json.containsKey('stock_qty') && json['stock_qty'] != null);
+        (json.containsKey('stock_qty') && json['stock_qty'] != null) ||
+        (json.containsKey('stok') && json['stok'] != null) ||
+        (json.containsKey('current_stock') && json['current_stock'] != null) ||
+        (json.containsKey('qty') && json['qty'] != null);
     final bool isExplicitlyUnavailable = json.getBool('is_out_of_stock') ||
         json.getString('status').toLowerCase() == 'out_of_stock' ||
         (json.containsKey('is_available') && json.getBool('is_available') == false);
@@ -207,20 +224,22 @@ class PosProduct {
     if (isExplicitlyUnavailable) {
       stockVal = 0.0;
     } else if (hasStockField) {
-      stockVal = json.getDouble('stock', fallback: json.getDouble('stock_qty'));
+      stockVal = json.getDouble('stock',
+          fallback: json.getDouble('stock_qty',
+              fallback: json.getDouble('stok',
+                  fallback: json.getDouble('current_stock', fallback: json.getDouble('qty')))));
     } else {
       stockVal = 99.0;
     }
 
     // SKU & Barcode: handles 'sku'/'velora_id' and 'barcode'/'barcode_master'
     String skuVal = json.getString('sku');
-    if (skuVal.isEmpty || skuVal == '-') {
-      skuVal = json.getString('velora_id');
-    }
+    if (skuVal.isEmpty || skuVal == '-') skuVal = json.getString('velora_id');
+    if (skuVal.isEmpty || skuVal == '-') skuVal = json.getString('kode_obat');
+    if (skuVal.isEmpty || skuVal == '-') skuVal = json.getString('kode_produk');
+    if (skuVal.isEmpty || skuVal == '-') skuVal = json.getString('code');
     String barcodeVal = json.getString('barcode');
-    if (barcodeVal.isEmpty || barcodeVal == '-') {
-      barcodeVal = json.getString('barcode_master');
-    }
+    if (barcodeVal.isEmpty || barcodeVal == '-') barcodeVal = json.getString('barcode_master');
 
     // Prescription / Hard Drug detection
     final isRx = json.getBool('is_prescription_only') ||
@@ -514,6 +533,7 @@ class ProductCatalogService {
     }
 
     final bizType = SessionStorage.instance.getBusinessType()?.toLowerCase() ?? 'retail';
+    final isPharmacy = AppConfig.instance.isPharmacy || bizType == 'pharmacy';
     final candidateEndpoints = bizType == 'fnb'
         ? [
             '/v1/pos/products-sync',
@@ -523,13 +543,24 @@ class ProductCatalogService {
             '/cafe/menu',
             '/v1/products',
           ]
-        : [
-            '/v1/pos/products-sync',
-            '/v1/pos/products',
-            '/v1/products',
-            '/v1/pos/menu',
-            '/products',
-          ];
+        : isPharmacy
+            ? [
+                '/v1/pharmacy/products',
+                '/v1/pharmacy/medicines',
+                '/v1/pharmacy/drugs',
+                '/v1/pos/products-sync',
+                '/v1/pos/products',
+                '/v1/products',
+                '/v1/pos/menu',
+                '/products',
+              ]
+            : [
+                '/v1/pos/products-sync',
+                '/v1/pos/products',
+                '/v1/products',
+                '/v1/pos/menu',
+                '/products',
+              ];
 
     Response<dynamic>? response;
     String? successfulEndpoint;
