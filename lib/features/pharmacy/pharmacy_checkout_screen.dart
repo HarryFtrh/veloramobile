@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../core/design/tokens.dart';
 import '../../core/storage/session_storage.dart';
 import '../../core/utils/audio_helper.dart';
@@ -7,9 +6,12 @@ import '../../core/utils/currency_formatter.dart';
 import '../shared_pos/pos_checkout_service.dart';
 import '../shared_pos/receipt_printer_service.dart';
 import '../shared_pos/sales_history_drawer.dart';
+import 'services/pharmacy_clinical_safety_service.dart';
+import 'widgets/pharmacy_customer_facing_display.dart';
+import 'widgets/pharmacy_etiket_dialog.dart';
 import 'widgets/pharmacy_receipt_dialog.dart';
 
-enum PharmacyPaymentMode { cash, qris, debit, insurance }
+enum PharmacyPaymentMode { cash, qris, debit, insurance, split }
 
 class PharmacyCheckoutScreen extends StatefulWidget {
   final List<PosCartItem> items;
@@ -58,6 +60,11 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> {
   final TextEditingController _bpjsCardController = TextEditingController();
   final TextEditingController _sepNumberController = TextEditingController();
 
+  // Split payment controllers
+  final TextEditingController _splitCashController = TextEditingController();
+  num _splitCashAmount = 0;
+  String _splitSecondaryMethod = 'QRIS Dinamis';
+
   String _selectedBank = 'BCA';
   final List<String> _bankList = ['BCA', 'Mandiri', 'BRI', 'BNI', 'CIMB'];
 
@@ -74,12 +81,26 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> {
   bool _isProcessing = false;
   bool _autoPrintReceipt = true;
 
+  // Clinical Safety Alerts
+  List<ClinicalSafetyAlert> _safetyAlerts = [];
+  bool _isClinicalReviewAcknowledged = false;
+
   @override
   void initState() {
     super.initState();
-    // Default tender amount is exact change
     _tenderAmount = widget.grandTotal;
     _cashController.text = CurrencyFormatter.formatRupiah(widget.grandTotal);
+
+    // Default split cash is 50% rounded
+    _splitCashAmount = (widget.grandTotal / 20000).ceil() * 10000;
+    if (_splitCashAmount > widget.grandTotal) _splitCashAmount = widget.grandTotal;
+    _splitCashController.text = CurrencyFormatter.formatRupiah(_splitCashAmount);
+
+    // Run Clinical Safety Screening
+    _safetyAlerts = PharmacyClinicalSafetyService.instance.checkCartSafety(
+      items: widget.items,
+      patientAllergies: widget.patientAllergies,
+    );
   }
 
   @override
@@ -88,6 +109,7 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> {
     _refCodeController.dispose();
     _bpjsCardController.dispose();
     _sepNumberController.dispose();
+    _splitCashController.dispose();
     super.dispose();
   }
 
@@ -107,8 +129,59 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> {
     });
   }
 
+  void _openEtiketDialog() {
+    AudioHelper.tapFeedback();
+    PharmacyEtiketDialog.show(
+      context: context,
+      items: widget.items,
+      patientName: widget.patientName,
+      queueNumber: widget.queueNumber,
+      medicalRecordNumber: widget.medicalRecordNumber,
+      doctorName: widget.doctorName,
+    );
+  }
+
+  void _openCustomerFacingDisplay() {
+    AudioHelper.tapFeedback();
+    PharmacyCustomerFacingDisplay.show(
+      context: context,
+      grandTotal: widget.grandTotal,
+      patientName: widget.patientName,
+      queueNumber: widget.queueNumber,
+      onPaymentConfirmed: () {
+        setState(() {
+          _selectedMode = PharmacyPaymentMode.qris;
+        });
+        _processSettlement();
+      },
+    );
+  }
+
+  void _simulateShareWhatsApp() {
+    AudioHelper.actionFeedback();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Tautan struk digital #${DateTime.now().millisecondsSinceEpoch} dikirim ke nomor WhatsApp pasien.'),
+        backgroundColor: ClinicalPalette.primary,
+      ),
+    );
+  }
+
   Future<void> _processSettlement() async {
     if (_isProcessing) return;
+
+    // Safety Contraindication Check
+    final hasContraindication = _safetyAlerts.any((a) => a.level == ClinicalSafetyLevel.contraindication);
+    if (hasContraindication && !_isClinicalReviewAcknowledged) {
+      AudioHelper.actionFeedback();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ Mohon centang "Telaah Apoteker: Verifikasi Aman" sebelum menyelesaikan transaksi.'),
+          backgroundColor: ClinicalPalette.danger,
+        ),
+      );
+      return;
+    }
 
     if (_selectedMode == PharmacyPaymentMode.cash && _tenderAmount < widget.grandTotal) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -144,6 +217,11 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> {
       case PharmacyPaymentMode.insurance:
         methodCode = 'insurance';
         methodLabel = _selectedInsurance.toUpperCase();
+        break;
+      case PharmacyPaymentMode.split:
+        methodCode = 'split';
+        final secondaryAmount = widget.grandTotal - _splitCashAmount;
+        methodLabel = 'SPLIT (TUNAI ${CurrencyFormatter.formatRupiah(_splitCashAmount)} + $_splitSecondaryMethod ${CurrencyFormatter.formatRupiah(secondaryAmount)})';
         break;
     }
 
@@ -295,6 +373,40 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> {
           ],
         ),
         actions: [
+          // Action 1: Generator Etiket Obat (Signa)
+          TextButton.icon(
+            onPressed: _openEtiketDialog,
+            icon: const Icon(Icons.label_important_rounded, size: 16, color: ClinicalPalette.primary),
+            label: const Text(
+              'Etiket Obat',
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: ClinicalPalette.primary,
+              ),
+            ),
+            style: TextButton.styleFrom(
+              backgroundColor: ClinicalPalette.primary.withValues(alpha: 0.08),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Action 2: Customer-Facing Display (Layar Pasien QRIS)
+          IconButton(
+            onPressed: _openCustomerFacingDisplay,
+            icon: const Icon(Icons.tv_rounded, color: ClinicalPalette.secondary),
+            tooltip: 'Layar Tampilan Pasien (QRIS Standee)',
+            style: IconButton.styleFrom(
+              backgroundColor: const Color(0xFFE0F2FE),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Status Badge
           Container(
             margin: const EdgeInsets.only(right: 16),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -363,6 +475,8 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> {
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
+                    _buildClinicalSafetyBanner(),
+                    const SizedBox(height: 12),
                     _buildMobileOrderSummaryCard(),
                     const SizedBox(height: 16),
                     _buildPaymentPanel(),
@@ -371,6 +485,151 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> {
               ),
       ),
       bottomNavigationBar: !isTabletLandscape ? _buildMobileStickyBottomBar() : null,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // CLINICAL SAFETY BANNER (FEATURE 1)
+  // ---------------------------------------------------------------------------
+  Widget _buildClinicalSafetyBanner() {
+    if (_safetyAlerts.isEmpty) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0FDF4),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFBBF7D0)),
+        ),
+        child: Row(
+          children: const [
+            Icon(Icons.verified_user_rounded, color: ClinicalPalette.primary, size: 18),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Skrining Klinis Lolos: Tidak terdeteksi interaksi mayor atau kontraindikasi alergi pasien.',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 11.5,
+                  color: ClinicalPalette.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final hasContra = _safetyAlerts.any((a) => a.level == ClinicalSafetyLevel.contraindication);
+    final borderColor = hasContra ? const Color(0xFFFECACA) : const Color(0xFFFDE68A);
+    final bgColor = hasContra ? const Color(0xFFFEF2F2) : const Color(0xFFFFFBEB);
+    final iconColor = hasContra ? ClinicalPalette.danger : ClinicalPalette.warning;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: borderColor, width: 1.2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(iconColor == ClinicalPalette.danger ? Icons.gpp_bad_rounded : Icons.warning_rounded, color: iconColor, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  hasContra ? 'PERINGATAN KONTRAINDIKASI ALERGI PASIEN' : 'PERHATIAN INTERAKSI OBAT KLINIS',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12,
+                    color: iconColor,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '${_safetyAlerts.length} Peringatan',
+                  style: TextStyle(
+                    fontFamily: 'JetBrains Mono',
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: iconColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          ..._safetyAlerts.map((alert) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '• ${alert.title}',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5, color: iconColor),
+                  ),
+                  Text(
+                    alert.message,
+                    style: TextStyle(fontSize: 11, color: ClinicalPalette.textPrimary.withValues(alpha: 0.85)),
+                  ),
+                  Text(
+                    'Saran: ${alert.recommendation}',
+                    style: TextStyle(fontSize: 10.5, fontStyle: FontStyle.italic, color: ClinicalPalette.textSecondary),
+                  ),
+                ],
+              ),
+            );
+          }),
+
+          const SizedBox(height: 6),
+          InkWell(
+            onTap: () {
+              AudioHelper.tapFeedback();
+              setState(() => _isClinicalReviewAcknowledged = !_isClinicalReviewAcknowledged);
+            },
+            child: Row(
+              children: [
+                SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: Checkbox(
+                    value: _isClinicalReviewAcknowledged,
+                    activeColor: ClinicalPalette.primary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                    onChanged: (v) {
+                      setState(() => _isClinicalReviewAcknowledged = v ?? false);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Telaah Apoteker: Verifikasi Resep Aman Dilanjutkan',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.bold,
+                    color: ClinicalPalette.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -405,232 +664,262 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> {
                   ),
                 ],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: ClinicalPalette.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: const Text(
-                  'TERMINAL AUDIT COPY',
-                  style: TextStyle(
-                    fontFamily: 'JetBrains Mono',
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.bold,
-                    color: ClinicalPalette.primary,
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.share_rounded, size: 18, color: ClinicalPalette.primary),
+                    tooltip: 'Kirim Struk via WhatsApp',
+                    onPressed: _simulateShareWhatsApp,
                   ),
-                ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: ClinicalPalette.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      'TERMINAL AUDIT COPY',
+                      style: TextStyle(
+                        fontFamily: 'JetBrains Mono',
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.bold,
+                        color: ClinicalPalette.primary,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
         ),
 
-        // Scrollable Receipt Paper
+        // Scrollable Receipt Paper with Jagged Paper Tear Effect
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             child: Center(
               child: Container(
                 constraints: const BoxConstraints(maxWidth: 390),
-                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: ClinicalPalette.border),
+                  borderRadius: BorderRadius.circular(8),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF0F172A).withValues(alpha: 0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+                      color: const Color(0xFF0F172A).withValues(alpha: 0.06),
+                      blurRadius: 14,
+                      offset: const Offset(0, 6),
                     ),
                   ],
                 ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Pharmacy Header
-                    Center(
+                    // Top Jagged Cut Paper Edge
+                    CustomPaint(
+                      size: const Size(390, 8),
+                      painter: _JaggedEdgePainter(isTop: true),
+                    ),
+
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(18, 12, 18, 14),
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Container(
-                            width: 38,
-                            height: 38,
-                            decoration: BoxDecoration(
-                              color: ClinicalPalette.primary.withValues(alpha: 0.12),
-                              shape: BoxShape.circle,
+                          // Pharmacy Header
+                          Center(
+                            child: Column(
+                              children: [
+                                Container(
+                                  width: 38,
+                                  height: 38,
+                                  decoration: BoxDecoration(
+                                    color: ClinicalPalette.primary.withValues(alpha: 0.12),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.health_and_safety_rounded, color: ClinicalPalette.primary, size: 22),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  (SessionStorage.instance.getTenantName() ?? 'VELORA PHARMACY').toUpperCase(),
+                                  style: const TextStyle(
+                                    fontFamily: 'Plus Jakarta Sans',
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w800,
+                                    color: ClinicalPalette.textPrimary,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  SessionStorage.instance.getLocationName() ?? 'Cabang Utama • Apotek & Klinik Terpadu',
+                                  style: const TextStyle(fontSize: 10.5, color: ClinicalPalette.textTertiary),
+                                ),
+                                Text(
+                                  SessionStorage.instance.getStoreAddress() ?? 'Jl. Kesehatan Medika No. 18 • Telp: (021) 7892011',
+                                  style: const TextStyle(fontSize: 10, color: ClinicalPalette.textTertiary),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
                             ),
-                            child: const Icon(Icons.health_and_safety_rounded, color: ClinicalPalette.primary, size: 22),
+                          ),
+
+                          const SizedBox(height: 12),
+                          _buildDashedLine(),
+                          const SizedBox(height: 10),
+
+                          // Metadata
+                          _buildMetadataRow('Pasien / Klien:', widget.patientName, isBold: true),
+                          _buildMetadataRow('No. Antrean:', widget.queueNumber),
+                          _buildMetadataRow('No. Rekam Medis:', widget.medicalRecordNumber, isAccent: true),
+                          _buildMetadataRow('Dokter Peresep:', widget.doctorName),
+                          _buildMetadataRow('Kasir / Petugas:', SessionStorage.instance.getUserName() ?? 'Apoteker'),
+                          _buildMetadataRow('Waktu Transaksi:', '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year} ${DateTime.now().hour.toString().padLeft(2, '0')}:${DateTime.now().minute.toString().padLeft(2, '0')} WIB'),
+
+                          const SizedBox(height: 10),
+                          _buildDashedLine(),
+                          const SizedBox(height: 10),
+
+                          // Items Table
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: const [
+                              Text('RINCIAN OBAT & ALKES', style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 10, fontWeight: FontWeight.bold, color: ClinicalPalette.textTertiary)),
+                              Text('SUBTOTAL', style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 10, fontWeight: FontWeight.bold, color: ClinicalPalette.textTertiary)),
+                            ],
                           ),
                           const SizedBox(height: 6),
-                          Text(
-                            (SessionStorage.instance.getTenantName() ?? 'VELORA PHARMACY').toUpperCase(),
-                            style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: ClinicalPalette.textPrimary,
-                              letterSpacing: 0.5,
+
+                          ...widget.items.map((item) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          item.name,
+                                          style: const TextStyle(
+                                            fontFamily: 'Plus Jakarta Sans',
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: ClinicalPalette.textPrimary,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        CurrencyFormatter.formatRupiah(item.price * item.quantity),
+                                        style: const TextStyle(
+                                          fontFamily: 'JetBrains Mono',
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: ClinicalPalette.textPrimary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        '${item.quantity}x @ ${CurrencyFormatter.formatRupiah(item.price)}',
+                                        style: const TextStyle(fontSize: 10.5, color: ClinicalPalette.textTertiary),
+                                      ),
+                                      if (item.batchNumber != null && item.batchNumber != '-')
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFF1F5F9),
+                                            borderRadius: BorderRadius.circular(3),
+                                          ),
+                                          child: Text(
+                                            'B: ${item.batchNumber}',
+                                            style: const TextStyle(
+                                              fontFamily: 'JetBrains Mono',
+                                              fontSize: 9,
+                                              color: ClinicalPalette.textSecondary,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+
+                          const SizedBox(height: 10),
+                          _buildDashedLine(),
+                          const SizedBox(height: 10),
+
+                          // Financial Calculations
+                          _buildFinancialRow('Subtotal Obat', widget.subtotal),
+                          if (widget.tuslahFee > 0)
+                            _buildFinancialRow('Jasa Tuslah / Dispensing', widget.tuslahFee, isSubtle: true),
+                          if (widget.embalaseFee > 0)
+                            _buildFinancialRow('Biaya Embalase & Wadah', widget.embalaseFee, isSubtle: true),
+                          if (widget.taxAmount > 0)
+                            _buildFinancialRow('${widget.taxName}', widget.taxAmount, isSubtle: true),
+                          if (widget.discountAmount > 0)
+                            _buildFinancialRow('Diskon', -widget.discountAmount, isDiscount: true),
+
+                          const SizedBox(height: 8),
+                          Container(height: 1, color: ClinicalPalette.border),
+                          const SizedBox(height: 8),
+
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'TOTAL TAGIHAN',
+                                style: TextStyle(
+                                  fontFamily: 'Plus Jakarta Sans',
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13,
+                                  color: ClinicalPalette.textPrimary,
+                                ),
+                              ),
+                              Text(
+                                CurrencyFormatter.formatRupiah(widget.grandTotal),
+                                style: const TextStyle(
+                                  fontFamily: 'JetBrains Mono',
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 16,
+                                  color: ClinicalPalette.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 16),
+                          _buildDashedLine(),
+                          const SizedBox(height: 12),
+
+                          // Feature 4: Simulated Thermal Barcode (Code-128)
+                          _buildSimulatedBarcode(),
+                          const SizedBox(height: 8),
+
+                          // Thermal Footer Note
+                          Center(
+                            child: Text(
+                              'Obat yang sudah dibeli tidak dapat ditukar/dikembalikan.\nSemoga lekas sembuh.',
+                              style: const TextStyle(fontSize: 9.5, color: ClinicalPalette.textTertiary, fontStyle: FontStyle.italic),
+                              textAlign: TextAlign.center,
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            SessionStorage.instance.getLocationName() ?? 'Cabang Utama • Apotek & Klinik Terpadu',
-                            style: const TextStyle(fontSize: 10.5, color: ClinicalPalette.textTertiary),
-                          ),
-                          Text(
-                            SessionStorage.instance.getStoreAddress() ?? 'Jl. Kesehatan Medika No. 18 • Telp: (021) 7892011',
-                            style: const TextStyle(fontSize: 10, color: ClinicalPalette.textTertiary),
-                            textAlign: TextAlign.center,
                           ),
                         ],
                       ),
                     ),
 
-                    const SizedBox(height: 12),
-                    _buildDashedLine(),
-                    const SizedBox(height: 10),
-
-                    // Metadata
-                    _buildMetadataRow('Pasien / Klien:', widget.patientName, isBold: true),
-                    _buildMetadataRow('No. Antrean:', widget.queueNumber),
-                    _buildMetadataRow('No. Rekam Medis:', widget.medicalRecordNumber, isAccent: true),
-                    _buildMetadataRow('Dokter Peresep:', widget.doctorName),
-                    _buildMetadataRow('Kasir / Petugas:', SessionStorage.instance.getUserName() ?? 'Apoteker'),
-                    _buildMetadataRow('Waktu Transaksi:', '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year} ${DateTime.now().hour.toString().padLeft(2, '0')}:${DateTime.now().minute.toString().padLeft(2, '0')} WIB'),
-
-                    const SizedBox(height: 10),
-                    _buildDashedLine(),
-                    const SizedBox(height: 10),
-
-                    // Items Table
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        Text('RINCIAN OBAT & ALKES', style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 10, fontWeight: FontWeight.bold, color: ClinicalPalette.textTertiary)),
-                        Text('SUBTOTAL', style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 10, fontWeight: FontWeight.bold, color: ClinicalPalette.textTertiary)),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-
-                    ...widget.items.map((item) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    item.name,
-                                    style: const TextStyle(
-                                      fontFamily: 'Plus Jakarta Sans',
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: ClinicalPalette.textPrimary,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  CurrencyFormatter.formatRupiah(item.price * item.quantity),
-                                  style: const TextStyle(
-                                    fontFamily: 'JetBrains Mono',
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: ClinicalPalette.textPrimary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 2),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  '${item.quantity}x @ ${CurrencyFormatter.formatRupiah(item.price)}',
-                                  style: const TextStyle(fontSize: 10.5, color: ClinicalPalette.textTertiary),
-                                ),
-                                if (item.batchNumber != null && item.batchNumber != '-')
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFF1F5F9),
-                                      borderRadius: BorderRadius.circular(3),
-                                    ),
-                                    child: Text(
-                                      'B: ${item.batchNumber}',
-                                      style: const TextStyle(
-                                        fontFamily: 'JetBrains Mono',
-                                        fontSize: 9,
-                                        color: ClinicalPalette.textSecondary,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-
-                    const SizedBox(height: 10),
-                    _buildDashedLine(),
-                    const SizedBox(height: 10),
-
-                    // Financial Calculations
-                    _buildFinancialRow('Subtotal Obat', widget.subtotal),
-                    if (widget.tuslahFee > 0)
-                      _buildFinancialRow('Jasa Tuslah / Dispensing', widget.tuslahFee, isSubtle: true),
-                    if (widget.embalaseFee > 0)
-                      _buildFinancialRow('Biaya Embalase & Wadah', widget.embalaseFee, isSubtle: true),
-                    if (widget.taxAmount > 0)
-                      _buildFinancialRow('${widget.taxName}', widget.taxAmount, isSubtle: true),
-                    if (widget.discountAmount > 0)
-                      _buildFinancialRow('Diskon', -widget.discountAmount, isDiscount: true),
-
-                    const SizedBox(height: 8),
-                    Container(height: 1, color: ClinicalPalette.border),
-                    const SizedBox(height: 8),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'TOTAL TAGIHAN',
-                          style: TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontWeight: FontWeight.w800,
-                            fontSize: 13,
-                            color: ClinicalPalette.textPrimary,
-                          ),
-                        ),
-                        Text(
-                          CurrencyFormatter.formatRupiah(widget.grandTotal),
-                          style: const TextStyle(
-                            fontFamily: 'JetBrains Mono',
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
-                            color: ClinicalPalette.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 16),
-                    _buildDashedLine(),
-                    const SizedBox(height: 10),
-
-                    // Thermal Footer Note
-                    Center(
-                      child: Text(
-                        'Obat yang sudah dibeli tidak dapat ditukar/dikembalikan.\nSemoga lekas sembuh.',
-                        style: const TextStyle(fontSize: 9.5, color: ClinicalPalette.textTertiary, fontStyle: FontStyle.italic),
-                        textAlign: TextAlign.center,
-                      ),
+                    // Bottom Jagged Cut Paper Edge
+                    CustomPaint(
+                      size: const Size(390, 8),
+                      painter: _JaggedEdgePainter(isTop: false),
                     ),
                   ],
                 ),
@@ -697,9 +986,12 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> {
           ),
         ),
 
-        // Payment Method Selector Tabs
+        // Clinical Safety Banner (Feature 1)
+        _buildClinicalSafetyBanner(),
+
+        // Payment Method Selector Tabs (Feature 3: Added Split Payment)
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
           child: Row(
             children: [
               _buildPaymentTab(
@@ -707,23 +999,29 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> {
                 icon: Icons.payments_rounded,
                 label: 'Tunai',
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               _buildPaymentTab(
                 mode: PharmacyPaymentMode.qris,
                 icon: Icons.qr_code_2_rounded,
                 label: 'QRIS',
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               _buildPaymentTab(
                 mode: PharmacyPaymentMode.debit,
                 icon: Icons.credit_card_rounded,
                 label: 'Kartu EDC',
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               _buildPaymentTab(
                 mode: PharmacyPaymentMode.insurance,
                 icon: Icons.verified_user_rounded,
                 label: 'BPJS / Asuransi',
+              ),
+              const SizedBox(width: 6),
+              _buildPaymentTab(
+                mode: PharmacyPaymentMode.split,
+                icon: Icons.call_split_rounded,
+                label: 'Split Bayar',
               ),
             ],
           ),
@@ -744,6 +1042,8 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> {
                   _buildDebitPaymentForm(),
                 ] else if (_selectedMode == PharmacyPaymentMode.insurance) ...[
                   _buildInsurancePaymentForm(),
+                ] else if (_selectedMode == PharmacyPaymentMode.split) ...[
+                  _buildSplitPaymentForm(),
                 ],
               ],
             ),
@@ -888,7 +1188,6 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> {
         ),
         const SizedBox(height: 8),
 
-        // Cash Input Field
         TextField(
           controller: _cashController,
           keyboardType: TextInputType.number,
@@ -938,7 +1237,6 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> {
         ),
         const SizedBox(height: 12),
 
-        // Quick Tender Preset Buttons
         const Text(
           'Preset Uang Pas & Pecahan Cepat:',
           style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: ClinicalPalette.textTertiary),
@@ -1047,6 +1345,128 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> {
   }
 
   // ---------------------------------------------------------------------------
+  // FEATURE 3: SPLIT PAYMENT (MULTI-TENDER) FORM COMPONENT
+  // ---------------------------------------------------------------------------
+  Widget _buildSplitPaymentForm() {
+    final num secondaryAmount = (widget.grandTotal > _splitCashAmount) ? (widget.grandTotal - _splitCashAmount) : 0;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: ClinicalPalette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.call_split_rounded, color: ClinicalPalette.primary, size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Pembayaran Multi-Tender / Split Payment',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: ClinicalPalette.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Porsi 1: Tunai
+          const Text(
+            '1. Porsi Pembayaran Tunai (Cash):',
+            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: ClinicalPalette.textSecondary),
+          ),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _splitCashController,
+            keyboardType: TextInputType.number,
+            style: const TextStyle(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.bold, fontSize: 16),
+            decoration: InputDecoration(
+              prefixText: 'Rp ',
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onChanged: (val) {
+              final clean = val.replaceAll(RegExp(r'[^0-9]'), '');
+              final num parsed = num.tryParse(clean) ?? 0;
+              setState(() => _splitCashAmount = parsed);
+            },
+          ),
+          const SizedBox(height: 14),
+
+          // Porsi 2: Non-Tunai (Sisa)
+          const Text(
+            '2. Porsi Sisa Pembayaran (Non-Tunai):',
+            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: ClinicalPalette.textSecondary),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0FDF4),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFBBF7D0)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Sisa Tagihan:',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: ClinicalPalette.textPrimary),
+                ),
+                Text(
+                  CurrencyFormatter.formatRupiah(secondaryAmount),
+                  style: const TextStyle(
+                    fontFamily: 'JetBrains Mono',
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: ClinicalPalette.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          const Text(
+            'Metode Pembayaran Sisa:',
+            style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: ClinicalPalette.textTertiary),
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            children: ['QRIS Dinamis', 'Debit BCA/EDC', 'Iur Biaya BPJS/Asuransi'].map((m) {
+              final isSel = _splitSecondaryMethod == m;
+              return ChoiceChip(
+                label: Text(m),
+                selected: isSel,
+                selectedColor: ClinicalPalette.primary,
+                backgroundColor: Colors.white,
+                labelStyle: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11.5,
+                  color: isSel ? Colors.white : ClinicalPalette.textPrimary,
+                ),
+                onSelected: (val) {
+                  if (val) setState(() => _splitSecondaryMethod = m);
+                },
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
   // QRIS FORM COMPONENT
   // ---------------------------------------------------------------------------
   Widget _buildQrisPaymentForm() {
@@ -1077,20 +1497,15 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> {
                   ),
                 ],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE0F2FE),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Text(
-                  'NMID: ID102003920194',
-                  style: TextStyle(
-                    fontFamily: 'JetBrains Mono',
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF0369A1),
-                  ),
+              ElevatedButton.icon(
+                onPressed: _openCustomerFacingDisplay,
+                icon: const Icon(Icons.tv_rounded, size: 14),
+                label: const Text('Buka Layar Pasien'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0284C7),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -1314,6 +1729,44 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> {
   // ---------------------------------------------------------------------------
   // HELPER WIDGETS
   // ---------------------------------------------------------------------------
+  Widget _buildSimulatedBarcode() {
+    return Column(
+      children: [
+        Container(
+          height: 32,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: ClinicalPalette.border),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(36, (index) {
+              final widths = [1.0, 2.0, 1.5, 3.0, 1.0, 2.5, 1.0, 1.5];
+              final w = widths[index % widths.length];
+              return Container(
+                width: w,
+                color: index % 2 == 0 ? const Color(0xFF0F172A) : Colors.transparent,
+                margin: const EdgeInsets.symmetric(horizontal: 1),
+              );
+            }),
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          '*TRX-${DateTime.now().year}${DateTime.now().month.toString().padLeft(2, "0")}${DateTime.now().day.toString().padLeft(2, "0")}-${widget.queueNumber}*',
+          style: const TextStyle(
+            fontFamily: 'JetBrains Mono',
+            fontSize: 9,
+            color: ClinicalPalette.textTertiary,
+            letterSpacing: 1.5,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildPaymentTab({
     required PharmacyPaymentMode mode,
     required IconData icon,
@@ -1333,7 +1786,7 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> {
         },
         borderRadius: BorderRadius.circular(10),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
           decoration: BoxDecoration(
             color: isSelected ? ClinicalPalette.primary : const Color(0xFFF1F5F9),
             borderRadius: BorderRadius.circular(10),
@@ -1344,13 +1797,13 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: isSelected ? Colors.white : ClinicalPalette.textSecondary, size: 22),
+              Icon(icon, color: isSelected ? Colors.white : ClinicalPalette.textSecondary, size: 20),
               const SizedBox(height: 4),
               Text(
                 label,
                 style: TextStyle(
                   fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 11.5,
+                  fontSize: 10.5,
                   fontWeight: FontWeight.bold,
                   color: isSelected ? Colors.white : ClinicalPalette.textPrimary,
                 ),
@@ -1527,4 +1980,49 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> {
       ),
     );
   }
+}
+
+/// CustomPainter untuk membuat efek tepi kertas termal bergerigi (Jagged Physical Paper Tear)
+class _JaggedEdgePainter extends CustomPainter {
+  final bool isTop;
+  const _JaggedEdgePainter({required this.isTop});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFFFAF8FF)
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+    const toothWidth = 10.0;
+    final toothHeight = size.height;
+    final teethCount = (size.width / toothWidth).ceil();
+
+    if (isTop) {
+      path.moveTo(0, toothHeight);
+      for (int i = 0; i < teethCount; i++) {
+        final x = i * toothWidth;
+        path.lineTo(x + toothWidth / 2, 0);
+        path.lineTo(x + toothWidth, toothHeight);
+      }
+      path.lineTo(size.width, 0);
+      path.lineTo(0, 0);
+      path.close();
+    } else {
+      path.moveTo(0, 0);
+      for (int i = 0; i < teethCount; i++) {
+        final x = i * toothWidth;
+        path.lineTo(x + toothWidth / 2, toothHeight);
+        path.lineTo(x + toothWidth, 0);
+      }
+      path.lineTo(size.width, toothHeight);
+      path.lineTo(0, toothHeight);
+      path.close();
+    }
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
