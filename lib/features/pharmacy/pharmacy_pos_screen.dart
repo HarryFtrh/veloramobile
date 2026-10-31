@@ -77,7 +77,6 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
     'Obat Bebas (OTC)',
     'Obat Keras (Rx)',
     'Alat Kesehatan',
-    'Resep Dokter',
   ];
   final List<String> _dynamicCategories = [];
   final List<Map<String, dynamic>> _drugItems = [];
@@ -608,7 +607,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
   Map<String, dynamic> _getItemFromCartKey(String key) {
     final id = key.contains(':') ? key.split(':').first : key;
     return _drugItems.firstWhere(
-      (m) => m['id'] == id,
+      (m) => m['id'].toString() == id.toString(),
       orElse: () => <String, dynamic>{'id': id, 'name': 'Obat', 'price': 0},
     );
   }
@@ -633,11 +632,12 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
     return item['price'] as num? ?? 0;
   }
 
-  int _getCartQuantityForDrug(String id) {
+  int _getCartQuantityForDrug(dynamic id) {
+    final strId = id.toString();
     int total = 0;
     _cart.forEach((k, q) {
       final baseId = k.contains(':') ? k.split(':').first : k;
-      if (baseId == id) {
+      if (baseId.toString() == strId) {
         total += q;
       }
     });
@@ -680,7 +680,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
     setState(() {
       final baseId = id.contains(':') ? id.split(':').first : id;
       final item = _drugItems.firstWhere(
-        (e) => e['id'] == baseId,
+        (e) => e['id'].toString() == baseId.toString(),
         orElse: () => <String, dynamic>{},
       );
       final targetUnit = unit ??
@@ -1731,8 +1731,6 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
         } else if (selectedCategoryName == 'Alat Kesehatan') {
           matchesCategory = (item['category']?.toString().toLowerCase().contains('alkes') ?? false) ||
               (item['category']?.toString().toLowerCase().contains('alat') ?? false);
-        } else if (selectedCategoryName == 'Resep Dokter') {
-          matchesCategory = item['isDotRed'] == true || item['isPrescriptionOnly'] == true;
         } else {
           matchesCategory = item['category'] == selectedCategoryName;
         }
@@ -1810,13 +1808,14 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                           itemCount: filteredItems.length,
                           itemBuilder: (context, index) {
                             final item = filteredItems[index];
-                            final qty = _getCartQuantityForDrug(item['id']);
+                            final idStr = item['id'].toString();
+                            final qty = _getCartQuantityForDrug(idStr);
                             return PharmacyDrugCard(
                               item: item,
                               quantity: qty,
-                              onAdd: () => _addToCart(item['id']),
-                              onRemove: () => _removeFromCart(item['id']),
-                              onSelectUnit: (unit) => _addToCart(item['id'], unit),
+                              onAdd: () => _addToCart(idStr),
+                              onRemove: () => _removeFromCart(idStr),
+                              onSelectUnit: (unit) => _addToCart(idStr, unit),
                             );
                           },
                         )
@@ -1826,13 +1825,14 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                           separatorBuilder: (_, _) => const SizedBox(height: 8),
                           itemBuilder: (context, index) {
                             final item = filteredItems[index];
-                            final qty = _getCartQuantityForDrug(item['id']);
+                            final idStr = item['id'].toString();
+                            final qty = _getCartQuantityForDrug(idStr);
                             return PharmacyDrugRow(
                               item: item,
                               quantity: qty,
-                              onAdd: () => _addToCart(item['id']),
-                              onRemove: () => _removeFromCart(item['id']),
-                              onSelectUnit: (unit) => _addToCart(item['id'], unit),
+                              onAdd: () => _addToCart(idStr),
+                              onRemove: () => _removeFromCart(idStr),
+                              onSelectUnit: (unit) => _addToCart(idStr, unit),
                             );
                           },
                         ),

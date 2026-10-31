@@ -346,6 +346,29 @@ class PosProduct {
       finalUnits.add(PosProductUnit(name: defaultU, price: priceVal, conversion: 1, isDefault: true));
     }
 
+    // Auto-populate multi-satuan for single-unit medications
+    if (finalUnits.length == 1) {
+      final uUpper = finalUnits.first.name.toUpperCase();
+      final baseP = finalUnits.first.price;
+      if (uUpper == 'TAB' || uUpper == 'TABLET' || uUpper == 'KAPLET' || uUpper == 'KAPSUL' || uUpper == 'PIL') {
+        if (!finalUnits.any((u) => u.name == 'STRIP')) {
+          finalUnits.add(PosProductUnit(name: 'STRIP', price: (baseP * 10).round(), conversion: 10));
+        }
+        if (!finalUnits.any((u) => u.name == 'BOX')) {
+          finalUnits.add(PosProductUnit(name: 'BOX', price: (baseP * 100).round(), conversion: 100));
+        }
+      } else if (uUpper == 'STRIP') {
+        if (!finalUnits.any((u) => u.name == 'TAB')) {
+          finalUnits.insert(0, PosProductUnit(name: 'TAB', price: (baseP / 10).round(), conversion: 1));
+        }
+        if (!finalUnits.any((u) => u.name == 'BOX')) {
+          finalUnits.add(PosProductUnit(name: 'BOX', price: (baseP * 10).round(), conversion: 10));
+        }
+      } else if (!finalUnits.any((u) => u.name == 'BOX')) {
+        finalUnits.add(PosProductUnit(name: 'BOX', price: (baseP * 10).round(), conversion: 10));
+      }
+    }
+
     return PosProduct(
       id: json.getString('id'),
       name: productName,

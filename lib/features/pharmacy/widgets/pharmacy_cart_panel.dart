@@ -152,7 +152,7 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
       final cartKey = e.key;
       final baseId = cartKey.contains(':') ? cartKey.split(':').first : cartKey;
       final item = widget.drugItems.firstWhere(
-        (m) => m['id'] == baseId,
+        (m) => m['id'].toString() == baseId.toString(),
         orElse: () => <String, dynamic>{'id': baseId, 'name': 'Obat', 'price': 0},
       );
       final currentUnit = cartKey.contains(':') ? cartKey.split(':').last : (item['selectedUnit'] ?? item['unit'] ?? 'TAB');
@@ -776,7 +776,7 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                     final qty = widget.cart[cartKey]!;
                     final baseId = cartKey.contains(':') ? cartKey.split(':').first : cartKey;
                     final item = widget.drugItems.firstWhere(
-                      (e) => e['id'] == baseId,
+                      (e) => e['id'].toString() == baseId.toString(),
                       orElse: () => <String, dynamic>{},
                     );
                     final currentUnit = cartKey.contains(':')
@@ -784,11 +784,43 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                         : (item['selectedUnit'] ?? item['unit'] ?? 'TAB');
 
                     final rawUnits = item['units'];
-                    final List<Map<String, dynamic>> units = (rawUnits is List)
-                        ? rawUnits.whereType<Map<String, dynamic>>().toList()
-                        : [];
+                    final List<Map<String, dynamic>> units = [];
+                    if (rawUnits is List) {
+                      for (final u in rawUnits) {
+                        if (u is Map) {
+                          units.add(Map<String, dynamic>.from(u));
+                        }
+                      }
+                    }
 
-                    num price = (item['price'] as num? ?? 0);
+                    num basePrice = (item['price'] as num? ?? 0);
+                    if (units.isEmpty) {
+                      units.add({'name': currentUnit, 'price': basePrice, 'conversion': 1});
+                    }
+
+                    if (units.length == 1) {
+                      final uName = units.first['name']?.toString().toUpperCase() ?? 'TAB';
+                      final p = (units.first['price'] as num?) ?? basePrice;
+                      if (uName == 'TAB' || uName == 'TABLET' || uName == 'KAPLET' || uName == 'KAPSUL' || uName == 'PIL') {
+                        if (!units.any((u) => u['name'] == 'STRIP')) {
+                          units.add({'name': 'STRIP', 'price': (p * 10).round(), 'conversion': 10});
+                        }
+                        if (!units.any((u) => u['name'] == 'BOX')) {
+                          units.add({'name': 'BOX', 'price': (p * 100).round(), 'conversion': 100});
+                        }
+                      } else if (uName == 'STRIP') {
+                        if (!units.any((u) => u['name'] == 'TAB')) {
+                          units.insert(0, {'name': 'TAB', 'price': (p / 10).round(), 'conversion': 1});
+                        }
+                        if (!units.any((u) => u['name'] == 'BOX')) {
+                          units.add({'name': 'BOX', 'price': (p * 10).round(), 'conversion': 10});
+                        }
+                      } else if (!units.any((u) => u['name'] == 'BOX')) {
+                        units.add({'name': 'BOX', 'price': (p * 10).round(), 'conversion': 10});
+                      }
+                    }
+
+                    num price = basePrice;
                     for (final u in units) {
                       if (u['name']?.toString().toUpperCase() == currentUnit.toUpperCase()) {
                         price = (u['price'] as num?) ?? price;
@@ -895,40 +927,45 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                                       spacing: 6,
                                       children: [
                                         Text(
-                                          'Batch: $batch • ${CurrencyFormatter.format(price)}/$currentUnit',
+                                          'Batch: $batch • ${CurrencyFormatter.format(price)}',
                                           style: const TextStyle(
                                             fontFamily: 'JetBrains Mono',
                                             fontSize: 10,
                                             color: textMuted,
                                           ),
                                         ),
-                                        if (units.length > 1)
-                                          InkWell(
-                                            onTap: () => _showUnitPicker(context, cartKey, units, currentUnit),
-                                            borderRadius: BorderRadius.circular(4),
-                                            child: Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                              decoration: BoxDecoration(
-                                                color: primaryEmerald.withValues(alpha: 0.1),
-                                                borderRadius: BorderRadius.circular(4),
-                                                border: Border.all(color: primaryEmerald.withValues(alpha: 0.3)),
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: const [
-                                                  Text(
-                                                    'Ubah Satuan ▾',
-                                                    style: TextStyle(
-                                                      fontFamily: 'JetBrains Mono',
-                                                      fontSize: 9,
-                                                      fontWeight: FontWeight.bold,
-                                                      color: primaryEmerald,
-                                                    ),
+                                        InkWell(
+                                          onTap: () => _showUnitPicker(context, cartKey, units, currentUnit),
+                                          borderRadius: BorderRadius.circular(4),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                            decoration: BoxDecoration(
+                                              color: primaryEmerald.withValues(alpha: 0.1),
+                                              borderRadius: BorderRadius.circular(4),
+                                              border: Border.all(color: primaryEmerald.withValues(alpha: 0.3)),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  currentUnit,
+                                                  style: const TextStyle(
+                                                    fontFamily: 'JetBrains Mono',
+                                                    fontSize: 9.5,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: primaryEmerald,
                                                   ),
-                                                ],
-                                              ),
+                                                ),
+                                                const SizedBox(width: 2),
+                                                const Icon(
+                                                  Icons.arrow_drop_down_rounded,
+                                                  size: 14,
+                                                  color: primaryEmerald,
+                                                ),
+                                              ],
                                             ),
                                           ),
+                                        ),
                                       ],
                                     ),
                                   ],
