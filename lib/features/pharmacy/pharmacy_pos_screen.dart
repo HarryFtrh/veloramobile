@@ -650,22 +650,24 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
           doctorName: _selectedDoctor,
           patientCategory: _patientCategory,
           patientAllergies: _patientAllergies,
-          onCompleted: (result, paymentMethodName) {
-            setState(() {
-              _cart.clear();
-              _totalPrice = 0;
-              _selectedPatient = 'Pelanggan Umum (Walk-in)';
-              _selectedDoctor = 'dr. Resep Luar (Umum)';
-              _queueNumber = '-';
-              _medicalRecordNumber = '-';
-              _patientCategory = 'Umum';
-              _patientAllergies = '';
-              _persistCart();
-            });
-          },
+          onCompleted: _onSettlementCompleted,
         ),
       ),
     );
+  }
+
+  void _onSettlementCompleted(PosCheckoutResult result, String paymentMethodName) {
+    setState(() {
+      _cart.clear();
+      _totalPrice = 0;
+      _selectedPatient = 'Pelanggan Umum (Walk-in)';
+      _selectedDoctor = 'dr. Resep Luar (Umum)';
+      _queueNumber = '-';
+      _medicalRecordNumber = '-';
+      _patientCategory = 'Umum';
+      _patientAllergies = '';
+      _persistCart();
+    });
   }
 
   void _openMobileCartSheet() {
@@ -693,6 +695,8 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
             selectedDoctor: _selectedDoctor,
             queueNumber: _queueNumber,
             medicalRecordNumber: _medicalRecordNumber,
+            patientCategory: _patientCategory,
+            patientAllergies: _patientAllergies,
             onChangePatient: () {
               Navigator.pop(ctx);
               _showChangePatientOptions();
@@ -708,6 +712,10 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
               _showCheckoutDialog();
             },
             onClose: () => Navigator.pop(ctx),
+            onSettlementSuccess: (result, method) {
+              Navigator.pop(ctx);
+              _onSettlementCompleted(result, method);
+            },
           ),
         ),
       ),
@@ -1741,11 +1749,14 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                       selectedDoctor: _selectedDoctor,
                       queueNumber: _queueNumber,
                       medicalRecordNumber: _medicalRecordNumber,
+                      patientCategory: _patientCategory,
+                      patientAllergies: _patientAllergies,
                       onChangePatient: _showChangePatientOptions,
                       onClearCart: _clearCart,
                       onAddToCart: _addToCart,
                       onRemoveFromCart: _removeFromCart,
                       onCheckout: _showCheckoutDialog,
+                      onSettlementSuccess: _onSettlementCompleted,
                     ),
                   ),
                 ],
