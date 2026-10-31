@@ -6,6 +6,7 @@ import '../../core/design/tokens.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/storage/session_storage.dart';
 import '../fnb/billing.dart';
+import '../fnb/fnb_catalog_service.dart';
 import '../shared_pos/product_catalog_service.dart';
 import '../tables/table_service.dart';
 import 'customer_cart_screen.dart';
@@ -61,7 +62,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     });
 
     try {
-      final catalogFuture = ProductCatalogService.instance.fetchCatalog();
+      final catalogFuture = FnbCatalogService.instance.fetchCatalog();
       final tablesFuture = TableService.instance.tables().catchError((_) => <CafeTableInfo>[]);
       final billingFuture = BillingSettings.fetch().catchError((_) => const BillingSettings());
 

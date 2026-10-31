@@ -2,6 +2,7 @@
 // Unified barrel export for Pharmacy POS feature & Google Stitch "Clinical Precision" suite
 
 export 'pharmacy_service.dart';
+export 'services/pharmacy_catalog_service.dart';
 export 'pharmacy_pos_screen.dart';
 export 'pharmacy_queue_screen.dart';
 export 'pharmacy_stock_alert_screen.dart';

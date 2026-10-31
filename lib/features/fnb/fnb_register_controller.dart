@@ -7,6 +7,7 @@ import '../shared_pos/product_catalog_service.dart';
 import '../shared_pos/shift_service.dart';
 import '../tables/table_service.dart';
 import 'billing.dart';
+import 'fnb_catalog_service.dart';
 import 'fnb_register_service.dart';
 import 'modifiers.dart';
 
@@ -74,7 +75,7 @@ class RegisterController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final catalog = await ProductCatalogService.instance.fetchCatalog();
+      final catalog = await FnbCatalogService.instance.fetchCatalog();
       products = catalog.products;
       categories = catalog.categories;
       if (catalog.modifiers.isNotEmpty) {

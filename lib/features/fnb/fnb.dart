@@ -4,6 +4,7 @@
 export 'fnb_register_screen.dart';
 export 'fnb_register_controller.dart';
 export 'fnb_register_service.dart';
+export 'fnb_catalog_service.dart';
 export 'billing.dart';
 export 'modifiers.dart';
 export 'fnb_payment_split_screen.dart';

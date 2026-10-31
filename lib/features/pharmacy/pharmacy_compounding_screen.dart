@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/storage/session_storage.dart';
 import '../../core/utils/audio_helper.dart';
 import '../shared_pos/receipt_printer_service.dart';
-import '../shared_pos/product_catalog_service.dart';
+import 'services/pharmacy_catalog_service.dart';
 import 'pharmacy_service.dart';
 
 /// Workstation Meja Racik & Etiket Farmasi (Google Stitch "Clinical Precision")
@@ -82,7 +82,7 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
   Future<void> _addIngredientFromCatalog() async {
     AudioHelper.tapFeedback();
     try {
-      final catalog = await ProductCatalogService.instance.fetchCatalog();
+      final catalog = await PharmacyCatalogService.instance.fetchCatalog();
       if (!mounted) return;
       if (catalog.products.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(

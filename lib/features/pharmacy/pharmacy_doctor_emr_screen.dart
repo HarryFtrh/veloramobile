@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/storage/session_storage.dart';
 import '../../core/utils/audio_helper.dart';
-import '../shared_pos/product_catalog_service.dart';
+import 'services/pharmacy_catalog_service.dart';
 import 'pharmacy_service.dart';
 import 'widgets/pharmacy_queue_modal.dart';
 
@@ -418,7 +418,7 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
                         const Text('R/ Lembar Peresepan Digital (e-Resep)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
                         InkWell(
                           onTap: () async {
-                            final catalog = await ProductCatalogService.instance.fetchCatalog();
+                            final catalog = await PharmacyCatalogService.instance.fetchCatalog();
                             if (!context.mounted) return;
                             // ignore: use_build_context_synchronously
                             showModalBottomSheet(

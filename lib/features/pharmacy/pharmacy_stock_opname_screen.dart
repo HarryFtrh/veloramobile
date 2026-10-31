@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/network/api_client.dart';
 import '../../core/utils/audio_helper.dart';
 import '../../core/utils/currency_formatter.dart';
-import '../shared_pos/product_catalog_service.dart';
+import 'services/pharmacy_catalog_service.dart';
 
 class OpnameItem {
   final String id;
@@ -59,7 +59,7 @@ class _PharmacyStockOpnameScreenState extends State<PharmacyStockOpnameScreen> {
   Future<void> _loadOpnameCatalog() async {
     setState(() => _isLoading = true);
     try {
-      final catalog = await ProductCatalogService.instance.fetchCatalog();
+      final catalog = await PharmacyCatalogService.instance.fetchCatalog();
       final List<OpnameItem> list = [];
 
       for (final p in catalog.products) {

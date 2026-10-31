@@ -3,8 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart' show Color;
 import '../../core/network/api_client.dart';
 import '../../core/storage/session_storage.dart';
-import '../shared_pos/product_catalog_service.dart';
 import '../shared_pos/shift_service.dart';
+import 'services/pharmacy_catalog_service.dart';
 import 'widgets/pharmacy_queue_modal.dart';
 import 'widgets/pharmacy_stock_alert_modal.dart';
 import 'widgets/pharmacy_patient_dialog.dart';
@@ -279,9 +279,9 @@ class PharmacyService {
 
   /// 2. Ambil Alert Kedaluwarsa & Stok Kritis FEFO (Stitch Screen 3)
   Future<List<PharmacyStockAlertItem>> fetchStockAlerts() async {
-    // Tarik live catalog untuk mengecek batch number & tanggal kedaluwarsa nyata
+    // Tarik live catalog Apotek untuk mengecek batch number & tanggal kedaluwarsa nyata
     try {
-      final catalog = await ProductCatalogService.instance.fetchCatalog();
+      final catalog = await PharmacyCatalogService.instance.fetchCatalog();
       final List<PharmacyStockAlertItem> list = [];
 
       for (final p in catalog.products) {

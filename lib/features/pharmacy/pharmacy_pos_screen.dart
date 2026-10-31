@@ -12,6 +12,7 @@ import '../shared_pos/shift_service.dart';
 import '../shared_pos/shift_modal.dart';
 import '../shared_pos/sales_history_drawer.dart';
 import '../shared_pos/printer_settings_modal.dart';
+import 'services/pharmacy_catalog_service.dart';
 import 'widgets/pharmacy_patient_dialog.dart';
 import 'widgets/pharmacy_drug_card.dart';
 import 'widgets/pharmacy_cart_panel.dart';
@@ -238,7 +239,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
       if (!mounted) return;
       setState(() => _isSearchingRemote = true);
       try {
-        final results = await ProductCatalogService.instance.searchProductsRemote(trimmed);
+        final results = await PharmacyCatalogService.instance.searchProductsRemote(trimmed);
         if (mounted && _searchQuery.trim() == trimmed) {
           _mergeRemoteProducts(results);
         }
@@ -253,7 +254,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
   Future<void> _fetchCatalog() async {
     setState(() => _isLoadingCatalog = true);
     try {
-      final catalog = await ProductCatalogService.instance.fetchCatalog();
+      final catalog = await PharmacyCatalogService.instance.fetchCatalog();
       if (mounted) {
         setState(() {
           _categories = catalog.categories.isNotEmpty ? catalog.categories : const ['Semua'];
@@ -582,8 +583,8 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
       return true;
     }
 
-    // Jika belum ada di memori lokal, cari lewat endpoint scan/Scout server
-    final remoteProduct = await ProductCatalogService.instance.scanBarcodeRemote(rawCode.trim());
+    // Jika belum ada di memori lokal, cari lewat endpoint scan/Scout server Apotek
+    final remoteProduct = await PharmacyCatalogService.instance.scanBarcodeRemote(rawCode.trim());
     if (remoteProduct != null && mounted) {
       _mergeRemoteProducts([remoteProduct]);
       _addToCart(remoteProduct.id);
