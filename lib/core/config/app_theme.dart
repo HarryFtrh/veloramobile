@@ -71,7 +71,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
-      fontFamily: fontFamily,
+      fontFamily: bodyFont,
       textTheme: textTheme,
       scaffoldBackgroundColor: palette.canvas,
       colorScheme: ColorScheme.fromSeed(

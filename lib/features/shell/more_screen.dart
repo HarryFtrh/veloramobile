@@ -71,7 +71,6 @@ class MoreScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final p = context.palette;
     final isWide = MediaQuery.sizeOf(context).width >= 600;
     final canPop = ModalRoute.of(context)?.canPop ?? false;
     final p = context.palette;
@@ -125,7 +124,7 @@ class MoreScreen extends StatelessWidget {
                       backgroundColor: brandPrimary.withValues(alpha: 0.12),
                       child: Text(
                         userName.isNotEmpty ? userName[0].toUpperCase() : 'K',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
                           color: brandPrimary,
@@ -139,7 +138,7 @@ class MoreScreen extends StatelessWidget {
                         children: [
                           Text(
                             userName,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w800,
                               color: p.textPrimary,
@@ -150,7 +149,7 @@ class MoreScreen extends StatelessWidget {
                           const SizedBox(height: 3),
                           Text(
                             '$tenantName • $locationName',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               color: p.textSecondary,
                               fontWeight: FontWeight.w600,
@@ -168,11 +167,11 @@ class MoreScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: p.tertiary.withValues(alpha: 0.3)),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.circle, size: 7, color: p.tertiary),
-                          SizedBox(width: 4),
+                          const SizedBox(width: 4),
                           Text(
                             'ONLINE',
                             style: TextStyle(
@@ -191,8 +190,8 @@ class MoreScreen extends StatelessWidget {
               const SizedBox(height: 20),
 
               // 2. Section: Operasional Register & Kasir
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                 child: Text(
                   'OPERASIONAL KASIR',
                   style: TextStyle(
@@ -218,10 +217,10 @@ class MoreScreen extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Row(
+                        Row(
                           children: [
                             Icon(Icons.lock_clock_outlined, size: 18, color: brandPrimary),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             Text(
                               'Shift Register',
                               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: p.textPrimary),
@@ -231,7 +230,7 @@ class MoreScreen extends StatelessWidget {
                         const CashierShiftBadge(),
                       ],
                     ),
-                    const Divider(height: 20, color: p.line),
+                    Divider(height: 20, color: p.line),
                     // Row 2: Quick buttons: Buka laci & Printer
                     Row(
                       children: [
@@ -252,7 +251,7 @@ class MoreScreen extends StatelessWidget {
                             ),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: brandPrimary,
-                              side: const BorderSide(color: p.line),
+                              side: BorderSide(color: p.line),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               padding: const EdgeInsets.symmetric(vertical: 10),
                             ),
@@ -269,7 +268,7 @@ class MoreScreen extends StatelessWidget {
                             ),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: p.textPrimary,
-                              side: const BorderSide(color: p.line),
+                              side: BorderSide(color: p.line),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               padding: const EdgeInsets.symmetric(vertical: 10),
                             ),
@@ -284,8 +283,8 @@ class MoreScreen extends StatelessWidget {
               const SizedBox(height: 20),
 
               // 3. Section: Fitur & Pengaturan
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                 child: Text(
                   'FITUR & PENGATURAN TOKO',
                   style: TextStyle(
@@ -336,7 +335,7 @@ class MoreScreen extends StatelessWidget {
                                     children: [
                                       Text(
                                         entries[i].title,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontWeight: FontWeight.w700,
                                           fontSize: 13.5,
                                           color: p.textPrimary,
@@ -345,7 +344,7 @@ class MoreScreen extends StatelessWidget {
                                       const SizedBox(height: 2),
                                       Text(
                                         entries[i].subtitle,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 11.5,
                                           color: p.textSecondary,
                                         ),
@@ -353,14 +352,14 @@ class MoreScreen extends StatelessWidget {
                                     ],
                                   ),
                                 ),
-                                const Icon(Icons.chevron_right_rounded, color: p.textTertiary, size: 20),
+                                Icon(Icons.chevron_right_rounded, color: p.textTertiary, size: 20),
                               ],
                             ),
                           ),
                         ),
                       ),
                       if (i < entries.length - 1)
-                        const Divider(height: 1, indent: 56, endIndent: 16, color: p.line),
+                        Divider(height: 1, indent: 56, endIndent: 16, color: p.line),
                     ],
                   ],
                 ),
