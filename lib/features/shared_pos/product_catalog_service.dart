@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import '../../core/config/app_config.dart';
 import '../../core/network/api_client.dart';
 import '../../core/storage/session_storage.dart';
 import '../../core/utils/safe_json.dart';
@@ -533,7 +534,10 @@ class ProductCatalogService {
     }
 
     final bizType = SessionStorage.instance.getBusinessType()?.toLowerCase() ?? 'retail';
-    final isPharmacy = AppConfig.instance.isPharmacy || bizType == 'pharmacy';
+    bool isPharmacy = bizType == 'pharmacy';
+    try {
+      if (AppConfig.instance.isPharmacy) isPharmacy = true;
+    } catch (_) {}
     final candidateEndpoints = bizType == 'fnb'
         ? [
             '/v1/pos/products-sync',
