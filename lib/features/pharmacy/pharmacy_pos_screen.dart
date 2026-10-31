@@ -897,7 +897,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
   }
 
   // Top App Bar Header
-  Widget _buildTopHeader(bool isMobile) {
+  Widget _buildTopHeader(bool isMobile, double screenWidth) {
     const emeraldPrimary = Color(0xFF006948);
     const borderColor = Color(0xFFE2E8F0);
     final tenant = SessionStorage.instance.getTenantName() ?? 'Velora Pharmacy';
@@ -914,106 +914,121 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Clinic Icon & Name & Branch (Stitch Precision)
-          Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: emeraldPrimary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: emeraldPrimary.withValues(alpha: 0.2)),
+          Expanded(
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: emeraldPrimary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: emeraldPrimary.withValues(alpha: 0.2)),
+                  ),
+                  child: const Icon(Icons.local_hospital_rounded, color: emeraldPrimary, size: 20),
                 ),
-                child: const Icon(Icons.local_hospital_rounded, color: emeraldPrimary, size: 20),
-              ),
-              const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        tenant,
-                        style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          color: emeraldPrimary,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF68DBA9).withValues(alpha: 0.25),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 6,
-                              height: 6,
-                              decoration: const BoxDecoration(
-                                color: emeraldPrimary,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            const Text(
-                              'Online',
-                              style: TextStyle(
-                                fontFamily: 'JetBrains Mono',
-                                fontSize: 9.5,
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              tenant,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
                                 fontWeight: FontWeight.bold,
+                                fontSize: 15,
                                 color: emeraldPrimary,
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF68DBA9).withValues(alpha: 0.25),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    color: emeraldPrimary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Text(
+                                  'Online',
+                                  style: TextStyle(
+                                    fontFamily: 'JetBrains Mono',
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: emeraldPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        '$location • Kasir #WS-02',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 10.5, color: Color(0xFF6D7A72)),
                       ),
                     ],
                   ),
-                  Text(
-                    '$location • Kasir #WS-02',
-                    style: const TextStyle(fontSize: 10.5, color: Color(0xFF6D7A72)),
+                ),
+                if (!isMobile && screenWidth >= 1150) ...[
+                  const SizedBox(width: 16),
+                  Container(width: 1, height: 28, color: borderColor),
+                  const SizedBox(width: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF2F3FF),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: borderColor),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.store_rounded, size: 15, color: Color(0xFF006577)),
+                        SizedBox(width: 6),
+                        Text(
+                          'Cabang Utama',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: emeraldPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
-              ),
-              if (!isMobile) ...[
-                const SizedBox(width: 16),
-                Container(width: 1, height: 28, color: borderColor),
-                const SizedBox(width: 16),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF2F3FF),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: borderColor),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.store_rounded, size: 15, color: Color(0xFF006577)),
-                      SizedBox(width: 6),
-                      Text(
-                        'Cabang Utama',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: emeraldPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ],
-            ],
+            ),
           ),
+          const SizedBox(width: 8),
 
           // Actions Cluster & Cashier Shift
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              if (!isMobile) ...[
+              if (!isMobile && screenWidth >= 1050) ...[
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -1033,6 +1048,8 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                   ],
                 ),
                 const SizedBox(width: 8),
+              ],
+              if (!isMobile && screenWidth >= 950) ...[
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
@@ -1050,9 +1067,9 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const OfflineSyncBadge(showClock: false),
-                const SizedBox(width: 6),
               ],
+              const OfflineSyncBadge(showClock: false),
+              const SizedBox(width: 4),
               IconButton(
                 icon: const Icon(Icons.qr_code_scanner_rounded, size: 20, color: emeraldPrimary),
                 tooltip: 'Scan Barcode Produk',
@@ -1605,7 +1622,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
     final catalogPane = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildTopHeader(isMobile),
+        _buildTopHeader(isMobile, screenWidth),
         _buildPatientContextStrip(),
         _buildPrescriptionValidationBanner(),
         _buildSearchField(),
