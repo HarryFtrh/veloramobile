@@ -393,7 +393,7 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
                               fontFamily: 'JetBrains Mono',
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF006577),
+                              color: Color(0xFF0D9488),
                             ),
                           ),
                         ],

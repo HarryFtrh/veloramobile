@@ -210,7 +210,7 @@ class _PharmacyStockOpnameScreenState extends State<PharmacyStockOpnameScreen> {
                     child: _buildMetricTile(
                       label: 'Stok Sistem',
                       value: '$totalSystemQty Unit',
-                      color: const Color(0xFF006577),
+                      color: const Color(0xFF0D9488),
                       bg: const Color(0xFFE0F2FE),
                     ),
                   ),

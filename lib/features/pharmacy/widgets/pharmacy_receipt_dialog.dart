@@ -122,11 +122,11 @@ class PharmacyReceiptDialog extends StatelessWidget {
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF86F2E4),
+                      color: const Color(0xFF0D9488).withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                       border: Border.all(color: const Color(0xFF0D9488).withValues(alpha: 0.3), width: 3),
                     ),
-                    child: const Icon(Icons.check_circle_rounded, color: Color(0xFF006F66), size: 32),
+                    child: const Icon(Icons.check_circle_rounded, color: Color(0xFF0D9488), size: 32),
                   ),
                   const SizedBox(height: 10),
                   const Text(
@@ -171,7 +171,7 @@ class PharmacyReceiptDialog extends StatelessWidget {
                             color: const Color(0xFFE2E7FF),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(Icons.person_outline, size: 20, color: Color(0xFF006577)),
+                          child: const Icon(Icons.person_outline, size: 20, color: Color(0xFF0D9488)),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -197,7 +197,7 @@ class PharmacyReceiptDialog extends StatelessWidget {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF86F2E4).withValues(alpha: 0.4),
+                                      color: const Color(0xFF0D9488).withValues(alpha: 0.12),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Text(
@@ -206,7 +206,7 @@ class PharmacyReceiptDialog extends StatelessWidget {
                                         fontFamily: 'JetBrains Mono',
                                         fontSize: 9.5,
                                         fontWeight: FontWeight.bold,
-                                        color: Color(0xFF006F66),
+                                        color: Color(0xFF0D9488),
                                       ),
                                     ),
                                   ),
@@ -214,7 +214,9 @@ class PharmacyReceiptDialog extends StatelessWidget {
                               ),
                               const SizedBox(height: 1),
                               Text(
-                                'Dokter: $doctorName',
+                                (doctorName.isNotEmpty && doctorName != '-' && doctorName != 'dr. -')
+                                    ? 'Dokter: $doctorName'
+                                    : 'Penjualan Bebas / Walk-in',
                                 style: const TextStyle(fontSize: 10.5, color: textMuted),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,

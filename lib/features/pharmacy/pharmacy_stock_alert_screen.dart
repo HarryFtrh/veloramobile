@@ -205,7 +205,7 @@ class _PharmacyStockAlertScreenState extends State<PharmacyStockAlertScreen> {
                     child: _buildKpiCard(
                       label: 'Stok Menipis',
                       value: '$lowStockCount Obat',
-                      color: const Color(0xFF006577),
+                      color: const Color(0xFF0D9488),
                       bg: const Color(0xFFE0F2FE),
                       icon: Icons.inventory_2_outlined,
                     ),

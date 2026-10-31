@@ -382,7 +382,7 @@ class _PharmacyShiftReportScreenState extends State<PharmacyShiftReportScreen> {
                                       title: 'Modal Awal Kasir',
                                       value: CurrencyFormatter.format(_openingCash),
                                       icon: Icons.account_balance_wallet_outlined,
-                                      accentColor: const Color(0xFF006577),
+                                      accentColor: const Color(0xFF0D9488),
                                     ),
                                   ),
                                   SizedBox(
@@ -451,7 +451,7 @@ class _PharmacyShiftReportScreenState extends State<PharmacyShiftReportScreen> {
                                 const Divider(height: 16, color: Color(0xFFF1F5F9)),
                                 _buildMethodRow('Kartu Debit / EDC', _debitRevenue, Icons.credit_card_rounded, const Color(0xFF6366F1)),
                                 const Divider(height: 16, color: Color(0xFFF1F5F9)),
-                                _buildMethodRow('Klaim Penjamin / BPJS', _insuranceRevenue, Icons.verified_user_outlined, const Color(0xFF006577)),
+                                _buildMethodRow('Klaim Penjamin / BPJS', _insuranceRevenue, Icons.verified_user_outlined, const Color(0xFF0D9488)),
                               ],
                             ),
                           ),

@@ -207,7 +207,7 @@ class _PharmacyMedicalRecordsModalState extends State<PharmacyMedicalRecordsModa
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFF86F2E4).withValues(alpha: 0.4),
+                                          color: const Color(0xFF0D9488).withValues(alpha: 0.12),
                                           borderRadius: BorderRadius.circular(4),
                                         ),
                                         child: Text(
@@ -216,7 +216,7 @@ class _PharmacyMedicalRecordsModalState extends State<PharmacyMedicalRecordsModa
                                             fontFamily: 'JetBrains Mono',
                                             fontSize: 9.5,
                                             fontWeight: FontWeight.bold,
-                                            color: Color(0xFF006F66),
+                                            color: Color(0xFF0D9488),
                                           ),
                                         ),
                                       ),

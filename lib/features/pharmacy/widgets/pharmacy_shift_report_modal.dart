@@ -55,8 +55,10 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
   Future<void> _loadShiftData() async {
     try {
       final recon = await PharmacyService.instance.fetchShiftReconciliation();
+      final status = ShiftService.instance.currentStatus ?? await ShiftService.instance.getShiftStatus();
       if (mounted) {
         setState(() {
+          _shiftStatus = status;
           _openingCash = recon.startingCash;
           _cashRevenue = recon.cashSales;
           _qrisRevenue = recon.qrisSales;
@@ -79,7 +81,7 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
     const borderColor = Color(0xFFE2E8F0);
     const textPrimary = Color(0xFF0F172A);
     const textMuted = Color(0xFF6D7A72);
-    const tertiaryCyan = Color(0xFF006577);
+    const tertiaryCyan = Color(0xFF0D9488);
 
     final totalRevenue = _cashRevenue + _qrisRevenue + _debitRevenue + _insuranceRevenue;
     final totalDrawerCash = _openingCash + _cashRevenue;
@@ -171,7 +173,7 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
                             width: 42,
                             height: 42,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF86F2E4).withValues(alpha: 0.3),
+                              color: const Color(0xFF0D9488).withValues(alpha: 0.12),
                               shape: BoxShape.circle,
                               border: Border.all(color: const Color(0xFF0D9488).withValues(alpha: 0.3)),
                             ),
@@ -207,7 +209,7 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF86F2E4),
+                                        color: const Color(0xFF0D9488).withValues(alpha: 0.12),
                                         borderRadius: BorderRadius.circular(10),
                                       ),
                                       child: const Text(
@@ -216,16 +218,18 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
                                           fontFamily: 'JetBrains Mono',
                                           fontSize: 9,
                                           fontWeight: FontWeight.bold,
-                                          color: Color(0xFF006F66),
+                                          color: Color(0xFF0D9488),
                                         ),
                                       ),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 2),
-                                const Text(
-                                  'Shift 1 (Pagi: 07.00 - 15.00 WIB) • Hari Ini',
-                                  style: TextStyle(fontSize: 11, color: textMuted),
+                                Text(
+                                  _shiftStatus?.openedAt != null
+                                      ? 'Shift ${_shiftStatus?.shiftId != null ? "#${_shiftStatus!.shiftId}" : ""} • Dibuka ${_shiftStatus!.openedAt!.hour.toString().padLeft(2, '0')}:${_shiftStatus!.openedAt!.minute.toString().padLeft(2, '0')} WIB'
+                                      : 'Shift Berjalan • Hari Ini',
+                                  style: const TextStyle(fontSize: 11, color: textMuted),
                                 ),
                               ],
                             ),
@@ -436,12 +440,12 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF86F2E4).withValues(alpha: 0.4),
+                                  color: const Color(0xFF0D9488).withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: const Text(
                                   'MATCH OK',
-                                  style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF006F66)),
+                                  style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF0D9488)),
                                 ),
                               ),
                             ],

@@ -249,7 +249,7 @@ class _PharmacyPbfOrderModalState extends State<PharmacyPbfOrderModal> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: isDueSoon ? const Color(0xFFFFDAD6) : const Color(0xFF86F2E4).withValues(alpha: 0.4),
+                                color: isDueSoon ? const Color(0xFFFFDAD6) : const Color(0xFF0D9488).withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
@@ -258,7 +258,7 @@ class _PharmacyPbfOrderModalState extends State<PharmacyPbfOrderModal> {
                                   fontFamily: 'JetBrains Mono',
                                   fontSize: 9,
                                   fontWeight: FontWeight.bold,
-                                  color: isDueSoon ? const Color(0xFFBA1A1A) : const Color(0xFF006F66),
+                                  color: isDueSoon ? const Color(0xFFBA1A1A) : const Color(0xFF0D9488),
                                 ),
                               ),
                             ),

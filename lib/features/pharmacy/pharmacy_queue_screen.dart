@@ -607,7 +607,7 @@ class _PharmacyQueueScreenState extends State<PharmacyQueueScreen> {
                 ),
                 child: Text(
                   item.insurance,
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF006577)),
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF0D9488)),
                 ),
               ),
               if (item.allergy != null && item.allergy!.isNotEmpty)

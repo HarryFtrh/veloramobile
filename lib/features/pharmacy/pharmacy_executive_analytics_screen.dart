@@ -210,7 +210,7 @@ class _PharmacyExecutiveAnalyticsScreenState extends State<PharmacyExecutiveAnal
                           title: 'HPP Obat (COGS)',
                           value: CurrencyFormatter.format(_cogs),
                           subtitle: _grossRevenue > 0 ? '${((_cogs / _grossRevenue) * 100).toStringAsFixed(1)}% dari omzet' : '0% dari omzet',
-                          accentColor: const Color(0xFF006577),
+                          accentColor: const Color(0xFF0D9488),
                           icon: Icons.inventory_2_outlined,
                         ),
                       ),
