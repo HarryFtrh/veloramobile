@@ -1114,9 +1114,6 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
             ? 'Shift Aktif • ${shift!.openedAt!.hour.toString().padLeft(2, '0')}:${shift.openedAt!.minute.toString().padLeft(2, '0')}'
             : (shift?.shiftId != null ? 'Shift #${shift!.shiftId}' : 'Shift Aktif'))
         : 'Shift Tutup';
-    final shiftBadge = isShiftOpen
-        ? (shift?.shiftId != null ? 'Shift #${shift!.shiftId}' : 'Shift Aktif')
-        : 'Shift Tutup';
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 18, vertical: 8),
@@ -1443,6 +1440,9 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                       ),
                     ),
                 ],
+              ),
+                  ],
+                ),
               ),
             ],
           ),
