@@ -576,4 +576,121 @@ class PharmacyService {
       topMedicines: topMedicines,
     );
   }
+
+  /// 7. Pencarian instan Pasien via Laravel Scout / Meilisearch (`/v1/pharmacy/patients/search-scout`)
+  Future<List<PharmacyPatientData>> searchPatientsScout(String query) async {
+    final trimmed = query.trim();
+    final qParams = <String, dynamic>{
+      ..._locationQuery(),
+      'q': trimmed,
+      'search': trimmed,
+      'limit': 15,
+    };
+
+    const candidateEndpoints = [
+      '/v1/pharmacy/patients/search-scout',
+      '/v1/pharmacy/patients',
+      '/v1/pos/customers',
+    ];
+
+    for (final ep in candidateEndpoints) {
+      try {
+        final res = await _dio.get(ep, queryParameters: qParams);
+        if (res.statusCode == 200 && res.data != null) {
+          final raw = res.data;
+          List<dynamic> list = const [];
+          if (raw is Map) {
+            final d = raw['data'] ?? raw['patients'] ?? raw['customers'] ?? raw['items'];
+            if (d is List) {
+              list = d;
+            } else if (d is Map && d['data'] is List) {
+              list = d['data'] as List;
+            }
+          } else if (raw is List) {
+            list = raw;
+          }
+
+          if (list.isNotEmpty) {
+            return list.whereType<Map>().map((m) {
+              final name = (m['name'] ?? m['patient_name'] ?? m['full_name'] ?? 'Pasien').toString();
+              final rm = (m['mr_number'] ??
+                      m['medical_record_number'] ??
+                      m['no_rm'] ??
+                      m['rm_number'] ??
+                      m['code'] ??
+                      '-')
+                  .toString();
+              final rawAllergies = m['allergies'] ?? m['allergy_history'] ?? m['alergi'] ?? '';
+              final allergies = rawAllergies is List
+                  ? rawAllergies.map((e) => e.toString()).join(', ')
+                  : rawAllergies.toString();
+              final cat = (m['category'] ??
+                      m['patient_category'] ??
+                      m['insurance_type'] ??
+                      (m['bpjs_number'] != null && m['bpjs_number'].toString().isNotEmpty
+                          ? 'BPJS Kesehatan'
+                          : 'Umum'))
+                  .toString();
+              final doc = (m['doctor_name'] ?? m['doctor'] ?? '-').toString();
+              return PharmacyPatientData(
+                patient: name,
+                doctor: doc,
+                queueNumber: '-',
+                medicalRecordNumber: rm,
+                patientCategory: cat,
+                allergies: allergies,
+              );
+            }).toList();
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠️ [PharmacyService] Scout patient search $ep failed: $e');
+      }
+    }
+    return const [];
+  }
+
+  /// 8. Pencarian Dokter Pemeriksa & SIP (`/v1/pharmacy/doctors?search=...`)
+  Future<List<Map<String, String>>> searchDoctors(String query) async {
+    final trimmed = query.trim();
+    final qParams = <String, dynamic>{
+      ..._locationQuery(),
+      if (trimmed.isNotEmpty) 'search': trimmed,
+      if (trimmed.isNotEmpty) 'q': trimmed,
+      'limit': 15,
+    };
+
+    try {
+      final res = await _dio.get('/v1/pharmacy/doctors', queryParameters: qParams);
+      if (res.statusCode == 200 && res.data != null) {
+        final raw = res.data;
+        List<dynamic> list = const [];
+        if (raw is Map) {
+          final d = raw['data'] ?? raw['doctors'] ?? raw['items'];
+          if (d is List) {
+            list = d;
+          } else if (d is Map && d['data'] is List) {
+            list = d['data'] as List;
+          }
+        } else if (raw is List) {
+          list = raw;
+        }
+
+        return list.whereType<Map>().map((m) {
+          final name = (m['name'] ?? m['doctor_name'] ?? 'dr. -').toString();
+          final sip = (m['sip_number'] ?? m['sip'] ?? m['license_number'] ?? '').toString();
+          final spec = (m['specialization'] ?? m['spesialis'] ?? 'Umum').toString();
+          return {
+            'name': name,
+            'sip': sip,
+            'specialization': spec,
+            'display': sip.isNotEmpty ? '$name (SIP: $sip)' : name,
+          };
+        }).toList();
+      }
+    } catch (e) {
+      debugPrint('⚠️ [PharmacyService] Doctor search failed: $e');
+    }
+    return const [];
+  }
 }

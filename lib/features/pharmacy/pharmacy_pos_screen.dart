@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../core/design/tokens.dart';
@@ -66,6 +67,8 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
   }
 
   bool _isLoadingCatalog = false;
+  bool _isSearchingRemote = false;
+  Timer? _searchDebounce;
   String? _syncError; // ignore: unused_field
   bool _isGridView = true;
 
@@ -95,6 +98,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     PharmacyService.instance.activePatient.removeListener(_onActivePatientChanged);
     _searchController.dispose();
     super.dispose();
@@ -158,6 +162,94 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
     }
   }
 
+  Map<String, dynamic> _posProductToDrugMap(PosProduct p) => {
+        'id': p.id,
+        'name': p.name,
+        'sku': p.sku.isNotEmpty ? p.sku : (p.barcode.isNotEmpty ? p.barcode : '-'),
+        'barcode': p.barcode,
+        'category': p.category,
+        'price': p.price,
+        'isDotRed': p.isPrescriptionOnly,
+        'isPrescriptionOnly': p.isPrescriptionOnly,
+        'batch': p.batches.isNotEmpty ? p.batches.first.batchNumber : '-',
+        'ed': p.batches.isNotEmpty ? p.batches.first.expiryDate : '-',
+        'stock': p.stock.toInt(),
+        'unit': p.unit ?? 'TAB',
+        'selectedUnit': p.units.isNotEmpty ? p.units.first.name : (p.unit ?? 'TAB'),
+        'units': p.units.map((u) => u.toJson()).toList(),
+        'imageUrl': p.imageUrl,
+        'image': p.imageUrl,
+        'description': p.description,
+        'batches': p.batches
+            .map((b) => {
+                  'id': b.id,
+                  'batch': b.batchNumber,
+                  'batch_number': b.batchNumber,
+                  'ed': b.expiryDate,
+                  'expiry_date': b.expiryDate,
+                  'stock': b.stock,
+                })
+            .toList(),
+      };
+
+  void _mergeRemoteProducts(List<PosProduct> products) {
+    if (products.isEmpty || !mounted) return;
+    final existingIds = _drugItems.map((e) => e['id'].toString()).toSet();
+    final newCategories = Set<String>.from(_categories);
+    bool changed = false;
+
+    for (final p in products) {
+      final mapped = _posProductToDrugMap(p);
+      if (existingIds.contains(p.id)) {
+        final idx = _drugItems.indexWhere((e) => e['id'].toString() == p.id);
+        if (idx != -1) {
+          _drugItems[idx] = mapped;
+          changed = true;
+        }
+      } else {
+        _drugItems.add(mapped);
+        existingIds.add(p.id);
+        if (p.category.isNotEmpty && p.category != 'Semua' && p.category != 'Umum') {
+          newCategories.add(p.category);
+        }
+        changed = true;
+      }
+    }
+
+    if (changed && mounted) {
+      setState(() {
+        _categories = newCategories.toList();
+      });
+    }
+  }
+
+  void _onSearchChanged(String val) {
+    setState(() => _searchQuery = val);
+    _searchDebounce?.cancel();
+    final trimmed = val.trim();
+    if (trimmed.length < 2) {
+      if (_isSearchingRemote) {
+        setState(() => _isSearchingRemote = false);
+      }
+      return;
+    }
+
+    _searchDebounce = Timer(const Duration(milliseconds: 320), () async {
+      if (!mounted) return;
+      setState(() => _isSearchingRemote = true);
+      try {
+        final results = await ProductCatalogService.instance.searchProductsRemote(trimmed);
+        if (mounted && _searchQuery.trim() == trimmed) {
+          _mergeRemoteProducts(results);
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isSearchingRemote = false);
+        }
+      }
+    });
+  }
+
   Future<void> _fetchCatalog() async {
     setState(() => _isLoadingCatalog = true);
     try {
@@ -167,32 +259,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
           _categories = catalog.categories.isNotEmpty ? catalog.categories : const ['Semua'];
           _selectedCategoryIndex = 0;
           _drugItems.clear();
-          _drugItems.addAll(catalog.products.map((p) => {
-            'id': p.id,
-            'name': p.name,
-            'sku': p.sku.isNotEmpty ? p.sku : (p.barcode.isNotEmpty ? p.barcode : '-'),
-            'category': p.category,
-            'price': p.price,
-            'isDotRed': p.isPrescriptionOnly,
-            'isPrescriptionOnly': p.isPrescriptionOnly,
-            'batch': p.batches.isNotEmpty ? p.batches.first.batchNumber : '-',
-            'ed': p.batches.isNotEmpty ? p.batches.first.expiryDate : '-',
-            'stock': p.stock.toInt(),
-            'unit': p.unit ?? 'TAB',
-            'selectedUnit': p.units.isNotEmpty ? p.units.first.name : (p.unit ?? 'TAB'),
-            'units': p.units.map((u) => u.toJson()).toList(),
-            'imageUrl': p.imageUrl,
-            'image': p.imageUrl,
-            'description': p.description,
-            'batches': p.batches.map((b) => {
-              'id': b.id,
-              'batch': b.batchNumber,
-              'batch_number': b.batchNumber,
-              'ed': b.expiryDate,
-              'expiry_date': b.expiryDate,
-              'stock': b.stock,
-            }).toList(),
-          }));
+          _drugItems.addAll(catalog.products.map(_posProductToDrugMap));
           _isLoadingCatalog = false;
           _syncError = null;
         });
@@ -489,107 +556,133 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
     );
   }
 
+  Future<bool> _resolveAndAddBarcode(String rawCode) async {
+    final code = rawCode.trim().toLowerCase();
+    if (code.isEmpty) return false;
+
+    final match = _drugItems.firstWhere(
+      (it) =>
+          it['sku']?.toString().toLowerCase() == code ||
+          it['barcode']?.toString().toLowerCase() == code ||
+          it['id']?.toString().toLowerCase() == code,
+      orElse: () => <String, dynamic>{},
+    );
+
+    if (match.isNotEmpty) {
+      _addToCart(match['id'].toString());
+      AudioHelper.actionFeedback();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✓ ${match['name']} ditambahkan ke keranjang resep.'),
+            backgroundColor: const Color(0xFF059669),
+          ),
+        );
+      }
+      return true;
+    }
+
+    // Jika belum ada di memori lokal, cari lewat endpoint scan/Scout server
+    final remoteProduct = await ProductCatalogService.instance.scanBarcodeRemote(rawCode.trim());
+    if (remoteProduct != null && mounted) {
+      _mergeRemoteProducts([remoteProduct]);
+      _addToCart(remoteProduct.id);
+      AudioHelper.actionFeedback();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✓ ${remoteProduct.name} ditemukan dari katalog & ditambahkan ke keranjang.'),
+          backgroundColor: const Color(0xFF059669),
+        ),
+      );
+      return true;
+    }
+
+    return false;
+  }
+
   void _openBarcodeScanner() {
     AudioHelper.tapFeedback();
     final barcodeCtrl = TextEditingController();
     String? localError;
+    bool isScanning = false;
 
     showDialog<void>(
       context: context,
       builder: (dCtx) => StatefulBuilder(
-        builder: (context, setDState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Row(
-            children: [
-              Icon(Icons.qr_code_scanner_rounded, color: Color(0xFF059669)),
-              SizedBox(width: 10),
-              Text(
-                'Pindai Barcode / SKU Obat',
-                style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+        builder: (context, setDState) {
+          Future<void> handleScan(String val) async {
+            final trimmed = val.trim();
+            if (trimmed.isEmpty || isScanning) return;
+            setDState(() {
+              isScanning = true;
+              localError = null;
+            });
+            final found = await _resolveAndAddBarcode(trimmed);
+            if (!dCtx.mounted) return;
+            if (found) {
+              Navigator.pop(dCtx);
+            } else {
+              setDState(() {
+                isScanning = false;
+                localError = 'Obat dengan barcode "$trimmed" tidak ditemukan di katalog.';
+              });
+            }
+          }
+
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Row(
               children: [
-                const Text(
-                  'Arahkan scanner barcode atau ketik kode barcode/SKU sediaan obat:',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF6D7A72)),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: barcodeCtrl,
-                  autofocus: true,
-                  decoration: InputDecoration(
-                    labelText: 'Kode Barcode / SKU',
-                    hintText: 'Contoh: 8991234567...',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    errorText: localError,
-                    prefixIcon: const Icon(Icons.qr_code_rounded, color: Color(0xFF059669)),
-                  ),
-                  onSubmitted: (val) {
-                    final code = val.trim().toLowerCase();
-                    if (code.isEmpty) return;
-                    final match = _drugItems.firstWhere(
-                      (it) => it['sku']?.toString().toLowerCase() == code || it['id']?.toString() == code,
-                      orElse: () => <String, dynamic>{},
-                    );
-                    if (match.isNotEmpty) {
-                      _addToCart(match['id'].toString());
-                      AudioHelper.actionFeedback();
-                      Navigator.pop(dCtx);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('✓ ${match['name']} ditambahkan ke keranjang resep.'),
-                          backgroundColor: const Color(0xFF059669),
-                        ),
-                      );
-                    } else {
-                      setDState(() => localError = 'Obat dengan barcode "$val" tidak ditemukan.');
-                    }
-                  },
+                Icon(Icons.qr_code_scanner_rounded, color: Color(0xFF059669)),
+                SizedBox(width: 10),
+                Text(
+                  'Pindai Barcode / SKU Obat',
+                  style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dCtx),
-              child: const Text('Batal', style: TextStyle(color: Color(0xFF6D7A72))),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final code = barcodeCtrl.text.trim().toLowerCase();
-                if (code.isEmpty) return;
-                final match = _drugItems.firstWhere(
-                  (it) => it['sku']?.toString().toLowerCase() == code || it['id']?.toString() == code,
-                  orElse: () => <String, dynamic>{},
-                );
-                if (match.isNotEmpty) {
-                  _addToCart(match['id'].toString());
-                  AudioHelper.actionFeedback();
-                  Navigator.pop(dCtx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('✓ ${match['name']} ditambahkan ke keranjang resep.'),
-                      backgroundColor: const Color(0xFF059669),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Arahkan scanner barcode atau ketik kode barcode/SKU sediaan obat:',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF6D7A72)),
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: barcodeCtrl,
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      labelText: 'Kode Barcode / SKU',
+                      hintText: 'Contoh: 8991234567...',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      errorText: localError,
+                      prefixIcon: const Icon(Icons.qr_code_rounded, color: Color(0xFF059669)),
                     ),
-                  );
-                } else {
-                  setDState(() => localError = 'Obat dengan barcode "${barcodeCtrl.text}" tidak ditemukan.');
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF059669),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    onSubmitted: handleScan,
+                  ),
+                ],
               ),
-              child: const Text('Cari & Tambah'),
             ),
-          ],
-        ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dCtx),
+                child: const Text('Batal', style: TextStyle(color: Color(0xFF6D7A72))),
+              ),
+              ElevatedButton(
+                onPressed: isScanning ? null : () => handleScan(barcodeCtrl.text),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF059669),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: Text(isScanning ? 'Mencari...' : 'Cari & Tambah'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -1616,18 +1709,14 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
         ),
         child: TextField(
           controller: _searchController,
-          onChanged: (val) => setState(() => _searchQuery = val),
-          onSubmitted: (val) {
+          onChanged: _onSearchChanged,
+          onSubmitted: (val) async {
             final trimmed = val.trim();
             if (trimmed.isEmpty) return;
-            for (final it in _drugItems) {
-              if (it['sku']?.toString().toLowerCase() == trimmed.toLowerCase()) {
-                _addToCart(it['id'].toString());
-                AudioHelper.actionFeedback();
-                _searchController.clear();
-                setState(() => _searchQuery = '');
-                break;
-              }
+            final added = await _resolveAndAddBarcode(trimmed);
+            if (added && mounted) {
+              _searchController.clear();
+              setState(() => _searchQuery = '');
             }
           },
           style: const TextStyle(fontSize: 12.5, color: Color(0xFF0F172A), fontWeight: FontWeight.w500),
@@ -1638,14 +1727,30 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
             suffixIcon: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (_isSearchingRemote)
+                  const Padding(
+                    padding: EdgeInsets.only(right: 6),
+                    child: SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: emeraldPrimary,
+                      ),
+                    ),
+                  ),
                 if (_searchQuery.isNotEmpty)
                   IconButton(
                     icon: const Icon(Icons.close_rounded, size: 15, color: Color(0xFF94A3B8)),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                     onPressed: () {
+                      _searchDebounce?.cancel();
                       _searchController.clear();
-                      setState(() => _searchQuery = '');
+                      setState(() {
+                        _searchQuery = '';
+                        _isSearchingRemote = false;
+                      });
                     },
                   ),
                 InkWell(
@@ -1812,6 +1917,8 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
       final matchesSearch = q.isEmpty ||
           item['name'].toString().toLowerCase().contains(q) ||
           item['sku'].toString().toLowerCase().contains(q) ||
+          (item['barcode'] != null && item['barcode'].toString().toLowerCase().contains(q)) ||
+          (item['description'] != null && item['description'].toString().toLowerCase().contains(q)) ||
           (item['category'] != null && item['category'].toString().toLowerCase().contains(q));
 
       return matchesCategory && matchesSearch;

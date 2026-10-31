@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../core/design/tokens.dart';
+import '../pharmacy_service.dart';
 
 class PharmacyPatientData {
   final String patient;
@@ -71,6 +73,13 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
   late final TextEditingController _allergiesController;
   late String _selectedCategory;
 
+  Timer? _patientDebounce;
+  Timer? _doctorDebounce;
+  bool _isSearchingPatients = false;
+  bool _isSearchingDoctors = false;
+  List<PharmacyPatientData> _patientSuggestions = const [];
+  List<Map<String, String>> _doctorSuggestions = const [];
+
   static const List<String> presetCategories = [
     'Umum',
     'BPJS Kesehatan',
@@ -97,12 +106,66 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
 
   @override
   void dispose() {
+    _patientDebounce?.cancel();
+    _doctorDebounce?.cancel();
     _patientController.dispose();
     _doctorController.dispose();
     _queueController.dispose();
     _rmController.dispose();
     _allergiesController.dispose();
     super.dispose();
+  }
+
+  void _onPatientQueryChanged(String val) {
+    _patientDebounce?.cancel();
+    final q = val.trim();
+    if (q.length < 2 || q == 'Pelanggan Umum (Walk-in)') {
+      if (_patientSuggestions.isNotEmpty || _isSearchingPatients) {
+        setState(() {
+          _patientSuggestions = const [];
+          _isSearchingPatients = false;
+        });
+      }
+      return;
+    }
+
+    _patientDebounce = Timer(const Duration(milliseconds: 300), () async {
+      if (!mounted) return;
+      setState(() => _isSearchingPatients = true);
+      final results = await PharmacyService.instance.searchPatientsScout(q);
+      if (mounted) {
+        setState(() {
+          _patientSuggestions = results;
+          _isSearchingPatients = false;
+        });
+      }
+    });
+  }
+
+  void _onDoctorQueryChanged(String val) {
+    _doctorDebounce?.cancel();
+    final q = val.trim();
+    if (q.length < 2 || q == '-') {
+      if (_doctorSuggestions.isNotEmpty || _isSearchingDoctors) {
+        setState(() {
+          _doctorSuggestions = const [];
+          _isSearchingDoctors = false;
+        });
+      }
+      return;
+    }
+
+    _doctorDebounce = Timer(const Duration(milliseconds: 300), () async {
+      if (!mounted) return;
+      setState(() => _isSearchingDoctors = true);
+      final results = await PharmacyService.instance.searchDoctors(q);
+      if (mounted) {
+        setState(() {
+          _doctorSuggestions = results;
+          _isSearchingDoctors = false;
+        });
+      }
+    });
   }
 
   @override
@@ -239,6 +302,7 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
                     flex: 6,
                     child: TextField(
                       controller: _rmController,
+                      onChanged: _onPatientQueryChanged,
                       style: const TextStyle(
                         fontFamily: 'JetBrains Mono',
                         fontSize: 13,
@@ -272,13 +336,24 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
               const SizedBox(height: 12),
               TextField(
                 controller: _patientController,
+                onChanged: _onPatientQueryChanged,
                 style: const TextStyle(fontSize: 13, color: Color(0xFF0F172A)),
                 decoration: InputDecoration(
-                  labelText: 'Nama Lengkap Pasien',
+                  labelText: 'Nama Lengkap Pasien (Cari Scout)',
                   labelStyle: const TextStyle(color: Color(0xFF6D7A72), fontSize: 11.5),
-                  hintText: 'Contoh: Nama Lengkap Pasien',
+                  hintText: 'Ketik nama atau No. RM untuk cari cepat...',
                   hintStyle: const TextStyle(color: Color(0xFFBCCAC0), fontSize: 12),
-                  prefixIcon: const Icon(Icons.person_outline, size: 18, color: Color(0xFF6D7A72)),
+                  prefixIcon: const Icon(Icons.person_search_outlined, size: 18, color: Color(0xFF6D7A72)),
+                  suffixIcon: _isSearchingPatients
+                      ? const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: emeraldPrimary),
+                          ),
+                        )
+                      : null,
                   filled: true,
                   fillColor: surfaceCanvas,
                   border: OutlineInputBorder(
@@ -296,9 +371,81 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 ),
               ),
+              if (_patientSuggestions.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Container(
+                  constraints: const BoxConstraints(maxHeight: 150),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: emeraldPrimary.withValues(alpha: 0.3)),
+                  ),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    itemCount: _patientSuggestions.length,
+                    separatorBuilder: (_, _) => const Divider(height: 1, color: borderColor),
+                    itemBuilder: (ctx, i) {
+                      final p = _patientSuggestions[i];
+                      return InkWell(
+                        onTap: () {
+                          setState(() {
+                            _patientController.text = p.patient;
+                            if (p.medicalRecordNumber != '-' && p.medicalRecordNumber.isNotEmpty) {
+                              _rmController.text = p.medicalRecordNumber;
+                            }
+                            if (p.allergies.isNotEmpty) {
+                              _allergiesController.text = p.allergies;
+                            }
+                            if (p.doctor != '-' && p.doctor.isNotEmpty) {
+                              _doctorController.text = p.doctor;
+                            }
+                            if (presetCategories.contains(p.patientCategory)) {
+                              _selectedCategory = p.patientCategory;
+                            }
+                            _patientSuggestions = const [];
+                          });
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.person_pin_rounded, size: 16, color: emeraldPrimary),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      p.patient,
+                                      style: const TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF0F172A),
+                                      ),
+                                    ),
+                                    Text(
+                                      'RM: ${p.medicalRecordNumber} • ${p.patientCategory}${p.allergies.isNotEmpty ? " • Alergi: ${p.allergies}" : ""}',
+                                      style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(Icons.north_west_rounded, size: 14, color: emeraldPrimary),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               TextField(
                 controller: _doctorController,
+                onChanged: _onDoctorQueryChanged,
                 style: const TextStyle(fontSize: 13, color: Color(0xFF0F172A)),
                 decoration: InputDecoration(
                   labelText: 'Dokter Pemeriksa & SIP',
@@ -306,6 +453,16 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
                   hintText: 'Contoh: dr. Nama Dokter (SIP: No. SIP)',
                   hintStyle: const TextStyle(color: Color(0xFFBCCAC0), fontSize: 12),
                   prefixIcon: const Icon(Icons.medical_services_outlined, size: 18, color: Color(0xFF6D7A72)),
+                  suffixIcon: _isSearchingDoctors
+                      ? const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: emeraldPrimary),
+                          ),
+                        )
+                      : null,
                   filled: true,
                   fillColor: surfaceCanvas,
                   border: OutlineInputBorder(
@@ -323,6 +480,55 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 ),
               ),
+              if (_doctorSuggestions.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Container(
+                  constraints: const BoxConstraints(maxHeight: 130),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFF0D9488).withValues(alpha: 0.3)),
+                  ),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    itemCount: _doctorSuggestions.length,
+                    separatorBuilder: (_, _) => const Divider(height: 1, color: borderColor),
+                    itemBuilder: (ctx, i) {
+                      final d = _doctorSuggestions[i];
+                      return InkWell(
+                        onTap: () {
+                          setState(() {
+                            _doctorController.text = d['display'] ?? d['name'] ?? '';
+                            _doctorSuggestions = const [];
+                          });
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.medical_information_outlined, size: 16, color: Color(0xFF0D9488)),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '${d['display'] ?? d['name']} • ${d['specialization'] ?? 'Umum'}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF0F172A),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               TextField(
                 controller: _allergiesController,

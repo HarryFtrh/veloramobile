@@ -174,22 +174,37 @@ class PosProduct {
         (item) => PosProductBatch.fromJson(item is Map<String, dynamic> ? item : null),
       );
     }
+    if (rawBatches.isEmpty) {
+      rawBatches = json.getList<PosProductBatch>(
+        'stocks',
+        (item) => PosProductBatch.fromJson(item is Map<String, dynamic> ? item : null),
+      );
+    }
 
-    // Product name: handles Cafe/Retail/Pharmacy keys
+    final Map<String, dynamic> gp = (json['global_product'] is Map)
+        ? Map<String, dynamic>.from(json['global_product'] as Map)
+        : (json['product'] is Map ? Map<String, dynamic>.from(json['product'] as Map) : const {});
+
+    // Product name: handles Cafe/Retail/Pharmacy keys + GlobalProduct fallback
     String productName = json.getString('name');
+    if (productName.isEmpty || productName == '-') productName = json.getString('display_name');
     if (productName.isEmpty || productName == '-') productName = json.getString('custom_name');
     if (productName.isEmpty || productName == '-') productName = json.getString('name_main');
+    if (productName.isEmpty || productName == '-') productName = json.getString('product_name');
     if (productName.isEmpty || productName == '-') productName = json.getString('nama_obat');
     if (productName.isEmpty || productName == '-') productName = json.getString('nama_produk');
     if (productName.isEmpty || productName == '-') productName = json.getString('medicine_name');
     if (productName.isEmpty || productName == '-') productName = json.getString('drug_name');
     if (productName.isEmpty || productName == '-') productName = json.getString('item_name');
+    if (productName.isEmpty || productName == '-') productName = gp.getString('name_main');
+    if (productName.isEmpty || productName == '-') productName = gp.getString('display_name');
+    if (productName.isEmpty || productName == '-') productName = gp.getString('name');
     if (productName.isEmpty || productName == '-') productName = 'Produk';
     productName = sanitizeDisplayName(productName);
 
-    // Category name: handles Cafe/Retail/Pharmacy keys
+    // Category name: handles Cafe/Retail/Pharmacy keys + GlobalProduct fallback
     String categoryName = '';
-    final rawCat = json['category'] ?? json['kategori'] ?? json['golongan'] ?? json['klasifikasi'] ?? json['jenis'];
+    final rawCat = json['category'] ?? json['kategori'] ?? json['golongan'] ?? json['klasifikasi'] ?? json['jenis'] ?? gp['golongan'] ?? gp['category'];
     if (rawCat is Map) {
       categoryName = sanitizeDisplayName(rawCat);
     } else if (rawCat is String) {
@@ -198,6 +213,7 @@ class PosProduct {
     if (categoryName.isEmpty || categoryName == '-') categoryName = json.getString('category_name');
     if (categoryName.isEmpty || categoryName == '-') categoryName = json.getString('golongan_obat');
     if (categoryName.isEmpty || categoryName == '-') categoryName = json.getString('category');
+    if (categoryName.isEmpty || categoryName == '-') categoryName = gp.getString('golongan');
     if (categoryName.isEmpty || categoryName == '-') categoryName = 'Umum';
     categoryName = sanitizeDisplayName(categoryName);
 
@@ -210,12 +226,15 @@ class PosProduct {
     if (priceVal <= 0) priceVal = json.getDouble('selling_price_1');
     if (priceVal <= 0) priceVal = json.getDouble('selling_price_2');
     if (priceVal <= 0) priceVal = json.getDouble('selling_price_3');
+    if (priceVal <= 0) priceVal = gp.getDouble('selling_price');
+    if (priceVal <= 0) priceVal = gp.getDouble('price');
 
     // Stock: handles 'stock', 'stock_qty', 'stok', 'current_stock', 'qty'
     final bool hasStockField = (json.containsKey('stock') && json['stock'] != null) ||
         (json.containsKey('stock_qty') && json['stock_qty'] != null) ||
         (json.containsKey('stok') && json['stok'] != null) ||
         (json.containsKey('current_stock') && json['current_stock'] != null) ||
+        (json.containsKey('total_stock') && json['total_stock'] != null) ||
         (json.containsKey('qty') && json['qty'] != null);
     final bool isExplicitlyUnavailable = json.getBool('is_out_of_stock') ||
         json.getString('status').toLowerCase() == 'out_of_stock' ||
@@ -228,7 +247,10 @@ class PosProduct {
       stockVal = json.getDouble('stock',
           fallback: json.getDouble('stock_qty',
               fallback: json.getDouble('stok',
-                  fallback: json.getDouble('current_stock', fallback: json.getDouble('qty')))));
+                  fallback: json.getDouble('current_stock',
+                      fallback: json.getDouble('total_stock', fallback: json.getDouble('qty'))))));
+    } else if (rawBatches.isNotEmpty) {
+      stockVal = rawBatches.fold<double>(0.0, (sum, b) => sum + b.stock);
     } else {
       stockVal = 99.0;
     }
@@ -239,8 +261,12 @@ class PosProduct {
     if (skuVal.isEmpty || skuVal == '-') skuVal = json.getString('kode_obat');
     if (skuVal.isEmpty || skuVal == '-') skuVal = json.getString('kode_produk');
     if (skuVal.isEmpty || skuVal == '-') skuVal = json.getString('code');
+    if (skuVal.isEmpty || skuVal == '-') skuVal = json.getString('kode');
+    if (skuVal.isEmpty || skuVal == '-') skuVal = gp.getString('velora_id');
+    if (skuVal.isEmpty || skuVal == '-') skuVal = gp.getString('sku');
     String barcodeVal = json.getString('barcode');
     if (barcodeVal.isEmpty || barcodeVal == '-') barcodeVal = json.getString('barcode_master');
+    if (barcodeVal.isEmpty || barcodeVal == '-') barcodeVal = gp.getString('barcode');
 
     // Prescription / Hard Drug detection
     final isRx = json.getBool('is_prescription_only') ||
@@ -309,14 +335,24 @@ class PosProduct {
     if (unitVal.isEmpty || unitVal == '-') unitVal = json.getString('packaging');
     if (unitVal.isEmpty || unitVal == '-') unitVal = json.getString('package_unit');
     if (unitVal.isEmpty || unitVal == '-') unitVal = json.getString('uom');
+    if (unitVal.isEmpty || unitVal == '-') unitVal = json.getString('base_unit');
+    if (unitVal.isEmpty || unitVal == '-') unitVal = json.getString('satuan_terkecil');
+    if (unitVal.isEmpty || unitVal == '-') unitVal = gp.getString('kemasan');
+    if (unitVal.isEmpty || unitVal == '-') unitVal = gp.getString('unit');
 
     String? productTag = json.getString('badge');
     if (productTag.isEmpty) productTag = json.getString('tag');
     if (productTag.isEmpty) productTag = json.getString('promo_tag');
 
     String? desc = json.getString('description');
+    if (desc.isEmpty) desc = json.getString('kandungan');
+    if (desc.isEmpty) desc = json.getString('composition');
+    if (desc.isEmpty) desc = json.getString('active_ingredient');
+    if (desc.isEmpty) desc = json.getString('zat_aktif');
     if (desc.isEmpty) desc = json.getString('subtitle');
     if (desc.isEmpty) desc = json.getString('desc');
+    if (desc.isEmpty) desc = gp.getString('kandungan');
+    if (desc.isEmpty) desc = gp.getString('description');
 
     String? catId = json.getString('category_id');
     if (catId.isEmpty && json['category'] is Map) {
@@ -493,7 +529,7 @@ class ProductCatalogService {
   /// Pencarian ID produk O(1) instan
   PosProduct? findById(String id) => _idMap[id.trim()];
 
-  /// Filter pencarian cepat (Barcode -> SKU -> Nama -> Kategori)
+  /// Filter pencarian cepat (Barcode -> SKU -> Nama -> Kandungan -> Kategori)
   List<PosProduct> searchFast(String query) {
     if (query.isEmpty) return _cachedCatalog?.products ?? const [];
     final q = query.trim().toLowerCase();
@@ -509,8 +545,128 @@ class ProductCatalogService {
       p.name.toLowerCase().contains(q) ||
       p.sku.toLowerCase().contains(q) ||
       p.barcode.toLowerCase().contains(q) ||
+      (p.description ?? '').toLowerCase().contains(q) ||
       p.category.toLowerCase().contains(q)
     ).toList();
+  }
+
+  /// Pencarian real-time ke backend Laravel Scout / Meilisearch (/v1/pharmacy/products?search=...)
+  /// tanpa menimpa katalog dasar (_cachedCatalog), melainkan memperkaya indeks in-memory.
+  Future<List<PosProduct>> searchProductsRemote(
+    String query, {
+    int limit = 50,
+  }) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return _cachedCatalog?.products ?? const [];
+
+    final locId = SessionStorage.instance.getLocationId();
+    final queryParams = <String, dynamic>{
+      'search': trimmed,
+      'q': trimmed,
+      'limit': limit,
+      'per_page': limit,
+      if (locId != null && locId.isNotEmpty) 'location_id': locId,
+    };
+
+    final bizType = SessionStorage.instance.getBusinessType()?.toLowerCase() ?? 'retail';
+    bool isPharmacy = bizType == 'pharmacy';
+    try {
+      if (AppConfig.instance.isPharmacy) isPharmacy = true;
+    } catch (_) {}
+
+    final candidateEndpoints = isPharmacy
+        ? [
+            '/v1/pharmacy/products',
+            '/v1/pos/products-sync',
+            '/v1/pharmacy/inventory',
+            '/v1/pharmacy/products/search-global',
+          ]
+        : [
+            '/v1/pos/products-sync',
+            '/v1/pos/products',
+            '/v1/products',
+          ];
+
+    for (final ep in candidateEndpoints) {
+      try {
+        final res = await ApiClient.instance.dio.get(
+          ep,
+          queryParameters: queryParams,
+        );
+        if (res.statusCode == 200 && res.data != null) {
+          final parsed = _parseCatalogData(res.data);
+          if (parsed.products.isNotEmpty) {
+            for (final p in parsed.products) {
+              if (p.id.isNotEmpty) _idMap[p.id] = p;
+              if (p.barcode.isNotEmpty) _barcodeMap[p.barcode.trim().toLowerCase()] = p;
+              if (p.sku.isNotEmpty) _skuMap[p.sku.trim().toLowerCase()] = p;
+            }
+            return parsed.products;
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠️ [SCOUT SEARCH] Candidate $ep failed: $e');
+      }
+    }
+
+    return searchFast(trimmed);
+  }
+
+  /// Pindai barcode obat ke endpoint server `/v1/pharmacy/pos/scan` atau `/v1/pharmacy/products/scan`
+  /// jika belum ada di memori lokal.
+  Future<PosProduct?> scanBarcodeRemote(String barcode) async {
+    final clean = barcode.trim();
+    if (clean.isEmpty) return null;
+
+    final local = findByBarcode(clean) ?? findBySku(clean);
+    if (local != null) return local;
+
+    final locId = SessionStorage.instance.getLocationId();
+    final payload = <String, dynamic>{
+      'barcode': clean,
+      'code': clean,
+      'sku': clean,
+      if (locId != null && locId.isNotEmpty) 'location_id': locId,
+    };
+
+    const scanEndpoints = [
+      '/v1/pharmacy/pos/scan',
+      '/v1/pharmacy/products/scan',
+    ];
+
+    for (final ep in scanEndpoints) {
+      try {
+        final res = await ApiClient.instance.dio.post(ep, data: payload);
+        if (res.statusCode == 200 && res.data != null) {
+          final raw = res.data;
+          Map<String, dynamic>? itemMap;
+          if (raw is Map) {
+            final d = raw['data'] ?? raw['product'] ?? raw['item'];
+            if (d is Map) {
+              itemMap = Map<String, dynamic>.from(d['product'] is Map ? d['product'] : d);
+            } else if (raw['id'] != null || raw['name'] != null) {
+              itemMap = Map<String, dynamic>.from(raw);
+            }
+          }
+          if (itemMap != null) {
+            final p = PosProduct.fromJson(itemMap);
+            if (p.id.isNotEmpty) _idMap[p.id] = p;
+            if (p.barcode.isNotEmpty) _barcodeMap[p.barcode.trim().toLowerCase()] = p;
+            if (p.sku.isNotEmpty) _skuMap[p.sku.trim().toLowerCase()] = p;
+            return p;
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠️ [BARCODE SCAN] $ep failed: $e');
+      }
+    }
+
+    // Fallback ke pencarian Scout dengan kata kunci barcode
+    final scoutMatches = await searchProductsRemote(clean, limit: 5);
+    if (scoutMatches.isNotEmpty) {
+      return scoutMatches.first;
+    }
+    return null;
   }
 
   /// Fetches products from the canonical POS sync API
