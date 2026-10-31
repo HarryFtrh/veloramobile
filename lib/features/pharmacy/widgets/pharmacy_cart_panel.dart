@@ -657,25 +657,25 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
-                                    const SizedBox(width: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                      decoration: BoxDecoration(
-                                        color: isWalkIn
-                                            ? primaryEmerald.withValues(alpha: 0.1)
-                                            : secondaryTeal.withValues(alpha: 0.12),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        isWalkIn ? 'OTC' : 'No. ${widget.queueNumber}',
-                                        style: TextStyle(
-                                          fontFamily: 'JetBrains Mono',
-                                          fontSize: 9.5,
-                                          fontWeight: FontWeight.bold,
-                                          color: isWalkIn ? primaryEmerald : secondaryTeal,
+                                    if (!isWalkIn && widget.queueNumber.isNotEmpty && widget.queueNumber != '-') ...[
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                        decoration: BoxDecoration(
+                                          color: secondaryTeal.withValues(alpha: 0.12),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          'No. ${widget.queueNumber}',
+                                          style: const TextStyle(
+                                            fontFamily: 'JetBrains Mono',
+                                            fontSize: 9.5,
+                                            fontWeight: FontWeight.bold,
+                                            color: secondaryTeal,
+                                          ),
                                         ),
                                       ),
-                                    ),
+                                    ],
                                   ],
                                 ),
                                 const SizedBox(height: 1),

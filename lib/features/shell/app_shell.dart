@@ -458,6 +458,11 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     final wide = MediaQuery.sizeOf(context).width >= _headerBreakpoint;
+    final bizType = (SessionStorage.instance.getBusinessRole() ?? '').toLowerCase();
+    final isPharmacy = AppConfig.instance.flavor == AppFlavor.pharmacy ||
+        bizType.contains('pharmacy') ||
+        bizType.contains('apotek') ||
+        bizType.contains('klinik');
 
     final body = IndexedStack(
       index: _index,
@@ -468,7 +473,7 @@ class _AppShellState extends State<AppShell> {
     );
 
     if (wide) {
-      if (AppConfig.instance.flavor == AppFlavor.pharmacy) {
+      if (isPharmacy) {
         return Scaffold(
           resizeToAvoidBottomInset: false,
           backgroundColor: const Color(0xFFFAF8FF),
@@ -498,7 +503,6 @@ class _AppShellState extends State<AppShell> {
 
     final p = context.palette;
     final brandPrimary = Theme.of(context).colorScheme.primary;
-    final isPharmacy = AppConfig.instance.flavor == AppFlavor.pharmacy;
     final pharmacyIndicator = const Color(0xFF86F2E4);
     final pharmacyActive = const Color(0xFF006F66);
     final pharmacyInactive = const Color(0xFF6D7A72);
