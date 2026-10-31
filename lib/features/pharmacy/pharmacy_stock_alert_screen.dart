@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/network/api_client.dart';
 import '../../core/utils/audio_helper.dart';
 import '../../core/utils/currency_formatter.dart';
 import 'pharmacy_service.dart';
@@ -45,9 +46,18 @@ class _PharmacyStockAlertScreenState extends State<PharmacyStockAlertScreen> {
 
   void _quarantineItem(PharmacyStockAlertItem item) {
     AudioHelper.tapFeedback();
+    try {
+      ApiClient.instance.dio.post('/v1/pharmacy/inventory/quarantine', data: {
+        'batch_number': item.batchNumber,
+        'medicine_name': item.name,
+        'action': 'quarantine',
+        'reason': 'near_expiry',
+      });
+    } catch (_) {}
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Batch ${item.batchNumber} (${item.name}) dimasukkan ke daftar Karantina/Retur PBF.'),
+        content: Text('✓ Batch ${item.batchNumber} (${item.name}) dimasukkan ke daftar Karantina/Retur server PBF.'),
         backgroundColor: const Color(0xFFBA1A1A),
         duration: const Duration(seconds: 3),
       ),

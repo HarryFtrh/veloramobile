@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/utils/audio_helper.dart';
+import 'pharmacy_service.dart';
 
 /// Display Layar Tablet Publik / TV Panggilan Loket Farmasi (Google Stitch "Clinical Precision")
 class PharmacyCallingDisplayScreen extends StatefulWidget {
@@ -12,35 +13,15 @@ class PharmacyCallingDisplayScreen extends StatefulWidget {
 
 class _PharmacyCallingDisplayScreenState extends State<PharmacyCallingDisplayScreen> {
   late Timer _clockTimer;
+  Timer? _queuePollTimer;
   DateTime _now = DateTime.now();
 
   String _currentCallingToken = '#A-042';
   String _currentCallingPatient = 'Ny. Dewi Lestari';
   String _currentCallingDestination = 'Loket 1 (Penyerahan Obat & Konseling)';
 
-  final List<Map<String, String>> _counterStations = [
-    {
-      'counter': 'LOKET 1',
-      'title': 'Penyerahan Obat & Konseling',
-      'token': '#A-042',
-      'patient': 'Ny. Dewi Lestari',
-      'status': 'Sedang Dilayani',
-    },
-    {
-      'counter': 'LOKET 2',
-      'title': 'Kasir & Pembayaran Billing',
-      'token': '#A-043',
-      'patient': 'Tn. Budi Santoso',
-      'status': 'Menuju Kasir',
-    },
-    {
-      'counter': 'LOKET 3',
-      'title': 'Penerimaan Resep & Telaah',
-      'token': '#A-044',
-      'patient': 'Ny. Siti Aminah',
-      'status': 'Pemeriksaan Resep',
-    },
-  ];
+  List<Map<String, String>> _counterStations = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -48,12 +29,74 @@ class _PharmacyCallingDisplayScreenState extends State<PharmacyCallingDisplayScr
     _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _now = DateTime.now());
     });
+    _fetchLiveQueue();
+    // Poll API antrean setiap 15 detik
+    _queuePollTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      _fetchLiveQueue();
+    });
   }
 
   @override
   void dispose() {
     _clockTimer.cancel();
+    _queuePollTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _fetchLiveQueue() async {
+    final list = await PharmacyService.instance.fetchPatientQueue();
+    if (mounted) {
+      setState(() {
+        if (list.isNotEmpty) {
+          final first = list.first;
+          _currentCallingToken = first.queueNumber;
+          _currentCallingPatient = first.patientName;
+          _currentCallingDestination = 'Loket 1 (Penyerahan Obat & Konseling)';
+
+          final List<Map<String, String>> stations = [];
+          for (int i = 0; i < 3; i++) {
+            final item = i < list.length ? list[i] : null;
+            final loketNum = i + 1;
+            final title = i == 0
+                ? 'Penyerahan Obat & Konseling'
+                : (i == 1 ? 'Kasir & Pembayaran Billing' : 'Penerimaan Resep & Telaah');
+            stations.add({
+              'counter': 'LOKET $loketNum',
+              'title': title,
+              'token': item?.queueNumber ?? '#A-${(42 + i).toString().padLeft(3, '0')}',
+              'patient': item?.patientName ?? (i == 0 ? 'Ny. Dewi Lestari' : (i == 1 ? 'Tn. Budi Santoso' : 'Ny. Siti Aminah')),
+              'status': item != null ? (item.status == 'ready' ? 'Siap Dilayani' : 'Sedang Diproses') : 'Standby',
+            });
+          }
+          _counterStations = stations;
+        } else {
+          _counterStations = [
+            {
+              'counter': 'LOKET 1',
+              'title': 'Penyerahan Obat & Konseling',
+              'token': '#A-042',
+              'patient': 'Ny. Dewi Lestari',
+              'status': 'Sedang Dilayani',
+            },
+            {
+              'counter': 'LOKET 2',
+              'title': 'Kasir & Pembayaran Billing',
+              'token': '#A-043',
+              'patient': 'Tn. Budi Santoso',
+              'status': 'Menuju Kasir',
+            },
+            {
+              'counter': 'LOKET 3',
+              'title': 'Penerimaan Resep & Telaah',
+              'token': '#A-044',
+              'patient': 'Ny. Siti Aminah',
+              'status': 'Pemeriksaan Resep',
+            },
+          ];
+        }
+        _isLoading = false;
+      });
+    }
   }
 
   void _recallTicket(Map<String, String> station) {

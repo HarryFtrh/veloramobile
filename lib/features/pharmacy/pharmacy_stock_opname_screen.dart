@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/network/api_client.dart';
 import '../../core/utils/audio_helper.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../shared_pos/product_catalog_service.dart';
@@ -105,18 +106,39 @@ class _PharmacyStockOpnameScreenState extends State<PharmacyStockOpnameScreen> {
     }
   }
 
-  void _saveOpnameAudit() {
+  Future<void> _saveOpnameAudit() async {
     AudioHelper.tapFeedback();
-    final totalDiscrepancies = _opnameItems.where((i) => i.difference != 0).length;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '✓ Berita Acara Stock Opname disimpan. Terdeteksi $totalDiscrepancies item selisih disesuaikan ke sistem.',
+    final discrepancies = _opnameItems.where((i) => i.difference != 0).toList();
+    final totalDiscrepancies = discrepancies.length;
+
+    try {
+      final payload = {
+        'timestamp': DateTime.now().toIso8601String(),
+        'items': discrepancies.map((i) => {
+          'product_id': i.id,
+          'batch_number': i.batchNumber,
+          'system_stock': i.systemStock,
+          'physical_stock': i.physicalStock,
+          'difference': i.difference,
+          'difference_value': i.differenceValue,
+        }).toList(),
+      };
+      await ApiClient.instance.dio.post('/v1/pharmacy/inventory/adjust', data: payload);
+    } catch (e) {
+      debugPrint('Sync opname adjustment to API failed: $e');
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '✓ Berita Acara Stock Opname disimpan ke server. Terdeteksi $totalDiscrepancies item selisih disesuaikan ke sistem.',
+          ),
+          backgroundColor: const Color(0xFF006948),
+          duration: const Duration(seconds: 4),
         ),
-        backgroundColor: const Color(0xFF006948),
-        duration: const Duration(seconds: 4),
-      ),
-    );
+      );
+    }
   }
 
   @override

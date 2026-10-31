@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../core/utils/audio_helper.dart';
+import '../shared_pos/product_catalog_service.dart';
 import 'pharmacy_service.dart';
+import 'widgets/pharmacy_queue_modal.dart';
 
 /// Workstation Dokter: EMR Rekam Medis & e-Prescribing (Google Stitch "Clinical Precision")
 class PharmacyDoctorEmrScreen extends StatefulWidget {
@@ -33,6 +35,47 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
     {'name': 'Paracetamol 500mg Kaplet', 'dose': '10 Kaplet', 'signa': '3 x Sehari 1 Kaplet Jika Demam / Nyeri'},
     {'name': 'Pulveres Racikan Batuk', 'dose': '15 Bungkus', 'signa': '3 x Sehari 1 Bungkus Sesudah Makan'},
   ];
+
+  List<ClinicPatientQueueItem> _liveQueue = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLivePatients();
+  }
+
+  Future<void> _fetchLivePatients() async {
+    setState(() => _isLoading = true);
+    final list = await PharmacyService.instance.fetchPatientQueue();
+    if (mounted) {
+      setState(() {
+        _liveQueue = list;
+        if (list.isNotEmpty) {
+          final first = list.first;
+          _patientName = first.patientName;
+          _queueNumber = first.queueNumber;
+          _medicalRecordNumber = first.medicalRecordNumber;
+          _allergies = first.allergy ?? 'Tidak ada riwayat alergi obat';
+          _department = first.department;
+          _doctorName = first.doctorName;
+        }
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _selectPatientFromQueue(ClinicPatientQueueItem item) {
+    AudioHelper.tapFeedback();
+    setState(() {
+      _patientName = item.patientName;
+      _queueNumber = item.queueNumber;
+      _medicalRecordNumber = item.medicalRecordNumber;
+      _allergies = item.allergy ?? 'Tidak ada riwayat alergi obat';
+      _department = item.department;
+      _doctorName = item.doctorName;
+    });
+  }
 
   @override
   void dispose() {
@@ -157,6 +200,72 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (_liveQueue.isNotEmpty) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Pilih Pasien dari Antrean Live (/v1/pharmacy/queue):',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: emeraldPrimary),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.refresh_rounded, size: 16, color: emeraldPrimary),
+                            tooltip: 'Segarkan Antrean Pasien',
+                            onPressed: _fetchLivePatients,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: _liveQueue.map((q) {
+                            final isSelected = q.queueNumber == _queueNumber;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 6),
+                              child: InkWell(
+                                onTap: () => _selectPatientFromQueue(q),
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? emeraldPrimary : const Color(0xFFF1F5F9),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: isSelected ? emeraldPrimary : borderColor),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        q.queueNumber,
+                                        style: TextStyle(
+                                          fontFamily: 'JetBrains Mono',
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 10.5,
+                                          color: isSelected ? Colors.white : emeraldPrimary,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        q.patientName,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                          color: isSelected ? Colors.white : textPrimary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                      const Divider(height: 16, color: Color(0xFFF1F5F9)),
+                    ],
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [

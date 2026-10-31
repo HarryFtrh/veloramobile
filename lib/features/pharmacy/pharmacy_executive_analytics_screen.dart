@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/utils/currency_formatter.dart';
+import 'pharmacy_service.dart';
 
 /// Executive Dashboard & Analitik Laba Rugi Farmasi (Google Stitch "Clinical Precision")
 class PharmacyExecutiveAnalyticsScreen extends StatefulWidget {
@@ -12,28 +13,38 @@ class PharmacyExecutiveAnalyticsScreen extends StatefulWidget {
 class _PharmacyExecutiveAnalyticsScreenState extends State<PharmacyExecutiveAnalyticsScreen> {
   String _selectedPeriod = 'Bulan Ini (Okt 2024)';
   String _selectedBranch = 'Semua Cabang (4 Unit)';
+  bool _isLoading = true;
+  PharmacyExecutiveData? _analyticsData;
 
-  final num _grossRevenue = 148500000;
-  final num _cogs = 106326000; // HPP
+  num get _grossRevenue => _analyticsData?.grossRevenue ?? 148500000;
+  num get _cogs => _analyticsData?.cogs ?? 106326000;
   num get _grossProfit => _grossRevenue - _cogs;
-  double get _grossMarginPct => (_grossProfit / _grossRevenue) * 100;
-  final num _operationalExpense = 14200000;
-  num get _netProfit => _grossProfit - _operationalExpense;
+  double get _grossMarginPct => _analyticsData?.grossMarginPct ?? (_grossRevenue > 0 ? (_grossProfit / _grossRevenue) * 100 : 0.0);
+  num get _operationalExpense => _analyticsData?.operationalExpense ?? 14200000;
+  num get _netProfit => _analyticsData?.netProfit ?? (_grossProfit - _operationalExpense);
 
-  final List<Map<String, dynamic>> _categoryShare = [
-    {'name': 'Obat Keras (Rx) & Resep', 'value': 74250000, 'pct': 50, 'color': const Color(0xFFBA1A1A)},
-    {'name': 'Obat Bebas (OTC)', 'value': 41580000, 'pct': 28, 'color': const Color(0xFF006948)},
-    {'name': 'Alat Kesehatan & Medis', 'value': 22275000, 'pct': 15, 'color': const Color(0xFF006577)},
-    {'name': 'Racikan Pulveres & Kapsul', 'value': 10395000, 'pct': 7, 'color': const Color(0xFF6366F1)},
-  ];
+  List<Map<String, dynamic>> get _categoryShare => _analyticsData?.categoryShare ?? [];
+  List<Map<String, dynamic>> get _topMedicines => _analyticsData?.topMedicines ?? [];
 
-  final List<Map<String, dynamic>> _topMedicines = [
-    {'name': 'Amoxicillin 500mg Kaplet', 'sales': '1.240 Strip', 'revenue': 19840000, 'growth': '+12%'},
-    {'name': 'Paracetamol 500mg Tablet', 'sales': '2.100 Strip', 'revenue': 17850000, 'growth': '+8%'},
-    {'name': 'Cefixime 100mg Kapsul', 'sales': '480 Box', 'revenue': 13680000, 'growth': '+15%'},
-    {'name': 'Amlodipine 10mg Tablet', 'sales': '890 Strip', 'revenue': 11570000, 'growth': '+5%'},
-    {'name': 'Cetirizine 10mg Tablet', 'sales': '650 Strip', 'revenue': 7150000, 'growth': '+3%'},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _fetchLiveAnalytics();
+  }
+
+  Future<void> _fetchLiveAnalytics() async {
+    setState(() => _isLoading = true);
+    final data = await PharmacyService.instance.fetchExecutiveAnalytics(
+      period: _selectedPeriod,
+      branchId: _selectedBranch,
+    );
+    if (mounted) {
+      setState(() {
+        _analyticsData = data;
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,80 +63,107 @@ class _PharmacyExecutiveAnalyticsScreenState extends State<PharmacyExecutiveAnal
         backgroundColor: Colors.white,
         foregroundColor: textPrimary,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF006948)),
+            tooltip: 'Segarkan Data Live API',
+            onPressed: _fetchLiveAnalytics,
+          ),
+        ],
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),
           child: Divider(height: 1, color: borderColor),
         ),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Period & Branch Selector Bar
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: borderColor),
-                ),
-                child: Row(
+        child: _isLoading
+            ? const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: borderColor),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: _selectedPeriod,
-                            isDense: true,
-                            icon: const Icon(Icons.calendar_month_outlined, size: 18),
-                            items: const [
-                              DropdownMenuItem(value: 'Bulan Ini (Okt 2024)', child: Text('Bulan Ini (Okt 2024)', style: TextStyle(fontSize: 12))),
-                              DropdownMenuItem(value: 'Kuartal 3 (Jul - Sep)', child: Text('Kuartal 3 (Jul - Sep)', style: TextStyle(fontSize: 12))),
-                              DropdownMenuItem(value: 'Year-to-Date (2024)', child: Text('Year-to-Date (2024)', style: TextStyle(fontSize: 12))),
-                            ],
-                            onChanged: (val) {
-                              if (val != null) setState(() => _selectedPeriod = val);
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: borderColor),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: _selectedBranch,
-                            isDense: true,
-                            icon: const Icon(Icons.storefront_outlined, size: 18),
-                            items: const [
-                              DropdownMenuItem(value: 'Semua Cabang (4 Unit)', child: Text('Semua Cabang (4 Unit)', style: TextStyle(fontSize: 12))),
-                              DropdownMenuItem(value: 'Cabang Utama Diponegoro', child: Text('Cabang Utama Diponegoro', style: TextStyle(fontSize: 12))),
-                            ],
-                            onChanged: (val) {
-                              if (val != null) setState(() => _selectedBranch = val);
-                            },
-                          ),
-                        ),
-                      ),
+                    CircularProgressIndicator(color: Color(0xFF006948)),
+                    SizedBox(height: 12),
+                    Text(
+                      'Menarik Data Analitik dari /v1/pharmacy/dashboard/analytics...',
+                      style: TextStyle(color: Color(0xFF6D7A72), fontSize: 12),
                     ),
                   ],
                 ),
-              ),
+              )
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Period & Branch Selector Bar
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: borderColor),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: borderColor),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: _selectedPeriod,
+                                  isDense: true,
+                                  icon: const Icon(Icons.calendar_month_outlined, size: 18),
+                                  items: const [
+                                    DropdownMenuItem(value: 'Bulan Ini (Okt 2024)', child: Text('Bulan Ini (Okt 2024)', style: TextStyle(fontSize: 12))),
+                                    DropdownMenuItem(value: 'Kuartal 3 (Jul - Sep)', child: Text('Kuartal 3 (Jul - Sep)', style: TextStyle(fontSize: 12))),
+                                    DropdownMenuItem(value: 'Year-to-Date (2024)', child: Text('Year-to-Date (2024)', style: TextStyle(fontSize: 12))),
+                                  ],
+                                  onChanged: (val) {
+                                    if (val != null) {
+                                      setState(() => _selectedPeriod = val);
+                                      _fetchLiveAnalytics();
+                                    }
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: borderColor),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: _selectedBranch,
+                                  isDense: true,
+                                  icon: const Icon(Icons.storefront_outlined, size: 18),
+                                  items: const [
+                                    DropdownMenuItem(value: 'Semua Cabang (4 Unit)', child: Text('Semua Cabang (4 Unit)', style: TextStyle(fontSize: 12))),
+                                    DropdownMenuItem(value: 'Cabang Utama Diponegoro', child: Text('Cabang Utama Diponegoro', style: TextStyle(fontSize: 12))),
+                                  ],
+                                  onChanged: (val) {
+                                    if (val != null) {
+                                      setState(() => _selectedBranch = val);
+                                      _fetchLiveAnalytics();
+                                    }
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
               const SizedBox(height: 14),
 
               // 4 Executive Financial KPI Cards

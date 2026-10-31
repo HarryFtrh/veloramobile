@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/network/api_client.dart';
 import '../../core/utils/audio_helper.dart';
 import '../../core/utils/currency_formatter.dart';
 import 'pharmacy_service.dart';
@@ -57,6 +58,14 @@ class _PharmacyQueueScreenState extends State<PharmacyQueueScreen> {
 
   void _callPatient(ClinicPatientQueueItem item) {
     AudioHelper.tapFeedback();
+    try {
+      ApiClient.instance.dio.post('/v1/pharmacy/queue/call', data: {
+        'queue_number': item.queueNumber,
+        'patient_name': item.patientName,
+        'destination': 'Loket Farmasi 1',
+      });
+    } catch (_) {}
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(

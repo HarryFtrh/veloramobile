@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../core/utils/audio_helper.dart';
 import '../shared_pos/receipt_printer_service.dart';
+import '../shared_pos/product_catalog_service.dart';
+import 'pharmacy_service.dart';
 
 /// Workstation Meja Racik & Etiket Farmasi (Google Stitch "Clinical Precision")
 class PharmacyCompoundingScreen extends StatefulWidget {
@@ -18,13 +20,64 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
   String _signa = '3 x Sehari 1 Bungkus Sesudah Makan';
   bool _isDtd = true; // Dosis Toleransi Dosis (d.t.d)
   String _labelType = 'putih'; // 'putih' (obat dalam/oral) vs 'biru' (obat luar)
+  bool _isLoading = true;
 
-  final List<Map<String, dynamic>> _ingredients = [
-    {'name': 'Paracetamol 500mg', 'dosePerPack': '250 mg', 'totalNeeded': '3.750 mg (7.5 Tab)', 'stockUnit': 'Kaplet'},
-    {'name': 'Dextromethorphan HBr 15mg', 'dosePerPack': '7.5 mg', 'totalNeeded': '112.5 mg (7.5 Tab)', 'stockUnit': 'Tablet'},
-    {'name': 'Chlorpheniramine Maleate (CTM) 4mg', 'dosePerPack': '2 mg', 'totalNeeded': '30 mg (7.5 Tab)', 'stockUnit': 'Tablet'},
-    {'name': 'Saccharum Lactis (SL)', 'dosePerPack': 'q.s.', 'totalNeeded': '1.500 mg', 'stockUnit': 'Serbuk'},
-  ];
+  final List<Map<String, dynamic>> _ingredients = [];
+  final List<String> _patientOptions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLiveIngredientsAndQueue();
+  }
+
+  Future<void> _loadLiveIngredientsAndQueue() async {
+    setState(() => _isLoading = true);
+    try {
+      // Ambil antrean pasien live dari API (/v1/pharmacy/queue)
+      final queue = await PharmacyService.instance.fetchPatientQueue();
+      if (queue.isNotEmpty) {
+        _patientOptions.clear();
+        for (final q in queue) {
+          _patientOptions.add('${q.patientName} (${q.queueNumber})');
+        }
+        _selectedPatient = _patientOptions.first;
+      }
+
+      // Ambil katalog obat live dari API (/v1/pos/products)
+      final catalog = await ProductCatalogService.instance.fetchCatalog();
+      final List<Map<String, dynamic>> ingList = [];
+      if (catalog.products.isNotEmpty) {
+        for (final p in catalog.products.take(4)) {
+          ingList.add({
+            'name': p.name,
+            'dosePerPack': '250 mg',
+            'totalNeeded': '3.750 mg (${(_packageCount * 0.5).toStringAsFixed(1)} Tab)',
+            'stockUnit': 'Tablet / Kapsul',
+          });
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _ingredients.clear();
+          if (ingList.isNotEmpty) {
+            _ingredients.addAll(ingList);
+          } else {
+            _ingredients.addAll([
+              {'name': 'Paracetamol 500mg', 'dosePerPack': '250 mg', 'totalNeeded': '3.750 mg (7.5 Tab)', 'stockUnit': 'Kaplet'},
+              {'name': 'Dextromethorphan HBr 15mg', 'dosePerPack': '7.5 mg', 'totalNeeded': '112.5 mg (7.5 Tab)', 'stockUnit': 'Tablet'},
+              {'name': 'Chlorpheniramine Maleate (CTM) 4mg', 'dosePerPack': '2 mg', 'totalNeeded': '30 mg (7.5 Tab)', 'stockUnit': 'Tablet'},
+              {'name': 'Saccharum Lactis (SL)', 'dosePerPack': 'q.s.', 'totalNeeded': '1.500 mg', 'stockUnit': 'Serbuk'},
+            ]);
+          }
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   Future<void> _printEtiket() async {
     AudioHelper.tapFeedback();
