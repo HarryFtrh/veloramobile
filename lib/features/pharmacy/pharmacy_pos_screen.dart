@@ -856,6 +856,9 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
   Widget _buildTopHeader(bool isMobile) {
     const emeraldPrimary = Color(0xFF006948);
     const borderColor = Color(0xFFE2E8F0);
+    final tenant = SessionStorage.instance.getTenantName() ?? 'Velora Pharmacy';
+    final location = SessionStorage.instance.getLocationName() ?? 'Apotek & Klinik Utama Medika';
+    final cashier = SessionStorage.instance.getUserName() ?? 'Siti Rahma, S.Farm';
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 20, vertical: 10),
@@ -866,7 +869,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Clinic Icon & Name
+          // Clinic Icon & Name & Branch (Stitch Precision)
           Row(
             children: [
               Container(
@@ -885,9 +888,9 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                 children: [
                   Row(
                     children: [
-                      const Text(
-                        'Velora Pharmacy',
-                        style: TextStyle(
+                      Text(
+                        tenant,
+                        style: const TextStyle(
                           fontFamily: 'Plus Jakarta Sans',
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
@@ -896,30 +899,113 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                       ),
                       const SizedBox(width: 6),
                       Container(
-                        width: 7,
-                        height: 7,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF10B981),
-                          shape: BoxShape.circle,
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF68DBA9).withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: emeraldPrimary,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'Online',
+                              style: TextStyle(
+                                fontFamily: 'JetBrains Mono',
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.bold,
+                                color: emeraldPrimary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                   Text(
-                    '${SessionStorage.instance.getLocationName() ?? "Apotek Utama"} • ${SessionStorage.instance.getUserName() ?? "Apoteker"}',
+                    '$location • Kasir #WS-02',
                     style: const TextStyle(fontSize: 10.5, color: Color(0xFF6D7A72)),
                   ),
                 ],
               ),
+              if (!isMobile) ...[
+                const SizedBox(width: 16),
+                Container(width: 1, height: 28, color: borderColor),
+                const SizedBox(width: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF2F3FF),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.store_rounded, size: 15, color: Color(0xFF006577)),
+                      SizedBox(width: 6),
+                      Text(
+                        'Cabang Utama',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: emeraldPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
 
-          // Actions Cluster
+          // Actions Cluster & Cashier Shift
           Row(
             children: [
               if (!isMobile) ...[
-                const CashierShiftBadge(),
-                const SizedBox(width: 6),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      cashier,
+                      style: const TextStyle(
+                        fontFamily: 'JetBrains Mono',
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF131B2E),
+                      ),
+                    ),
+                    const Text(
+                      'Shift Pagi • 07:00 - 15:00',
+                      style: TextStyle(fontSize: 9.5, color: Color(0xFF6D7A72)),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF86F2E4).withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    'Shift Pagi',
+                    style: TextStyle(
+                      fontFamily: 'JetBrains Mono',
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF006A61),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
                 const OfflineSyncBadge(showClock: false),
                 const SizedBox(width: 6),
               ],

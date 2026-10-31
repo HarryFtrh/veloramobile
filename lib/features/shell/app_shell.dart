@@ -281,6 +281,180 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
+  Widget _buildPharmacyLeftDock(BuildContext context) {
+    const dockBg = Color(0xFFFFFFFF);
+    const borderColor = Color(0xFFE2E8F0);
+    const emeraldPrimary = Color(0xFF006948);
+    const activeBg = Color(0xFF86F2E4);
+    const activeFg = Color(0xFF006F66);
+    const inactiveFg = Color(0xFF6D7A72);
+    final user = SessionStorage.instance.getUserName() ?? 'Siti Rahma';
+    final initials = user.trim().split(' ').map((s) => s.isNotEmpty ? s[0].toUpperCase() : '').take(2).join();
+
+    return Container(
+      width: 76,
+      decoration: const BoxDecoration(
+        color: dockBg,
+        border: Border(right: BorderSide(color: borderColor, width: 1)),
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 12),
+          // Brand Mark: Stitch Clinical Precision
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: emeraldPrimary,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: emeraldPrimary.withValues(alpha: 0.25),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.local_hospital_rounded,
+              color: Colors.white,
+              size: 26,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            width: 28,
+            height: 2,
+            decoration: BoxDecoration(
+              color: borderColor,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // Workstation Navigation Tabs
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: List.generate(widget.tabs.length, (i) {
+                  final t = widget.tabs[i];
+                  final isSelected = _index == i;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    child: Tooltip(
+                      message: '${t.label} (F${i + 1})',
+                      child: InkWell(
+                        onTap: () => _select(i),
+                        borderRadius: BorderRadius.circular(12),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          width: 58,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: isSelected ? activeBg : Colors.transparent,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    isSelected ? t.selectedIcon : t.icon,
+                                    size: 22,
+                                    color: isSelected ? activeFg : inactiveFg,
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    t.label,
+                                    style: TextStyle(
+                                      fontFamily: 'JetBrains Mono',
+                                      fontSize: 10,
+                                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                      color: isSelected ? activeFg : inactiveFg,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                              if (i == 1) // Notification dot for Antrean
+                                Positioned(
+                                  top: 6,
+                                  right: 8,
+                                  child: Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFBA1A1A),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.white, width: 1.5),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ),
+
+          // Bottom Utilities: Drawer, Settings, Cashier Avatar
+          Tooltip(
+            message: 'Buka Laci Kasir (Ctrl+O)',
+            child: IconButton(
+              icon: const Icon(Icons.savings_outlined, size: 22, color: inactiveFg),
+              onPressed: () async {
+                await ReceiptPrinterService.instance.openCashDrawer();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Perintah buka laci kasir dikirim')),
+                  );
+                }
+              },
+            ),
+          ),
+          Tooltip(
+            message: 'Pengaturan Workstation',
+            child: IconButton(
+              icon: const Icon(Icons.settings_outlined, size: 22, color: inactiveFg),
+              onPressed: () => ReceiptPrinterService.instance.openSettings(context),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Tooltip(
+            message: '$user (Kasir Aktif)',
+            child: Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: const Color(0xFF85F8C4).withValues(alpha: 0.6),
+                shape: BoxShape.circle,
+                border: Border.all(color: emeraldPrimary.withValues(alpha: 0.3)),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                initials.isNotEmpty ? initials : 'SR',
+                style: const TextStyle(
+                  fontFamily: 'JetBrains Mono',
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF002114),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final wide = MediaQuery.sizeOf(context).width >= _headerBreakpoint;
@@ -294,6 +468,20 @@ class _AppShellState extends State<AppShell> {
     );
 
     if (wide) {
+      if (AppConfig.flavor == AppFlavor.pharmacy) {
+        return Scaffold(
+          resizeToAvoidBottomInset: false,
+          backgroundColor: const Color(0xFFFAF8FF),
+          body: SafeArea(
+            child: Row(
+              children: [
+                _buildPharmacyLeftDock(context),
+                Expanded(child: body),
+              ],
+            ),
+          ),
+        );
+      }
       return Scaffold(
         resizeToAvoidBottomInset: false,
         body: SafeArea(
@@ -310,17 +498,21 @@ class _AppShellState extends State<AppShell> {
 
     final p = context.palette;
     final brandPrimary = Theme.of(context).colorScheme.primary;
+    final isPharmacy = AppConfig.flavor == AppFlavor.pharmacy;
+    final pharmacyIndicator = const Color(0xFF86F2E4);
+    final pharmacyActive = const Color(0xFF006F66);
+    final pharmacyInactive = const Color(0xFF6D7A72);
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: body,
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: Colors.white,
           border: Border(
-            top: BorderSide(color: WarmPalette.line, width: 1.2),
+            top: BorderSide(color: isPharmacy ? const Color(0xFFE2E8F0) : WarmPalette.line, width: 1.2),
           ),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
               color: Color(0x0A000000),
               blurRadius: 10,
@@ -333,30 +525,32 @@ class _AppShellState extends State<AppShell> {
             height: 62,
             backgroundColor: Colors.white,
             elevation: 0,
-            indicatorColor: brandPrimary.withValues(alpha: 0.12),
+            indicatorColor: isPharmacy ? pharmacyIndicator : brandPrimary.withValues(alpha: 0.12),
             indicatorShape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
             ),
             labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
             iconTheme: WidgetStateProperty.resolveWith((states) {
               if (states.contains(WidgetState.selected)) {
-                return IconThemeData(color: brandPrimary, size: 22);
+                return IconThemeData(color: isPharmacy ? pharmacyActive : brandPrimary, size: 22);
               }
-              return IconThemeData(color: p.textSecondary, size: 22);
+              return IconThemeData(color: isPharmacy ? pharmacyInactive : p.textSecondary, size: 22);
             }),
             labelTextStyle: WidgetStateProperty.resolveWith((states) {
               if (states.contains(WidgetState.selected)) {
                 return TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  color: brandPrimary,
+                  fontFamily: isPharmacy ? 'JetBrains Mono' : null,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  color: isPharmacy ? pharmacyActive : brandPrimary,
                   letterSpacing: -0.2,
                 );
               }
               return TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: p.textSecondary,
+                fontFamily: isPharmacy ? 'JetBrains Mono' : null,
+                fontSize: 10.5,
+                fontWeight: FontWeight.w500,
+                color: isPharmacy ? pharmacyInactive : p.textSecondary,
                 letterSpacing: -0.2,
               );
             }),
