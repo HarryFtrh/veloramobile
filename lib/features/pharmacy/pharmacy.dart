@@ -7,3 +7,5 @@ export 'widgets/pharmacy_cart_panel.dart';
 export 'widgets/pharmacy_patient_dialog.dart';
 export 'widgets/pharmacy_queue_modal.dart';
 export 'widgets/pharmacy_stock_alert_modal.dart';
+export 'widgets/pharmacy_shift_report_modal.dart';
+export 'widgets/pharmacy_prescription_review_modal.dart';

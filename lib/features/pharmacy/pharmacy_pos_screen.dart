@@ -19,6 +19,8 @@ import 'widgets/pharmacy_drug_card.dart';
 import 'widgets/pharmacy_cart_panel.dart';
 import 'widgets/pharmacy_queue_modal.dart';
 import 'widgets/pharmacy_stock_alert_modal.dart';
+import 'widgets/pharmacy_shift_report_modal.dart';
+import 'widgets/pharmacy_prescription_review_modal.dart';
 
 class PharmacyPosScreen extends StatefulWidget {
   final VoidCallback? onLogout;
@@ -332,6 +334,29 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
       catalogItems: _drugItems,
       onSelectDrug: (id) {
         _addToCart(id);
+      },
+    );
+  }
+
+  void _openPrescriptionReviewModal() {
+    AudioHelper.tapFeedback();
+    PharmacyPrescriptionReviewModal.show(
+      context,
+      onApprove: () {
+        // Automatically add common prescribed items to cart if desired
+        if (_drugItems.isNotEmpty) {
+          _addToCart(_drugItems.first['id'].toString());
+        }
+      },
+    );
+  }
+
+  void _openShiftReportModal() {
+    AudioHelper.tapFeedback();
+    PharmacyShiftReportModal.show(
+      context,
+      onShiftClosed: () {
+        setState(() {});
       },
     );
   }
@@ -790,8 +815,14 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                     case 'queue':
                       _openQueueModal();
                       break;
+                    case 'review':
+                      _openPrescriptionReviewModal();
+                      break;
                     case 'stock_alert':
                       _openStockAlertModal();
+                      break;
+                    case 'shift_report':
+                      _openShiftReportModal();
                       break;
                     case 'history':
                       SalesHistoryDrawer.show(
@@ -836,12 +867,32 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                     ),
                   ),
                   const PopupMenuItem(
+                    value: 'review',
+                    child: Row(
+                      children: [
+                        Icon(Icons.assignment_outlined, size: 18, color: Color(0xFF006A61)),
+                        SizedBox(width: 10),
+                        Text('Telaah Resep & Skrining'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
                     value: 'stock_alert',
                     child: Row(
                       children: [
                         Icon(Icons.warning_amber_rounded, size: 18, color: Color(0xFFB45309)),
                         SizedBox(width: 10),
                         Text('Alert Kedaluwarsa & Stok FEFO'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'shift_report',
+                    child: Row(
+                      children: [
+                        Icon(Icons.analytics_outlined, size: 18, color: emeraldPrimary),
+                        SizedBox(width: 10),
+                        Text('Laporan Shift & Kas Masuk'),
                       ],
                     ),
                   ),
@@ -1015,48 +1066,59 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
 
   // Prescription Prompt Info Banner
   Widget _buildPrescriptionValidationBanner() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF006A61).withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF006A61).withValues(alpha: 0.2)),
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.health_and_safety_outlined, size: 18, color: Color(0xFF006A61)),
-          SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return InkWell(
+      onTap: _openPrescriptionReviewModal,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF006A61).withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFF006A61).withValues(alpha: 0.2)),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.health_and_safety_outlined, size: 18, color: Color(0xFF006A61)),
+            SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Penjualan Resep Aktif • Buka Telaah Obat (7 Benar)',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF131B2E),
+                    ),
+                  ),
+                  Text(
+                    'Validasi identitas dokter & SIP untuk sediaan bertanda Rx. Ketuk untuk telaah klinis.',
+                    style: TextStyle(fontSize: 10, color: Color(0xFF6D7A72)),
+                  ),
+                ],
+              ),
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Penjualan Resep Aktif',
+                  'SIP Aktif',
                   style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 11.5,
+                    fontFamily: 'JetBrains Mono',
+                    fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF131B2E),
+                    color: Color(0xFF006A61),
                   ),
                 ),
-                Text(
-                  'Validasi identitas dokter & SIP untuk sediaan bertanda Rx.',
-                  style: TextStyle(fontSize: 10, color: Color(0xFF6D7A72)),
-                ),
+                SizedBox(width: 4),
+                Icon(Icons.chevron_right_rounded, size: 16, color: Color(0xFF006A61)),
               ],
             ),
-          ),
-          Text(
-            'SIP Terverifikasi',
-            style: TextStyle(
-              fontFamily: 'JetBrains Mono',
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF006A61),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1234,15 +1296,8 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
             _openStockAlertModal();
             break;
           case 3:
-            // Laporan Shift
-            SalesHistoryDrawer.show(
-              context,
-              storeName: SessionStorage.instance.getTenantName() ?? 'Velora Pharmacy',
-              storeAddress: SessionStorage.instance.getStoreAddress() ?? '',
-              storePhone: SessionStorage.instance.getStorePhone() ?? '-',
-              cashierName: SessionStorage.instance.getUserName() ?? 'Apoteker',
-              accentColor: emeraldPrimary,
-            );
+            // Laporan Shift & Kas Masuk
+            _openShiftReportModal();
             break;
         }
       },
