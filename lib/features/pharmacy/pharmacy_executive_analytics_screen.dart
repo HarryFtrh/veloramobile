@@ -284,7 +284,7 @@ class _PharmacyExecutiveAnalyticsScreenState extends State<PharmacyExecutiveAnal
                               Container(width: 10, height: 10, decoration: BoxDecoration(color: cat['color'] as Color, shape: BoxShape.circle)),
                               const SizedBox(width: 8),
                               Expanded(child: Text(cat['name'] as String, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600))),
-                              Text(cat['pct'].toString() + '%', style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11, fontWeight: FontWeight.bold)),
+                              Text('${cat['pct']}%', style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11, fontWeight: FontWeight.bold)),
                               const SizedBox(width: 12),
                               Text(CurrencyFormatter.format(cat['value'] as num), style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 12, fontWeight: FontWeight.bold)),
                             ],

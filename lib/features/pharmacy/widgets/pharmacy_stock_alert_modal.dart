@@ -285,7 +285,7 @@ class _PharmacyStockAlertModalState extends State<PharmacyStockAlertModal> {
                 : ListView.separated(
                     padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
                     itemCount: filtered.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    separatorBuilder: (_, _1) => const SizedBox(height: 10),
                     itemBuilder: (ctx, i) {
                       final it = filtered[i];
                       return _buildStockCard(it, primaryColor);

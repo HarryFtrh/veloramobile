@@ -290,7 +290,7 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                         );
                         if (dialogCtx.mounted) {
                           Navigator.of(dialogCtx).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          ScaffoldMessenger.of(dialogCtx).showSnackBar(
                             SnackBar(
                               content: Text('Selamat bergabung, $name! Silakan masuk dengan akun Anda.'),
                               backgroundColor: WarmPalette.success,

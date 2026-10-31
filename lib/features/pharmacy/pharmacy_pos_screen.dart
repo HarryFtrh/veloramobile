@@ -1,7 +1,5 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../../core/config/app_theme.dart';
-import '../../core/design/tokens.dart';
 import '../../core/utils/audio_helper.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/storage/session_storage.dart';
@@ -10,7 +8,6 @@ import '../shared_pos/product_catalog_service.dart';
 import '../shared_pos/pos_checkout_service.dart';
 import '../shared_pos/shift_service.dart';
 import '../shared_pos/shift_modal.dart';
-import '../shared_pos/shift_badge.dart';
 import '../shared_pos/universal_checkout_dialog.dart';
 import '../shared_pos/sales_history_drawer.dart';
 import '../shared_pos/printer_settings_modal.dart';
@@ -50,7 +47,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
   String _patientAllergies = '';
 
   bool _isLoadingCatalog = false;
-  String? _syncError;
+  String? _syncError; // ignore: unused_field
   bool _isGridView = true;
 
   // Selected quick payment mode in mobile floating drawer

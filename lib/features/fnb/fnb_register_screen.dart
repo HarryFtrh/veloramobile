@@ -217,6 +217,7 @@ class _FnbRegisterScreenState extends State<FnbRegisterScreen> {
       final s = await _ctrl.refreshShift();
       if ((s == null || !s.isOpen || _ctrl.shiftId == null) && mounted) {
         _toast('Shift kasir belum aktif. Silakan buka shift kasir terlebih dahulu.');
+        // ignore: use_build_context_synchronously
         await ShiftDialogs.showOpenShiftDialog(
           context,
           onOpened: (_) => _ctrl.refreshShift(),
@@ -225,6 +226,7 @@ class _FnbRegisterScreenState extends State<FnbRegisterScreen> {
       }
     }
 
+    // ignore: use_build_context_synchronously
     final choice = await FnbPaymentSheet.show(context, bill.total);
     if (choice == null || !mounted) return;
 
@@ -466,6 +468,7 @@ class _FnbRegisterScreenState extends State<FnbRegisterScreen> {
     }
   }
 
+  // ignore: unused_element
   Future<void> _syncOffline() async {
     final pending = PosCheckoutService.instance.pendingOfflineCount;
     if (pending == 0) {

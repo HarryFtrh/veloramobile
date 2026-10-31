@@ -5,7 +5,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/design/tokens.dart';
 import '../../core/storage/session_storage.dart';
 import '../../core/utils/safe_json.dart';
-import '../shared_pos/receipt_printer_service.dart';
 import '../shared_pos/sales_history_drawer.dart';
 import '../tables/table_service.dart';
 import 'billing.dart';
@@ -133,21 +132,9 @@ class _FnbPaymentSplitScreenState extends State<FnbPaymentSplitScreen> {
         onContinueSplit: () {
           _cubit.resetCheckoutSuccess();
           if (state.splitMode == 'item') {
-            for (final it in remainingItems) {
-              it['checked'] = true;
-            }
-            _cubit.emit(state.copyWith(
-              billItems: remainingItems,
-              activeBill: null,
-              qrisInvoice: null,
-            ));
+            _cubit.continueItemSplit(remainingItems);
           } else {
-            final newPax = (state.paxCount - state.paxToPay).clamp(1, 20);
-            _cubit.emit(state.copyWith(
-              paxCount: newPax,
-              paxToPay: 1,
-              qrisInvoice: null,
-            ));
+            _cubit.continuePaxSplit();
           }
         },
         onDone: () {

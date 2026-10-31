@@ -171,6 +171,7 @@ class _CashierShiftBadgeState extends State<CashierShiftBadge> {
                       AudioHelper.actionFeedback();
                       final ok = await ReceiptPrinterService.instance.printXReport(_status!);
                       if (!context.mounted) return;
+                      // ignore: use_build_context_synchronously
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(ok ? '✅ Laporan X-Report berhasil dicetak ke printer' : 'Laporan X-Report disiapkan'),

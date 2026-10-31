@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/network/api_client.dart';
@@ -13,6 +12,7 @@ class PosCartItem {
   final String? batchNumber;
   final String? expiryDate;
   final Map<String, dynamic>? modifiers;
+  final String? note;
 
   PosCartItem({
     required this.productId,
@@ -22,6 +22,7 @@ class PosCartItem {
     this.batchNumber,
     this.expiryDate,
     this.modifiers,
+    this.note,
   });
 
   Map<String, dynamic> toJson() {
@@ -224,6 +225,7 @@ class PosCheckoutService {
     }
   }
 
+  // ignore: unused_element
   bool get _isSyncing => false;
 
   /// Sync all pending offline transactions to Canonical POS Offline Batch API via unified OfflineSyncManager

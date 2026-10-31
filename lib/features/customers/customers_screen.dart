@@ -175,13 +175,13 @@ class _MembersTabState extends State<_MembersTab>
                           email: emailCtrl.text.trim().isNotEmpty ? emailCtrl.text.trim() : null,
                         );
 
-                        if (ctx.mounted) Navigator.pop(ctx);
-                        _cubit.reload();
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                        if (ctx.mounted) {
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(ctx).showSnackBar(
                             SnackBar(content: Text('✓ Pelanggan $nm berhasil ditambahkan')),
                           );
                         }
+                        _cubit.reload();
                       } catch (e) {
                         setDlgState(() {
                           saving = false;

@@ -201,7 +201,7 @@ class _CustomerOrderTrackingScreenState
           FilledButton.icon(
             onPressed: () {
               Navigator.of(ctx).pop();
-              Share.share(buf.toString(), subject: 'Nota Pesanan ${widget.orderNumber}');
+              SharePlus.instance.share(ShareParams(text: buf.toString(), subject: 'Nota Pesanan ${widget.orderNumber}'));
             },
             icon: const Icon(Icons.share_rounded, size: 16),
             label: const Text('Bagikan'),

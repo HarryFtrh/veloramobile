@@ -15,7 +15,6 @@ import 'widgets/customer_cart_order_type_bar.dart';
 import 'widgets/customer_cart_payment_selector.dart';
 import 'widgets/customer_cart_promo_card.dart';
 import 'widgets/customer_cart_summary_card.dart';
-import 'widgets/customer_voucher_dialog.dart';
 
 export 'widgets/customer_cart_bottom_bar.dart';
 export 'widgets/customer_cart_order_type_bar.dart';

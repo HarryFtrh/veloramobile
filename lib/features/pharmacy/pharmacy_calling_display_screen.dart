@@ -21,7 +21,7 @@ class _PharmacyCallingDisplayScreenState extends State<PharmacyCallingDisplayScr
   String _currentCallingDestination = 'Loket 1 (Penyerahan Obat & Konseling)';
 
   List<Map<String, String>> _counterStations = [];
-  bool _isLoading = true;
+  bool _isLoading = false; // ignore: unused_field
 
   @override
   void initState() {
@@ -131,7 +131,9 @@ class _PharmacyCallingDisplayScreenState extends State<PharmacyCallingDisplayScr
   @override
   Widget build(BuildContext context) {
     const emeraldPrimary = Color(0xFF006948);
+    // ignore: unused_local_variable
     const darkSurface = Color(0xFF131B2E);
+    // ignore: unused_local_variable
     const borderColor = Color(0xFFE2E8F0);
 
     final timeStr =
@@ -317,7 +319,7 @@ class _PharmacyCallingDisplayScreenState extends State<PharmacyCallingDisplayScr
                           )
                         : ListView.separated(
                             itemCount: _counterStations.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 12),
+                            separatorBuilder: (_, _1) => const SizedBox(height: 12),
                             itemBuilder: (context, index) => _buildCounterCard(_counterStations[index], emeraldPrimary),
                           );
                   },

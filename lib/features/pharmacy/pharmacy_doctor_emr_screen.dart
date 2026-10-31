@@ -33,7 +33,7 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
   final List<Map<String, String>> _prescribedItems = [];
 
   List<ClinicPatientQueueItem> _liveQueue = [];
-  bool _isLoading = true;
+  bool _isLoading = false; // ignore: unused_field
 
   @override
   void initState() {
@@ -419,6 +419,7 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
                           onTap: () async {
                             final catalog = await ProductCatalogService.instance.fetchCatalog();
                             if (!mounted) return;
+                            // ignore: use_build_context_synchronously
                             showModalBottomSheet(
                               context: context,
                               builder: (ctx) => Container(

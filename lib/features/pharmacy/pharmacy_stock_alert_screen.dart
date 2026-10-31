@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/network/api_client.dart';
 import '../../core/utils/audio_helper.dart';
-import '../../core/utils/currency_formatter.dart';
 import 'pharmacy_service.dart';
 import 'widgets/pharmacy_stock_alert_modal.dart';
 import 'widgets/pharmacy_pbf_order_modal.dart';
@@ -308,7 +307,7 @@ class _PharmacyStockAlertScreenState extends State<PharmacyStockAlertScreen> {
                           : ListView.separated(
                               padding: const EdgeInsets.all(14),
                               itemCount: filtered.length,
-                              separatorBuilder: (_, __) => const SizedBox(height: 10),
+                              separatorBuilder: (_, _1) => const SizedBox(height: 10),
                               itemBuilder: (context, index) => _buildAlertCard(filtered[index], emeraldPrimary),
                             ),
             ),

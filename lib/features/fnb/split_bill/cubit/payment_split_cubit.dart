@@ -8,7 +8,6 @@ import '../../../shared_pos/qris_payment_service.dart';
 import '../../../shared_pos/receipt_printer_service.dart';
 import '../../billing.dart';
 import '../../fnb_register_service.dart';
-import '../../modifiers.dart';
 import '../../../tables/table_service.dart';
 import 'payment_split_state.dart';
 
@@ -403,5 +402,27 @@ class PaymentSplitCubit extends Cubit<PaymentSplitState> {
 
   void resetCheckoutSuccess() {
     emit(state.copyWith(checkoutSuccess: false));
+  }
+
+  /// Continue split for item-mode: mark remaining items checked and reset invoice.
+  void continueItemSplit(List<Map<String, dynamic>> remainingItems) {
+    for (final it in remainingItems) {
+      it['checked'] = true;
+    }
+    emit(state.copyWith(
+      billItems: remainingItems,
+      activeBill: null,
+      qrisInvoice: null,
+    ));
+  }
+
+  /// Continue split for pax-mode: decrement pax count and reset invoice.
+  void continuePaxSplit() {
+    final newPax = (state.paxCount - state.paxToPay).clamp(1, 20);
+    emit(state.copyWith(
+      paxCount: newPax,
+      paxToPay: 1,
+      qrisInvoice: null,
+    ));
   }
 }

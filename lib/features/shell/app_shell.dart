@@ -118,9 +118,9 @@ class _AppShellState extends State<AppShell> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
-                  AppConfig.flavor == AppFlavor.pharmacy
+                  AppConfig.instance.flavor == AppFlavor.pharmacy
                       ? Icons.local_pharmacy_rounded
-                      : (AppConfig.flavor == AppFlavor.sales
+                      : (AppConfig.instance.flavor == AppFlavor.sales
                           ? Icons.inventory_2_rounded
                           : Icons.coffee_maker_rounded),
                   color: Colors.white,
@@ -468,7 +468,7 @@ class _AppShellState extends State<AppShell> {
     );
 
     if (wide) {
-      if (AppConfig.flavor == AppFlavor.pharmacy) {
+      if (AppConfig.instance.flavor == AppFlavor.pharmacy) {
         return Scaffold(
           resizeToAvoidBottomInset: false,
           backgroundColor: const Color(0xFFFAF8FF),
@@ -498,7 +498,7 @@ class _AppShellState extends State<AppShell> {
 
     final p = context.palette;
     final brandPrimary = Theme.of(context).colorScheme.primary;
-    final isPharmacy = AppConfig.flavor == AppFlavor.pharmacy;
+    final isPharmacy = AppConfig.instance.flavor == AppFlavor.pharmacy;
     final pharmacyIndicator = const Color(0xFF86F2E4);
     final pharmacyActive = const Color(0xFF006F66);
     final pharmacyInactive = const Color(0xFF6D7A72);

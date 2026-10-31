@@ -1,10 +1,8 @@
-import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart' show Color;
 import '../../core/network/api_client.dart';
 import '../../core/storage/session_storage.dart';
-import '../../core/utils/safe_json.dart';
 import '../shared_pos/product_catalog_service.dart';
 import '../shared_pos/shift_service.dart';
 import 'widgets/pharmacy_queue_modal.dart';
@@ -161,6 +159,7 @@ class PharmacyService {
       '/v1/pos/customers',
     ];
 
+    // ignore: unused_local_variable
     bool anyEndpointResponded = false;
 
     for (final ep in candidateEndpoints) {

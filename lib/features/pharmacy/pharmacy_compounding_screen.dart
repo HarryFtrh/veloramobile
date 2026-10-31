@@ -15,13 +15,13 @@ class PharmacyCompoundingScreen extends StatefulWidget {
 
 class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
   String _selectedPatient = 'Pilih Pasien Resep';
-  String _recipeName = 'Pulveres Racikan Obat';
-  int _packageCount = 15;
-  String _dosageForm = 'Pulveres (Puyer)';
-  String _signa = '3 x Sehari 1 Bungkus Sesudah Makan';
-  bool _isDtd = true; // Dosis Toleransi Dosis (d.t.d)
+  final String _recipeName = 'Pulveres Racikan Obat';
+  final int _packageCount = 15;
+  final String _dosageForm = 'Pulveres (Puyer)';
+  final String _signa = '3 x Sehari 1 Bungkus Sesudah Makan';
+  final bool _isDtd = true; // Dosis Toleransi Dosis (d.t.d)
   String _labelType = 'putih'; // 'putih' (obat dalam/oral) vs 'biru' (obat luar)
-  bool _isLoading = true;
+  bool _isLoading = false; // ignore: unused_field
 
   final List<Map<String, dynamic>> _ingredients = [];
   final List<String> _patientOptions = [];
@@ -132,7 +132,7 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
                             ? const Center(child: Text('Tidak ada obat ditemukan', style: TextStyle(color: Colors.grey)))
                             : ListView.separated(
                                 itemCount: filtered.length,
-                                separatorBuilder: (_, __) => const Divider(height: 1),
+                                separatorBuilder: (_, _1) => const Divider(height: 1),
                                 itemBuilder: (ctx, idx) {
                                   final p = filtered[idx];
                                   return ListTile(
