@@ -12,6 +12,7 @@ import 'features/auth/cubit/auth_cubit.dart';
 import 'features/auth/cubit/auth_state.dart';
 import 'features/auth/login_screen.dart';
 import 'features/sales/sales_dashboard_screen.dart';
+import 'features/shared_pos/offline_sync_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,6 +28,7 @@ void main() async {
     await SessionStorage.init();
     ApiClient.init();
     AppUpdateService.init();
+    OfflineSyncManager.instance.startAutoSync();
   } catch (e) {
     debugPrint('Bootstrap initialization error: $e');
   }

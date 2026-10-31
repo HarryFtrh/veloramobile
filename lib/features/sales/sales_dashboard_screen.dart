@@ -6,6 +6,7 @@ import 'sales_service.dart';
 import 'widgets/sales_action_card.dart';
 import 'widgets/sales_visit_card.dart';
 import 'widgets/sales_attendance_card.dart';
+import '../shared_pos/offline_sync_badge.dart';
 
 class SalesDashboardScreen extends StatefulWidget {
   final VoidCallback onLogout;
@@ -305,6 +306,8 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
           ],
         ),
         actions: [
+          const OfflineSyncBadge(showClock: false),
+          const SizedBox(width: 4),
           IconButton(
             tooltip: 'Muat ulang',
             icon: const Icon(Icons.refresh_rounded, color: Colors.white70),

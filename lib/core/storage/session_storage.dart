@@ -403,6 +403,11 @@ class SessionStorage {
     return _getString('velora_catalog_cache_$namespace');
   }
 
+  Future<void> clearCatalogCache(String namespace) async {
+    _memCache.remove('velora_catalog_cache_$namespace');
+    await _prefs?.remove('velora_catalog_cache_$namespace');
+  }
+
   Future<void> saveDraftCart(String namespace, String jsonCart) async {
     await _setString('velora_draft_cart_$namespace', jsonCart);
   }

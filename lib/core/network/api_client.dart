@@ -17,6 +17,8 @@ class ApiClient {
   static void Function()? onSessionExpired;
   static void Function(String message)? onSubscriptionBlocked;
   static void Function()? onAppUpdateRequired;
+  static void Function(int? retryAfterSeconds, String? cfRayId)? onRateLimited;
+  static void Function(String? cfRayId)? onCloudflareWafBlocked;
 
   ApiClient._() {
     dio = Dio(
@@ -131,7 +133,23 @@ class ApiClient {
             onAppUpdateRequired?.call();
           }
 
-          // 4. Normalisasi pesan error Cloudflare (520-526) & Gateway Timeout agar tidak melempar HTML atau null crash ke UI
+          // 4. Tangani 429 Cloudflare Rate Limit
+          if (statusCode == 429) {
+            final rawRetry = e.response?.headers.value('retry-after');
+            final retrySec = rawRetry != null ? int.tryParse(rawRetry) : null;
+            onRateLimited?.call(retrySec, cfRay);
+          }
+
+          // 5. Tangani 403 Cloudflare WAF Blocked
+          if (statusCode == 403) {
+            final isCf = e.response?.headers.value('cf-mitigated') != null ||
+                (e.response?.data is String && (e.response!.data as String).contains('cloudflare'));
+            if (isCf) {
+              onCloudflareWafBlocked?.call(cfRay);
+            }
+          }
+
+          // 6. Normalisasi pesan error Cloudflare (520-526) & Gateway Timeout agar tidak melempar HTML atau null crash ke UI
           if (statusCode != null && statusCode >= 520 && statusCode <= 526) {
             final cfMsg = statusCode == 521
                 ? 'Server pusat Velora sedang offline (Cloudflare 521 Web Server Down). Mengalihkan ke transaksi offline.'
