@@ -597,109 +597,131 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
               const SizedBox(height: 10),
 
               // Clinical Patient Strip
-              InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: widget.onChangePatient,
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
+              Builder(
+                builder: (context) {
+                  final isWalkIn = (widget.queueNumber == '-' || widget.queueNumber.isEmpty) &&
+                      (widget.medicalRecordNumber == '-' || widget.medicalRecordNumber.isEmpty) &&
+                      (widget.selectedPatient == 'Pelanggan Umum (Walk-in)' || widget.selectedPatient.isEmpty);
+
+                  return InkWell(
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: borderColor),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF0F172A).withValues(alpha: 0.03),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
+                    onTap: widget.onChangePatient,
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: borderColor),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF0F172A).withValues(alpha: 0.03),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: secondaryTeal.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(Icons.person_outline, size: 18, color: secondaryTeal),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: isWalkIn
+                                  ? primaryEmerald.withValues(alpha: 0.1)
+                                  : secondaryTeal.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              isWalkIn ? Icons.storefront_outlined : Icons.person_rounded,
+                              size: 18,
+                              color: isWalkIn ? primaryEmerald : secondaryTeal,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Flexible(
-                                  child: Text(
-                                    widget.selectedPatient,
-                                    style: const TextStyle(
-                                      fontFamily: 'Plus Jakarta Sans',
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.bold,
-                                      color: textPrimary,
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        isWalkIn ? 'Pelanggan Walk-in (Umum)' : widget.selectedPatient,
+                                        style: const TextStyle(
+                                          fontFamily: 'Plus Jakarta Sans',
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.bold,
+                                          color: textPrimary,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                      decoration: BoxDecoration(
+                                        color: isWalkIn
+                                            ? primaryEmerald.withValues(alpha: 0.1)
+                                            : secondaryTeal.withValues(alpha: 0.12),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        isWalkIn ? 'Bebas / OTC' : 'No. ${widget.queueNumber}',
+                                        style: TextStyle(
+                                          fontFamily: 'JetBrains Mono',
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.bold,
+                                          color: isWalkIn ? primaryEmerald : secondaryTeal,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF86F2E4).withValues(alpha: 0.4),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    widget.queueNumber,
-                                    style: const TextStyle(
-                                      fontFamily: 'JetBrains Mono',
-                                      fontSize: 9.5,
-                                      fontWeight: FontWeight.bold,
-                                      color: secondaryTeal,
-                                    ),
+                                const SizedBox(height: 1),
+                                Text(
+                                  isWalkIn
+                                      ? 'Penjualan langsung tanpa resep dokter'
+                                      : 'RM: ${widget.medicalRecordNumber} • ${widget.selectedDoctor != '-' && widget.selectedDoctor.isNotEmpty ? widget.selectedDoctor : 'Resep Luar'}',
+                                  style: const TextStyle(fontSize: 10.5, color: textMuted),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: canvasColor,
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: borderColor),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isWalkIn ? Icons.person_add_alt_1_rounded : Icons.sync_alt_rounded,
+                                  size: 12,
+                                  color: primaryEmerald,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  isWalkIn ? 'Pilih Pasien' : 'Ganti',
+                                  style: const TextStyle(
+                                    color: primaryEmerald,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 1),
-                            Text(
-                              'RM: ${widget.medicalRecordNumber} • ${widget.selectedDoctor}',
-                              style: const TextStyle(fontSize: 10.5, color: textMuted),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: canvasColor,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: borderColor),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.sync_alt_rounded, size: 12, color: primaryEmerald),
-                            SizedBox(width: 4),
-                            Text(
-                              'Ganti',
-                              style: TextStyle(
-                                color: primaryEmerald,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               ),
             ],
           ),

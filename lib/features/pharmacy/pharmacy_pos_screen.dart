@@ -40,11 +40,30 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
 
   // Clinical Patient Context
   String _selectedPatient = 'Pelanggan Umum (Walk-in)';
-  String _selectedDoctor = 'dr. Resep Luar (Umum)';
+  String _selectedDoctor = '-';
   String _queueNumber = '-';
   String _medicalRecordNumber = '-';
   String _patientCategory = 'Umum';
   String _patientAllergies = '';
+
+  bool get _isClinicPatientLoaded =>
+      (_queueNumber != '-' && _queueNumber.isNotEmpty) ||
+      (_medicalRecordNumber != '-' && _medicalRecordNumber.isNotEmpty) ||
+      (_selectedPatient != 'Pelanggan Umum (Walk-in)' && _selectedPatient.isNotEmpty);
+
+  bool get _hasRxInCart {
+    for (final key in _cart.keys) {
+      final baseId = key.contains(':') ? key.split(':').first : key;
+      final item = _drugItems.firstWhere(
+        (it) => it['id'].toString() == baseId,
+        orElse: () => const {},
+      );
+      if (item.isNotEmpty && (item['isDotRed'] == true || item['isPrescriptionOnly'] == true)) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   bool _isLoadingCatalog = false;
   String? _syncError; // ignore: unused_field
@@ -325,6 +344,45 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                   _changePatientDialog();
                 },
               ),
+              if (_isClinicPatientLoaded) ...[
+                const SizedBox(height: 10),
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                  leading: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFBA1A1A).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.person_off_outlined, color: Color(0xFFBA1A1A)),
+                  ),
+                  title: const Text(
+                    'Reset ke Pelanggan Walk-in (Umum)',
+                    style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 13.5),
+                  ),
+                  subtitle: const Text(
+                    'Hapus data pasien klinik & kembali ke transaksi umum',
+                    style: TextStyle(fontSize: 11, color: Color(0xFF6D7A72)),
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFF6D7A72)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    setState(() {
+                      _selectedPatient = 'Pelanggan Umum (Walk-in)';
+                      _selectedDoctor = '-';
+                      _queueNumber = '-';
+                      _medicalRecordNumber = '-';
+                      _patientCategory = 'Umum';
+                      _patientAllergies = '';
+                    });
+                  },
+                ),
+              ],
               const SizedBox(height: 12),
             ],
           ),
@@ -715,7 +773,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
       _cart.clear();
       _totalPrice = 0;
       _selectedPatient = 'Pelanggan Umum (Walk-in)';
-      _selectedDoctor = 'dr. Resep Luar (Umum)';
+      _selectedDoctor = '-';
       _queueNumber = '-';
       _medicalRecordNumber = '-';
       _patientCategory = 'Umum';
@@ -929,7 +987,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(vertical: 4),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF86F2E4) : Colors.white.withValues(alpha: 0.08),
+            color: isSelected ? const Color(0xFF0D9488) : Colors.white.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(6),
           ),
           child: Center(
@@ -939,7 +997,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                 fontFamily: 'JetBrains Mono',
                 fontSize: 10,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: isSelected ? const Color(0xFF006F66) : Colors.white.withValues(alpha: 0.75),
+                color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.75),
               ),
             ),
           ),
@@ -1017,7 +1075,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF68DBA9).withValues(alpha: 0.25),
+                              color: emeraldPrimary.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Row(
@@ -1055,36 +1113,6 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                     ],
                   ),
                 ),
-                if (!isMobile && screenWidth >= 1150) ...[
-                  const SizedBox(width: 16),
-                  Container(width: 1, height: 28, color: borderColor),
-                  const SizedBox(width: 16),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF2F3FF),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: borderColor),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.store_rounded, size: 15, color: Color(0xFF006577)),
-                        const SizedBox(width: 6),
-                        Text(
-                          location,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: emeraldPrimary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
@@ -1120,7 +1148,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: isShiftOpen
-                        ? const Color(0xFF86F2E4).withValues(alpha: 0.4)
+                        ? const Color(0xFF0D9488).withValues(alpha: 0.15)
                         : Colors.orange.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -1300,13 +1328,22 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
   }
 
   // Clinical Context Patient Strip
-  Widget _buildPatientContextStrip() {
+  Widget _buildPatientContextStrip(bool isWide) {
+    // If wide screen (desktop split view) and walk-in, the cart panel on the right
+    // already has the patient selector. Do not duplicate it on the left to keep screen tidy!
+    if (isWide && !_isClinicPatientLoaded) {
+      return const SizedBox.shrink();
+    }
+
     const emeraldPrimary = ClinicalPalette.primary;
+    const secondaryTeal = ClinicalPalette.secondary;
     const borderColor = Color(0xFFE2E8F0);
 
+    final isWalkIn = !_isClinicPatientLoaded;
+
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -1325,10 +1362,16 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
             width: 34,
             height: 34,
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
+              color: isWalkIn
+                  ? emeraldPrimary.withValues(alpha: 0.1)
+                  : secondaryTeal.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.person_rounded, size: 18, color: Color(0xFF3D4A42)),
+            child: Icon(
+              isWalkIn ? Icons.storefront_outlined : Icons.badge_outlined,
+              size: 18,
+              color: isWalkIn ? emeraldPrimary : secondaryTeal,
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -1339,7 +1382,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                   children: [
                     Flexible(
                       child: Text(
-                        _selectedPatient,
+                        isWalkIn ? 'Pelanggan Walk-in (Umum)' : _selectedPatient,
                         style: const TextStyle(
                           fontFamily: 'Plus Jakarta Sans',
                           fontSize: 13,
@@ -1352,18 +1395,20 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                     ),
                     const SizedBox(width: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                       decoration: BoxDecoration(
-                        color: emeraldPrimary.withValues(alpha: 0.1),
+                        color: isWalkIn
+                            ? emeraldPrimary.withValues(alpha: 0.1)
+                            : secondaryTeal.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        _queueNumber,
-                        style: const TextStyle(
+                        isWalkIn ? 'Penjualan Bebas' : 'Antrean $_queueNumber',
+                        style: TextStyle(
                           fontFamily: 'JetBrains Mono',
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: emeraldPrimary,
+                          color: isWalkIn ? emeraldPrimary : secondaryTeal,
                         ),
                       ),
                     ),
@@ -1371,8 +1416,10 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'RM: $_medicalRecordNumber • $_selectedDoctor'
-                  '${_patientAllergies.isNotEmpty ? " • Alergi: $_patientAllergies" : ""}',
+                  isWalkIn
+                      ? 'Penjualan kasir langsung tanpa antrean klinik'
+                      : 'No. RM: $_medicalRecordNumber • Dokter: ${_selectedDoctor != '-' && _selectedDoctor.isNotEmpty ? _selectedDoctor : 'Resep Luar'}'
+                          '${_patientAllergies.isNotEmpty ? " • Alergi: $_patientAllergies" : ""}',
                   style: TextStyle(
                     fontSize: 11,
                     color: _patientAllergies.isNotEmpty ? const Color(0xFFBA1A1A) : const Color(0xFF6D7A72),
@@ -1384,36 +1431,38 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
               ],
             ),
           ),
-          InkWell(
-            onTap: _openMedicalRecordsModal,
-            borderRadius: BorderRadius.circular(6),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFAF8FF),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: borderColor),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.assignment_outlined, size: 14, color: Color(0xFF006577)),
-                  SizedBox(width: 4),
-                  Text(
-                    'Rekam Medis',
-                    style: TextStyle(
-                      color: Color(0xFF006577),
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.bold,
+          if (!isWalkIn) ...[
+            InkWell(
+              onTap: _openMedicalRecordsModal,
+              borderRadius: BorderRadius.circular(6),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFAF8FF),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: borderColor),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.assignment_outlined, size: 14, color: secondaryTeal),
+                    SizedBox(width: 4),
+                    Text(
+                      'Rekam Medis',
+                      style: TextStyle(
+                        color: secondaryTeal,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 6),
+            const SizedBox(width: 6),
+          ],
           InkWell(
-            onTap: _showChangePatientOptions,
+            onTap: isWalkIn ? _openQueueModal : _showChangePatientOptions,
             borderRadius: BorderRadius.circular(6),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
@@ -1422,14 +1471,18 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: borderColor),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.sync_alt_rounded, size: 14, color: emeraldPrimary),
-                  SizedBox(width: 4),
+                  Icon(
+                    isWalkIn ? Icons.people_outline_rounded : Icons.sync_alt_rounded,
+                    size: 14,
+                    color: emeraldPrimary,
+                  ),
+                  const SizedBox(width: 4),
                   Text(
-                    'Ganti',
-                    style: TextStyle(
+                    isWalkIn ? 'Muat Antrean' : 'Ganti',
+                    style: const TextStyle(
                       color: emeraldPrimary,
                       fontSize: 11.5,
                       fontWeight: FontWeight.bold,
@@ -1446,6 +1499,13 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
 
   // Prescription Prompt Info Banner
   Widget _buildPrescriptionValidationBanner() {
+    // Only display when a clinical prescription patient is loaded OR when cart has Rx drugs!
+    if (!_isClinicPatientLoaded && !_hasRxInCart) {
+      return const SizedBox.shrink();
+    }
+
+    const secondaryTeal = ClinicalPalette.secondary;
+
     return InkWell(
       onTap: _openPrescriptionReviewModal,
       borderRadius: BorderRadius.circular(10),
@@ -1453,20 +1513,20 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF0D9488).withValues(alpha: 0.08),
+          color: secondaryTeal.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFF0D9488).withValues(alpha: 0.2)),
+          border: Border.all(color: secondaryTeal.withValues(alpha: 0.2)),
         ),
         child: const Row(
           children: [
-            Icon(Icons.health_and_safety_outlined, size: 18, color: Color(0xFF0D9488)),
+            Icon(Icons.health_and_safety_outlined, size: 18, color: secondaryTeal),
             SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Penjualan Resep Aktif • Buka Telaah Obat (7 Benar)',
+                    'Penjualan Resep / Obat Keras Aktif (7 Benar)',
                     style: TextStyle(
                       fontFamily: 'Plus Jakarta Sans',
                       fontSize: 11.5,
@@ -1475,7 +1535,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                     ),
                   ),
                   Text(
-                    'Validasi identitas dokter & SIP untuk sediaan bertanda Rx. Ketuk untuk telaah klinis.',
+                    'Sediaan bertanda Rx / resep terdeteksi. Buka telaah klinis & SIP dokter.',
                     style: TextStyle(fontSize: 10, color: Color(0xFF6D7A72)),
                   ),
                 ],
@@ -1485,16 +1545,16 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'SIP Aktif',
+                  'Telaah Klinis',
                   style: TextStyle(
                     fontFamily: 'JetBrains Mono',
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF0D9488),
+                    color: secondaryTeal,
                   ),
                 ),
                 SizedBox(width: 4),
-                Icon(Icons.chevron_right_rounded, size: 16, color: Color(0xFF0D9488)),
+                Icon(Icons.chevron_right_rounded, size: 16, color: secondaryTeal),
               ],
             ),
           ],
@@ -1691,7 +1751,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildTopHeader(isMobile, screenWidth),
-        _buildPatientContextStrip(),
+        _buildPatientContextStrip(isWide),
         _buildPrescriptionValidationBanner(),
         _buildSearchField(),
         _buildCategoryTabs(),
