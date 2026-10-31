@@ -252,7 +252,8 @@ class PosProduct {
     } else if (rawBatches.isNotEmpty) {
       stockVal = rawBatches.fold<double>(0.0, (sum, b) => sum + b.stock);
     } else {
-      stockVal = 99.0;
+      final bType = SessionStorage.instance.getBusinessType()?.toLowerCase() ?? '';
+      stockVal = bType == 'fnb' ? 99.0 : 0.0;
     }
 
     // SKU & Barcode: handles 'sku'/'velora_id' and 'barcode'/'barcode_master'
@@ -502,12 +503,36 @@ class ProductCatalogService {
   ProductCatalogService._();
 
   PosCatalogData? _cachedCatalog;
+  String? _cachedScopeKey;
   PosCatalogData? get cachedCatalog => _cachedCatalog;
 
   // In-Memory Fast Lookup Indices (O(1) Scan & Search)
   final Map<String, PosProduct> _barcodeMap = {};
   final Map<String, PosProduct> _skuMap = {};
   final Map<String, PosProduct> _idMap = {};
+
+  String _currentScopeKey() {
+    final bizType = SessionStorage.instance.getBusinessType()?.toLowerCase() ?? 'retail';
+    final tenantId = SessionStorage.instance.getTenantId() ?? 'anon';
+    final locId = SessionStorage.instance.getLocationId() ?? 'main';
+    return '${bizType}_${tenantId}_$locId';
+  }
+
+  void _ensureTenantScope() {
+    final currentKey = _currentScopeKey();
+    if (_cachedScopeKey != null && _cachedScopeKey != currentKey) {
+      clearMemoryCache();
+    }
+    _cachedScopeKey = currentKey;
+  }
+
+  void clearMemoryCache() {
+    _cachedCatalog = null;
+    _cachedScopeKey = null;
+    _barcodeMap.clear();
+    _skuMap.clear();
+    _idMap.clear();
+  }
 
   void _rebuildIndex(List<PosProduct> products) {
     _barcodeMap.clear();
@@ -531,6 +556,7 @@ class ProductCatalogService {
 
   /// Filter pencarian cepat (Barcode -> SKU -> Nama -> Kandungan -> Kategori)
   List<PosProduct> searchFast(String query) {
+    _ensureTenantScope();
     if (query.isEmpty) return _cachedCatalog?.products ?? const [];
     final q = query.trim().toLowerCase();
 
@@ -550,21 +576,25 @@ class ProductCatalogService {
     ).toList();
   }
 
-  /// Pencarian real-time ke backend Laravel Scout / Meilisearch (/v1/pharmacy/products?search=...)
-  /// tanpa menimpa katalog dasar (_cachedCatalog), melainkan memperkaya indeks in-memory.
+  /// Pencarian real-time ke backend Laravel Scout / Meilisearch milik TENANT aktif
+  /// (/v1/pos/products-sync & /v1/pharmacy/products?search=...)
+  /// tanpa pernah memanggil search-global atau marketplace publik.
   Future<List<PosProduct>> searchProductsRemote(
     String query, {
     int limit = 50,
   }) async {
+    _ensureTenantScope();
     final trimmed = query.trim();
     if (trimmed.isEmpty) return _cachedCatalog?.products ?? const [];
 
+    final tenantId = SessionStorage.instance.getTenantId();
     final locId = SessionStorage.instance.getLocationId();
     final queryParams = <String, dynamic>{
       'search': trimmed,
       'q': trimmed,
       'limit': limit,
       'per_page': limit,
+      if (tenantId != null && tenantId.isNotEmpty) 'tenant_id': tenantId,
       if (locId != null && locId.isNotEmpty) 'location_id': locId,
     };
 
@@ -576,15 +606,13 @@ class ProductCatalogService {
 
     final candidateEndpoints = isPharmacy
         ? [
-            '/v1/pharmacy/products',
             '/v1/pos/products-sync',
+            '/v1/pharmacy/products',
             '/v1/pharmacy/inventory',
-            '/v1/pharmacy/products/search-global',
           ]
         : [
             '/v1/pos/products-sync',
             '/v1/pos/products',
-            '/v1/products',
           ];
 
     for (final ep in candidateEndpoints) {
@@ -615,17 +643,20 @@ class ProductCatalogService {
   /// Pindai barcode obat ke endpoint server `/v1/pharmacy/pos/scan` atau `/v1/pharmacy/products/scan`
   /// jika belum ada di memori lokal.
   Future<PosProduct?> scanBarcodeRemote(String barcode) async {
+    _ensureTenantScope();
     final clean = barcode.trim();
     if (clean.isEmpty) return null;
 
     final local = findByBarcode(clean) ?? findBySku(clean);
     if (local != null) return local;
 
+    final tenantId = SessionStorage.instance.getTenantId();
     final locId = SessionStorage.instance.getLocationId();
     final payload = <String, dynamic>{
       'barcode': clean,
       'code': clean,
       'sku': clean,
+      if (tenantId != null && tenantId.isNotEmpty) 'tenant_id': tenantId,
       if (locId != null && locId.isNotEmpty) 'location_id': locId,
     };
 
@@ -661,7 +692,7 @@ class ProductCatalogService {
       }
     }
 
-    // Fallback ke pencarian Scout dengan kata kunci barcode
+    // Fallback ke pencarian Scout tenant dengan kata kunci barcode
     final scoutMatches = await searchProductsRemote(clean, limit: 5);
     if (scoutMatches.isNotEmpty) {
       return scoutMatches.first;
@@ -669,17 +700,21 @@ class ProductCatalogService {
     return null;
   }
 
-  /// Fetches products from the canonical POS sync API
+  /// Fetches products from the canonical POS sync API scoped strictly to the active tenant & location
   Future<PosCatalogData> fetchCatalog({
     String? search,
     String? categoryId,
     int? sinceVersion,
     int limit = 100,
   }) async {
+    _ensureTenantScope();
+    final scopeKey = _currentScopeKey();
+    final tenantId = SessionStorage.instance.getTenantId();
     final locId = SessionStorage.instance.getLocationId();
     final queryParams = <String, dynamic>{
       'limit': limit,
       'per_page': limit,
+      if (tenantId != null && tenantId.isNotEmpty) 'tenant_id': tenantId,
       if (locId != null && locId.isNotEmpty) 'location_id': locId,
       if (search != null && search.isNotEmpty) 'search': search,
       if (categoryId != null && categoryId.isNotEmpty) 'category_id': categoryId,
@@ -694,6 +729,9 @@ class ProductCatalogService {
     try {
       if (AppConfig.instance.isPharmacy) isPharmacy = true;
     } catch (_) {}
+
+    // Prioritaskan /v1/pos/products-sync (canonical POS endpoint untuk kasir tenant aktif)
+    // Jangan pernah masukkan /v1/products atau /products karena itu endpoint Marketplace B2B publik!
     final candidateEndpoints = bizType == 'fnb'
         ? [
             '/v1/pos/products-sync',
@@ -701,28 +739,22 @@ class ProductCatalogService {
             '/v1/pos/products',
             '/cafe/pos/products',
             '/cafe/menu',
-            '/v1/products',
           ]
         : isPharmacy
             ? [
-                '/v1/pharmacy/products',
-                '/v1/pharmacy/medicines',
-                '/v1/pharmacy/drugs',
                 '/v1/pos/products-sync',
                 '/v1/pos/products',
-                '/v1/products',
-                '/v1/pos/menu',
-                '/products',
+                '/v1/pharmacy/inventory',
+                '/v1/pharmacy/products',
               ]
             : [
                 '/v1/pos/products-sync',
                 '/v1/pos/products',
-                '/v1/products',
                 '/v1/pos/menu',
-                '/products',
               ];
 
     Response<dynamic>? response;
+    PosCatalogData? parsedCatalog;
     String? successfulEndpoint;
     for (final ep in candidateEndpoints) {
       try {
@@ -731,28 +763,35 @@ class ProductCatalogService {
           queryParameters: queryParams,
         );
         if (res.statusCode == 200 && res.data != null) {
-          response = res;
-          successfulEndpoint = ep;
-          break;
+          final candidateData = _parseCatalogData(res.data);
+          response ??= res;
+          parsedCatalog ??= candidateData;
+          successfulEndpoint ??= ep;
+          if (candidateData.products.isNotEmpty) {
+            response = res;
+            parsedCatalog = candidateData;
+            successfulEndpoint = ep;
+            break;
+          }
         }
       } catch (e) {
         debugPrint('⚠️ [CATALOG] Candidate $ep failed: $e');
       }
     }
 
-    if (response == null) {
+    if (response == null || parsedCatalog == null) {
       debugPrint('⚠️ [CATALOG] All candidate endpoints failed or returned empty');
       if (_cachedCatalog != null && _cachedCatalog!.products.isNotEmpty) {
         return _cachedCatalog!;
       }
-      // Pulihkan dari disk cache jika aplikasi dinyalakan saat offline total
-      final diskJson = SessionStorage.instance.getCatalogCache(bizType);
+      // Pulihkan dari disk cache SPESIFIK TENANT & CABANG jika aplikasi dinyalakan saat offline total
+      final diskJson = SessionStorage.instance.getCatalogCache(scopeKey);
       if (diskJson != null && diskJson.isNotEmpty) {
         try {
           final decoded = jsonDecode(diskJson);
           final diskData = _parseCatalogData(decoded);
           if (diskData.products.isNotEmpty) {
-            debugPrint('📦 [CATALOG] Berhasil memulihkan ${diskData.products.length} produk dari cache disk offline');
+            debugPrint('📦 [CATALOG] Berhasil memulihkan ${diskData.products.length} produk dari cache disk offline ($scopeKey)');
             _rebuildIndex(diskData.products);
             _cachedCatalog = diskData;
             return diskData;
@@ -769,14 +808,14 @@ class ProductCatalogService {
       );
     }
 
-    final catalogData = _parseCatalogData(response.data);
-    debugPrint('📦 [CATALOG] Loaded ${catalogData.products.length} dynamic products across ${catalogData.categories.length} categories and ${catalogData.modifiers.length} modifier groups from $successfulEndpoint');
+    final catalogData = parsedCatalog;
+    debugPrint('📦 [CATALOG] Loaded ${catalogData.products.length} dynamic products across ${catalogData.categories.length} categories and ${catalogData.modifiers.length} modifier groups from $successfulEndpoint (scope: $scopeKey)');
     _rebuildIndex(catalogData.products);
     _cachedCatalog = catalogData;
 
-    // Persist ke disk storage agar kasir tetap bisa berjualan saat cold-boot offline
+    // Persist ke disk storage terisolasi per tenant+cabang agar tidak bocor antar akun
     try {
-      unawaited(SessionStorage.instance.saveCatalogCache(bizType, jsonEncode(response.data)));
+      unawaited(SessionStorage.instance.saveCatalogCache(scopeKey, jsonEncode(response.data)));
     } catch (_) {}
 
     return catalogData;
