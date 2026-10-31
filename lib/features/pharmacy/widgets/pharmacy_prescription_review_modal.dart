@@ -140,10 +140,10 @@ class _PharmacyPrescriptionReviewModalState extends State<PharmacyPrescriptionRe
             final active = widget.patientData ?? PharmacyService.instance.activePatient.value;
             final patientName = (active?.patient.isNotEmpty == true) ? active!.patient : 'Pelanggan Umum (Walk-in)';
             final doctorName = (active?.doctor.isNotEmpty == true) ? active!.doctor : 'dr. Resep Luar / DPJP';
-            final queueNum = (active?.queueNumber.isNotEmpty == true && active!.queueNumber != '-') ? active.queueNumber : '#A-REG';
+            final queueNum = (active?.queueNumber.isNotEmpty == true && active!.queueNumber != '-') ? active.queueNumber : '-';
             final rmNumber = (active?.medicalRecordNumber.isNotEmpty == true && active!.medicalRecordNumber != '-')
                 ? active.medicalRecordNumber
-                : 'RM-UMUM';
+                : '-';
             final category = (active?.patientCategory.isNotEmpty == true) ? active!.patientCategory : 'Umum';
             final allergies = (active?.allergies.trim().isNotEmpty == true) ? active!.allergies.trim() : '';
 
@@ -371,7 +371,7 @@ class _PharmacyPrescriptionReviewModalState extends State<PharmacyPrescriptionRe
                       final isRacikan = item.name.toLowerCase().contains('racik') ||
                           item.name.toLowerCase().contains('pulveres') ||
                           item.name.toLowerCase().contains('puyer');
-                      final batchNum = item.batchNumber?.isNotEmpty == true ? item.batchNumber! : 'BATCH-REG';
+                      final batchNum = item.batchNumber?.isNotEmpty == true ? item.batchNumber! : '-';
 
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 8),

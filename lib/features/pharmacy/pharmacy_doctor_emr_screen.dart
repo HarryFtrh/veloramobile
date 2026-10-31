@@ -22,13 +22,13 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
   String _patientName = 'Pilih Pasien';
   String _queueNumber = '-';
   String _medicalRecordNumber = '-';
-  String _bp = '120/80 mmHg';
-  String _pulse = '76 bpm';
-  String _temp = '36.5 °C';
+  String _bp = '-';
+  String _pulse = '-';
+  String _temp = '-';
   String _allergies = 'Tidak ada riwayat alergi obat';
 
   final TextEditingController _anamnesisController = TextEditingController();
-  String _diagnosis = 'Pemeriksaan Klinis Rawat Jalan';
+  final TextEditingController _diagnosisController = TextEditingController(text: 'Pemeriksaan Klinis Rawat Jalan');
 
   final List<Map<String, String>> _prescribedItems = [];
 
@@ -104,6 +104,7 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
   @override
   void dispose() {
     _anamnesisController.dispose();
+    _diagnosisController.dispose();
     super.dispose();
   }
 
@@ -114,7 +115,7 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
       medicalRecordNumber: _medicalRecordNumber,
       doctorName: _doctorName,
       department: _department,
-      diagnosis: _diagnosis,
+      diagnosis: _diagnosisController.text.trim().isNotEmpty ? _diagnosisController.text.trim() : 'Pemeriksaan Klinis Rawat Jalan',
       prescribedDrugs: _prescribedItems.map((e) => '${e['name']} (${e['dose']})').toList(),
     );
 
@@ -380,17 +381,19 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
                     const SizedBox(height: 10),
                     const Text('Diagnosis Klinis (ICD-10)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary)),
                     const SizedBox(height: 6),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(8),
+                    TextField(
+                      controller: _diagnosisController,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        hintText: 'Contoh: J00 - Nasofaringitis akut / Observasi Febris',
+                        hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: borderColor)),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: borderColor)),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF006948), width: 1.5)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       ),
-                      child: Text(
-                        _diagnosis,
-                        style: const TextStyle(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.bold, fontSize: 12.5, color: textPrimary),
-                      ),
+                      style: const TextStyle(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.bold, fontSize: 12.5, color: textPrimary),
                     ),
                   ],
                 ),
@@ -538,26 +541,75 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
     );
   }
 
-  Widget _buildVitalPill(String label, String value, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 12, color: const Color(0xFF64748B)),
-              const SizedBox(width: 4),
-              Text(label, style: const TextStyle(fontSize: 9.5, color: Color(0xFF64748B))),
-            ],
+  void _editVitalSign(String label) {
+    AudioHelper.tapFeedback();
+    final ctrl = TextEditingController(
+      text: label == 'Tensi Darah'
+          ? (_bp == '-' ? '' : _bp)
+          : (label == 'Nadi'
+              ? (_pulse == '-' ? '' : _pulse)
+              : (_temp == '-' ? '' : _temp)),
+    );
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Input $label Pasien', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: label == 'Tensi Darah' ? '120/80 mmHg' : (label == 'Nadi' ? '78 bpm' : '36.5 °C'),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
           ),
-          const SizedBox(height: 2),
-          Text(value, style: const TextStyle(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.bold, fontSize: 11.5)),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF006948),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              setState(() {
+                final val = ctrl.text.trim();
+                if (label == 'Tensi Darah') _bp = val.isNotEmpty ? val : '-';
+                if (label == 'Nadi') _pulse = val.isNotEmpty ? val : '-';
+                if (label == 'Suhu') _temp = val.isNotEmpty ? val : '-';
+              });
+              Navigator.pop(ctx);
+            },
+            child: const Text('Simpan'),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildVitalPill(String label, String value, IconData icon) {
+    return InkWell(
+      onTap: () => _editVitalSign(label),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 12, color: const Color(0xFF64748B)),
+                const SizedBox(width: 4),
+                Text(label, style: const TextStyle(fontSize: 9.5, color: Color(0xFF64748B))),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Text(value, style: const TextStyle(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.bold, fontSize: 11.5)),
+          ],
+        ),
       ),
     );
   }

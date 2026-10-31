@@ -59,6 +59,12 @@ class _PharmacyPbfOrderModalState extends State<PharmacyPbfOrderModal> {
     const textPrimary = Color(0xFF131B2E);
     const textMuted = Color(0xFF6D7A72);
 
+    final totalPoAmount = _orders.fold<num>(0, (s, po) => s + po.totalAmount);
+    final totalPoCount = _orders.length;
+    final uniquePbfCount = _orders.map((po) => po.pbfName).toSet().length;
+    final dueSoonOrders = _orders.where((po) => po.status == 'due_soon').toList();
+    final dueSoonAmount = dueSoonOrders.fold<num>(0, (s, po) => s + po.totalAmount);
+
     return Column(
       children: [
         // Drag handle & Header
@@ -141,10 +147,16 @@ class _PharmacyPbfOrderModalState extends State<PharmacyPbfOrderModal> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Total PO Bulan Ini', style: TextStyle(fontSize: 11, color: textMuted)),
+                          const Text('Total PO Periode Ini', style: TextStyle(fontSize: 11, color: textMuted)),
                           const SizedBox(height: 4),
-                          const Text('Rp 42.500.000', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13.5, fontWeight: FontWeight.bold, color: textPrimary)),
-                          const Text('12 Faktur • 8 PBF', style: TextStyle(fontSize: 10, color: emeraldPrimary, fontWeight: FontWeight.bold)),
+                          Text(
+                            CurrencyFormatter.format(totalPoAmount),
+                            style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13.5, fontWeight: FontWeight.bold, color: textPrimary),
+                          ),
+                          Text(
+                            '$totalPoCount Faktur • $uniquePbfCount PBF',
+                            style: const TextStyle(fontSize: 10, color: emeraldPrimary, fontWeight: FontWeight.bold),
+                          ),
                         ],
                       ),
                     ),
@@ -161,10 +173,16 @@ class _PharmacyPbfOrderModalState extends State<PharmacyPbfOrderModal> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Jatuh Tempo 7 Hari', style: TextStyle(fontSize: 11, color: Color(0xFFBA1A1A), fontWeight: FontWeight.bold)),
+                          const Text('Jatuh Tempo Segera', style: TextStyle(fontSize: 11, color: Color(0xFFBA1A1A), fontWeight: FontWeight.bold)),
                           const SizedBox(height: 4),
-                          const Text('Rp 14.200.000', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFFBA1A1A))),
-                          const Text('3 Faktur Segera Bayar', style: TextStyle(fontSize: 10, color: textMuted)),
+                          Text(
+                            CurrencyFormatter.format(dueSoonAmount),
+                            style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFFBA1A1A)),
+                          ),
+                          Text(
+                            '${dueSoonOrders.length} Faktur Segera Bayar',
+                            style: const TextStyle(fontSize: 10, color: textMuted),
+                          ),
                         ],
                       ),
                     ),
@@ -184,7 +202,7 @@ class _PharmacyPbfOrderModalState extends State<PharmacyPbfOrderModal> {
                   OutlinedButton.icon(
                     onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Formulir SP Elektronik (Reguler/Prekursor) dibuka.')),
+                        const SnackBar(content: Text('Formulir SP Elektronik dibuka.')),
                       );
                     },
                     icon: const Icon(Icons.add, size: 14),
@@ -202,7 +220,7 @@ class _PharmacyPbfOrderModalState extends State<PharmacyPbfOrderModal> {
 
               if (_isLoading)
                 const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator(color: emeraldPrimary)))
-              else
+              else if (_orders.isNotEmpty)
                 ..._orders.map((po) {
                   final isDueSoon = po.status == 'due_soon';
                   return Container(
@@ -282,7 +300,35 @@ class _PharmacyPbfOrderModalState extends State<PharmacyPbfOrderModal> {
                       ],
                     ),
                   );
-                }),
+                })
+              else
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  margin: const EdgeInsets.only(top: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: const Center(
+                    child: Column(
+                      children: [
+                        Icon(Icons.local_shipping_outlined, size: 36, color: textMuted),
+                        SizedBox(height: 8),
+                        Text(
+                          'Belum ada Surat Pesanan / Faktur PBF',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Data pengadaan dari Pedagang Besar Farmasi akan tercatat secara otomatis saat pesanan dibuat.',
+                          style: TextStyle(fontSize: 11, color: textMuted),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

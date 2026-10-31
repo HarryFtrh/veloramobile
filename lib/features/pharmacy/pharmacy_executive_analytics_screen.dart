@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/storage/session_storage.dart';
 import '../../core/utils/currency_formatter.dart';
 import 'pharmacy_service.dart';
 
@@ -11,10 +12,30 @@ class PharmacyExecutiveAnalyticsScreen extends StatefulWidget {
 }
 
 class _PharmacyExecutiveAnalyticsScreenState extends State<PharmacyExecutiveAnalyticsScreen> {
-  String _selectedPeriod = 'Bulan Ini (Okt 2024)';
-  String _selectedBranch = 'Semua Cabang (4 Unit)';
+  late String _selectedPeriod;
+  late String _selectedBranch;
   bool _isLoading = true;
   PharmacyExecutiveData? _analyticsData;
+
+  static const _monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+  List<String> get _periodOptions {
+    final now = DateTime.now();
+    final mName = (now.month >= 1 && now.month <= 12) ? _monthNames[now.month - 1] : '';
+    return [
+      'Bulan Ini ($mName ${now.year})',
+      'Kuartal Berjalan',
+      'Year-to-Date (${now.year})',
+    ];
+  }
+
+  List<String> get _branchOptions {
+    final curBranch = SessionStorage.instance.getLocationName();
+    return [
+      'Semua Cabang',
+      if (curBranch != null && curBranch.isNotEmpty) curBranch else 'Cabang Utama',
+    ];
+  }
 
   num get _grossRevenue => _analyticsData?.grossRevenue ?? 0;
   num get _cogs => _analyticsData?.cogs ?? 0;
@@ -29,6 +50,8 @@ class _PharmacyExecutiveAnalyticsScreenState extends State<PharmacyExecutiveAnal
   @override
   void initState() {
     super.initState();
+    _selectedPeriod = _periodOptions.first;
+    _selectedBranch = _branchOptions.first;
     _fetchLiveAnalytics();
   }
 
@@ -118,11 +141,9 @@ class _PharmacyExecutiveAnalyticsScreenState extends State<PharmacyExecutiveAnal
                                   value: _selectedPeriod,
                                   isDense: true,
                                   icon: const Icon(Icons.calendar_month_outlined, size: 18),
-                                  items: const [
-                                    DropdownMenuItem(value: 'Bulan Ini (Okt 2024)', child: Text('Bulan Ini (Okt 2024)', style: TextStyle(fontSize: 12))),
-                                    DropdownMenuItem(value: 'Kuartal 3 (Jul - Sep)', child: Text('Kuartal 3 (Jul - Sep)', style: TextStyle(fontSize: 12))),
-                                    DropdownMenuItem(value: 'Year-to-Date (2024)', child: Text('Year-to-Date (2024)', style: TextStyle(fontSize: 12))),
-                                  ],
+                                  items: _periodOptions.map((opt) {
+                                    return DropdownMenuItem(value: opt, child: Text(opt, style: const TextStyle(fontSize: 12)));
+                                  }).toList(),
                                   onChanged: (val) {
                                     if (val != null) {
                                       setState(() => _selectedPeriod = val);
@@ -147,10 +168,9 @@ class _PharmacyExecutiveAnalyticsScreenState extends State<PharmacyExecutiveAnal
                                   value: _selectedBranch,
                                   isDense: true,
                                   icon: const Icon(Icons.storefront_outlined, size: 18),
-                                  items: const [
-                                    DropdownMenuItem(value: 'Semua Cabang (4 Unit)', child: Text('Semua Cabang (4 Unit)', style: TextStyle(fontSize: 12))),
-                                    DropdownMenuItem(value: 'Cabang Utama Diponegoro', child: Text('Cabang Utama Diponegoro', style: TextStyle(fontSize: 12))),
-                                  ],
+                                  items: _branchOptions.map((branch) {
+                                    return DropdownMenuItem(value: branch, child: Text(branch, style: const TextStyle(fontSize: 12)));
+                                  }).toList(),
                                   onChanged: (val) {
                                     if (val != null) {
                                       setState(() => _selectedBranch = val);

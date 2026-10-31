@@ -50,16 +50,16 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
         }
       }
 
-      // Ambil katalog obat live dari API (/v1/pos/products)
-      final catalog = await ProductCatalogService.instance.fetchCatalog();
       final List<Map<String, dynamic>> ingList = [];
-      if (catalog.products.isNotEmpty) {
-        for (final p in catalog.products.take(4)) {
+      // Jika pasien memiliki resep nyata dari antrean, muat resep tersebut
+      final match = queue.where((q) => '${q.patientName} (${q.queueNumber})' == _selectedPatient).firstOrNull ?? (queue.isNotEmpty ? queue.first : null);
+      if (match != null && match.prescribedDrugs.isNotEmpty) {
+        for (final d in match.prescribedDrugs) {
           ingList.add({
-            'name': p.name,
-            'dosePerPack': '250 mg',
-            'totalNeeded': '3.750 mg (${(_packageCount * 0.5).toStringAsFixed(1)} Tab)',
-            'stockUnit': 'Tablet / Kapsul',
+            'name': d,
+            'dosePerPack': '1 Bagian / Bungkus',
+            'totalNeeded': '$_packageCount Unit Racikan DTD',
+            'stockUnit': 'Unit Farmasi',
           });
         }
       }
@@ -76,6 +76,138 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _addIngredientFromCatalog() async {
+    AudioHelper.tapFeedback();
+    try {
+      final catalog = await ProductCatalogService.instance.fetchCatalog();
+      if (!mounted) return;
+      if (catalog.products.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Katalog obat formularium kosong.')),
+        );
+        return;
+      }
+
+      showDialog(
+        context: context,
+        builder: (ctx) {
+          String searchQ = '';
+          return StatefulBuilder(
+            builder: (ctx, setDialogState) {
+              final filtered = catalog.products.where((p) {
+                if (searchQ.isEmpty) return true;
+                return p.name.toLowerCase().contains(searchQ.toLowerCase()) ||
+                    p.sku.toLowerCase().contains(searchQ.toLowerCase());
+              }).toList();
+
+              return AlertDialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                title: const Row(
+                  children: [
+                    Icon(Icons.medication_liquid_rounded, color: Color(0xFF006948)),
+                    SizedBox(width: 8),
+                    Text('Pilih Bahan Baku Racikan', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                content: SizedBox(
+                  width: double.maxFinite,
+                  height: 380,
+                  child: Column(
+                    children: [
+                      TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Cari obat di formularium...',
+                          prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        ),
+                        onChanged: (val) => setDialogState(() => searchQ = val.trim()),
+                      ),
+                      const SizedBox(height: 10),
+                      Expanded(
+                        child: filtered.isEmpty
+                            ? const Center(child: Text('Tidak ada obat ditemukan', style: TextStyle(color: Colors.grey)))
+                            : ListView.separated(
+                                itemCount: filtered.length,
+                                separatorBuilder: (_, __) => const Divider(height: 1),
+                                itemBuilder: (ctx, idx) {
+                                  final p = filtered[idx];
+                                  return ListTile(
+                                    dense: true,
+                                    title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                    subtitle: Text('Stok: ${p.stock.toInt()} • ${p.sku.isNotEmpty ? p.sku : p.category}'),
+                                    trailing: const Icon(Icons.add_circle_outline, color: Color(0xFF006948)),
+                                    onTap: () {
+                                      Navigator.pop(ctx);
+                                      _promptIngredientDose(p.name, 'Unit');
+                                    },
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Tutup')),
+                ],
+              );
+            },
+          );
+        },
+      );
+    } catch (_) {}
+  }
+
+  void _promptIngredientDose(String drugName, String unit) {
+    final doseCtrl = TextEditingController(text: '1');
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Dosis untuk $drugName', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Tentukan kebutuhan per bungkus untuk $_packageCount bungkus racikan:', style: const TextStyle(fontSize: 12, color: Color(0xFF6D7A72))),
+            const SizedBox(height: 12),
+            TextField(
+              controller: doseCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: 'Jumlah per bungkus ($unit / mg)',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF006948), foregroundColor: Colors.white),
+            onPressed: () {
+              final val = doseCtrl.text.trim();
+              final numVal = num.tryParse(val) ?? 1;
+              final total = numVal * _packageCount;
+              setState(() {
+                _ingredients.add({
+                  'name': drugName,
+                  'dosePerPack': '$val $unit',
+                  'totalNeeded': '$total $unit total',
+                  'stockUnit': unit,
+                });
+              });
+              Navigator.pop(ctx);
+            },
+            child: const Text('Tambahkan'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _printEtiket() async {
@@ -279,10 +411,10 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Row(
+                          Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
+                              const Text(
                                 'Komposisi Bahan & Kalkulasi Penimbangan',
                                 style: TextStyle(
                                   fontFamily: 'Plus Jakarta Sans',
@@ -291,7 +423,28 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
                                   color: textPrimary,
                                 ),
                               ),
-                              Text('Status Mortar: Siap', style: TextStyle(fontSize: 11, color: emeraldPrimary, fontWeight: FontWeight.bold)),
+                              InkWell(
+                                onTap: _addIngredientFromCatalog,
+                                borderRadius: BorderRadius.circular(6),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: emeraldPrimary.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.add_circle_outline_rounded, size: 14, color: emeraldPrimary),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        '+ Tambah Bahan',
+                                        style: TextStyle(fontSize: 11, color: emeraldPrimary, fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 12),
@@ -343,18 +496,41 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
                                       ),
                                     ],
                                   ),
+                                  const SizedBox(width: 8),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline, size: 18, color: Color(0xFFBA1A1A)),
+                                    tooltip: 'Hapus Bahan',
+                                    onPressed: () => setState(() => _ingredients.remove(ing)),
+                                  ),
                                 ],
                               ),
                             );
                           })
                         else
                           Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(24),
                             alignment: Alignment.center,
-                            child: const Text(
-                              'Belum ada bahan obat terdaftar di katalog. Tambahkan obat di POS untuk memulai racikan.',
-                              style: TextStyle(color: textMuted, fontSize: 12),
-                              textAlign: TextAlign.center,
+                            child: Column(
+                              children: [
+                                Icon(Icons.medication_liquid_outlined, size: 36, color: Colors.grey.shade400),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'Belum ada bahan obat racikan.',
+                                  style: TextStyle(color: textMuted, fontSize: 12),
+                                ),
+                                const SizedBox(height: 10),
+                                ElevatedButton.icon(
+                                  onPressed: _addIngredientFromCatalog,
+                                  icon: const Icon(Icons.add, size: 16),
+                                  label: const Text('Pilih Bahan dari Formularium', style: TextStyle(fontSize: 12)),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: emeraldPrimary,
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],

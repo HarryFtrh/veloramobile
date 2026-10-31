@@ -23,7 +23,7 @@ class PharmacyCartPanel extends StatefulWidget {
     required this.cart,
     required this.drugItems,
     required this.totalPrice,
-    this.tuslahFee = 2500,
+    this.tuslahFee = 0,
     required this.selectedPatient,
     required this.selectedDoctor,
     this.queueNumber = '-',

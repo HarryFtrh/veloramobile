@@ -75,18 +75,18 @@ class _PharmacyStockAlertModalState extends State<PharmacyStockAlertModal> {
     for (final it in widget.catalogItems) {
       final name = it['name']?.toString() ?? 'Obat';
       final cat = it['category']?.toString() ?? 'Umum';
-      final batch = it['batch']?.toString() ?? 'BATCH-STD';
-      final ed = it['ed']?.toString() ?? '2026-12-31';
+      final batch = it['batch']?.toString() ?? '-';
+      final ed = it['ed']?.toString() ?? '-';
       final stock = (it['stock'] as num? ?? 0).toInt();
       final price = (it['price'] as num? ?? 0);
       final isRx = it['isDotRed'] == true;
 
       // Kalkulasi hari menuju ED berdasarkan tanggal batch nyata
-      int days = 180;
-      final parsedDate = DateTime.tryParse(ed);
+      int days = 999;
+      final parsedDate = ed != '-' ? DateTime.tryParse(ed) : null;
       if (parsedDate != null) {
         days = parsedDate.difference(DateTime.now()).inDays;
-      } else if (ed.contains('/') && ed.split('/').length == 2) {
+      } else if (ed != '-' && ed.contains('/') && ed.split('/').length == 2) {
         // Handle format MM/YY e.g. 11/26
         final parts = ed.split('/');
         final m = int.tryParse(parts[0]) ?? 1;

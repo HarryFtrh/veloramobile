@@ -83,8 +83,8 @@ class _PharmacyStockOpnameScreenState extends State<PharmacyStockOpnameScreen> {
             OpnameItem(
               id: p.id,
               name: p.name,
-              batchNumber: 'BATCH-REG',
-              expiryDate: '2026-12-31',
+              batchNumber: '-',
+              expiryDate: '-',
               systemStock: p.stock.toInt(),
               physicalStock: p.stock.toInt(),
               price: p.price,

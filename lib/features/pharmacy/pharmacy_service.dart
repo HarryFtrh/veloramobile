@@ -107,6 +107,35 @@ class PharmacyService {
   /// Local queue cache for prescriptions submitted within the session
   final List<ClinicPatientQueueItem> _localPrescriptions = [];
 
+  /// Biaya tuslah/embalase per transaksi resep dari konfigurasi tenant (/v1/pos/config).
+  /// Default 0 (tidak dikenakan) bila backend tidak mengatur.
+  final ValueNotifier<num> tuslahFee = ValueNotifier<num>(0);
+
+  Future<num> fetchTuslahFee() async {
+    const endpoints = ['/v1/pos/config', '/v1/pos/preferences', '/v1/preferences'];
+    for (final ep in endpoints) {
+      try {
+        final res = await _dio.get(ep, queryParameters: _locationQuery());
+        if (res.statusCode == 200 && res.data != null) {
+          final raw = res.data;
+          final d = raw is Map ? (raw['data'] is Map ? raw['data'] : raw) : null;
+          if (d is Map) {
+            final pharm = d['pharmacy'] is Map ? d['pharmacy'] as Map : const {};
+            final v = pharm['tuslah_fee'] ??
+                pharm['embalase_fee'] ??
+                d['tuslah_fee'] ??
+                d['embalase_fee'] ??
+                d['prescription_fee'];
+            final fee = v is num ? v : num.tryParse(v?.toString() ?? '') ?? 0;
+            tuslahFee.value = fee;
+            return fee;
+          }
+        }
+      } catch (_) {}
+    }
+    return tuslahFee.value;
+  }
+
   void setActivePatient(PharmacyPatientData data) {
     activePatient.value = data;
   }
@@ -190,7 +219,7 @@ class PharmacyService {
     required List<String> prescribedDrugs,
   }) async {
     final newItem = ClinicPatientQueueItem(
-      queueNumber: '#A-${(45 + _localPrescriptions.length + 1).toString().padLeft(3, '0')}',
+      queueNumber: 'R-${(_localPrescriptions.length + 1).toString().padLeft(3, '0')}',
       patientName: patientName,
       medicalRecordNumber: medicalRecordNumber,
       doctorName: doctorName,
@@ -442,12 +471,29 @@ class PharmacyService {
             cogs = (earnings['cogs'] as num?) ??
                 (d['cogs'] as num?) ??
                 (d['hpp'] as num?) ??
-                (revenue > 0 ? (revenue * 0.71).round() : 0);
+                0;
 
             operationalExpense = (earnings['operational_expenses'] as num?) ??
                 (d['operational_expenses'] as num?) ??
                 (d['expenses'] as num?) ??
                 0;
+
+            // Jika beban operasional belum ada di dashboard analitik, sinkronkan dengan /v1/pos/expenses
+            if (operationalExpense == 0) {
+              try {
+                final expRes = await _dio.get('/v1/pos/expenses', queryParameters: q);
+                if (expRes.statusCode == 200 && expRes.data != null) {
+                  final expRaw = expRes.data;
+                  final expItems = expRaw is Map ? (expRaw['data'] ?? expRaw['expenses']) : expRaw;
+                  if (expItems is List) {
+                    operationalExpense = expItems.fold<num>(0, (sum, it) {
+                      final m = it is Map ? it : {};
+                      return sum + ((m['amount'] ?? m['nominal'] ?? 0) as num);
+                    });
+                  }
+                }
+              } catch (_) {}
+            }
 
             netProfit = (earnings['net_profit'] as num?) ??
                 (d['net_profit'] as num?) ??
@@ -491,14 +537,10 @@ class PharmacyService {
       try {
         final catalog = await ProductCatalogService.instance.fetchCatalog();
         if (catalog.products.isNotEmpty) {
-          revenue = catalog.products.fold<num>(0, (s, p) => s + (p.price * (p.stock > 0 ? p.stock : 1)));
-          cogs = (revenue * 0.71).round();
-          operationalExpense = (revenue * 0.1).round();
-          netProfit = revenue - cogs - operationalExpense;
           topMedicines = catalog.products.take(5).map((p) => {
             'name': p.name,
             'sales': '${p.stock.toInt()} Stok',
-            'revenue': (p.price * (p.stock > 0 ? p.stock : 1)).round(),
+            'revenue': (p.price * (p.stock > 0 ? p.stock : 0)).round(),
             'growth': 'Tersedia',
           }).toList();
         }

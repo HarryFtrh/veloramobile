@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/storage/session_storage.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../shared_pos/pos_checkout_service.dart';
 import '../../shared_pos/receipt_printer_service.dart';
@@ -81,7 +82,9 @@ class PharmacyReceiptDialog extends StatelessWidget {
     const textPrimary = Color(0xFF131B2E);
     const textMuted = Color(0xFF6D7A72);
     final now = DateTime.now();
-    final timeStr = '${now.day} Okt ${now.year}, ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')} WIB';
+    final monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    final monthName = (now.month >= 1 && now.month <= 12) ? monthNames[now.month - 1] : '';
+    final timeStr = '${now.day} $monthName ${now.year}, ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')} WIB';
 
     return Container(
       decoration: BoxDecoration(
@@ -412,7 +415,7 @@ class PharmacyReceiptDialog extends StatelessWidget {
                         total: grandTotal,
                         paymentMethod: paymentMethod,
                         customerName: '$patientName ($queueNumber)',
-                        cashierName: 'Apoteker',
+                        cashierName: SessionStorage.instance.getUserName() ?? 'Apoteker',
                       );
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Struk resep dikirim ke printer thermal kasir.')),

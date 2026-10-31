@@ -66,12 +66,16 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
   final List<String> _dynamicCategories = [];
   final List<Map<String, dynamic>> _drugItems = [];
 
-  static const num _tuslahFee = 2500;
+  /// Tuslah/embalase dari konfigurasi tenant (/v1/pos/config), bukan hardcode.
+  num get _tuslahFee => PharmacyService.instance.tuslahFee.value;
 
   @override
   void initState() {
     super.initState();
     PharmacyService.instance.activePatient.addListener(_onActivePatientChanged);
+    PharmacyService.instance.fetchTuslahFee().then((_) {
+      if (mounted) setState(() {});
+    });
     _fetchCatalog().then((_) {
       if (mounted) _restoreCart();
     });

@@ -276,7 +276,7 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
                 decoration: InputDecoration(
                   labelText: 'Nama Lengkap Pasien',
                   labelStyle: const TextStyle(color: Color(0xFF6D7A72), fontSize: 11.5),
-                  hintText: 'Contoh: Ny. Ratna Dewi',
+                  hintText: 'Contoh: Nama Lengkap Pasien',
                   hintStyle: const TextStyle(color: Color(0xFFBCCAC0), fontSize: 12),
                   prefixIcon: const Icon(Icons.person_outline, size: 18, color: Color(0xFF6D7A72)),
                   filled: true,
@@ -303,7 +303,7 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
                 decoration: InputDecoration(
                   labelText: 'Dokter Pemeriksa & SIP',
                   labelStyle: const TextStyle(color: Color(0xFF6D7A72), fontSize: 11.5),
-                  hintText: 'Contoh: dr. Spesialis Poli (SIP: 446/SIP/2026)',
+                  hintText: 'Contoh: dr. Nama Dokter (SIP: No. SIP)',
                   hintStyle: const TextStyle(color: Color(0xFFBCCAC0), fontSize: 12),
                   prefixIcon: const Icon(Icons.medical_services_outlined, size: 18, color: Color(0xFF6D7A72)),
                   filled: true,

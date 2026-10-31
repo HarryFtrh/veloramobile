@@ -329,10 +329,10 @@ class _PharmacyShiftReportScreenState extends State<PharmacyShiftReportScreen> {
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            const Text('KASIR MENYERAHKAN (SHIFT 1)', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: textMuted)),
+                                            const Text('KASIR BERTUGAS', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: textMuted)),
                                             const SizedBox(height: 3),
                                             Text(cashierName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
-                                            const Text('Shift Pagi (07:00 - 15:00) • Loket 01', style: TextStyle(fontSize: 10, color: textMuted)),
+                                            Text('Shift Aktif • $branchName', style: const TextStyle(fontSize: 10, color: textMuted)),
                                           ],
                                         ),
                                       ),
@@ -349,10 +349,10 @@ class _PharmacyShiftReportScreenState extends State<PharmacyShiftReportScreen> {
                                         child: const Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Text('KASIR PENERIMA (SHIFT 2)', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: textMuted)),
+                                            Text('SERAH TERIMA SHIFT', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: textMuted)),
                                             SizedBox(height: 3),
-                                            Text('Apoteker Shift Pengganti', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
-                                            Text('Shift Siang (15:00 - 22:00) • Loket 01', style: TextStyle(fontSize: 10, color: textMuted)),
+                                            Text('Kasir / Petugas Pengganti', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+                                            Text('Rekonsiliasi Kas Laci Berjalan', style: TextStyle(fontSize: 10, color: textMuted)),
                                           ],
                                         ),
                                       ),

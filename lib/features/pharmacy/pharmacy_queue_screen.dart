@@ -397,9 +397,11 @@ class _PharmacyQueueScreenState extends State<PharmacyQueueScreen> {
                           color: Color(0xFF131B2E),
                         ),
                       ),
-                      const Text(
-                        'Estimasi selesai poli: ~12 menit',
-                        style: TextStyle(fontSize: 11, color: Color(0xFF6D7A72)),
+                      Text(
+                        waitingCount > 0
+                            ? 'Estimasi selesai poli: ~${waitingCount * 5} menit'
+                            : 'Semua antrean saat ini telah tertangani',
+                        style: const TextStyle(fontSize: 11, color: Color(0xFF6D7A72)),
                       ),
                     ],
                   ),
@@ -411,9 +413,11 @@ class _PharmacyQueueScreenState extends State<PharmacyQueueScreen> {
                   color: const Color(0xFF85F8C4).withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Text(
-                  'Sesi Pagi',
-                  style: TextStyle(
+                child: Text(
+                  DateTime.now().hour < 12
+                      ? 'Sesi Pagi'
+                      : (DateTime.now().hour < 17 ? 'Sesi Siang' : 'Sesi Malam'),
+                  style: const TextStyle(
                     fontFamily: 'JetBrains Mono',
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
