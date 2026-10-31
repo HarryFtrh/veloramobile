@@ -147,6 +147,24 @@ class VeloraPharmacyApp extends StatelessWidget {
                         builder: (_) => const PharmacyCallingDisplayScreen(),
                       ),
                       MoreEntry(
+                        icon: Icons.inventory_rounded,
+                        title: 'Gudang & Stock Opname Fisik',
+                        subtitle: 'Audit stok fisik, batch lot, dan berita acara',
+                        builder: (_) => const PharmacyStockOpnameScreen(),
+                      ),
+                      MoreEntry(
+                        icon: Icons.stethoscope,
+                        title: 'Workstation Dokter & e-Resep',
+                        subtitle: 'EMR pasien, ICD-10, dan peresepan digital',
+                        builder: (_) => const PharmacyDoctorEmrScreen(),
+                      ),
+                      MoreEntry(
+                        icon: Icons.insights_rounded,
+                        title: 'Executive Analytics & Laba Rugi',
+                        subtitle: 'Gross margin, HPP, laba bersih, dan tren Q4',
+                        builder: (_) => const PharmacyExecutiveAnalyticsScreen(),
+                      ),
+                      MoreEntry(
                         icon: Icons.bar_chart_rounded,
                         title: 'Analitik Apotek',
                         subtitle: 'Ringkasan omzet, laba kotor, dan tren',

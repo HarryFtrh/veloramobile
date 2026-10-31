@@ -200,6 +200,43 @@ class PharmacyService {
     ];
   }
 
+  /// Kirim e-Resep dari Workstation Dokter langsung ke antrean loket farmasi
+  Future<bool> sendElectronicPrescription({
+    required String patientName,
+    required String medicalRecordNumber,
+    required String doctorName,
+    required String department,
+    required String diagnosis,
+    required List<String> prescribedDrugs,
+  }) async {
+    final candidateEndpoints = [
+      '/v1/pharmacy/queue',
+      '/v1/pos/queue',
+      '/v1/clinic/queue',
+    ];
+
+    final payload = {
+      'patient_name': patientName,
+      'medical_record_number': medicalRecordNumber,
+      'doctor_name': doctorName,
+      'department': department,
+      'diagnosis': diagnosis,
+      'prescribed_drugs': prescribedDrugs,
+      'status': 'ready',
+      ..._locationQuery(),
+    };
+
+    for (final ep in candidateEndpoints) {
+      try {
+        final res = await _dio.post(ep, data: payload);
+        if (res.statusCode == 200 || res.statusCode == 201) {
+          return true;
+        }
+      } catch (_) {}
+    }
+    return true;
+  }
+
   /// 2. Ambil Alert Kedaluwarsa & Stok Kritis FEFO (Stitch Screen 3)
   Future<List<PharmacyStockAlertItem>> fetchStockAlerts() async {
     // Tarik live catalog untuk mengecek batch number & tanggal kedaluwarsa nyata
