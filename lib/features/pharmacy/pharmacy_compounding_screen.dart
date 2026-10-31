@@ -132,7 +132,7 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
                             ? const Center(child: Text('Tidak ada obat ditemukan', style: TextStyle(color: Colors.grey)))
                             : ListView.separated(
                                 itemCount: filtered.length,
-                                separatorBuilder: (_, _1) => const Divider(height: 1),
+                                separatorBuilder: (_, idx) => const Divider(height: 1),
                                 itemBuilder: (ctx, idx) {
                                   final p = filtered[idx];
                                   return ListTile(

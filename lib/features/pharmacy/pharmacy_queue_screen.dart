@@ -341,7 +341,7 @@ class _PharmacyQueueScreenState extends State<PharmacyQueueScreen> {
                           : ListView.separated(
                               padding: const EdgeInsets.all(14),
                               itemCount: filtered.length,
-                              separatorBuilder: (_, _1) => const SizedBox(height: 10),
+                              separatorBuilder: (_, idx) => const SizedBox(height: 10),
                               itemBuilder: (context, index) => _buildQueueCard(filtered[index], emeraldPrimary),
                             ),
             ),

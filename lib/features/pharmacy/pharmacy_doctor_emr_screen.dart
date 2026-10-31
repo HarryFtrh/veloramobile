@@ -417,11 +417,11 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
                         const Text('R/ Lembar Peresepan Digital (e-Resep)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
                         InkWell(
                           onTap: () async {
+                            final navContext = context; // capture before async gap
                             final catalog = await ProductCatalogService.instance.fetchCatalog();
                             if (!mounted) return;
-                            // ignore: use_build_context_synchronously
                             showModalBottomSheet(
-                              context: context,
+                              context: navContext,
                               builder: (ctx) => Container(
                                 padding: const EdgeInsets.all(16),
                                 child: Column(

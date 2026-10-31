@@ -319,7 +319,7 @@ class _PharmacyCallingDisplayScreenState extends State<PharmacyCallingDisplayScr
                           )
                         : ListView.separated(
                             itemCount: _counterStations.length,
-                            separatorBuilder: (_, _1) => const SizedBox(height: 12),
+                            separatorBuilder: (_, idx) => const SizedBox(height: 12),
                             itemBuilder: (context, index) => _buildCounterCard(_counterStations[index], emeraldPrimary),
                           );
                   },

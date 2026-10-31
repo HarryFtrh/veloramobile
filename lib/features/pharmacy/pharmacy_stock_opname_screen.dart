@@ -305,7 +305,7 @@ class _PharmacyStockOpnameScreenState extends State<PharmacyStockOpnameScreen> {
                       : ListView.separated(
                           padding: const EdgeInsets.all(14),
                           itemCount: filtered.length,
-                          separatorBuilder: (_, _1) => const SizedBox(height: 10),
+                          separatorBuilder: (_, idx) => const SizedBox(height: 10),
                           itemBuilder: (context, index) {
                             final item = filtered[index];
                             final isDiff = item.difference != 0;

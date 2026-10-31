@@ -224,7 +224,7 @@ class _PharmacyQueueModalState extends State<PharmacyQueueModal> {
                 : ListView.separated(
                     padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
                     itemCount: filtered.length,
-                    separatorBuilder: (_, _1) => const SizedBox(height: 12),
+                    separatorBuilder: (_, idx) => const SizedBox(height: 12),
                     itemBuilder: (ctx, i) {
                       final item = filtered[i];
                       return _buildQueueCard(item, primaryColor);
