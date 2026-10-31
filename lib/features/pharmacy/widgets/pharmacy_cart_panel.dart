@@ -644,12 +644,12 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                               children: [
                                 Row(
                                   children: [
-                                    Flexible(
+                                    Expanded(
                                       child: Text(
                                         isWalkIn ? 'Pelanggan Walk-in (Umum)' : widget.selectedPatient,
                                         style: const TextStyle(
                                           fontFamily: 'Plus Jakarta Sans',
-                                          fontSize: 12.5,
+                                          fontSize: 12,
                                           fontWeight: FontWeight.bold,
                                           color: textPrimary,
                                         ),
@@ -667,7 +667,7 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: Text(
-                                        isWalkIn ? 'Bebas / OTC' : 'No. ${widget.queueNumber}',
+                                        isWalkIn ? 'OTC' : 'No. ${widget.queueNumber}',
                                         style: TextStyle(
                                           fontFamily: 'JetBrains Mono',
                                           fontSize: 9.5,
@@ -690,6 +690,7 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                               ],
                             ),
                           ),
+                          const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
@@ -707,7 +708,7 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  isWalkIn ? 'Pilih Pasien' : 'Ganti',
+                                  isWalkIn ? 'Pilih' : 'Ganti',
                                   style: const TextStyle(
                                     color: primaryEmerald,
                                     fontSize: 11,

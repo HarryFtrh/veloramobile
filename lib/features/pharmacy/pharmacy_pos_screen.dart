@@ -1380,7 +1380,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
               children: [
                 Row(
                   children: [
-                    Flexible(
+                    Expanded(
                       child: Text(
                         isWalkIn ? 'Pelanggan Walk-in (Umum)' : _selectedPatient,
                         style: const TextStyle(
@@ -1403,7 +1403,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        isWalkIn ? 'Penjualan Bebas' : 'Antrean $_queueNumber',
+                        isWalkIn ? 'Bebas' : 'Antrean $_queueNumber',
                         style: TextStyle(
                           fontFamily: 'JetBrains Mono',
                           fontSize: 10,
