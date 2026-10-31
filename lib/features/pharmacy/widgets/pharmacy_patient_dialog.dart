@@ -4,22 +4,36 @@ import '../../../core/design/tokens.dart';
 class PharmacyPatientData {
   final String patient;
   final String doctor;
+  final String queueNumber;
+  final String medicalRecordNumber;
+  final String patientCategory;
+  final String allergies;
 
   const PharmacyPatientData({
     required this.patient,
     required this.doctor,
+    this.queueNumber = '#A-042',
+    this.medicalRecordNumber = 'RM-99201',
+    this.patientCategory = 'Umum',
+    this.allergies = '',
   });
 }
 
 class PharmacyPatientDialog extends StatefulWidget {
   final String initialPatient;
   final String initialDoctor;
+  final String? initialQueueNumber;
+  final String? initialMedicalRecordNumber;
+  final String? initialAllergies;
   final ValueChanged<PharmacyPatientData> onSave;
 
   const PharmacyPatientDialog({
     super.key,
     required this.initialPatient,
     required this.initialDoctor,
+    this.initialQueueNumber,
+    this.initialMedicalRecordNumber,
+    this.initialAllergies,
     required this.onSave,
   });
 
@@ -27,6 +41,9 @@ class PharmacyPatientDialog extends StatefulWidget {
     required BuildContext context,
     required String initialPatient,
     required String initialDoctor,
+    String? initialQueueNumber,
+    String? initialMedicalRecordNumber,
+    String? initialAllergies,
     required ValueChanged<PharmacyPatientData> onSave,
   }) {
     return showDialog(
@@ -34,6 +51,9 @@ class PharmacyPatientDialog extends StatefulWidget {
       builder: (ctx) => PharmacyPatientDialog(
         initialPatient: initialPatient,
         initialDoctor: initialDoctor,
+        initialQueueNumber: initialQueueNumber,
+        initialMedicalRecordNumber: initialMedicalRecordNumber,
+        initialAllergies: initialAllergies,
         onSave: onSave,
       ),
     );
@@ -46,58 +66,93 @@ class PharmacyPatientDialog extends StatefulWidget {
 class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
   late final TextEditingController _patientController;
   late final TextEditingController _doctorController;
-  late String _selectedPatient;
+  late final TextEditingController _queueController;
+  late final TextEditingController _rmController;
+  late final TextEditingController _allergiesController;
+  late String _selectedCategory;
 
-  static const List<String> presetPatients = [
-    'Pasien Umum / Walk-in',
-    'Pasien BPJS',
-    'Pasien Kronis / Prolanis',
-    'Pasien Asuransi Swasta',
+  static const List<String> presetCategories = [
+    'Umum',
+    'BPJS Kesehatan',
+    'Asuransi Swasta',
+    'Kronis / Prolanis',
   ];
 
   @override
   void initState() {
     super.initState();
-    _selectedPatient = widget.initialPatient;
     _patientController = TextEditingController(text: widget.initialPatient);
     _doctorController = TextEditingController(text: widget.initialDoctor);
+    _queueController = TextEditingController(text: widget.initialQueueNumber ?? '#A-042');
+    _rmController = TextEditingController(text: widget.initialMedicalRecordNumber ?? 'RM-99201');
+    _allergiesController = TextEditingController(text: widget.initialAllergies ?? '');
+    _selectedCategory = 'Umum';
+    for (final cat in presetCategories) {
+      if (widget.initialPatient.toLowerCase().contains(cat.toLowerCase())) {
+        _selectedCategory = cat;
+        break;
+      }
+    }
   }
 
   @override
   void dispose() {
     _patientController.dispose();
     _doctorController.dispose();
+    _queueController.dispose();
+    _rmController.dispose();
+    _allergiesController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final p = context.palette;
+    const emeraldPrimary = Color(0xFF006948);
+    const borderColor = Color(0xFFE2E8F0);
+    const surfaceCanvas = Color(0xFFFAF8FF);
+
     return AlertDialog(
-      backgroundColor: p.surface,
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-        side: BorderSide(color: p.line, width: 1.2),
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: borderColor, width: 1),
       ),
+      titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
       title: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: p.primary.withValues(alpha: 0.12),
+              color: emeraldPrimary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(Icons.medical_services_outlined, color: p.primary, size: 20),
+            child: const Icon(Icons.person_pin_circle_outlined, color: emeraldPrimary, size: 22),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'Identitas Pasien & Dokter',
-              style: TextStyle(color: p.textPrimary, fontSize: 16, fontWeight: FontWeight.w800),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Identitas Pasien & Dokter',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    color: Color(0xFF131B2E),
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  'Konteks klinis resep dan penagihan kasir farmasi',
+                  style: TextStyle(fontSize: 11, color: Color(0xFF6D7A72)),
+                ),
+              ],
             ),
           ),
         ],
       ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       content: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: context.dialogMaxWidth),
         child: SingleChildScrollView(
@@ -105,118 +160,234 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Kategori Pasien Cepat:',
-                style: TextStyle(color: p.textSecondary, fontSize: 12, fontWeight: FontWeight.w600),
+              const Text(
+                'Kategori Pasien / Penjamin:',
+                style: TextStyle(color: Color(0xFF131B2E), fontSize: 12, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: presetPatients.map((cat) {
-                  final isSelected = cat == _selectedPatient;
+                children: presetCategories.map((cat) {
+                  final isSelected = cat == _selectedCategory;
                   return ChoiceChip(
                     label: Text(cat),
                     selected: isSelected,
-                    selectedColor: p.primary,
-                    backgroundColor: p.canvas,
+                    selectedColor: emeraldPrimary,
+                    backgroundColor: surfaceCanvas,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                       side: BorderSide(
-                        color: isSelected ? p.primary : p.line,
+                        color: isSelected ? emeraldPrimary : borderColor,
                       ),
                     ),
                     labelStyle: TextStyle(
-                      color: isSelected ? Colors.white : p.textSecondary,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      fontSize: 11,
+                      color: isSelected ? Colors.white : const Color(0xFF3D4A42),
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                      fontSize: 11.5,
                     ),
                     onSelected: (_) {
                       setState(() {
-                        _selectedPatient = cat;
-                        _patientController.text = cat;
+                        _selectedCategory = cat;
+                        if (_patientController.text.isEmpty ||
+                            _patientController.text == 'Pasien Umum / Walk-in' ||
+                            presetCategories.contains(_patientController.text)) {
+                          _patientController.text = cat == 'Umum' ? 'Pelanggan Umum (Walk-in)' : 'Pasien $cat';
+                        }
                       });
                     },
                   );
                 }).toList(),
               ),
               const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    flex: 4,
+                    child: TextField(
+                      controller: _queueController,
+                      style: const TextStyle(
+                        fontFamily: 'JetBrains Mono',
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: emeraldPrimary,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'No. Antrean',
+                        labelStyle: const TextStyle(color: Color(0xFF6D7A72), fontSize: 11.5),
+                        prefixIcon: const Icon(Icons.tag_rounded, size: 16, color: emeraldPrimary),
+                        filled: true,
+                        fillColor: surfaceCanvas,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: borderColor),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: borderColor),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: emeraldPrimary, width: 1.5),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    flex: 6,
+                    child: TextField(
+                      controller: _rmController,
+                      style: const TextStyle(
+                        fontFamily: 'JetBrains Mono',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF131B2E),
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'No. Rekam Medis (RM)',
+                        labelStyle: const TextStyle(color: Color(0xFF6D7A72), fontSize: 11.5),
+                        prefixIcon: const Icon(Icons.badge_outlined, size: 16, color: Color(0xFF006A61)),
+                        filled: true,
+                        fillColor: surfaceCanvas,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: borderColor),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: borderColor),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: emeraldPrimary, width: 1.5),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
               TextField(
                 controller: _patientController,
-                style: TextStyle(fontSize: 13, color: p.textPrimary),
+                style: const TextStyle(fontSize: 13, color: Color(0xFF131B2E)),
                 decoration: InputDecoration(
-                  labelText: 'Nama Pasien / No. RM',
-                  labelStyle: TextStyle(color: p.textSecondary, fontSize: 12),
-                  hintText: 'Contoh: Ny. Ratna / RM-0982',
-                  hintStyle: TextStyle(color: p.textSecondary.withValues(alpha: 0.5), fontSize: 12),
+                  labelText: 'Nama Lengkap Pasien',
+                  labelStyle: const TextStyle(color: Color(0xFF6D7A72), fontSize: 11.5),
+                  hintText: 'Contoh: Ny. Ratna Dewi',
+                  hintStyle: const TextStyle(color: Color(0xFFBCCAC0), fontSize: 12),
+                  prefixIcon: const Icon(Icons.person_outline, size: 18, color: Color(0xFF6D7A72)),
                   filled: true,
-                  fillColor: p.canvas,
+                  fillColor: surfaceCanvas,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: p.line),
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: borderColor),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: p.line),
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: borderColor),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: p.primary, width: 1.5),
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: emeraldPrimary, width: 1.5),
                   ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _doctorController,
-                style: TextStyle(fontSize: 13, color: p.textPrimary),
+                style: const TextStyle(fontSize: 13, color: Color(0xFF131B2E)),
                 decoration: InputDecoration(
-                  labelText: 'Dokter Perujuk / Penulis Resep',
-                  labelStyle: TextStyle(color: p.textSecondary, fontSize: 12),
-                  hintText: 'Contoh: dr. Anita Wijaya, Sp.A',
-                  hintStyle: TextStyle(color: p.textSecondary.withValues(alpha: 0.5), fontSize: 12),
+                  labelText: 'Dokter Pemeriksa & SIP',
+                  labelStyle: const TextStyle(color: Color(0xFF6D7A72), fontSize: 11.5),
+                  hintText: 'Contoh: dr. Hendra Sp.A (SIP: 446/SIP/2023)',
+                  hintStyle: const TextStyle(color: Color(0xFFBCCAC0), fontSize: 12),
+                  prefixIcon: const Icon(Icons.medical_services_outlined, size: 18, color: Color(0xFF6D7A72)),
                   filled: true,
-                  fillColor: p.canvas,
+                  fillColor: surfaceCanvas,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: p.line),
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: borderColor),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: p.line),
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: borderColor),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: p.primary, width: 1.5),
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: emeraldPrimary, width: 1.5),
                   ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _allergiesController,
+                style: const TextStyle(fontSize: 13, color: Color(0xFFBA1A1A), fontWeight: FontWeight.w600),
+                decoration: InputDecoration(
+                  labelText: 'Riwayat Alergi Obat (Opsional)',
+                  labelStyle: const TextStyle(color: Color(0xFFBA1A1A), fontSize: 11.5),
+                  hintText: 'Contoh: Alergi Penisilin, Amoksisilin, Aspirin',
+                  hintStyle: const TextStyle(color: Color(0xFFBCCAC0), fontSize: 12),
+                  prefixIcon: const Icon(Icons.warning_amber_rounded, size: 18, color: Color(0xFFBA1A1A)),
+                  filled: true,
+                  fillColor: const Color(0xFFFFDAD6).withValues(alpha: 0.3),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Color(0xFFFFDAD6)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Color(0xFFFFDAD6)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Color(0xFFBA1A1A), width: 1.5),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 ),
               ),
             ],
           ),
         ),
       ),
+      actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text('Batal', style: TextStyle(color: p.textSecondary)),
+          child: const Text('Batal', style: TextStyle(color: Color(0xFF6D7A72))),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: p.primary,
+            backgroundColor: emeraldPrimary,
+            foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            elevation: 0,
           ),
           onPressed: () {
             final patientText = _patientController.text.trim();
             final doctorText = _doctorController.text.trim();
+            final queueText = _queueController.text.trim();
+            final rmText = _rmController.text.trim();
+            final allergiesText = _allergiesController.text.trim();
+
             widget.onSave(
               PharmacyPatientData(
-                patient: patientText.isNotEmpty ? patientText : _selectedPatient,
+                patient: patientText.isNotEmpty ? patientText : 'Pelanggan Umum (Walk-in)',
                 doctor: doctorText.isNotEmpty ? doctorText : widget.initialDoctor,
+                queueNumber: queueText.isNotEmpty ? queueText : '#A-042',
+                medicalRecordNumber: rmText.isNotEmpty ? rmText : 'RM-99201',
+                patientCategory: _selectedCategory,
+                allergies: allergiesText,
               ),
             );
             Navigator.pop(context);
           },
-          child: const Text('Simpan Data', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          child: const Text('Terapkan ke Kasir', style: TextStyle(fontWeight: FontWeight.bold)),
         ),
       ],
     );
