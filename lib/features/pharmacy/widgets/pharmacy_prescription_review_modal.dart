@@ -139,7 +139,7 @@ class _PharmacyPrescriptionReviewModalState extends State<PharmacyPrescriptionRe
           builder: (context) {
             final active = widget.patientData ?? PharmacyService.instance.activePatient.value;
             final patientName = (active?.patient.isNotEmpty == true) ? active!.patient : 'Pelanggan Umum (Walk-in)';
-            final doctorName = (active?.doctor.isNotEmpty == true) ? active!.doctor : 'dr. Resep Luar / DPJP';
+            final doctorName = (active?.doctor.isNotEmpty == true && active!.doctor != '-') ? active.doctor : '-';
             final queueNum = (active?.queueNumber.isNotEmpty == true && active!.queueNumber != '-') ? active.queueNumber : '-';
             final rmNumber = (active?.medicalRecordNumber.isNotEmpty == true && active!.medicalRecordNumber != '-')
                 ? active.medicalRecordNumber
@@ -183,7 +183,7 @@ class _PharmacyPrescriptionReviewModalState extends State<PharmacyPrescriptionRe
                                 fontFamily: 'JetBrains Mono',
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF006577),
+                                color: Color(0xFF0D9488),
                               ),
                             ),
                             Text(
@@ -195,13 +195,13 @@ class _PharmacyPrescriptionReviewModalState extends State<PharmacyPrescriptionRe
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF86F2E4).withValues(alpha: 0.4),
+                            color: const Color(0xFF0D9488).withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.circle, size: 6, color: Color(0xFF006F66)),
+                              Icon(Icons.circle, size: 6, color: Color(0xFF0D9488)),
                               SizedBox(width: 4),
                               Text(
                                 'Dalam Telaah',
@@ -209,7 +209,7 @@ class _PharmacyPrescriptionReviewModalState extends State<PharmacyPrescriptionRe
                                   fontFamily: 'JetBrains Mono',
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF006F66),
+                                  color: Color(0xFF0D9488),
                                 ),
                               ),
                             ],

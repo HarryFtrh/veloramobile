@@ -63,17 +63,26 @@ class PosProductUnit {
     if (unitName.isEmpty) unitName = json.getString('unit');
     if (unitName.isEmpty) unitName = json.getString('satuan');
     if (unitName.isEmpty) unitName = json.getString('uom');
+    if (unitName.isEmpty) unitName = json.getString('unit_name');
+    if (unitName.isEmpty) unitName = json.getString('packaging');
+    if (unitName.isEmpty) unitName = json.getString('package_unit');
     if (unitName.isEmpty) unitName = 'TAB';
 
     num p = json.getDouble('price');
     if (p <= 0) p = json.getDouble('selling_price');
     if (p <= 0) p = json.getDouble('harga');
+    if (p <= 0) p = json.getDouble('harga_jual');
+    if (p <= 0) p = json.getDouble('unit_price');
+    if (p <= 0) p = json.getDouble('amount');
     if (p <= 0) p = defaultPrice;
 
     num c = json.getDouble('conversion');
     if (c <= 0) c = json.getDouble('conversion_factor');
     if (c <= 0) c = json.getDouble('multiplier');
     if (c <= 0) c = json.getDouble('isi');
+    if (c <= 0) c = json.getDouble('qty');
+    if (c <= 0) c = json.getDouble('quantity');
+    if (c <= 0) c = json.getDouble('qty_conversion');
     if (c <= 0) c = 1;
 
     return PosProductUnit(
@@ -310,7 +319,16 @@ class PosProduct {
 
     // Multi-Satuan / Product Units resolution
     final List<PosProductUnit> finalUnits = [];
-    final rawUnits = json['units'] ?? json['product_units'] ?? json['multi_units'] ?? json['satuan_list'] ?? json['conversions'];
+    final rawUnits = json['units'] ??
+        json['product_units'] ??
+        json['multi_units'] ??
+        json['satuan_list'] ??
+        json['conversions'] ??
+        json['unit_conversions'] ??
+        json['uom_conversions'] ??
+        json['packaging_units'] ??
+        json['prices'] ??
+        json['price_levels'];
     if (rawUnits is List) {
       for (final u in rawUnits) {
         if (u is Map) {
