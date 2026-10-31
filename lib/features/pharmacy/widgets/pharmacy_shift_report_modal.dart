@@ -3,6 +3,7 @@ import '../../../core/utils/currency_formatter.dart';
 import '../../../core/storage/session_storage.dart';
 import '../../shared_pos/shift_service.dart';
 import '../../shared_pos/shift_modal.dart';
+import '../pharmacy_service.dart';
 
 class PharmacyShiftReportModal extends StatefulWidget {
   final VoidCallback? onShiftClosed;
@@ -54,16 +55,15 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
 
   Future<void> _loadShiftData() async {
     try {
-      final status = await ShiftService.instance.getShiftStatus();
+      final recon = await PharmacyService.instance.fetchShiftReconciliation();
       if (mounted) {
         setState(() {
-          _shiftStatus = status;
-          if (status.startingCash > 0) {
-            _openingCash = status.startingCash;
-          }
-          if (status.expectedCash > 0) {
-            _cashRevenue = status.expectedCash - _openingCash;
-          }
+          _openingCash = recon.startingCash;
+          _cashRevenue = recon.cashSales;
+          _qrisRevenue = recon.qrisSales;
+          _debitRevenue = recon.debitSales;
+          _insuranceRevenue = recon.insuranceSales;
+          _transactionCount = recon.transactionCount;
           _isLoading = false;
         });
       }

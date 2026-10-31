@@ -81,10 +81,18 @@ class _PharmacyStockAlertModalState extends State<PharmacyStockAlertModal> {
       final price = (it['price'] as num? ?? 0);
       final isRx = it['isDotRed'] == true;
 
-      // Simulasi kalkulasi hari menuju ED
+      // Kalkulasi hari menuju ED berdasarkan tanggal batch nyata
       int days = 180;
-      if (ed.contains('24') || ed.contains('2024') || ed.contains('25') || ed.contains('2025')) {
-        days = 45;
+      final parsedDate = DateTime.tryParse(ed);
+      if (parsedDate != null) {
+        days = parsedDate.difference(DateTime.now()).inDays;
+      } else if (ed.contains('/') && ed.split('/').length == 2) {
+        // Handle format MM/YY e.g. 11/26
+        final parts = ed.split('/');
+        final m = int.tryParse(parts[0]) ?? 1;
+        final y = (int.tryParse(parts[1]) ?? 26) + 2000;
+        final d = DateTime(y, m, 28);
+        days = d.difference(DateTime.now()).inDays;
       }
 
       items.add(

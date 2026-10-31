@@ -21,6 +21,8 @@ import 'widgets/pharmacy_queue_modal.dart';
 import 'widgets/pharmacy_stock_alert_modal.dart';
 import 'widgets/pharmacy_shift_report_modal.dart';
 import 'widgets/pharmacy_prescription_review_modal.dart';
+import 'widgets/pharmacy_receipt_dialog.dart';
+import 'pharmacy_service.dart';
 
 class PharmacyPosScreen extends StatefulWidget {
   final VoidCallback? onLogout;
@@ -32,9 +34,6 @@ class PharmacyPosScreen extends StatefulWidget {
 }
 
 class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
-  // Navigation tab for mobile view
-  int _currentNavIndex = 0; // 0: Kasir POS, 1: Antrean, 2: Stok Obat, 3: Laporan
-
   int _selectedCategoryIndex = 0;
   final Map<String, int> _cart = {};
   num _totalPrice = 0;
@@ -71,6 +70,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
   @override
   void initState() {
     super.initState();
+    PharmacyService.instance.activePatient.addListener(_onActivePatientChanged);
     _fetchCatalog().then((_) {
       if (mounted) _restoreCart();
     });
@@ -81,8 +81,23 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
 
   @override
   void dispose() {
+    PharmacyService.instance.activePatient.removeListener(_onActivePatientChanged);
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _onActivePatientChanged() {
+    final data = PharmacyService.instance.activePatient.value;
+    if (data != null && mounted) {
+      setState(() {
+        _selectedPatient = data.patient;
+        _selectedDoctor = data.doctor;
+        _queueNumber = data.queueNumber;
+        _medicalRecordNumber = data.medicalRecordNumber;
+        _patientCategory = data.patientCategory;
+        _patientAllergies = data.allergies;
+      });
+    }
   }
 
   void _persistCart() {
@@ -459,26 +474,51 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
       tableOrCustomer: '$_selectedPatient ($_queueNumber)',
       accentColor: const Color(0xFF006948),
       onCompleted: (result) {
+        final paymentMethodName = _mobilePaymentMode == 0
+            ? 'QRIS'
+            : _mobilePaymentMode == 1
+                ? 'TUNAI'
+                : _mobilePaymentMode == 2
+                    ? 'DEBIT'
+                    : 'ASURANSI';
+
         SalesHistoryDrawer.addRecord(
           CompletedSaleRecord(
             invoiceNumber: result.invoiceNumber,
             time: DateTime.now(),
             total: grandTotal,
-            paymentMethod: _mobilePaymentMode == 0 ? 'QRIS' : _mobilePaymentMode == 1 ? 'TUNAI' : _mobilePaymentMode == 2 ? 'DEBIT' : 'ASURANSI',
+            paymentMethod: paymentMethodName,
             tableOrCustomer: _selectedPatient,
             items: cartItems,
           ),
         );
 
-        final msg = result.isOffline
-            ? 'Resep tersimpan offline (#${result.invoiceNumber}).'
-            : '✓ Resep Selesai! #${result.invoiceNumber} • Struk Tercetak & Stok Batch Terpotong (FEFO).';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(msg),
-            backgroundColor: result.isOffline ? const Color(0xFFF59E0B) : const Color(0xFF006948),
-            duration: const Duration(seconds: 4),
-          ),
+        // Show Stitch Screen 7 Digital Receipt & Settlement Dialog
+        PharmacyReceiptDialog.show(
+          context: context,
+          result: result,
+          patientName: _selectedPatient,
+          queueNumber: _queueNumber,
+          medicalRecordNumber: _medicalRecordNumber,
+          doctorName: _selectedDoctor,
+          items: cartItems,
+          subtotal: _totalPrice,
+          tuslahFee: _totalPrice > 0 ? _tuslahFee : 0,
+          grandTotal: grandTotal,
+          paymentMethod: paymentMethodName,
+          onNewSale: () {
+            setState(() {
+              _cart.clear();
+              _totalPrice = 0;
+              _selectedPatient = 'Pelanggan Umum (Walk-in)';
+              _selectedDoctor = 'dr. Resep Luar (Umum)';
+              _queueNumber = '#A-042';
+              _medicalRecordNumber = 'RM-99201';
+              _patientCategory = 'Umum';
+              _patientAllergies = '';
+              _persistCart();
+            });
+          },
         );
 
         setState(() {
@@ -1270,62 +1310,6 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
     );
   }
 
-  // Bottom Navigation Bar on Mobile
-  Widget _buildMobileBottomNav() {
-    const emeraldPrimary = Color(0xFF006948);
-
-    return NavigationBar(
-      selectedIndex: _currentNavIndex,
-      backgroundColor: Colors.white,
-      surfaceTintColor: Colors.transparent,
-      elevation: 4,
-      height: 60,
-      onDestinationSelected: (idx) {
-        AudioHelper.tapFeedback();
-        setState(() => _currentNavIndex = idx);
-        switch (idx) {
-          case 0:
-            // Kasir POS (current screen)
-            break;
-          case 1:
-            // Antrean & Billing
-            _openQueueModal();
-            break;
-          case 2:
-            // Stok Obat & Alert ED
-            _openStockAlertModal();
-            break;
-          case 3:
-            // Laporan Shift & Kas Masuk
-            _openShiftReportModal();
-            break;
-        }
-      },
-      destinations: const [
-        NavigationDestination(
-          icon: Icon(Icons.point_of_sale_outlined),
-          selectedIcon: Icon(Icons.point_of_sale_rounded, color: emeraldPrimary),
-          label: 'Kasir POS',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.receipt_long_outlined),
-          selectedIcon: Icon(Icons.receipt_long_rounded, color: emeraldPrimary),
-          label: 'Antrean',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.medication_outlined),
-          selectedIcon: Icon(Icons.medication_rounded, color: emeraldPrimary),
-          label: 'Stok Obat',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.analytics_outlined),
-          selectedIcon: Icon(Icons.analytics_rounded, color: emeraldPrimary),
-          label: 'Laporan',
-        ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
@@ -1502,7 +1486,6 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                 ],
               ),
       ),
-      bottomNavigationBar: !isWide ? _buildMobileBottomNav() : null,
     );
   }
 }

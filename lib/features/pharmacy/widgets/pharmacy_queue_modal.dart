@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/utils/currency_formatter.dart';
 import 'pharmacy_patient_dialog.dart';
+import '../pharmacy_service.dart';
 
 /// Model antrean pasien poli/klinik untuk kasir apotek
 class ClinicPatientQueueItem {
@@ -63,55 +64,24 @@ class PharmacyQueueModal extends StatefulWidget {
 class _PharmacyQueueModalState extends State<PharmacyQueueModal> {
   String _selectedFilter = 'all';
   String _searchQuery = '';
+  bool _isLoading = true;
+  List<ClinicPatientQueueItem> _queueItems = [];
 
-  // Data antrean pasien klinik (terintegrasi dengan alur kasir apotek)
-  final List<ClinicPatientQueueItem> _queueItems = const [
-    ClinicPatientQueueItem(
-      queueNumber: '#A-042',
-      patientName: 'Ny. Dewi Lestari',
-      medicalRecordNumber: 'RM-08234',
-      doctorName: 'dr. Hendra Sp.PD',
-      department: 'Poli Penyakit Dalam',
-      insurance: 'BPJS Kesehatan',
-      allergy: 'Penicillin',
-      status: 'ready',
-      estimatedTotal: 135000,
-      prescribedDrugs: ['Amoxicillin 500mg', 'Paracetamol 500mg', 'Cetirizine 10mg'],
-    ),
-    ClinicPatientQueueItem(
-      queueNumber: '#A-043',
-      patientName: 'Tn. Budi Santoso',
-      medicalRecordNumber: 'RM-09112',
-      doctorName: 'dr. Anita Sp.A',
-      department: 'Poli Anak',
-      insurance: 'Asuransi Mandiri Inhealth',
-      status: 'ready',
-      estimatedTotal: 85000,
-      prescribedDrugs: ['Paracetamol Sirup', 'Ambroxol Sirup'],
-    ),
-    ClinicPatientQueueItem(
-      queueNumber: '#A-044',
-      patientName: 'Sdr. Rizky Pratama',
-      medicalRecordNumber: 'RM-10291',
-      doctorName: 'dr. Farhan Umum',
-      department: 'Poli Umum',
-      insurance: 'Pasien Umum / Tunai',
-      status: 'pending',
-      estimatedTotal: 45000,
-      prescribedDrugs: ['Antasida Doen', 'Vitamin C 500mg'],
-    ),
-    ClinicPatientQueueItem(
-      queueNumber: '#B-015',
-      patientName: 'Ibu Siti Aminah',
-      medicalRecordNumber: 'RM-04551',
-      doctorName: 'dr. Maya Sp.OG',
-      department: 'Poli Kandungan',
-      insurance: 'BPJS Kesehatan',
-      status: 'done',
-      estimatedTotal: 210000,
-      prescribedDrugs: ['Asam Folat', 'Kalsium Laktat', 'Fe Fumarat'],
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadQueue();
+  }
+
+  Future<void> _loadQueue() async {
+    final items = await PharmacyService.instance.fetchPatientQueue();
+    if (mounted) {
+      setState(() {
+        _queueItems = items;
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

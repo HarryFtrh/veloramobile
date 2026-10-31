@@ -13,7 +13,7 @@ import 'features/auth/login_screen.dart';
 import 'features/dashboard/dashboard_screen.dart';
 import 'features/finance/expenses_screen.dart';
 import 'features/finance/return_screen.dart';
-import 'features/pharmacy/pharmacy_pos_screen.dart';
+import 'features/pharmacy/pharmacy.dart';
 import 'features/shared_pos/offline_sync_manager.dart';
 import 'core/services/app_update_service.dart';
 import 'features/shell/app_shell.dart';
@@ -81,20 +81,33 @@ class VeloraPharmacyApp extends StatelessWidget {
           if (state is Authenticated) {
             return AppShell(
               key: ValueKey(state.activeLocationName),
+              tabControllerNotifier: PharmacyService.instance.activeTabNotifier,
               tabs: [
                 ShellTab(
                   label: 'Kasir',
                   icon: Icons.point_of_sale_outlined,
-                  selectedIcon: Icons.point_of_sale,
+                  selectedIcon: Icons.point_of_sale_rounded,
                   builder: (_) => PharmacyPosScreen(
                     onLogout: () => context.read<AuthCubit>().logout(),
                   ),
                 ),
                 ShellTab(
-                  label: 'Ringkasan',
-                  icon: Icons.bar_chart_outlined,
-                  selectedIcon: Icons.bar_chart,
-                  builder: (_) => const DashboardScreen(),
+                  label: 'Antrean',
+                  icon: Icons.people_outline_rounded,
+                  selectedIcon: Icons.people_rounded,
+                  builder: (_) => const PharmacyQueueScreen(),
+                ),
+                ShellTab(
+                  label: 'Stok ED',
+                  icon: Icons.warning_amber_rounded,
+                  selectedIcon: Icons.warning_rounded,
+                  builder: (_) => const PharmacyStockAlertScreen(),
+                ),
+                ShellTab(
+                  label: 'Shift',
+                  icon: Icons.analytics_outlined,
+                  selectedIcon: Icons.analytics_rounded,
+                  builder: (_) => const PharmacyShiftReportScreen(),
                 ),
                 ShellTab(
                   label: 'Lainnya',
@@ -104,22 +117,58 @@ class VeloraPharmacyApp extends StatelessWidget {
                     onLogout: () => context.read<AuthCubit>().logout(),
                     entries: [
                       MoreEntry(
-                        icon: Icons.settings_outlined,
-                        title: 'Pengaturan',
-                        subtitle: 'Akun, cabang, printer, PIN, perangkat',
-                        builder: (_) => const SettingsScreen(),
+                        icon: Icons.assignment_outlined,
+                        title: 'Telaah Resep Dokter',
+                        subtitle: 'Skrining 7 Benar & racikan pulveres',
+                        builder: (_) => const PharmacyPrescriptionReviewPage(),
+                      ),
+                      MoreEntry(
+                        icon: Icons.local_shipping_outlined,
+                        title: 'Pengadaan Order PBF',
+                        subtitle: 'Surat Pesanan (SP) & jatuh tempo faktur',
+                        builder: (_) => const PharmacyPbfOrderPage(),
+                      ),
+                      MoreEntry(
+                        icon: Icons.medical_information_outlined,
+                        title: 'Rekam Medis & Riwayat Pasien',
+                        subtitle: 'Histori obat, profil alergi, dan ulangi resep',
+                        builder: (_) => const PharmacyMedicalRecordsPage(),
+                      ),
+                      MoreEntry(
+                        icon: Icons.science_outlined,
+                        title: 'Meja Racik & Etiket',
+                        subtitle: 'Kalkulator DTD, mortar digital, cetak etiket',
+                        builder: (_) => const PharmacyCompoundingScreen(),
+                      ),
+                      MoreEntry(
+                        icon: Icons.tv_rounded,
+                        title: 'Display Antrean Loket',
+                        subtitle: 'Layar pemanggil nomor antrean publik',
+                        builder: (_) => const PharmacyCallingDisplayScreen(),
+                      ),
+                      MoreEntry(
+                        icon: Icons.bar_chart_rounded,
+                        title: 'Analitik Apotek',
+                        subtitle: 'Ringkasan omzet, laba kotor, dan tren',
+                        builder: (_) => const DashboardScreen(),
                       ),
                       MoreEntry(
                         icon: Icons.payments_outlined,
-                        title: 'Pengeluaran',
-                        subtitle: 'Catat biaya operasional bulanan',
+                        title: 'Pengeluaran Kasir',
+                        subtitle: 'Biaya operasional kas kecil apotek',
                         builder: (_) => const ExpensesScreen(),
                       ),
                       MoreEntry(
                         icon: Icons.assignment_return_outlined,
-                        title: 'Retur penjualan',
-                        subtitle: 'Kembalikan barang dari invoice',
+                        title: 'Retur Obat & Faktur',
+                        subtitle: 'Retur obat dari invoice atau ke PBF',
                         builder: (_) => const ReturnScreen(),
+                      ),
+                      MoreEntry(
+                        icon: Icons.settings_outlined,
+                        title: 'Pengaturan & Printer',
+                        subtitle: 'Akun, cabang, printer thermal, PIN',
+                        builder: (_) => const SettingsScreen(),
                       ),
                     ],
                   ),

@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 class PharmacyPrescriptionReviewModal extends StatefulWidget {
   final VoidCallback? onApprove;
+  final bool showDragHandle;
 
-  const PharmacyPrescriptionReviewModal({super.key, this.onApprove});
+  const PharmacyPrescriptionReviewModal({super.key, this.onApprove, this.showDragHandle = true});
 
   static Future<void> show(BuildContext context, {VoidCallback? onApprove}) {
     return showModalBottomSheet(
@@ -54,63 +55,64 @@ class _PharmacyPrescriptionReviewModalState extends State<PharmacyPrescriptionRe
     return Column(
       children: [
         // Drag handle & Header
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 10),
-          child: Column(
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: borderColor,
-                  borderRadius: BorderRadius.circular(2),
+        if (widget.showDragHandle)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 10),
+            child: Column(
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: borderColor,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF006A61).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(10),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF006A61).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.assignment_outlined, color: Color(0xFF006A61), size: 20),
                         ),
-                        child: const Icon(Icons.assignment_outlined, color: Color(0xFF006A61), size: 20),
-                      ),
-                      const SizedBox(width: 10),
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Telaah Klinis Resep Dokter',
-                            style: TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: textPrimary,
+                        const SizedBox(width: 10),
+                        const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Telaah Klinis Resep Dokter',
+                              style: TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: textPrimary,
+                              ),
                             ),
-                          ),
-                          Text(
-                            'Skrining 7 Benar Farmasi & Validasi SIP',
-                            style: TextStyle(fontSize: 11, color: textMuted),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded, color: textMuted),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ],
+                            Text(
+                              'Skrining 7 Benar Farmasi & Validasi SIP',
+                              style: TextStyle(fontSize: 11, color: textMuted),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, color: textMuted),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
         const Divider(height: 1, color: borderColor),
 
         // Scrollable Body
@@ -582,6 +584,45 @@ class _PharmacyPrescriptionReviewModalState extends State<PharmacyPrescriptionRe
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Standalone Full Page Version for AppShell MoreScreen
+class PharmacyPrescriptionReviewPage extends StatelessWidget {
+  final VoidCallback? onApprove;
+
+  const PharmacyPrescriptionReviewPage({super.key, this.onApprove});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFAF8FF),
+      appBar: AppBar(
+        title: const Text(
+          'Telaah Resep Dokter & Skrining',
+          style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF131B2E),
+        elevation: 0,
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, color: Color(0xFFE2E8F0)),
+        ),
+      ),
+      body: SafeArea(
+        child: PharmacyPrescriptionReviewModal(
+          onApprove: () {
+            if (onApprove != null) {
+              onApprove!();
+            } else {
+              Navigator.pop(context);
+            }
+          },
+          showDragHandle: false,
+        ),
       ),
     );
   }

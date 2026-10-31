@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/config/app_config.dart';
 import '../../core/design/tokens.dart';
 import '../../core/storage/session_storage.dart';
 import '../shared_pos/offline_sync_badge.dart';
@@ -24,10 +25,16 @@ class ShellTab {
 /// terpadu sesuai standar POS kasir modern (brand, shift, tabs, clock, quick actions).
 /// Pada layar smartphone, menggunakan Bottom Navigation Bar.
 class AppShell extends StatefulWidget {
-  const AppShell({super.key, required this.tabs})
-      : assert(tabs.length >= 2, 'Shell butuh minimal dua tab');
+  const AppShell({
+    super.key,
+    required this.tabs,
+    this.initialIndex = 0,
+    this.tabControllerNotifier,
+  }) : assert(tabs.length >= 2, 'Shell butuh minimal dua tab');
 
   final List<ShellTab> tabs;
+  final int initialIndex;
+  final ValueNotifier<int>? tabControllerNotifier;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -37,15 +44,51 @@ class _AppShellState extends State<AppShell> {
   static const double _headerBreakpoint = 600;
 
   int _index = 0;
-  late final Set<int> _visited = {0};
+  late final Set<int> _visited = {_index};
 
-  void _select(int i) => setState(() {
-        _index = i;
-        _visited.add(i);
-      });
+  @override
+  void initState() {
+    super.initState();
+    _index = widget.initialIndex;
+    _visited.add(_index);
+    widget.tabControllerNotifier?.addListener(_onTabControllerChanged);
+  }
+
+  @override
+  void didUpdateWidget(AppShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.tabControllerNotifier != widget.tabControllerNotifier) {
+      oldWidget.tabControllerNotifier?.removeListener(_onTabControllerChanged);
+      widget.tabControllerNotifier?.addListener(_onTabControllerChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.tabControllerNotifier?.removeListener(_onTabControllerChanged);
+    super.dispose();
+  }
+
+  void _onTabControllerChanged() {
+    final newIdx = widget.tabControllerNotifier?.value;
+    if (newIdx != null && newIdx >= 0 && newIdx < widget.tabs.length && newIdx != _index) {
+      _select(newIdx);
+    }
+  }
+
+  void _select(int i) {
+    setState(() {
+      _index = i;
+      _visited.add(i);
+    });
+    if (widget.tabControllerNotifier != null && widget.tabControllerNotifier!.value != i) {
+      widget.tabControllerNotifier!.value = i;
+    }
+  }
 
   Widget _buildTopHeader(BuildContext context) {
     final p = context.palette;
+    final brandPrimary = Theme.of(context).colorScheme.primary;
     final tenant = SessionStorage.instance.getTenantName() ?? 'Velora POS';
     final location = SessionStorage.instance.getLocationName() ?? 'Terminal #01';
     final user = SessionStorage.instance.getUserName() ?? 'Kasir';
@@ -71,10 +114,18 @@ class _AppShellState extends State<AppShell> {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: WarmPalette.primary,
+                  color: brandPrimary,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.coffee_maker_rounded, color: Colors.white, size: 18),
+                child: Icon(
+                  AppConfig.flavor == AppFlavor.pharmacy
+                      ? Icons.local_pharmacy_rounded
+                      : (AppConfig.flavor == AppFlavor.sales
+                          ? Icons.inventory_2_rounded
+                          : Icons.coffee_maker_rounded),
+                  color: Colors.white,
+                  size: 18,
+                ),
               ),
               const SizedBox(width: 8),
               ConstrainedBox(
@@ -136,7 +187,7 @@ class _AppShellState extends State<AppShell> {
                               decoration: BoxDecoration(
                                 border: Border(
                                   bottom: BorderSide(
-                                    color: isSelected ? WarmPalette.primary : Colors.transparent,
+                                    color: isSelected ? brandPrimary : Colors.transparent,
                                     width: 2.5,
                                   ),
                                 ),
@@ -147,7 +198,7 @@ class _AppShellState extends State<AppShell> {
                                   Icon(
                                     isSelected ? t.selectedIcon : t.icon,
                                     size: 18,
-                                    color: isSelected ? WarmPalette.primary : p.textSecondary,
+                                    color: isSelected ? brandPrimary : p.textSecondary,
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
@@ -155,7 +206,7 @@ class _AppShellState extends State<AppShell> {
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                                      color: isSelected ? WarmPalette.primary : p.textSecondary,
+                                      color: isSelected ? brandPrimary : p.textSecondary,
                                     ),
                                   ),
                                 ],
@@ -258,6 +309,7 @@ class _AppShellState extends State<AppShell> {
     }
 
     final p = context.palette;
+    final brandPrimary = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -281,23 +333,23 @@ class _AppShellState extends State<AppShell> {
             height: 62,
             backgroundColor: Colors.white,
             elevation: 0,
-            indicatorColor: WarmPalette.primary.withValues(alpha: 0.12),
+            indicatorColor: brandPrimary.withValues(alpha: 0.12),
             indicatorShape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),
             labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
             iconTheme: WidgetStateProperty.resolveWith((states) {
               if (states.contains(WidgetState.selected)) {
-                return const IconThemeData(color: WarmPalette.primary, size: 22);
+                return IconThemeData(color: brandPrimary, size: 22);
               }
               return IconThemeData(color: p.textSecondary, size: 22);
             }),
             labelTextStyle: WidgetStateProperty.resolveWith((states) {
               if (states.contains(WidgetState.selected)) {
-                return const TextStyle(
+                return TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
-                  color: WarmPalette.primary,
+                  color: brandPrimary,
                   letterSpacing: -0.2,
                 );
               }
