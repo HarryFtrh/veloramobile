@@ -10,9 +10,10 @@ import 'modifiers.dart';
 
 /// Layanan Katalog Khusus Bisnis F&B / CAFE / RESTORAN.
 /// Terisolasi penuh dari Pharmacy (Apotek) dan Retail:
-/// - Hanya menembak endpoint menu Cafe & F&B (`/v1/pos/products-sync`, `/v1/pos/menu`, `/cafe/pos/products`, `/cafe/menu`).
-/// - Mengekstrak `ModifierGroup` (level gula, es, topping, ukuran cup) dan status `is_available`.
-/// - Stok default `99.0` (menu racikan dapur/barista selalu tersedia kecuali ditandai habis `is_out_of_stock` / `is_available: false`).
+/// - Hanya menembak endpoint menu Cafe & F&B sesuai `routes/api/pos.php` dan `routes/api/cafe.php`:
+///   `/v1/pos/products-sync`, `/cafe/menu`, `/cafe/products`.
+/// - Mengekstrak skema `CafePosStrategy` (`id, category_id, velora_id, name, description, price, promo_price, image, is_available, can_order, status, barcode, sku, station, sales_unit, stock_unit, is_bundle, bundle_items`, serta `modifiers`).
+/// - Stok default `99.0` (menu racikan dapur/barista selalu tersedia kecuali `is_available == false`, `can_order == false`, atau `status == 'sold_out'`).
 /// - Cache memori dan disk dikunci ke `fnb_<tenantId>_<locationId>`.
 class FnbCatalogService {
   static final FnbCatalogService instance = FnbCatalogService._();
@@ -109,10 +110,8 @@ class FnbCatalogService {
 
     const candidateEndpoints = [
       '/v1/pos/products-sync',
-      '/v1/pos/menu',
-      '/v1/pos/products',
-      '/cafe/pos/products',
       '/cafe/menu',
+      '/cafe/products',
     ];
 
     Response<dynamic>? response;
@@ -188,21 +187,18 @@ class FnbCatalogService {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return _cachedCatalog?.products ?? const [];
 
-    final tenantId = SessionStorage.instance.getTenantId();
     final locId = SessionStorage.instance.getLocationId();
     final queryParams = <String, dynamic>{
       'search': trimmed,
-      'q': trimmed,
       'limit': limit,
       'per_page': limit,
-      if (tenantId != null && tenantId.isNotEmpty) 'tenant_id': tenantId,
       if (locId != null && locId.isNotEmpty) 'location_id': locId,
     };
 
     const candidateEndpoints = [
       '/v1/pos/products-sync',
-      '/v1/pos/menu',
-      '/v1/pos/products',
+      '/cafe/menu',
+      '/cafe/products',
     ];
 
     for (final ep in candidateEndpoints) {
@@ -248,47 +244,43 @@ class FnbCatalogService {
     if (categoryName.isEmpty || categoryName == '-') categoryName = 'Minuman & Makanan';
     categoryName = sanitizeDisplayName(categoryName);
 
-    double priceVal = json.getDouble('price');
+    double priceVal = json.getDouble('promo_price');
+    if (priceVal <= 0) priceVal = json.getDouble('price');
     if (priceVal <= 0) priceVal = json.getDouble('selling_price');
-    if (priceVal <= 0) priceVal = json.getDouble('harga');
-    if (priceVal <= 0) priceVal = json.getDouble('harga_jual');
 
     final bool hasStockField = (json.containsKey('stock') && json['stock'] != null) ||
-        (json.containsKey('stock_qty') && json['stock_qty'] != null) ||
-        (json.containsKey('stok') && json['stok'] != null) ||
-        (json.containsKey('qty') && json['qty'] != null);
+        (json.containsKey('stock_qty') && json['stock_qty'] != null);
+    final statusStr = json.getString('status').toLowerCase();
     final bool isExplicitlyUnavailable = json.getBool('is_out_of_stock') ||
-        json.getString('status').toLowerCase() == 'out_of_stock' ||
-        (json.containsKey('is_available') && json.getBool('is_available') == false);
+        statusStr == 'sold_out' ||
+        statusStr == 'out_of_stock' ||
+        statusStr == 'unavailable' ||
+        (json.containsKey('is_available') && json.getBool('is_available') == false) ||
+        (json.containsKey('can_order') && json.getBool('can_order') == false);
 
     double stockVal;
     if (isExplicitlyUnavailable) {
       stockVal = 0.0;
     } else if (hasStockField) {
-      stockVal = json.getDouble(
-        'stock',
-        fallback: json.getDouble('stock_qty', fallback: json.getDouble('stok', fallback: json.getDouble('qty'))),
-      );
+      stockVal = json.getDouble('stock', fallback: json.getDouble('stock_qty'));
     } else {
       stockVal = 99.0;
     }
 
     String skuVal = json.getString('sku');
+    if (skuVal.isEmpty || skuVal == '-') skuVal = json.getString('velora_id');
     if (skuVal.isEmpty || skuVal == '-') skuVal = json.getString('code');
-    if (skuVal.isEmpty || skuVal == '-') skuVal = json.getString('menu_code');
 
     String barcodeVal = json.getString('barcode');
 
-    String img = json.getString('image_url');
-    if (img.isEmpty || img == '-') img = json.getString('image');
-    if (img.isEmpty || img == '-') img = json.getString('photo_url');
-    if (img.isEmpty || img == '-') img = json.getString('thumbnail');
+    String img = json.getString('image');
+    if (img.isEmpty || img == '-') img = json.getString('image_url');
 
-    String? productTag = json.getString('badge');
+    String? productTag = json.getString('station');
+    if (productTag.isEmpty) productTag = json.getString('badge');
     if (productTag.isEmpty) productTag = json.getString('tag');
 
     String? desc = json.getString('description');
-    if (desc.isEmpty) desc = json.getString('subtitle');
 
     String? catId = json.getString('category_id');
     if (catId.isEmpty && json['category'] is Map) {
@@ -309,7 +301,10 @@ class FnbCatalogService {
       }
     }
 
-    final unitVal = json.getString('unit', fallback: 'PORSI');
+    final unitVal = json.getString(
+      'sales_unit',
+      fallback: json.getString('stock_unit', fallback: json.getString('unit', fallback: 'PORSI')),
+    );
 
     return PosProduct(
       id: json.getString('id'),

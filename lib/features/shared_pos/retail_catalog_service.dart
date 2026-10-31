@@ -9,8 +9,9 @@ import 'product_catalog_service.dart';
 
 /// Layanan Katalog Khusus Bisnis RETAIL / MINIMARKET / GROSIR.
 /// Terisolasi penuh dari Pharmacy (Apotek) dan FnB (Cafe):
-/// - Hanya menembak endpoint POS Retail (`/v1/pos/products-sync`, `/v1/pos/products`).
-/// - Mengekstrak struktur barang Retail (`sku`, `barcode`, `selling_price_1..3` bertingkat, satuan `PCS`/`PACK`/`DUS`).
+/// - Hanya menembak endpoint POS Retail sesuai `routes/api/pos.php` dan `routes/api/retail.php`:
+///   `/v1/pos/products-sync`, `/retail/pos/products`, `/retail/products`.
+/// - Mengekstrak skema `RetailPosStrategy` (`id, category_id, velora_id, name, description, price, cost_price, image, is_available, barcode, sku, shelf_location, stock, units: [unit_name, conversion_ratio, price, barcode], stocks`).
 /// - Stok default selalu `0` jika belum ada stok fisik (tidak pernah `99`).
 /// - Cache memori dan disk dikunci ke `retail_<tenantId>_<locationId>`.
 class RetailCatalogService {
@@ -108,7 +109,8 @@ class RetailCatalogService {
 
     const candidateEndpoints = [
       '/v1/pos/products-sync',
-      '/v1/pos/products',
+      '/retail/pos/products',
+      '/retail/products',
     ];
 
     Response<dynamic>? response;
@@ -197,7 +199,8 @@ class RetailCatalogService {
 
     const candidateEndpoints = [
       '/v1/pos/products-sync',
-      '/v1/pos/products',
+      '/retail/pos/products',
+      '/retail/products',
     ];
 
     for (final ep in candidateEndpoints) {
@@ -250,40 +253,53 @@ class RetailCatalogService {
     if (priceVal <= 0) priceVal = json.getDouble('selling_price_1');
 
     final bool hasStockField = (json.containsKey('stock') && json['stock'] != null) ||
+        (json.containsKey('total_stock') && json['total_stock'] != null) ||
         (json.containsKey('stock_qty') && json['stock_qty'] != null) ||
-        (json.containsKey('current_stock') && json['current_stock'] != null) ||
-        (json.containsKey('stok') && json['stok'] != null) ||
-        (json.containsKey('qty') && json['qty'] != null);
+        (json.containsKey('current_stock') && json['current_stock'] != null);
 
     double stockVal = 0.0;
     if (hasStockField) {
       stockVal = json.getDouble(
         'stock',
-        fallback: json.getDouble(
-          'stock_qty',
-          fallback: json.getDouble('current_stock', fallback: json.getDouble('stok', fallback: json.getDouble('qty'))),
-        ),
+        fallback: json.getDouble('total_stock', fallback: json.getDouble('stock_qty', fallback: json.getDouble('current_stock'))),
       );
+    } else if (json['stocks'] is List && (json['stocks'] as List).isNotEmpty) {
+      for (final s in (json['stocks'] as List)) {
+        if (s is Map) {
+          stockVal += Map<String, dynamic>.from(s).getDouble('total_stock', fallback: Map<String, dynamic>.from(s).getDouble('stock'));
+        }
+      }
     }
 
     String skuVal = json.getString('sku');
-    if (skuVal.isEmpty || skuVal == '-') skuVal = json.getString('kode_produk');
+    if (skuVal.isEmpty || skuVal == '-') skuVal = json.getString('velora_id');
     if (skuVal.isEmpty || skuVal == '-') skuVal = json.getString('code');
 
     String barcodeVal = json.getString('barcode');
 
     String unitVal = json.getString('unit');
-    if (unitVal.isEmpty || unitVal == '-') unitVal = json.getString('satuan');
-    if (unitVal.isEmpty || unitVal == '-') unitVal = json.getString('uom');
+    if (unitVal.isEmpty || unitVal == '-') unitVal = json.getString('unit_name');
     if (unitVal.isEmpty || unitVal == '-') unitVal = 'PCS';
     unitVal = sanitizeDisplayName(unitVal).toUpperCase();
 
     final List<PosProductUnit> finalUnits = [];
-    final rawUnits = json['units'] ?? json['product_units'] ?? json['multi_units'] ?? json['price_levels'];
+    final rawUnits = json['units'] ?? json['product_units'];
     if (rawUnits is List) {
       for (final u in rawUnits) {
         if (u is Map) {
-          finalUnits.add(PosProductUnit.fromJson(Map<String, dynamic>.from(u), defaultPrice: priceVal));
+          final uMap = Map<String, dynamic>.from(u);
+          final uName = uMap.getString('unit_name', fallback: uMap.getString('name', fallback: unitVal)).toUpperCase();
+          final uPrice = uMap.getDouble('price', fallback: priceVal);
+          final uConv = uMap.getDouble('conversion_ratio', fallback: uMap.getDouble('conversion', fallback: 1.0));
+          finalUnits.add(
+            PosProductUnit(
+              name: uName,
+              price: uPrice > 0 ? uPrice : priceVal,
+              conversion: uConv > 0 ? uConv : 1.0,
+              barcode: uMap.getString('barcode').isNotEmpty ? uMap.getString('barcode') : null,
+              isDefault: finalUnits.isEmpty,
+            ),
+          );
         }
       }
     }
@@ -291,8 +307,8 @@ class RetailCatalogService {
       finalUnits.add(PosProductUnit(name: unitVal, price: priceVal, conversion: 1, isDefault: true));
     }
 
-    String img = json.getString('image_url');
-    if (img.isEmpty || img == '-') img = json.getString('image');
+    String img = json.getString('image');
+    if (img.isEmpty || img == '-') img = json.getString('image_url');
 
     return PosProduct(
       id: json.getString('id'),
@@ -304,7 +320,9 @@ class RetailCatalogService {
       sku: skuVal,
       barcode: barcodeVal,
       imageUrl: img.isNotEmpty && img != '-' ? img : null,
-      unit: unitVal,
+      tag: json.getString('shelf_location').isNotEmpty ? json.getString('shelf_location') : null,
+      description: json.getString('description').isNotEmpty ? json.getString('description') : null,
+      unit: finalUnits.first.name,
       isPrescriptionOnly: false,
       batches: const [],
       units: finalUnits,

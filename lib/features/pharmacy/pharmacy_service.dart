@@ -115,7 +115,7 @@ class PharmacyService {
   final ValueNotifier<bool> taxInclusive = ValueNotifier<bool>(true);
 
   Future<num> fetchTuslahFee() async {
-    const endpoints = ['/v1/pos/config', '/v1/pos/preferences', '/v1/preferences'];
+    const endpoints = ['/v1/pos/tuslah-config', '/v1/pos/config', '/preferences'];
     for (final ep in endpoints) {
       try {
         final res = await _dio.get(ep, queryParameters: _locationQuery());
@@ -166,13 +166,12 @@ class PharmacyService {
     };
   }
 
-  /// 1. Ambil Antrean Pasien Poli/Klinik & Billing (Stitch Screen 2)
+  /// 1. Ambil Antrean Pasien Poli/Klinik & Resep Pending sesuai `routes/api/pharmacy.php` & `routes/api/pos.php`
   Future<List<ClinicPatientQueueItem>> fetchPatientQueue() async {
     final candidateEndpoints = [
-      '/v1/pharmacy/queue',
-      '/v1/pos/queue',
-      '/v1/clinic/queue',
-      '/v1/pos/customers',
+      '/v1/pharmacy/polikliniks/today-queues',
+      '/v1/pos/prescriptions/pending',
+      '/v1/pharmacy/prescriptions',
     ];
 
     // ignore: unused_local_variable
@@ -249,10 +248,8 @@ class PharmacyService {
     _localPrescriptions.insert(0, newItem);
 
     final candidateEndpoints = [
-      '/v1/pharmacy/queue',
-      '/v1/pos/queue',
-      '/v1/clinic/queue',
       '/v1/pharmacy/prescriptions',
+      '/v1/pharmacy/medical-records',
     ];
 
     final payload = {
@@ -277,9 +274,77 @@ class PharmacyService {
     return true;
   }
 
-  /// 2. Ambil Alert Kedaluwarsa & Stok Kritis FEFO (Stitch Screen 3)
+  /// 2. Ambil Alert Kedaluwarsa & Stok Kritis FEFO sesuai `routes/api/pharmacy.php` (`/v1/pharmacy/inventory/batches/expired-alerts`)
   Future<List<PharmacyStockAlertItem>> fetchStockAlerts() async {
-    // Tarik live catalog Apotek untuk mengecek batch number & tanggal kedaluwarsa nyata
+    const alertEndpoints = [
+      '/v1/pharmacy/inventory/batches/expired-alerts',
+      '/v1/pharmacy/inventory/batches',
+    ];
+
+    for (final ep in alertEndpoints) {
+      try {
+        final res = await _dio.get(ep, queryParameters: _locationQuery());
+        if (res.statusCode == 200 && res.data != null) {
+          final raw = res.data;
+          List items = [];
+          if (raw is List) {
+            items = raw;
+          } else if (raw is Map) {
+            final d = raw['data'] ?? raw['batches'] ?? raw['alerts'];
+            if (d is List) {
+              items = d;
+            } else if (d is Map && d['data'] is List) {
+              items = d['data'] as List;
+            }
+          }
+          if (items.isNotEmpty) {
+            final parsedAlerts = <PharmacyStockAlertItem>[];
+            for (final e in items) {
+              if (e is Map) {
+                final m = Map<String, dynamic>.from(e);
+                final prodMap = m['product'] is Map ? Map<String, dynamic>.from(m['product'] as Map) : const <String, dynamic>{};
+                final expStr = (m['expired_date'] ?? m['expiry_date'] ?? '-').toString();
+                int days = (m['days_to_expiry'] as num?)?.toInt() ?? 90;
+                if (expStr.isNotEmpty && expStr != '-' && m['days_to_expiry'] == null) {
+                  final dt = DateTime.tryParse(expStr);
+                  if (dt != null) {
+                    days = dt.difference(DateTime.now()).inDays;
+                  }
+                }
+                final stockNum = (m['stock'] ?? m['total_stock'] ?? m['quantity'] ?? 0);
+                final stockInt = stockNum is num ? stockNum.toInt() : (int.tryParse(stockNum.toString()) ?? 0);
+                final priceNum = (m['selling_price'] ?? prodMap['selling_price'] ?? m['price'] ?? 0);
+                final priceVal = priceNum is num ? priceNum : (num.tryParse(priceNum.toString()) ?? 0);
+                parsedAlerts.add(
+                  PharmacyStockAlertItem(
+                    name: (m['product_name'] ?? prodMap['custom_name'] ?? prodMap['name_main'] ?? m['name'] ?? 'Obat').toString(),
+                    category: (m['golongan'] ?? prodMap['golongan'] ?? m['category'] ?? 'Obat').toString(),
+                    batchNumber: (m['batch_no'] ?? m['batch_number'] ?? '-').toString(),
+                    expiryDate: expStr,
+                    daysToExpiry: days,
+                    stock: stockInt,
+                    unit: (m['unit'] ?? prodMap['unit_3'] ?? 'TAB').toString().toUpperCase(),
+                    price: priceVal,
+                    isHardDrug: m['is_narcotic'] == true ||
+                        m['is_psychotropic'] == true ||
+                        prodMap['is_narcotic'] == true ||
+                        (m['golongan'] ?? prodMap['golongan'] ?? '').toString().toLowerCase().contains('keras'),
+                  ),
+                );
+              }
+            }
+            if (parsedAlerts.isNotEmpty) {
+              parsedAlerts.sort((a, b) => a.daysToExpiry.compareTo(b.daysToExpiry));
+              return parsedAlerts;
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠️ [PharmacyService] Alert endpoint $ep failed: $e');
+      }
+    }
+
+    // Fallback ke live catalog Apotek untuk mengecek batch number & tanggal kedaluwarsa nyata
     try {
       final catalog = await PharmacyCatalogService.instance.fetchCatalog();
       final List<PharmacyStockAlertItem> list = [];
@@ -366,12 +431,12 @@ class PharmacyService {
     );
   }
 
-  /// 4. Ambil Daftar PO Pengadaan PBF (Stitch Screen 6)
+  /// 4. Ambil Daftar PO Pengadaan PBF sesuai `routes/api/pharmacy.php`
   Future<List<PharmacyPbfOrder>> fetchPbfOrders() async {
     final candidateEndpoints = [
-      '/v1/pharmacy/pbf/orders',
-      '/v1/pos/purchases',
-      '/v1/purchases',
+      '/v1/pharmacy/purchase-orders',
+      '/v1/pharmacy/pembelian/orders',
+      '/v1/pharmacy/b2b/my-orders',
     ];
 
     for (final ep in candidateEndpoints) {
@@ -406,16 +471,23 @@ class PharmacyService {
     return const [];
   }
 
-  /// 5. Ambil Riwayat Rekam Medis & Histori Obat Pasien (Stitch Screen 8)
+  /// 5. Ambil Riwayat Rekam Medis & Histori Obat Pasien sesuai `routes/api/pharmacy.php`
   Future<List<PharmacyPatientHistory>> fetchPatientMedicationHistory(String patientIdOrRm) async {
     final candidateEndpoints = [
-      '/v1/pharmacy/patients/$patientIdOrRm/history',
-      '/v1/pos/customers/$patientIdOrRm/orders',
+      '/v1/pharmacy/medical-records',
+      '/v1/pharmacy/prescriptions',
+      '/v1/pharmacy/orders',
     ];
+
+    final q = {
+      ..._locationQuery(),
+      'search': patientIdOrRm,
+      'patient_id': patientIdOrRm,
+    };
 
     for (final ep in candidateEndpoints) {
       try {
-        final res = await _dio.get(ep);
+        final res = await _dio.get(ep, queryParameters: q);
         if (res.statusCode == 200 && res.data != null) {
           final raw = res.data;
           List items = [];
@@ -551,7 +623,7 @@ class PharmacyService {
 
     if (revenue == 0) {
       try {
-        final catalog = await ProductCatalogService.instance.fetchCatalog();
+        final catalog = await PharmacyCatalogService.instance.fetchCatalog();
         if (catalog.products.isNotEmpty) {
           topMedicines = catalog.products.take(5).map((p) => {
             'name': p.name,

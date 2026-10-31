@@ -111,7 +111,6 @@ class PharmacyCatalogService {
       '/v1/pos/products-sync',
       '/v1/pharmacy/products',
       '/v1/pharmacy/inventory',
-      '/v1/pos/products',
     ];
 
     Response<dynamic>? response;
@@ -187,20 +186,17 @@ class PharmacyCatalogService {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return _cachedCatalog?.products ?? const [];
 
-    final tenantId = SessionStorage.instance.getTenantId();
     final locId = SessionStorage.instance.getLocationId();
     final queryParams = <String, dynamic>{
       'search': trimmed,
-      'q': trimmed,
       'limit': limit,
       'per_page': limit,
-      if (tenantId != null && tenantId.isNotEmpty) 'tenant_id': tenantId,
       if (locId != null && locId.isNotEmpty) 'location_id': locId,
     };
 
     const candidateEndpoints = [
-      '/v1/pharmacy/products',
       '/v1/pos/products-sync',
+      '/v1/pharmacy/products',
       '/v1/pharmacy/inventory',
     ];
 
@@ -235,17 +231,14 @@ class PharmacyCatalogService {
     final local = findByBarcode(clean) ?? findBySku(clean);
     if (local != null) return local;
 
-    final tenantId = SessionStorage.instance.getTenantId();
     final locId = SessionStorage.instance.getLocationId();
     final payload = <String, dynamic>{
       'barcode': clean,
-      'code': clean,
-      'sku': clean,
-      if (tenantId != null && tenantId.isNotEmpty) 'tenant_id': tenantId,
       if (locId != null && locId.isNotEmpty) 'location_id': locId,
     };
 
     const scanEndpoints = [
+      '/v1/pos/scan',
       '/v1/pharmacy/pos/scan',
       '/v1/pharmacy/products/scan',
     ];
@@ -284,7 +277,8 @@ class PharmacyCatalogService {
     return null;
   }
 
-  /// Parser khusus produk Farmasi (Obat, Alkes, Batch FEFO, Multi-Satuan, Golongan, Kandungan)
+  /// Parser khusus produk Farmasi sesuai skema `PharmacyPosStrategy` & `PharmacyProduct` di backend Velora:
+  /// - Kolom utama: `id, tenant_id, velora_id, name_main, custom_name, ratio_1, ratio_2, ratio_3, unit_1, unit_2, unit_3, barcode_master, selling_price, selling_price_1, selling_price_2, selling_price_3, golongan, klasifikasi, fungsi, kandungan, sediaan, is_narcotic, is_psychotropic, is_precursor, is_oot, is_active, image, stocks`
   static PosProduct parsePharmacyProduct(Map<String, dynamic> json) {
     final Map<String, dynamic> gp = (json['global_product'] is Map)
         ? Map<String, dynamic>.from(json['global_product'] as Map)
@@ -294,25 +288,30 @@ class PharmacyCatalogService {
       'batches',
       (item) => PosProductBatch.fromJson(item is Map<String, dynamic> ? item : null),
     );
-    if (rawBatches.isEmpty) {
-      rawBatches = json.getList<PosProductBatch>(
-        'stocks',
-        (item) => PosProductBatch.fromJson(item is Map<String, dynamic> ? item : null),
-      );
-    }
-    if (rawBatches.isEmpty) {
-      rawBatches = json.getList<PosProductBatch>(
-        'product_batches',
-        (item) => PosProductBatch.fromJson(item is Map<String, dynamic> ? item : null),
-      );
+    if (rawBatches.isEmpty && json['stocks'] is List) {
+      final stocksList = json['stocks'] as List;
+      final extracted = <PosProductBatch>[];
+      for (final s in stocksList) {
+        if (s is Map) {
+          if (s['batches'] is List) {
+            for (final b in (s['batches'] as List)) {
+              if (b is Map) {
+                extracted.add(PosProductBatch.fromJson(Map<String, dynamic>.from(b)));
+              }
+            }
+          } else if (s['batch_no'] != null || s['batch_number'] != null || s['expired_date'] != null) {
+            extracted.add(PosProductBatch.fromJson(Map<String, dynamic>.from(s)));
+          }
+        }
+      }
+      rawBatches = extracted;
     }
 
-    String productName = json.getString('display_name');
-    if (productName.isEmpty || productName == '-') productName = json.getString('name');
-    if (productName.isEmpty || productName == '-') productName = json.getString('custom_name');
+    // Sesuai PharmacyProductMarketplaceService: custom_name diutamakan di atas name_main
+    String productName = json.getString('custom_name');
     if (productName.isEmpty || productName == '-') productName = json.getString('name_main');
-    if (productName.isEmpty || productName == '-') productName = json.getString('nama_obat');
-    if (productName.isEmpty || productName == '-') productName = gp.getString('display_name');
+    if (productName.isEmpty || productName == '-') productName = json.getString('display_name');
+    if (productName.isEmpty || productName == '-') productName = json.getString('name');
     if (productName.isEmpty || productName == '-') productName = gp.getString('name_main');
     if (productName.isEmpty || productName == '-') productName = gp.getString('name');
     if (productName.isEmpty || productName == '-') productName = 'Obat';
@@ -320,83 +319,81 @@ class PharmacyCatalogService {
 
     String categoryName = '';
     final rawCat = json['golongan'] ??
-        json['category'] ??
-        json['kategori'] ??
         json['klasifikasi'] ??
+        json['fungsi'] ??
+        json['sediaan'] ??
+        json['category'] ??
         gp['golongan'] ??
-        gp['category'];
+        gp['klasifikasi'];
     if (rawCat is Map) {
       categoryName = sanitizeDisplayName(rawCat);
     } else if (rawCat is String) {
       categoryName = sanitizeDisplayName(rawCat);
     }
-    if (categoryName.isEmpty || categoryName == '-') categoryName = json.getString('golongan_obat');
-    if (categoryName.isEmpty || categoryName == '-') categoryName = json.getString('category_name');
-    if (categoryName.isEmpty || categoryName == '-') categoryName = gp.getString('golongan');
     if (categoryName.isEmpty || categoryName == '-') categoryName = 'Obat Bebas';
     categoryName = sanitizeDisplayName(categoryName);
 
+    // Sesuai PharmacyProductCrudService: selling_price default adalah selling_price_3 (satuan terkecil)
     double priceVal = json.getDouble('selling_price');
-    if (priceVal <= 0) priceVal = json.getDouble('price');
-    if (priceVal <= 0) priceVal = json.getDouble('harga_jual');
-    if (priceVal <= 0) priceVal = json.getDouble('harga');
+    if (priceVal <= 0) priceVal = json.getDouble('selling_price_3');
+    if (priceVal <= 0) priceVal = json.getDouble('selling_price_2');
     if (priceVal <= 0) priceVal = json.getDouble('selling_price_1');
+    if (priceVal <= 0) priceVal = json.getDouble('price');
     if (priceVal <= 0) priceVal = gp.getDouble('selling_price');
-    if (priceVal <= 0) priceVal = gp.getDouble('price');
 
     final bool hasStockField = (json.containsKey('stock') && json['stock'] != null) ||
-        (json.containsKey('stock_qty') && json['stock_qty'] != null) ||
         (json.containsKey('total_stock') && json['total_stock'] != null) ||
-        (json.containsKey('stok') && json['stok'] != null) ||
-        (json.containsKey('current_stock') && json['current_stock'] != null) ||
-        (json.containsKey('qty') && json['qty'] != null);
+        (json.containsKey('total_physical_stock') && json['total_physical_stock'] != null) ||
+        (json.containsKey('stock_qty') && json['stock_qty'] != null);
 
     double stockVal = 0.0;
     if (hasStockField) {
       stockVal = json.getDouble(
         'stock',
         fallback: json.getDouble(
-          'stock_qty',
-          fallback: json.getDouble(
-            'total_stock',
-            fallback: json.getDouble(
-              'stok',
-              fallback: json.getDouble('current_stock', fallback: json.getDouble('qty')),
-            ),
-          ),
+          'total_stock',
+          fallback: json.getDouble('total_physical_stock', fallback: json.getDouble('stock_qty')),
         ),
       );
+    } else if (json['stocks'] is List && (json['stocks'] as List).isNotEmpty) {
+      for (final s in (json['stocks'] as List)) {
+        if (s is Map) {
+          stockVal += Map<String, dynamic>.from(s).getDouble(
+            'total_stock',
+            fallback: Map<String, dynamic>.from(s).getDouble('stock', fallback: Map<String, dynamic>.from(s).getDouble('quantity')),
+          );
+        }
+      }
     } else if (rawBatches.isNotEmpty) {
       stockVal = rawBatches.fold<double>(0.0, (sum, b) => sum + b.stock);
     }
 
-    String skuVal = json.getString('sku');
-    if (skuVal.isEmpty || skuVal == '-') skuVal = json.getString('velora_id');
-    if (skuVal.isEmpty || skuVal == '-') skuVal = json.getString('kode_obat');
-    if (skuVal.isEmpty || skuVal == '-') skuVal = json.getString('code');
+    String skuVal = json.getString('velora_id');
+    if (skuVal.isEmpty || skuVal == '-') skuVal = json.getString('sku');
     if (skuVal.isEmpty || skuVal == '-') skuVal = gp.getString('velora_id');
-    if (skuVal.isEmpty || skuVal == '-') skuVal = gp.getString('sku');
 
-    String barcodeVal = json.getString('barcode');
-    if (barcodeVal.isEmpty || barcodeVal == '-') barcodeVal = json.getString('barcode_master');
+    String barcodeVal = json.getString('barcode_master');
+    if (barcodeVal.isEmpty || barcodeVal == '-') barcodeVal = json.getString('barcode');
     if (barcodeVal.isEmpty || barcodeVal == '-') barcodeVal = gp.getString('barcode');
 
-    final isRx = json.getBool('is_prescription_only') ||
+    final isRx = json.getBool('is_narcotic') ||
+        json.getBool('is_psychotropic') ||
+        json.getBool('is_precursor') ||
+        json.getBool('is_oot') ||
+        json.getBool('is_prescription_only') ||
         json.getBool('is_hard_drug') ||
         categoryName.toLowerCase().contains('keras') ||
         categoryName.toLowerCase().contains('narkotika') ||
         categoryName.toLowerCase().contains('psikotropika') ||
-        categoryName.toLowerCase().contains('resep') ||
+        categoryName.toLowerCase().contains('prekursor') ||
+        categoryName.toLowerCase().contains('oot') ||
         json.getString('golongan').toLowerCase().contains('keras');
 
-    String? singleBatch = json.getString('batch_number');
-    if (singleBatch.isEmpty || singleBatch == '-') singleBatch = json.getString('batch');
-    if (singleBatch.isEmpty || singleBatch == '-') singleBatch = json.getString('no_batch');
+    String? singleBatch = json.getString('batch_no');
+    if (singleBatch.isEmpty || singleBatch == '-') singleBatch = json.getString('batch_number');
 
-    String? singleExp = json.getString('expiry_date');
-    if (singleExp.isEmpty || singleExp == '-') singleExp = json.getString('exp_date');
-    if (singleExp.isEmpty || singleExp == '-') singleExp = json.getString('kadaluwarsa');
-    if (singleExp.isEmpty || singleExp == '-') singleExp = json.getString('ed');
+    String? singleExp = json.getString('expired_date');
+    if (singleExp.isEmpty || singleExp == '-') singleExp = json.getString('expiry_date');
 
     final List<PosProductBatch> finalBatches = List.from(rawBatches);
     if (finalBatches.isEmpty &&
@@ -411,49 +408,76 @@ class PharmacyCatalogService {
       );
     }
 
-    String unitStr = json.getString('unit');
-    if (unitStr.isEmpty || unitStr == '-') unitStr = json.getString('base_unit');
-    if (unitStr.isEmpty || unitStr == '-') unitStr = json.getString('satuan_terkecil');
-    if (unitStr.isEmpty || unitStr == '-') unitStr = json.getString('satuan');
-    if (unitStr.isEmpty || unitStr == '-') unitStr = json.getString('uom');
-    if (unitStr.isEmpty || unitStr == '-') unitStr = gp.getString('base_unit');
-    if (unitStr.isEmpty || unitStr == '-') unitStr = gp.getString('kemasan');
-    if (unitStr.isEmpty || unitStr == '-') unitStr = 'TAB';
+    // Skema Multi-Satuan PharmacyProduct di Backend:
+    // unit_3 = satuan terkecil/dasar POS (misal TAB/KAP/PCS), ratio_3, selling_price_3
+    // unit_2 = satuan menengah (misal STRIP/BLISTER), ratio_2, selling_price_2
+    // unit_1 = satuan terbesar (misal BOX/FLS), ratio_1, selling_price_1
+    final u3 = json.getString('unit_3', fallback: gp.getString('unit_3'));
+    final u2 = json.getString('unit_2', fallback: gp.getString('unit_2'));
+    final u1 = json.getString('unit_1', fallback: gp.getString('unit_1'));
+    final r3 = json.getDouble('ratio_3', fallback: gp.getDouble('ratio_3', fallback: 1.0));
+    final r2 = json.getDouble('ratio_2', fallback: gp.getDouble('ratio_2', fallback: 1.0));
+    final r1 = json.getDouble('ratio_1', fallback: gp.getDouble('ratio_1', fallback: 1.0));
+    final sp3 = json.getDouble('selling_price_3', fallback: priceVal);
+    final sp2 = json.getDouble('selling_price_2');
+    final sp1 = json.getDouble('selling_price_1');
+
+    String unitStr = u3.isNotEmpty && u3 != '-'
+        ? u3
+        : (u2.isNotEmpty && u2 != '-'
+            ? u2
+            : (u1.isNotEmpty && u1 != '-' ? u1 : json.getString('unit', fallback: 'TAB')));
     unitStr = sanitizeDisplayName(unitStr).toUpperCase();
 
     final List<PosProductUnit> finalUnits = [];
-    final rawUnitsList = json['units'] ??
-        json['product_units'] ??
-        json['satuan_list'] ??
-        json['multi_units'] ??
-        json['unit_prices'] ??
-        json['conversions'];
+    final rawUnitsList = json['units'] ?? json['product_units'];
     if (rawUnitsList is List) {
       for (final u in rawUnitsList) {
         if (u is Map) {
           finalUnits.add(PosProductUnit.fromJson(Map<String, dynamic>.from(u), defaultPrice: priceVal));
-        } else if (u is String && u.trim().isNotEmpty) {
-          finalUnits.add(PosProductUnit(name: u.trim().toUpperCase(), price: priceVal, conversion: 1));
         }
       }
     }
 
     if (finalUnits.isEmpty) {
-      final u1 = json.getString('unit_1', fallback: json.getString('satuan_1'));
-      final u2 = json.getString('unit_2', fallback: json.getString('satuan_2'));
-      final u3 = json.getString('unit_3', fallback: json.getString('satuan_3'));
-      final sp1 = json.getDouble('selling_price_1', fallback: priceVal);
-      final sp2 = json.getDouble('selling_price_2');
-      final sp3 = json.getDouble('selling_price_3');
-
-      if (u1.isNotEmpty && u1 != '-') {
-        finalUnits.add(PosProductUnit(name: u1.toUpperCase(), price: sp1, conversion: 1, isDefault: true));
+      final seenUnits = <String>{};
+      if (u3.isNotEmpty && u3 != '-') {
+        final name3 = u3.trim().toUpperCase();
+        seenUnits.add(name3);
+        finalUnits.add(
+          PosProductUnit(
+            name: name3,
+            price: sp3 > 0 ? sp3 : priceVal,
+            conversion: r3 > 0 ? r3 : 1,
+            isDefault: true,
+          ),
+        );
       }
       if (u2.isNotEmpty && u2 != '-' && sp2 > 0) {
-        finalUnits.add(PosProductUnit(name: u2.toUpperCase(), price: sp2, conversion: 1));
+        final name2 = u2.trim().toUpperCase();
+        if (seenUnits.add(name2)) {
+          finalUnits.add(
+            PosProductUnit(
+              name: name2,
+              price: sp2,
+              conversion: r2 > 0 ? r2 : 1,
+              isDefault: finalUnits.isEmpty,
+            ),
+          );
+        }
       }
-      if (u3.isNotEmpty && u3 != '-' && sp3 > 0) {
-        finalUnits.add(PosProductUnit(name: u3.toUpperCase(), price: sp3, conversion: 1));
+      if (u1.isNotEmpty && u1 != '-' && sp1 > 0) {
+        final name1 = u1.trim().toUpperCase();
+        if (seenUnits.add(name1)) {
+          finalUnits.add(
+            PosProductUnit(
+              name: name1,
+              price: sp1,
+              conversion: r1 > 0 ? r1 : 1,
+              isDefault: finalUnits.isEmpty,
+            ),
+          );
+        }
       }
     }
 
@@ -461,46 +485,30 @@ class PharmacyCatalogService {
       finalUnits.add(PosProductUnit(name: unitStr, price: priceVal, conversion: 1, isDefault: true));
     }
 
-    if (finalUnits.length == 1) {
-      final baseU = finalUnits.first.name.toUpperCase();
-      final baseP = finalUnits.first.price;
-      if (baseU == 'TAB' || baseU == 'KAP' || baseU == 'CAP' || baseU == 'PCS') {
-        finalUnits.add(PosProductUnit(name: 'STRIP', price: (baseP * 10).round(), conversion: 10));
-        finalUnits.add(PosProductUnit(name: 'BOX', price: (baseP * 100).round(), conversion: 100));
-      } else if (baseU == 'STRIP') {
-        finalUnits.insert(0, PosProductUnit(name: 'TAB', price: (baseP / 10).round(), conversion: 1));
-        finalUnits.add(PosProductUnit(name: 'BOX', price: (baseP * 10).round(), conversion: 10));
-      } else if (baseU == 'FLS' || baseU == 'BTL' || baseU == 'TUBE') {
-        finalUnits.add(PosProductUnit(name: 'BOX', price: (baseP * 10).round(), conversion: 10));
-      }
-    }
+    final rawDesc = json.getString('kandungan').isNotEmpty
+        ? json.getString('kandungan')
+        : (json.getString('fungsi').isNotEmpty
+            ? json.getString('fungsi')
+            : (json.getString('description').isNotEmpty
+                ? json.getString('description')
+                : gp.getString('kandungan')));
 
-    final rawDesc = json.getString('description').isNotEmpty
-        ? json.getString('description')
-        : (json.getString('kandungan').isNotEmpty
-            ? json.getString('kandungan')
-            : (json.getString('composition').isNotEmpty
-                ? json.getString('composition')
-                : (gp.getString('kandungan').isNotEmpty
-                    ? gp.getString('kandungan')
-                    : gp.getString('composition'))));
-
-    final rawImg = json.getString('image_url').isNotEmpty
-        ? json.getString('image_url')
-        : (json.getString('image').isNotEmpty ? json.getString('image') : gp.getString('image_url'));
+    final rawImg = json.getString('image').isNotEmpty
+        ? json.getString('image')
+        : (json.getString('image_url').isNotEmpty ? json.getString('image_url') : gp.getString('image'));
 
     return PosProduct(
-      id: json.getString('id', fallback: json.getString('pharmacy_product_id', fallback: json.getString('product_id'))),
+      id: json.getString('id', fallback: json.getString('pharmacy_product_id')),
       name: productName,
       category: categoryName,
-      categoryId: json['category_id']?.toString(),
+      categoryId: json['category_id']?.toString() ?? json['golongan']?.toString(),
       price: priceVal,
       stock: stockVal,
       sku: skuVal,
       barcode: barcodeVal,
       unit: unitStr,
       imageUrl: rawImg.isNotEmpty ? rawImg : null,
-      tag: json['tag']?.toString(),
+      tag: json['sediaan']?.toString() ?? json['klasifikasi']?.toString(),
       description: rawDesc.isNotEmpty ? rawDesc : null,
       isPrescriptionOnly: isRx,
       batches: finalBatches,
