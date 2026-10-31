@@ -1144,32 +1144,64 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                 const SizedBox(width: 8),
               ],
               if (!isMobile && screenWidth >= 950) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: isShiftOpen
-                        ? const Color(0xFF0D9488).withValues(alpha: 0.15)
-                        : Colors.orange.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    shiftBadge,
-                    style: TextStyle(
-                      fontFamily: 'JetBrains Mono',
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: isShiftOpen ? const Color(0xFF0D9488) : Colors.deepOrange.shade800,
+                InkWell(
+                  onTap: _openShiftReportModal,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: isShiftOpen
+                          ? const Color(0xFF0D9488).withValues(alpha: 0.15)
+                          : Colors.orange.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          shiftBadge,
+                          style: TextStyle(
+                            fontFamily: 'JetBrains Mono',
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: isShiftOpen ? const Color(0xFF0D9488) : Colors.deepOrange.shade800,
+                          ),
+                        ),
+                        const SizedBox(width: 3),
+                        Icon(
+                          Icons.expand_more_rounded,
+                          size: 13,
+                          color: isShiftOpen ? const Color(0xFF0D9488) : Colors.deepOrange.shade800,
+                        ),
+                      ],
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
               ],
               const OfflineSyncBadge(showClock: false),
               const SizedBox(width: 4),
+              if (!isMobile) ...[
+                IconButton(
+                  icon: const Icon(Icons.people_outline_rounded, size: 20, color: Color(0xFF0D9488)),
+                  tooltip: 'Antrean Pasien & Billing',
+                  onPressed: _openQueueModal,
+                ),
+              ],
               IconButton(
-                icon: const Icon(Icons.qr_code_scanner_rounded, size: 20, color: emeraldPrimary),
-                tooltip: 'Scan Barcode Produk',
-                onPressed: _openBarcodeScanner,
+                icon: const Icon(Icons.receipt_long_rounded, size: 20, color: Color(0xFF6D7A72)),
+                tooltip: 'Riwayat Transaksi',
+                onPressed: () {
+                  AudioHelper.tapFeedback();
+                  SalesHistoryDrawer.show(
+                    context,
+                    storeName: SessionStorage.instance.getTenantName() ?? 'Velora Pharmacy',
+                    storeAddress: SessionStorage.instance.getStoreAddress() ?? '',
+                    storePhone: SessionStorage.instance.getStorePhone() ?? '-',
+                    cashierName: SessionStorage.instance.getUserName() ?? 'Apoteker',
+                    accentColor: emeraldPrimary,
+                  );
+                },
               ),
               IconButton(
                 icon: Icon(
@@ -1185,7 +1217,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
               ),
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert_rounded, size: 20, color: Color(0xFF6D7A72)),
-                tooltip: 'Menu Kasir',
+                tooltip: 'Menu Tambahan',
                 onSelected: (val) {
                   AudioHelper.tapFeedback();
                   switch (val) {
@@ -1200,19 +1232,6 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                       break;
                     case 'stock_alert':
                       _openStockAlertModal();
-                      break;
-                    case 'shift_report':
-                      _openShiftReportModal();
-                      break;
-                    case 'history':
-                      SalesHistoryDrawer.show(
-                        context,
-                        storeName: SessionStorage.instance.getTenantName() ?? 'Velora Pharmacy',
-                        storeAddress: SessionStorage.instance.getStoreAddress() ?? '',
-                        storePhone: SessionStorage.instance.getStorePhone() ?? '-',
-                        cashierName: SessionStorage.instance.getUserName() ?? 'Apoteker',
-                        accentColor: emeraldPrimary,
-                      );
                       break;
                     case 'printer':
                       PrinterSettingsModal.show(context);
@@ -1236,16 +1255,17 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                       ],
                     ),
                   ),
-                  const PopupMenuItem(
-                    value: 'queue',
-                    child: Row(
-                      children: [
-                        Icon(Icons.people_outline_rounded, size: 18, color: Color(0xFF0D9488)),
-                        SizedBox(width: 10),
-                        Text('Antrean Pasien & Billing'),
-                      ],
+                  if (isMobile)
+                    const PopupMenuItem(
+                      value: 'queue',
+                      child: Row(
+                        children: [
+                          Icon(Icons.people_outline_rounded, size: 18, color: Color(0xFF0D9488)),
+                          SizedBox(width: 10),
+                          Text('Antrean Pasien & Billing'),
+                        ],
+                      ),
                     ),
-                  ),
                   const PopupMenuItem(
                     value: 'review',
                     child: Row(
@@ -1263,26 +1283,6 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                         Icon(Icons.warning_amber_rounded, size: 18, color: Color(0xFFB45309)),
                         SizedBox(width: 10),
                         Text('Alert Kedaluwarsa & Stok FEFO'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'shift_report',
-                    child: Row(
-                      children: [
-                        Icon(Icons.analytics_outlined, size: 18, color: emeraldPrimary),
-                        SizedBox(width: 10),
-                        Text('Laporan Shift & Kas Masuk'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'history',
-                    child: Row(
-                      children: [
-                        Icon(Icons.receipt_long_rounded, size: 18, color: Color(0xFF6D7A72)),
-                        SizedBox(width: 10),
-                        Text('Riwayat Transaksi'),
                       ],
                     ),
                   ),

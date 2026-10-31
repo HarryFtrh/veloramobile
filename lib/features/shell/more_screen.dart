@@ -10,12 +10,14 @@ class MoreEntry {
     required this.title,
     required this.subtitle,
     required this.builder,
+    this.category,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
   final WidgetBuilder builder;
+  final String? category;
 }
 
 /// Menu Hub "Lainnya" untuk operasional kasir, profil outlet, dan fitur sekunder.
@@ -282,90 +284,115 @@ class MoreScreen extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              // 3. Section: Fitur & Pengaturan
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                child: Text(
-                  'FITUR & PENGATURAN TOKO',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.6,
-                    color: p.textTertiary,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 6),
+              // 3. Section(s): Categorized Features or Grouped Menu Cards
+              ...() {
+                final Map<String, List<MoreEntry>> groupedEntries = {};
+                for (final entry in entries) {
+                  final cat = entry.category ?? 'Fitur & Pengaturan Toko';
+                  groupedEntries.putIfAbsent(cat, () => []).add(entry);
+                }
 
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: p.line),
-                ),
-                child: Column(
-                  children: [
-                    for (var i = 0; i < entries.length; i++) ...[
-                      Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.vertical(
-                            top: i == 0 ? const Radius.circular(16) : Radius.zero,
-                            bottom: i == entries.length - 1 ? const Radius.circular(16) : Radius.zero,
-                          ),
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute<void>(builder: entries[i].builder),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: brandPrimary.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Icon(entries[i].icon, color: brandPrimary, size: 20),
-                                ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        entries[i].title,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 13.5,
-                                          color: p.textPrimary,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        entries[i].subtitle,
-                                        style: TextStyle(
-                                          fontSize: 11.5,
-                                          color: p.textSecondary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Icon(Icons.chevron_right_rounded, color: p.textTertiary, size: 20),
-                              ],
+                return groupedEntries.entries.map((group) {
+                  final groupEntries = group.value;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                          child: Text(
+                            group.key.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.6,
+                              color: p.textTertiary,
                             ),
                           ),
                         ),
-                      ),
-                      if (i < entries.length - 1)
-                        Divider(height: 1, indent: 56, endIndent: 16, color: p.line),
-                    ],
-                  ],
-                ),
-              ),
+                        const SizedBox(height: 6),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: p.line),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x04000000),
+                                blurRadius: 6,
+                                offset: Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              for (var i = 0; i < groupEntries.length; i++) ...[
+                                Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.vertical(
+                                      top: i == 0 ? const Radius.circular(16) : Radius.zero,
+                                      bottom: i == groupEntries.length - 1 ? const Radius.circular(16) : Radius.zero,
+                                    ),
+                                    onTap: () => Navigator.of(context).push(
+                                      MaterialPageRoute<void>(builder: groupEntries[i].builder),
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color: brandPrimary.withValues(alpha: 0.1),
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                            child: Icon(groupEntries[i].icon, color: brandPrimary, size: 20),
+                                          ),
+                                          const SizedBox(width: 14),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  groupEntries[i].title,
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w700,
+                                                    fontSize: 13.5,
+                                                    color: p.textPrimary,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  groupEntries[i].subtitle,
+                                                  style: TextStyle(
+                                                    fontSize: 11.5,
+                                                    color: p.textSecondary,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          Icon(Icons.chevron_right_rounded, color: p.textTertiary, size: 20),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                if (i < groupEntries.length - 1)
+                                  Divider(height: 1, indent: 56, endIndent: 16, color: p.line),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList();
+              }(),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 8),
 
               // 4. Logout Button
               if (onLogout != null) ...[
