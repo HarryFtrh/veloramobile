@@ -45,6 +45,53 @@ class PosProductBatch {
   }
 }
 
+class PosProductUnit {
+  final String name;
+  final num price;
+  final num conversion;
+  final bool isDefault;
+
+  PosProductUnit({
+    required this.name,
+    required this.price,
+    this.conversion = 1,
+    this.isDefault = false,
+  });
+
+  factory PosProductUnit.fromJson(Map<String, dynamic> json, {num defaultPrice = 0}) {
+    String unitName = json.getString('name');
+    if (unitName.isEmpty) unitName = json.getString('unit');
+    if (unitName.isEmpty) unitName = json.getString('satuan');
+    if (unitName.isEmpty) unitName = json.getString('uom');
+    if (unitName.isEmpty) unitName = 'TAB';
+
+    num p = json.getDouble('price');
+    if (p <= 0) p = json.getDouble('selling_price');
+    if (p <= 0) p = json.getDouble('harga');
+    if (p <= 0) p = defaultPrice;
+
+    num c = json.getDouble('conversion');
+    if (c <= 0) c = json.getDouble('conversion_factor');
+    if (c <= 0) c = json.getDouble('multiplier');
+    if (c <= 0) c = json.getDouble('isi');
+    if (c <= 0) c = 1;
+
+    return PosProductUnit(
+      name: unitName.toUpperCase(),
+      price: p,
+      conversion: c,
+      isDefault: json.getBool('is_default') || json.getBool('is_primary'),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'price': price,
+    'conversion': conversion,
+    'is_default': isDefault,
+  };
+}
+
 class PosProduct {
   final String id;
   final String name;
@@ -60,6 +107,7 @@ class PosProduct {
   final String? unit;
   final bool isPrescriptionOnly;
   final List<PosProductBatch> batches;
+  final List<PosProductUnit> units;
   final List<ModifierGroup> modifierGroups;
 
   PosProduct({
@@ -77,6 +125,7 @@ class PosProduct {
     this.unit,
     this.isPrescriptionOnly = false,
     this.batches = const [],
+    this.units = const [],
     this.modifierGroups = const [],
   });
 
@@ -242,6 +291,44 @@ class PosProduct {
       }
     }
 
+    // Multi-Satuan / Product Units resolution
+    final List<PosProductUnit> finalUnits = [];
+    final rawUnits = json['units'] ?? json['product_units'] ?? json['multi_units'] ?? json['satuan_list'] ?? json['conversions'];
+    if (rawUnits is List) {
+      for (final u in rawUnits) {
+        if (u is Map) {
+          finalUnits.add(PosProductUnit.fromJson(Map<String, dynamic>.from(u), defaultPrice: priceVal));
+        } else if (u is String && u.trim().isNotEmpty) {
+          finalUnits.add(PosProductUnit(name: u.trim().toUpperCase(), price: priceVal, conversion: 1));
+        }
+      }
+    }
+
+    // Check tiered price & unit fields: unit_1, unit_2, unit_3 / satuan_1, satuan_2, satuan_3
+    final u1 = json.getString('unit_1', fallback: json.getString('satuan_1'));
+    final sp1 = json.getDouble('selling_price_1');
+    final u2 = json.getString('unit_2', fallback: json.getString('satuan_2'));
+    final sp2 = json.getDouble('selling_price_2');
+    final u3 = json.getString('unit_3', fallback: json.getString('satuan_3'));
+    final sp3 = json.getDouble('selling_price_3');
+
+    if (finalUnits.isEmpty) {
+      if (u1.isNotEmpty && sp1 > 0) {
+        finalUnits.add(PosProductUnit(name: u1.toUpperCase(), price: sp1, conversion: 1, isDefault: true));
+      }
+      if (u2.isNotEmpty && sp2 > 0) {
+        finalUnits.add(PosProductUnit(name: u2.toUpperCase(), price: sp2, conversion: 1));
+      }
+      if (u3.isNotEmpty && sp3 > 0) {
+        finalUnits.add(PosProductUnit(name: u3.toUpperCase(), price: sp3, conversion: 1));
+      }
+    }
+
+    if (finalUnits.isEmpty) {
+      final defaultU = unitVal.isNotEmpty && unitVal != '-' ? unitVal.toUpperCase() : 'TAB';
+      finalUnits.add(PosProductUnit(name: defaultU, price: priceVal, conversion: 1, isDefault: true));
+    }
+
     return PosProduct(
       id: json.getString('id'),
       name: productName,
@@ -257,6 +344,7 @@ class PosProduct {
       unit: unitVal.isNotEmpty && unitVal != '-' ? unitVal : null,
       isPrescriptionOnly: isRx,
       batches: finalBatches,
+      units: finalUnits,
       modifierGroups: modGroups,
     );
   }

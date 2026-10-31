@@ -6,6 +6,7 @@ class PharmacyDrugCard extends StatelessWidget {
   final int quantity;
   final VoidCallback onAdd;
   final VoidCallback? onRemove;
+  final Function(String unit)? onSelectUnit;
 
   const PharmacyDrugCard({
     super.key,
@@ -13,6 +14,7 @@ class PharmacyDrugCard extends StatelessWidget {
     required this.quantity,
     required this.onAdd,
     this.onRemove,
+    this.onSelectUnit,
   });
 
   @override
@@ -21,6 +23,20 @@ class PharmacyDrugCard extends StatelessWidget {
     const borderColor = Color(0xFFE2E8F0);
     const textPrimary = Color(0xFF0F172A);
     const textMuted = Color(0xFF6D7A72);
+
+    final rawUnits = item['units'];
+    final List<Map<String, dynamic>> units = (rawUnits is List)
+        ? rawUnits.whereType<Map<String, dynamic>>().toList()
+        : [];
+    final selectedUnit = item['selectedUnit']?.toString() ?? item['unit']?.toString() ?? 'TAB';
+
+    num currentPrice = (item['price'] as num? ?? 0);
+    for (final u in units) {
+      if (u['name']?.toString().toUpperCase() == selectedUnit.toUpperCase()) {
+        currentPrice = (u['price'] as num?) ?? currentPrice;
+        break;
+      }
+    }
 
     final isRx = item['isDotRed'] == true ||
         item['isPrescriptionOnly'] == true ||
@@ -260,6 +276,48 @@ class PharmacyDrugCard extends StatelessWidget {
               ],
             ),
 
+            // Multi-Satuan Selector Pills (if multiple units available)
+            if (units.length > 1) ...[
+              const SizedBox(height: 6),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: units.map((u) {
+                    final uName = u['name']?.toString() ?? 'TAB';
+                    final uPrice = (u['price'] as num?) ?? 0;
+                    final isSel = selectedUnit.toUpperCase() == uName.toUpperCase();
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: InkWell(
+                        onTap: () => onSelectUnit?.call(uName),
+                        borderRadius: BorderRadius.circular(5),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: isSel ? primaryEmerald : const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(5),
+                            border: Border.all(
+                              color: isSel ? primaryEmerald : borderColor,
+                              width: isSel ? 1.2 : 1,
+                            ),
+                          ),
+                          child: Text(
+                            '$uName (${CurrencyFormatter.formatCompact(uPrice)})',
+                            style: TextStyle(
+                              fontFamily: 'JetBrains Mono',
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              color: isSel ? Colors.white : textPrimary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+
             // Bottom Section: Price & Action Stepper
             Padding(
               padding: const EdgeInsets.only(top: 8),
@@ -271,7 +329,7 @@ class PharmacyDrugCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          CurrencyFormatter.format(item['price'] ?? 0),
+                          CurrencyFormatter.format(currentPrice),
                           style: const TextStyle(
                             fontFamily: 'JetBrains Mono',
                             color: primaryEmerald,
@@ -280,7 +338,7 @@ class PharmacyDrugCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '/${item['unit'] ?? 'unit'}',
+                          '/$selectedUnit',
                           style: const TextStyle(color: textMuted, fontSize: 9.5),
                         ),
                       ],
@@ -377,6 +435,7 @@ class PharmacyDrugRow extends StatelessWidget {
   final int quantity;
   final VoidCallback onAdd;
   final VoidCallback? onRemove;
+  final Function(String unit)? onSelectUnit;
 
   const PharmacyDrugRow({
     super.key,
@@ -384,6 +443,7 @@ class PharmacyDrugRow extends StatelessWidget {
     required this.quantity,
     required this.onAdd,
     this.onRemove,
+    this.onSelectUnit,
   });
 
   @override
@@ -392,6 +452,20 @@ class PharmacyDrugRow extends StatelessWidget {
     const borderColor = Color(0xFFE2E8F0);
     const textPrimary = Color(0xFF0F172A);
     const textMuted = Color(0xFF6D7A72);
+
+    final rawUnits = item['units'];
+    final List<Map<String, dynamic>> units = (rawUnits is List)
+        ? rawUnits.whereType<Map<String, dynamic>>().toList()
+        : [];
+    final selectedUnit = item['selectedUnit']?.toString() ?? item['unit']?.toString() ?? 'TAB';
+
+    num currentPrice = (item['price'] as num? ?? 0);
+    for (final u in units) {
+      if (u['name']?.toString().toUpperCase() == selectedUnit.toUpperCase()) {
+        currentPrice = (u['price'] as num?) ?? currentPrice;
+        break;
+      }
+    }
 
     final isRx = item['isDotRed'] == true ||
         item['isPrescriptionOnly'] == true ||
@@ -506,18 +580,68 @@ class PharmacyDrugRow extends StatelessWidget {
                       ),
                     ],
                   ),
+                  if (units.length > 1) ...[
+                    const SizedBox(height: 4),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: units.map((u) {
+                          final uName = u['name']?.toString() ?? 'TAB';
+                          final uPrice = (u['price'] as num?) ?? 0;
+                          final isSel = selectedUnit.toUpperCase() == uName.toUpperCase();
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 4),
+                            child: InkWell(
+                              onTap: () => onSelectUnit?.call(uName),
+                              borderRadius: BorderRadius.circular(4),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                decoration: BoxDecoration(
+                                  color: isSel ? primaryEmerald : const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                    color: isSel ? primaryEmerald : borderColor,
+                                    width: isSel ? 1.2 : 1,
+                                  ),
+                                ),
+                                child: Text(
+                                  '$uName (${CurrencyFormatter.formatCompact(uPrice)})',
+                                  style: TextStyle(
+                                    fontFamily: 'JetBrains Mono',
+                                    fontSize: 8.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: isSel ? Colors.white : textPrimary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
             const SizedBox(width: 10),
-            Text(
-              CurrencyFormatter.format(item['price'] ?? 0),
-              style: const TextStyle(
-                fontFamily: 'JetBrains Mono',
-                color: primaryEmerald,
-                fontWeight: FontWeight.bold,
-                fontSize: 13.5,
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  CurrencyFormatter.format(currentPrice),
+                  style: const TextStyle(
+                    fontFamily: 'JetBrains Mono',
+                    color: primaryEmerald,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13.5,
+                  ),
+                ),
+                Text(
+                  '/$selectedUnit',
+                  style: const TextStyle(color: textMuted, fontSize: 9.5),
+                ),
+              ],
             ),
             const SizedBox(width: 12),
             if (quantity > 0)

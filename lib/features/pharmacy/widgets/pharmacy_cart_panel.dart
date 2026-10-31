@@ -32,6 +32,7 @@ class PharmacyCartPanel extends StatefulWidget {
   final VoidCallback onCheckout;
   final VoidCallback? onClose;
   final Function(PosCheckoutResult result, String paymentMethod)? onSettlementSuccess;
+  final Function(String oldKey, String newUnit)? onChangeCartItemUnit;
 
   const PharmacyCartPanel({
     super.key,
@@ -52,6 +53,7 @@ class PharmacyCartPanel extends StatefulWidget {
     required this.onCheckout,
     this.onClose,
     this.onSettlementSuccess,
+    this.onChangeCartItemUnit,
   });
 
   @override
@@ -67,7 +69,7 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
   static const textMuted = Color(0xFF6D7A72);
 
   PharmacyCartPanelMode _panelMode = PharmacyCartPanelMode.cartItems;
-  int _selectedPaymentMethod = 1; // 0: QRIS, 1: Tunai, 2: Debit/EDC, 3: Asuransi, 4: Split
+  int _selectedPaymentMethod = 0; // 0: Tunai, 1: QRIS, 2: Debit/EDC, 3: Asuransi, 4: Split
 
   final TextEditingController _cashController = TextEditingController();
   final TextEditingController _refCodeController = TextEditingController();
@@ -112,6 +114,7 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
     AudioHelper.tapFeedback();
     setState(() {
       _panelMode = PharmacyCartPanelMode.tenderPayment;
+      _selectedPaymentMethod = 0; // Tunai (Cash) default
       _tenderAmount = grandTotal;
       _cashController.text = CurrencyFormatter.formatRupiah(grandTotal);
 
@@ -146,19 +149,114 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
 
   List<PosCartItem> _buildCartItems() {
     return widget.cart.entries.map((e) {
+      final cartKey = e.key;
+      final baseId = cartKey.contains(':') ? cartKey.split(':').first : cartKey;
       final item = widget.drugItems.firstWhere(
-        (m) => m['id'] == e.key,
-        orElse: () => <String, dynamic>{'id': e.key, 'name': 'Obat', 'price': 0},
+        (m) => m['id'] == baseId,
+        orElse: () => <String, dynamic>{'id': baseId, 'name': 'Obat', 'price': 0},
       );
+      final currentUnit = cartKey.contains(':') ? cartKey.split(':').last : (item['selectedUnit'] ?? item['unit'] ?? 'TAB');
+      num price = (item['price'] as num?) ?? 0;
+      final rawUnits = item['units'];
+      if (rawUnits is List) {
+        for (final u in rawUnits) {
+          if (u is Map && u['name']?.toString().toUpperCase() == currentUnit.toUpperCase()) {
+            price = (u['price'] as num?) ?? price;
+            break;
+          }
+        }
+      }
       return PosCartItem(
-        productId: e.key,
-        name: item['name']?.toString() ?? 'Obat',
-        price: (item['price'] as num?) ?? 0,
+        productId: baseId,
+        name: '${item['name']?.toString() ?? 'Obat'} ($currentUnit)',
+        price: price,
         quantity: e.value,
         batchNumber: item['batch']?.toString(),
         expiryDate: (item['ed'] ?? item['exp'])?.toString(),
+        modifiers: {'Satuan': currentUnit},
       );
     }).toList();
+  }
+
+  void _showUnitPicker(BuildContext context, String cartKey, List<Map<String, dynamic>> units, String currentUnit) {
+    AudioHelper.tapFeedback();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Pilih Satuan Jual',
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: textPrimary,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 18),
+                      onPressed: () => Navigator.pop(ctx),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                ...units.map((u) {
+                  final uName = u['name']?.toString() ?? 'TAB';
+                  final uPrice = (u['price'] as num?) ?? 0;
+                  final isSelected = uName.toUpperCase() == currentUnit.toUpperCase();
+
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(
+                      isSelected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                      color: isSelected ? primaryEmerald : textMuted,
+                      size: 20,
+                    ),
+                    title: Text(
+                      uName,
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: isSelected ? primaryEmerald : textPrimary,
+                      ),
+                    ),
+                    trailing: Text(
+                      CurrencyFormatter.format(uPrice),
+                      style: TextStyle(
+                        fontFamily: 'JetBrains Mono',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: isSelected ? primaryEmerald : textPrimary,
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      if (uName.toUpperCase() != currentUnit.toUpperCase()) {
+                        widget.onChangeCartItemUnit?.call(cartKey, uName);
+                      }
+                    },
+                  );
+                }),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _openEtiketDialog() {
@@ -651,13 +749,30 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                   itemCount: widget.cart.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
-                    final id = widget.cart.keys.elementAt(index);
-                    final qty = widget.cart[id]!;
+                    final cartKey = widget.cart.keys.elementAt(index);
+                    final qty = widget.cart[cartKey]!;
+                    final baseId = cartKey.contains(':') ? cartKey.split(':').first : cartKey;
                     final item = widget.drugItems.firstWhere(
-                      (e) => e['id'] == id,
+                      (e) => e['id'] == baseId,
                       orElse: () => <String, dynamic>{},
                     );
-                    final price = (item['price'] as num? ?? 0);
+                    final currentUnit = cartKey.contains(':')
+                        ? cartKey.split(':').last
+                        : (item['selectedUnit'] ?? item['unit'] ?? 'TAB');
+
+                    final rawUnits = item['units'];
+                    final List<Map<String, dynamic>> units = (rawUnits is List)
+                        ? rawUnits.whereType<Map<String, dynamic>>().toList()
+                        : [];
+
+                    num price = (item['price'] as num? ?? 0);
+                    for (final u in units) {
+                      if (u['name']?.toString().toUpperCase() == currentUnit.toUpperCase()) {
+                        price = (u['price'] as num?) ?? price;
+                        break;
+                      }
+                    }
+
                     final itemTotal = price * qty;
                     final batch = item['batch']?.toString() ?? item['batchNumber']?.toString() ?? '-';
                     final isRx = item['isDotRed'] == true ||
@@ -741,19 +856,52 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                                       ],
                                     ),
                                     const SizedBox(height: 2),
-                                    Text(
-                                      'Batch: $batch • ${CurrencyFormatter.format(price)}/${item['unit'] ?? 'unit'}',
-                                      style: const TextStyle(
-                                        fontFamily: 'JetBrains Mono',
-                                        fontSize: 10,
-                                        color: textMuted,
-                                      ),
+                                    Wrap(
+                                      crossAxisAlignment: WrapCrossAlignment.center,
+                                      spacing: 6,
+                                      children: [
+                                        Text(
+                                          'Batch: $batch • ${CurrencyFormatter.format(price)}/$currentUnit',
+                                          style: const TextStyle(
+                                            fontFamily: 'JetBrains Mono',
+                                            fontSize: 10,
+                                            color: textMuted,
+                                          ),
+                                        ),
+                                        if (units.length > 1)
+                                          InkWell(
+                                            onTap: () => _showUnitPicker(context, cartKey, units, currentUnit),
+                                            borderRadius: BorderRadius.circular(4),
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                              decoration: BoxDecoration(
+                                                color: primaryEmerald.withValues(alpha: 0.1),
+                                                borderRadius: BorderRadius.circular(4),
+                                                border: Border.all(color: primaryEmerald.withValues(alpha: 0.3)),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: const [
+                                                  Text(
+                                                    'Ubah Satuan ▾',
+                                                    style: TextStyle(
+                                                      fontFamily: 'JetBrains Mono',
+                                                      fontSize: 9,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: primaryEmerald,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                   ],
                                 ),
                               ),
                               InkWell(
-                                onTap: () => widget.onRemoveFromCart(id),
+                                onTap: () => widget.onRemoveFromCart(cartKey),
                                 borderRadius: BorderRadius.circular(4),
                                 child: const Padding(
                                   padding: EdgeInsets.all(2),
@@ -779,7 +927,7 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                                     InkWell(
                                       onTap: () {
                                         AudioHelper.tapFeedback();
-                                        widget.onRemoveFromCart(id);
+                                        widget.onRemoveFromCart(cartKey);
                                       },
                                       child: const Padding(
                                         padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -798,7 +946,7 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                                     InkWell(
                                       onTap: () {
                                         AudioHelper.tapFeedback();
-                                        widget.onAddToCart(id);
+                                        widget.onAddToCart(cartKey);
                                       },
                                       child: const Padding(
                                         padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),

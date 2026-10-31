@@ -51,7 +51,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
   bool _isGridView = true;
 
   // Selected quick payment mode in mobile floating drawer
-  int _mobilePaymentMode = 0; // 0: QRIS, 1: Tunai, 2: Debit, 3: Asuransi
+  int _mobilePaymentMode = 0; // 0: Tunai, 1: QRIS, 2: Debit, 3: Asuransi
 
   final List<String> _baseCategories = [
     'Semua',
@@ -171,6 +171,8 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
             'ed': p.batches.isNotEmpty ? p.batches.first.expiryDate : '-',
             'stock': p.stock.toInt(),
             'unit': p.unit ?? 'TAB',
+            'selectedUnit': p.units.isNotEmpty ? p.units.first.name : (p.unit ?? 'TAB'),
+            'units': p.units.map((u) => u.toJson()).toList(),
             'imageUrl': p.imageUrl,
             'image': p.imageUrl,
             'description': p.description,
@@ -376,20 +378,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
       patientCategory: _patientCategory,
       allergies: _patientAllergies,
     );
-    final cartItems = _cart.entries.map((e) {
-      final item = _drugItems.firstWhere(
-        (m) => m['id'] == e.key,
-        orElse: () => <String, dynamic>{'id': e.key, 'name': 'Obat', 'price': 0},
-      );
-      return PosCartItem(
-        productId: e.key,
-        name: item['name']?.toString() ?? 'Obat',
-        price: (item['price'] as num?) ?? 0,
-        quantity: e.value,
-        batchNumber: item['batch']?.toString(),
-        expiryDate: (item['ed'] ?? item['exp'])?.toString(),
-      );
-    }).toList();
+    final cartItems = _buildPosCartItems();
 
     PharmacyPrescriptionReviewModal.show(
       context,
@@ -558,23 +547,106 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
     );
   }
 
-  void _addToCart(String id) {
+  Map<String, dynamic> _getItemFromCartKey(String key) {
+    final id = key.contains(':') ? key.split(':').first : key;
+    return _drugItems.firstWhere(
+      (m) => m['id'] == id,
+      orElse: () => <String, dynamic>{'id': id, 'name': 'Obat', 'price': 0},
+    );
+  }
+
+  String _getUnitFromCartKey(String key, Map<String, dynamic> item) {
+    if (key.contains(':')) {
+      return key.split(':').last;
+    }
+    return item['selectedUnit']?.toString() ?? item['unit']?.toString() ?? 'TAB';
+  }
+
+  num _getPriceForCartKey(String key, Map<String, dynamic> item) {
+    final unit = _getUnitFromCartKey(key, item);
+    final rawUnits = item['units'];
+    if (rawUnits is List) {
+      for (final u in rawUnits) {
+        if (u is Map && u['name']?.toString().toUpperCase() == unit.toUpperCase()) {
+          return (u['price'] as num?) ?? (item['price'] as num? ?? 0);
+        }
+      }
+    }
+    return item['price'] as num? ?? 0;
+  }
+
+  int _getCartQuantityForDrug(String id) {
+    int total = 0;
+    _cart.forEach((k, q) {
+      final baseId = k.contains(':') ? k.split(':').first : k;
+      if (baseId == id) {
+        total += q;
+      }
+    });
+    return total;
+  }
+
+  List<PosCartItem> _buildPosCartItems() {
+    return _cart.entries.map((e) {
+      final item = _getItemFromCartKey(e.key);
+      final unit = _getUnitFromCartKey(e.key, item);
+      final price = _getPriceForCartKey(e.key, item);
+      final baseId = e.key.contains(':') ? e.key.split(':').first : e.key;
+
+      return PosCartItem(
+        productId: baseId,
+        name: '${item['name']?.toString() ?? 'Obat'} ($unit)',
+        price: price,
+        quantity: e.value,
+        batchNumber: item['batch']?.toString(),
+        expiryDate: (item['ed'] ?? item['exp'])?.toString(),
+        modifiers: {'Satuan': unit},
+      );
+    }).toList();
+  }
+
+  void _onChangeCartItemUnit(String oldKey, String newUnit) {
     AudioHelper.tapFeedback();
     setState(() {
-      _cart[id] = (_cart[id] ?? 0) + 1;
+      final qty = _cart.remove(oldKey) ?? 1;
+      final baseId = oldKey.contains(':') ? oldKey.split(':').first : oldKey;
+      final newKey = '$baseId:$newUnit';
+      _cart[newKey] = (_cart[newKey] ?? 0) + qty;
       _calculateTotal();
       _persistCart();
     });
   }
 
-  void _removeFromCart(String id) {
+  void _addToCart(String id, [String? unit]) {
     AudioHelper.tapFeedback();
     setState(() {
-      final current = _cart[id] ?? 0;
+      final baseId = id.contains(':') ? id.split(':').first : id;
+      final item = _drugItems.firstWhere(
+        (e) => e['id'] == baseId,
+        orElse: () => <String, dynamic>{},
+      );
+      final targetUnit = unit ??
+          (id.contains(':')
+              ? id.split(':').last
+              : (item['selectedUnit'] ?? item['unit'] ?? 'TAB'));
+
+      item['selectedUnit'] = targetUnit;
+      final fullKey = '$baseId:$targetUnit';
+
+      _cart[fullKey] = (_cart[fullKey] ?? 0) + 1;
+      _calculateTotal();
+      _persistCart();
+    });
+  }
+
+  void _removeFromCart(String key) {
+    AudioHelper.tapFeedback();
+    setState(() {
+      final current = _cart[key] ?? 0;
       if (current <= 1) {
-        _cart.remove(id);
+        _cart.remove(key);
       } else {
-        _cart[id] = current - 1;
+        _cart[key] = current - 1;
       }
       _calculateTotal();
       _persistCart();
@@ -591,12 +663,9 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
 
   void _calculateTotal() {
     num total = 0;
-    _cart.forEach((id, qty) {
-      final item = _drugItems.firstWhere(
-        (e) => e['id'] == id,
-        orElse: () => <String, dynamic>{},
-      );
-      final price = item['price'] as num? ?? 0;
+    _cart.forEach((key, qty) {
+      final item = _getItemFromCartKey(key);
+      final price = _getPriceForCartKey(key, item);
       total += price * qty;
     });
     setState(() {
@@ -617,20 +686,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
         : 0;
     final grandTotal = _totalPrice + tuslah + taxAmount;
 
-    final cartItems = _cart.entries.map((e) {
-      final item = _drugItems.firstWhere(
-        (m) => m['id'] == e.key,
-        orElse: () => <String, dynamic>{'id': e.key, 'name': 'Obat', 'price': 0},
-      );
-      return PosCartItem(
-        productId: e.key,
-        name: item['name']?.toString() ?? 'Obat',
-        price: (item['price'] as num?) ?? 0,
-        quantity: e.value,
-        batchNumber: item['batch']?.toString(),
-        expiryDate: (item['ed'] ?? item['exp'])?.toString(),
-      );
-    }).toList();
+    final cartItems = _buildPosCartItems();
 
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -705,6 +761,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
             },
             onAddToCart: _addToCart,
             onRemoveFromCart: _removeFromCart,
+            onChangeCartItemUnit: _onChangeCartItemUnit,
             onCheckout: () {
               Navigator.pop(ctx);
               _showCheckoutDialog();
@@ -823,9 +880,9 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
           // Payment mode pills
           Row(
             children: [
-              _buildPaymentPill(0, 'QRIS'),
+              _buildPaymentPill(0, 'Tunai'),
               const SizedBox(width: 6),
-              _buildPaymentPill(1, 'Tunai'),
+              _buildPaymentPill(1, 'QRIS'),
               const SizedBox(width: 6),
               _buildPaymentPill(2, 'Debit'),
               const SizedBox(width: 6),
@@ -1693,12 +1750,13 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                           itemCount: filteredItems.length,
                           itemBuilder: (context, index) {
                             final item = filteredItems[index];
-                            final qty = _cart[item['id']] ?? 0;
+                            final qty = _getCartQuantityForDrug(item['id']);
                             return PharmacyDrugCard(
                               item: item,
                               quantity: qty,
                               onAdd: () => _addToCart(item['id']),
                               onRemove: () => _removeFromCart(item['id']),
+                              onSelectUnit: (unit) => _addToCart(item['id'], unit),
                             );
                           },
                         )
@@ -1708,12 +1766,13 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                           separatorBuilder: (_, _) => const SizedBox(height: 8),
                           itemBuilder: (context, index) {
                             final item = filteredItems[index];
-                            final qty = _cart[item['id']] ?? 0;
+                            final qty = _getCartQuantityForDrug(item['id']);
                             return PharmacyDrugRow(
                               item: item,
                               quantity: qty,
                               onAdd: () => _addToCart(item['id']),
                               onRemove: () => _removeFromCart(item['id']),
+                              onSelectUnit: (unit) => _addToCart(item['id'], unit),
                             );
                           },
                         ),
@@ -1755,6 +1814,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                       onRemoveFromCart: _removeFromCart,
                       onCheckout: _showCheckoutDialog,
                       onSettlementSuccess: _onSettlementCompleted,
+                      onChangeCartItemUnit: _onChangeCartItemUnit,
                     ),
                   ),
                 ],
