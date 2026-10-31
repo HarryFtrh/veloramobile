@@ -38,8 +38,9 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
   @override
   void initState() {
     super.initState();
-    _doctorName = SessionStorage.instance.getUserName() ?? 'dr. Spesialis Poli';
+    _doctorName = SessionStorage.instance.getUserName() ?? 'Dokter Pemeriksa';
     _sip = SessionStorage.instance.getUserRole() ?? 'SIP: Aktif';
+    _department = SessionStorage.instance.getLocationName() ?? 'Poli Rawat Jalan';
     final active = PharmacyService.instance.activePatient.value;
     if (active != null) {
       _patientName = active.patient;
@@ -47,6 +48,7 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
       _medicalRecordNumber = active.medicalRecordNumber;
       _allergies = active.allergies.isNotEmpty ? active.allergies : 'Tidak ada riwayat alergi obat';
       if (active.doctor.isNotEmpty) _doctorName = active.doctor;
+      if (active.department.isNotEmpty) _department = active.department;
     }
     _fetchLivePatients();
   }

@@ -184,10 +184,10 @@ class PharmacyService {
               final m = e is Map<String, dynamic> ? e : Map<String, dynamic>.from(e as Map);
               return ClinicPatientQueueItem(
                 queueNumber: m['queue_number']?.toString() ?? '#A-${(m['id'] ?? 1).toString().padLeft(3, '0')}',
-                patientName: m['patient_name']?.toString() ?? m['name']?.toString() ?? 'Pasien Umum',
-                medicalRecordNumber: m['medical_record_number']?.toString() ?? m['rm_number']?.toString() ?? 'RM-${(m['id'] ?? 1000).toString().padLeft(5, '0')}',
-                doctorName: m['doctor_name']?.toString() ?? 'dr. Spesialis Poli',
-                department: m['department']?.toString() ?? m['poli']?.toString() ?? 'Poli Umum',
+                patientName: m['patient_name']?.toString() ?? m['name']?.toString() ?? 'Pasien',
+                medicalRecordNumber: m['medical_record_number']?.toString() ?? m['rm_number']?.toString() ?? '-',
+                doctorName: m['doctor_name']?.toString() ?? '-',
+                department: m['department']?.toString() ?? m['poli']?.toString() ?? 'Umum',
                 insurance: m['insurance']?.toString() ?? (m['is_bpjs'] == true ? 'BPJS Kesehatan' : 'Umum / Mandiri'),
                 allergy: m['allergy']?.toString() ?? m['allergies']?.toString(),
                 status: m['status']?.toString() ?? 'ready',
@@ -414,8 +414,8 @@ class PharmacyService {
               return PharmacyPatientHistory(
                 visitDate: m['visit_date']?.toString() ?? m['created_at']?.toString() ?? 'Hari ini',
                 invoiceNumber: m['invoice_number']?.toString() ?? m['order_number']?.toString() ?? '-',
-                doctorName: m['doctor_name']?.toString() ?? 'dr. Spesialis Poli',
-                diagnosis: m['diagnosis']?.toString() ?? 'Pemeriksaan Poli',
+                doctorName: m['doctor_name']?.toString() ?? '-',
+                diagnosis: m['diagnosis']?.toString() ?? '-',
                 medicines: m['medicines'] is List
                     ? List<String>.from(m['medicines'])
                     : (m['items'] is List

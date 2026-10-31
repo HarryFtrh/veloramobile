@@ -30,10 +30,10 @@ class _PharmacyExecutiveAnalyticsScreenState extends State<PharmacyExecutiveAnal
   }
 
   List<String> get _branchOptions {
-    final curBranch = SessionStorage.instance.getLocationName();
+    final curBranch = SessionStorage.instance.getLocationName() ?? SessionStorage.instance.getTenantName();
     return [
       'Semua Cabang',
-      if (curBranch != null && curBranch.isNotEmpty) curBranch else 'Cabang Utama',
+      if (curBranch != null && curBranch.isNotEmpty) curBranch,
     ];
   }
 

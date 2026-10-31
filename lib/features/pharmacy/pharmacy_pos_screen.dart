@@ -617,7 +617,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
       tax: 0,
       grandTotal: grandTotal,
       storeName: SessionStorage.instance.getTenantName() ?? SessionStorage.instance.getLocationName() ?? 'Velora Pharmacy',
-      storeAddress: SessionStorage.instance.getStoreAddress() ?? (SessionStorage.instance.getLocationName() ?? 'Apotek & Klinik Utama'),
+      storeAddress: SessionStorage.instance.getStoreAddress() ?? (SessionStorage.instance.getLocationName() ?? '-'),
       storePhone: SessionStorage.instance.getStorePhone() ?? '-',
       cashierName: SessionStorage.instance.getUserName() ?? 'Apoteker',
       tableOrCustomer: '$_selectedPatient ($_queueNumber)',
@@ -901,8 +901,20 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
     const emeraldPrimary = Color(0xFF006948);
     const borderColor = Color(0xFFE2E8F0);
     final tenant = SessionStorage.instance.getTenantName() ?? 'Velora Pharmacy';
-    final location = SessionStorage.instance.getLocationName() ?? 'Apotek & Klinik Utama Medika';
-    final cashier = SessionStorage.instance.getUserName() ?? 'Apoteker / Kasir';
+    final location = SessionStorage.instance.getLocationName() ?? tenant;
+    final shift = ShiftService.instance.currentStatus;
+    final isShiftOpen = shift?.isOpen == true;
+    final cashier = (shift?.cashierName?.isNotEmpty == true ? shift?.cashierName : null) ??
+        SessionStorage.instance.getUserName() ??
+        'Kasir';
+    final shiftText = isShiftOpen
+        ? (shift?.openedAt != null
+            ? 'Shift Aktif • ${shift!.openedAt!.hour.toString().padLeft(2, '0')}:${shift.openedAt!.minute.toString().padLeft(2, '0')}'
+            : (shift?.shiftId != null ? 'Shift #${shift!.shiftId}' : 'Shift Aktif'))
+        : 'Shift Tutup';
+    final shiftBadge = isShiftOpen
+        ? (shift?.shiftId != null ? 'Shift #${shift!.shiftId}' : 'Shift Aktif')
+        : 'Shift Tutup';
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 20, vertical: 10),
@@ -983,7 +995,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                         ],
                       ),
                       Text(
-                        '$location • Kasir #WS-02',
+                        location,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontSize: 10.5, color: Color(0xFF6D7A72)),
@@ -1002,14 +1014,16 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: borderColor),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.store_rounded, size: 15, color: Color(0xFF006577)),
-                        SizedBox(width: 6),
+                        const Icon(Icons.store_rounded, size: 15, color: Color(0xFF006577)),
+                        const SizedBox(width: 6),
                         Text(
-                          'Cabang Utama',
-                          style: TextStyle(
+                          location,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                             color: emeraldPrimary,
@@ -1041,9 +1055,9 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                         color: Color(0xFF131B2E),
                       ),
                     ),
-                    const Text(
-                      'Shift Pagi • 07:00 - 15:00',
-                      style: TextStyle(fontSize: 9.5, color: Color(0xFF6D7A72)),
+                    Text(
+                      shiftText,
+                      style: const TextStyle(fontSize: 9.5, color: Color(0xFF6D7A72)),
                     ),
                   ],
                 ),
@@ -1053,16 +1067,18 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF86F2E4).withValues(alpha: 0.4),
+                    color: isShiftOpen
+                        ? const Color(0xFF86F2E4).withValues(alpha: 0.4)
+                        : Colors.orange.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Text(
-                    'Shift Pagi',
+                  child: Text(
+                    shiftBadge,
                     style: TextStyle(
                       fontFamily: 'JetBrains Mono',
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF006A61),
+                      color: isShiftOpen ? const Color(0xFF006A61) : Colors.deepOrange.shade800,
                     ),
                   ),
                 ),

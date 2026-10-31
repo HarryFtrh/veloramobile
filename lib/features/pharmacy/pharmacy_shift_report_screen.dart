@@ -218,8 +218,11 @@ class _PharmacyShiftReportScreenState extends State<PharmacyShiftReportScreen> {
     final expectedTotalDrawer = _openingCash + _cashRevenue;
     final discrepancy = (_countedCash ?? expectedTotalDrawer) - expectedTotalDrawer;
 
-    final cashierName = SessionStorage.instance.getUserName() ?? 'Apoteker Penanggung Jawab';
-    final branchName = SessionStorage.instance.getLocationName() ?? 'Apotek & Klinik Cabang Utama';
+    final currentShift = ShiftService.instance.currentStatus;
+    final cashierName = (currentShift?.cashierName?.isNotEmpty == true ? currentShift?.cashierName : null) ??
+        SessionStorage.instance.getUserName() ??
+        'Kasir';
+    final branchName = SessionStorage.instance.getLocationName() ?? SessionStorage.instance.getTenantName() ?? 'Apotek';
 
     return Scaffold(
       backgroundColor: const Color(0xFFFAF8FF),
@@ -312,7 +315,7 @@ class _PharmacyShiftReportScreenState extends State<PharmacyShiftReportScreen> {
                                       ],
                                     ),
                                     Text(
-                                      'Shift Pagi → Siang',
+                                      currentShift?.shiftId != null ? 'Shift #${currentShift!.shiftId}' : 'Serah Terima Shift',
                                       style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11, fontWeight: FontWeight.bold, color: emeraldPrimary),
                                     ),
                                   ],

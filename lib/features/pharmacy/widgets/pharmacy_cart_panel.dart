@@ -107,7 +107,7 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                               ),
                             ),
                             Text(
-                              'Faktur: INV/${DateTime.now().year}/#${(DateTime.now().millisecondsSinceEpoch % 10000).toString().padLeft(4, '0')}',
+                              widget.cart.isEmpty ? 'Keranjang kosong' : '${widget.cart.length} item dipilih',
                               style: const TextStyle(
                                 fontFamily: 'JetBrains Mono',
                                 color: textMuted,
