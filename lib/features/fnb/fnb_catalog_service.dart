@@ -105,7 +105,7 @@ class FnbCatalogService {
       if (locId != null && locId.isNotEmpty) 'location_id': locId,
       if (search != null && search.isNotEmpty) 'search': search,
       if (categoryId != null && categoryId.isNotEmpty) 'category_id': categoryId,
-      if (sinceVersion != null) 'since_version': sinceVersion,
+      'since_version': ?sinceVersion,
     };
 
     const candidateEndpoints = [

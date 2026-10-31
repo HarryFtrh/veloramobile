@@ -62,12 +62,14 @@ class PosProductUnit {
   final String name;
   final num price;
   final num conversion;
+  final String? barcode;
   final bool isDefault;
 
   PosProductUnit({
     required this.name,
     required this.price,
     this.conversion = 1,
+    this.barcode,
     this.isDefault = false,
   });
 
@@ -219,7 +221,7 @@ class ProductCatalogService {
     }
     try {
       if (AppConfig.instance.isPharmacy) return 'pharmacy';
-      if (AppConfig.instance.isFnB) return 'fnb';
+      if (AppConfig.instance.isFnb) return 'fnb';
     } catch (_) {}
     return 'retail';
   }
