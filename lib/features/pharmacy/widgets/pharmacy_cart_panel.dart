@@ -59,11 +59,12 @@ class PharmacyCartPanel extends StatefulWidget {
 }
 
 class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
-  static const primaryEmerald = Color(0xFF006948);
-  static const secondaryTeal = Color(0xFF006A61);
+  static const primaryEmerald = Color(0xFF059669); // Clinical Precision Primary
+  static const secondaryTeal = Color(0xFF0D9488); // Clinical Precision Secondary
+  static const tertiaryCyan = Color(0xFF06B6D4); // Clinical Precision Tertiary
   static const borderColor = Color(0xFFE2E8F0);
   static const canvasColor = Color(0xFFFAF8FF);
-  static const textPrimary = Color(0xFF131B2E);
+  static const textPrimary = Color(0xFF0F172A); // Clinical Precision Neutral
   static const textMuted = Color(0xFF6D7A72);
 
   PharmacyCartPanelMode _panelMode = PharmacyCartPanelMode.cartItems;

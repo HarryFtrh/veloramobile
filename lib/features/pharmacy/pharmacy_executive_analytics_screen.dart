@@ -71,8 +71,8 @@ class _PharmacyExecutiveAnalyticsScreenState extends State<PharmacyExecutiveAnal
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF006948);
-    const textPrimary = Color(0xFF131B2E);
+    const emeraldPrimary = Color(0xFF059669);
+    const textPrimary = Color(0xFF0F172A);
     const textMuted = Color(0xFF6D7A72);
     const borderColor = Color(0xFFE2E8F0);
 
@@ -88,7 +88,7 @@ class _PharmacyExecutiveAnalyticsScreenState extends State<PharmacyExecutiveAnal
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF006948)),
+            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF059669)),
             tooltip: 'Segarkan Data Live API',
             onPressed: _fetchLiveAnalytics,
           ),
@@ -104,7 +104,7 @@ class _PharmacyExecutiveAnalyticsScreenState extends State<PharmacyExecutiveAnal
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    CircularProgressIndicator(color: Color(0xFF006948)),
+                    CircularProgressIndicator(color: Color(0xFF059669)),
                     SizedBox(height: 12),
                     Text(
                       'Menarik Data Analitik dari /v1/pharmacy/dashboard/analytics...',
@@ -403,7 +403,7 @@ class _PharmacyExecutiveAnalyticsScreenState extends State<PharmacyExecutiveAnal
               fontFamily: 'JetBrains Mono',
               fontWeight: FontWeight.w800,
               fontSize: 14.5,
-              color: Color(0xFF131B2E),
+              color: Color(0xFF0F172A),
             ),
           ),
           const SizedBox(height: 4),

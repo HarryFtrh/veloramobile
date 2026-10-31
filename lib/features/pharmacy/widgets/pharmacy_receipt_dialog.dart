@@ -77,9 +77,9 @@ class PharmacyReceiptDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF006948);
+    const emeraldPrimary = Color(0xFF059669);
     const borderColor = Color(0xFFE2E8F0);
-    const textPrimary = Color(0xFF131B2E);
+    const textPrimary = Color(0xFF0F172A);
     const textMuted = Color(0xFF6D7A72);
     final now = DateTime.now();
     final monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
@@ -124,7 +124,7 @@ class PharmacyReceiptDialog extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: const Color(0xFF86F2E4),
                       shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFF006A61).withValues(alpha: 0.3), width: 3),
+                      border: Border.all(color: const Color(0xFF0D9488).withValues(alpha: 0.3), width: 3),
                     ),
                     child: const Icon(Icons.check_circle_rounded, color: Color(0xFF006F66), size: 32),
                   ),
@@ -360,7 +360,7 @@ class PharmacyReceiptDialog extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text('Metode Pembayaran', style: TextStyle(fontSize: 11, color: textMuted)),
-                            Text(paymentMethod.toUpperCase(), style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF006A61))),
+                            Text(paymentMethod.toUpperCase(), style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF0D9488))),
                           ],
                         ),
                         const Divider(height: 14, color: borderColor),
@@ -430,8 +430,8 @@ class PharmacyReceiptDialog extends StatelessWidget {
                     icon: const Icon(Icons.print_outlined, size: 16),
                     label: const Text('Cetak Struk', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF006A61),
-                      side: const BorderSide(color: Color(0xFF006A61)),
+                      foregroundColor: const Color(0xFF0D9488),
+                      side: const BorderSide(color: Color(0xFF0D9488)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),

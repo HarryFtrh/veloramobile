@@ -523,7 +523,7 @@ class PharmacyService {
                   'name': m['category_name']?.toString() ?? m['name']?.toString() ?? 'Lainnya',
                   'value': (m['total'] as num?) ?? 0,
                   'pct': (m['percentage'] as num?)?.toInt() ?? 0,
-                  'color': const Color(0xFF006948),
+                  'color': const Color(0xFF059669),
                 };
               }).toList();
             }

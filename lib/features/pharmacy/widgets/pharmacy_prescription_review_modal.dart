@@ -65,9 +65,9 @@ class _PharmacyPrescriptionReviewModalState extends State<PharmacyPrescriptionRe
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF006948);
+    const emeraldPrimary = Color(0xFF059669);
     const borderColor = Color(0xFFE2E8F0);
-    const textPrimary = Color(0xFF131B2E);
+    const textPrimary = Color(0xFF0F172A);
     const textMuted = Color(0xFF6D7A72);
 
     final allPassed = _screenings.values.every((v) => v);
@@ -98,10 +98,10 @@ class _PharmacyPrescriptionReviewModalState extends State<PharmacyPrescriptionRe
                           width: 36,
                           height: 36,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF006A61).withValues(alpha: 0.1),
+                            color: const Color(0xFF0D9488).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(Icons.assignment_outlined, color: Color(0xFF006A61), size: 20),
+                          child: const Icon(Icons.assignment_outlined, color: Color(0xFF0D9488), size: 20),
                         ),
                         const SizedBox(width: 10),
                         const Column(
@@ -246,7 +246,7 @@ class _PharmacyPrescriptionReviewModalState extends State<PharmacyPrescriptionRe
                                   style: const TextStyle(
                                     fontFamily: 'Plus Jakarta Sans',
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF006948),
+                                    color: Color(0xFF059669),
                                   ),
                                 ),
                               ),
@@ -309,11 +309,11 @@ class _PharmacyPrescriptionReviewModalState extends State<PharmacyPrescriptionRe
                           decoration: BoxDecoration(
                             color: allergies.isNotEmpty
                                 ? const Color(0xFFFFDAD6).withValues(alpha: 0.35)
-                                : const Color(0xFF006948).withValues(alpha: 0.08),
+                                : const Color(0xFF059669).withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(8),
                             border: Border(
                               left: BorderSide(
-                                color: allergies.isNotEmpty ? const Color(0xFFBA1A1A) : const Color(0xFF006948),
+                                color: allergies.isNotEmpty ? const Color(0xFFBA1A1A) : const Color(0xFF059669),
                                 width: 3,
                               ),
                             ),
@@ -323,7 +323,7 @@ class _PharmacyPrescriptionReviewModalState extends State<PharmacyPrescriptionRe
                               Icon(
                                 allergies.isNotEmpty ? Icons.warning_amber_rounded : Icons.check_circle_outline_rounded,
                                 size: 18,
-                                color: allergies.isNotEmpty ? const Color(0xFFBA1A1A) : const Color(0xFF006948),
+                                color: allergies.isNotEmpty ? const Color(0xFFBA1A1A) : const Color(0xFF059669),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
@@ -337,7 +337,7 @@ class _PharmacyPrescriptionReviewModalState extends State<PharmacyPrescriptionRe
                                       style: TextStyle(
                                         fontSize: 11.5,
                                         fontWeight: FontWeight.bold,
-                                        color: allergies.isNotEmpty ? const Color(0xFFBA1A1A) : const Color(0xFF006948),
+                                        color: allergies.isNotEmpty ? const Color(0xFFBA1A1A) : const Color(0xFF059669),
                                       ),
                                     ),
                                     Text(
@@ -515,8 +515,8 @@ class _PharmacyPrescriptionReviewModalState extends State<PharmacyPrescriptionRe
                     icon: const Icon(Icons.print_outlined, size: 18),
                     label: const Text('Cetak Etiket', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF006A61),
-                      side: const BorderSide(color: Color(0xFF006A61)),
+                      foregroundColor: const Color(0xFF0D9488),
+                      side: const BorderSide(color: Color(0xFF0D9488)),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
@@ -535,7 +535,7 @@ class _PharmacyPrescriptionReviewModalState extends State<PharmacyPrescriptionRe
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Telaah resep tervalidasi! R/ obat siap diracik & diserahkan.'),
-                                backgroundColor: Color(0xFF006948),
+                                backgroundColor: Color(0xFF059669),
                               ),
                             );
                           }
@@ -567,9 +567,9 @@ class _PharmacyPrescriptionReviewModalState extends State<PharmacyPrescriptionRe
     required String batch,
     required bool isRacikan,
   }) {
-    const emeraldPrimary = Color(0xFF006948);
+    const emeraldPrimary = Color(0xFF059669);
     const borderColor = Color(0xFFE2E8F0);
-    const textPrimary = Color(0xFF131B2E);
+    const textPrimary = Color(0xFF0F172A);
     const textMuted = Color(0xFF6D7A72);
 
     return Container(
@@ -590,7 +590,7 @@ class _PharmacyPrescriptionReviewModalState extends State<PharmacyPrescriptionRe
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: isRacikan ? emeraldPrimary : const Color(0xFF131B2E),
+                      color: isRacikan ? emeraldPrimary : const Color(0xFF0F172A),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -685,7 +685,7 @@ class PharmacyPrescriptionReviewPage extends StatelessWidget {
           style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 16),
         ),
         backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF131B2E),
+        foregroundColor: const Color(0xFF0F172A),
         elevation: 0,
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),

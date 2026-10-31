@@ -67,7 +67,7 @@ class _PharmacyStockAlertModalState extends State<PharmacyStockAlertModal> {
 
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFF006948);
+    const primaryColor = Color(0xFF059669);
     const canvasColor = Color(0xFFFAF8FF);
 
     // Olah data stok & batch dari katalog aktif
@@ -169,7 +169,7 @@ class _PharmacyStockAlertModalState extends State<PharmacyStockAlertModal> {
                             fontFamily: 'Plus Jakarta Sans',
                             fontWeight: FontWeight.w800,
                             fontSize: 17,
-                            color: Color(0xFF131B2E),
+                            color: Color(0xFF0F172A),
                           ),
                         ),
                         Text(
@@ -373,7 +373,7 @@ class _PharmacyStockAlertModalState extends State<PharmacyStockAlertModal> {
                       fontFamily: 'Plus Jakarta Sans',
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
-                      color: Color(0xFF131B2E),
+                      color: Color(0xFF0F172A),
                     ),
                   ),
                 ],
@@ -421,7 +421,7 @@ class _PharmacyStockAlertModalState extends State<PharmacyStockAlertModal> {
                         fontFamily: 'JetBrains Mono',
                         fontSize: 10.5,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF131B2E),
+                        color: Color(0xFF0F172A),
                       ),
                     ),
                   ),

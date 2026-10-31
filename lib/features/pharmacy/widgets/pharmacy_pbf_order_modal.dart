@@ -54,9 +54,9 @@ class _PharmacyPbfOrderModalState extends State<PharmacyPbfOrderModal> {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF006948);
+    const emeraldPrimary = Color(0xFF059669);
     const borderColor = Color(0xFFE2E8F0);
-    const textPrimary = Color(0xFF131B2E);
+    const textPrimary = Color(0xFF0F172A);
     const textMuted = Color(0xFF6D7A72);
 
     final totalPoAmount = _orders.fold<num>(0, (s, po) => s + po.totalAmount);
@@ -351,7 +351,7 @@ class PharmacyPbfOrderPage extends StatelessWidget {
           style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 16),
         ),
         backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF131B2E),
+        foregroundColor: const Color(0xFF0F172A),
         elevation: 0,
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),

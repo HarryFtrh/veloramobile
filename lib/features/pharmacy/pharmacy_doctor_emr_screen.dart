@@ -135,7 +135,7 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
               ),
             ],
           ),
-          backgroundColor: const Color(0xFF006948),
+          backgroundColor: const Color(0xFF059669),
           duration: const Duration(seconds: 4),
         ),
       );
@@ -144,8 +144,8 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF006948);
-    const textPrimary = Color(0xFF131B2E);
+    const emeraldPrimary = Color(0xFF059669);
+    const textPrimary = Color(0xFF0F172A);
     const textMuted = Color(0xFF6D7A72);
     const borderColor = Color(0xFFE2E8F0);
 
@@ -391,7 +391,7 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
                         hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: borderColor)),
                         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: borderColor)),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF006948), width: 1.5)),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF059669), width: 1.5)),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       ),
                       style: const TextStyle(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.bold, fontSize: 12.5, color: textPrimary),
@@ -570,7 +570,7 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF006948),
+              backgroundColor: const Color(0xFF059669),
               foregroundColor: Colors.white,
             ),
             onPressed: () {

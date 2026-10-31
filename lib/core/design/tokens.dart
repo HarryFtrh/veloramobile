@@ -56,7 +56,7 @@ abstract final class ClinicalPalette {
   static const Color surface = Color(0xFFFFFFFF);
   static const Color surfaceMuted = Color(0xFFF2F3FF);
   static const Color line = Color(0xFFE2E8F0);
-  static const Color textPrimary = Color(0xFF131B2E);
+  static const Color textPrimary = Color(0xFF0F172A);
   static const Color textSecondary = Color(0xFF3D4A42);
   static const Color textTertiary = Color(0xFF6D7A72);
   static const Color danger = Color(0xFFBA1A1A);
@@ -142,7 +142,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     surface: Color(0xFFFFFFFF),
     surfaceMuted: Color(0xFFF2F3FF),
     line: Color(0xFFE2E8F0),
-    textPrimary: Color(0xFF131B2E),
+    textPrimary: Color(0xFF0F172A),
     textSecondary: Color(0xFF3D4A42),
     textTertiary: Color(0xFF6D7A72),
     success: Color(0xFF059669),

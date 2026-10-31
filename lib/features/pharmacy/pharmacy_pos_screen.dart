@@ -217,7 +217,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Berhasil sinkron: ${res['synced']} transaksi. Tersisa: ${res['remaining']}'),
-          backgroundColor: res['remaining'] == 0 ? const Color(0xFF006948) : const Color(0xFFF59E0B),
+          backgroundColor: res['remaining'] == 0 ? const Color(0xFF059669) : const Color(0xFFF59E0B),
         ),
       );
     }
@@ -255,7 +255,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                   fontFamily: 'Plus Jakarta Sans',
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: Color(0xFF131B2E),
+                  color: Color(0xFF0F172A),
                 ),
               ),
               const SizedBox(height: 4),
@@ -274,10 +274,10 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF006948).withValues(alpha: 0.1),
+                    color: const Color(0xFF059669).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.people_outline_rounded, color: Color(0xFF006948)),
+                  child: const Icon(Icons.people_outline_rounded, color: Color(0xFF059669)),
                 ),
                 title: const Text(
                   'Antrean Klinik & Billing Pasien',
@@ -304,10 +304,10 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF006A61).withValues(alpha: 0.1),
+                    color: const Color(0xFF0D9488).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.badge_outlined, color: Color(0xFF006A61)),
+                  child: const Icon(Icons.badge_outlined, color: Color(0xFF0D9488)),
                 ),
                 title: const Text(
                   'Edit Identitas Pasien Manual',
@@ -347,7 +347,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Pasien antrean ${data.queueNumber} (${data.patient}) berhasil dimuat ke kasir.'),
-            backgroundColor: const Color(0xFF006948),
+            backgroundColor: const Color(0xFF059669),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -465,7 +465,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Row(
             children: [
-              Icon(Icons.qr_code_scanner_rounded, color: Color(0xFF006948)),
+              Icon(Icons.qr_code_scanner_rounded, color: Color(0xFF059669)),
               SizedBox(width: 10),
               Text(
                 'Pindai Barcode / SKU Obat',
@@ -491,7 +491,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                     hintText: 'Contoh: 8991234567...',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     errorText: localError,
-                    prefixIcon: const Icon(Icons.qr_code_rounded, color: Color(0xFF006948)),
+                    prefixIcon: const Icon(Icons.qr_code_rounded, color: Color(0xFF059669)),
                   ),
                   onSubmitted: (val) {
                     final code = val.trim().toLowerCase();
@@ -507,7 +507,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('✓ ${match['name']} ditambahkan ke keranjang resep.'),
-                          backgroundColor: const Color(0xFF006948),
+                          backgroundColor: const Color(0xFF059669),
                         ),
                       );
                     } else {
@@ -538,7 +538,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('✓ ${match['name']} ditambahkan ke keranjang resep.'),
-                      backgroundColor: const Color(0xFF006948),
+                      backgroundColor: const Color(0xFF059669),
                     ),
                   );
                 } else {
@@ -546,7 +546,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF006948),
+                backgroundColor: const Color(0xFF059669),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
@@ -724,7 +724,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
   Widget _buildMobileFloatingCartDrawer() {
     final totalItems = _cart.values.fold<int>(0, (sum, q) => sum + q);
     final grandTotal = _totalPrice + (_totalPrice > 0 ? _tuslahFee : 0);
-    const primaryEmerald = Color(0xFF006948);
+    const primaryEmerald = Color(0xFF059669);
     const darkSurface = Color(0xFF283044);
 
     return Container(
@@ -1047,7 +1047,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                         fontFamily: 'JetBrains Mono',
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF131B2E),
+                        color: Color(0xFF0F172A),
                       ),
                     ),
                     Text(
@@ -1073,7 +1073,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                       fontFamily: 'JetBrains Mono',
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: isShiftOpen ? const Color(0xFF006A61) : Colors.deepOrange.shade800,
+                      color: isShiftOpen ? const Color(0xFF0D9488) : Colors.deepOrange.shade800,
                     ),
                   ),
                 ),
@@ -1090,7 +1090,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                 icon: Icon(
                   _isGridView ? Icons.grid_view_rounded : Icons.view_list_rounded,
                   size: 20,
-                  color: const Color(0xFF006A61),
+                  color: const Color(0xFF0D9488),
                 ),
                 tooltip: _isGridView ? 'Beralih ke List' : 'Beralih ke Grid',
                 onPressed: () {
@@ -1155,7 +1155,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                     value: 'queue',
                     child: Row(
                       children: [
-                        Icon(Icons.people_outline_rounded, size: 18, color: Color(0xFF006A61)),
+                        Icon(Icons.people_outline_rounded, size: 18, color: Color(0xFF0D9488)),
                         SizedBox(width: 10),
                         Text('Antrean Pasien & Billing'),
                       ],
@@ -1165,7 +1165,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                     value: 'review',
                     child: Row(
                       children: [
-                        Icon(Icons.assignment_outlined, size: 18, color: Color(0xFF006A61)),
+                        Icon(Icons.assignment_outlined, size: 18, color: Color(0xFF0D9488)),
                         SizedBox(width: 10),
                         Text('Telaah Resep & Skrining'),
                       ],
@@ -1287,7 +1287,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                           fontFamily: 'Plus Jakarta Sans',
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF131B2E),
+                          color: Color(0xFF0F172A),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -1396,13 +1396,13 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF006A61).withValues(alpha: 0.08),
+          color: const Color(0xFF0D9488).withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFF006A61).withValues(alpha: 0.2)),
+          border: Border.all(color: const Color(0xFF0D9488).withValues(alpha: 0.2)),
         ),
         child: const Row(
           children: [
-            Icon(Icons.health_and_safety_outlined, size: 18, color: Color(0xFF006A61)),
+            Icon(Icons.health_and_safety_outlined, size: 18, color: Color(0xFF0D9488)),
             SizedBox(width: 8),
             Expanded(
               child: Column(
@@ -1414,7 +1414,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                       fontFamily: 'Plus Jakarta Sans',
                       fontSize: 11.5,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF131B2E),
+                      color: Color(0xFF0F172A),
                     ),
                   ),
                   Text(
@@ -1433,11 +1433,11 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                     fontFamily: 'JetBrains Mono',
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF006A61),
+                    color: Color(0xFF0D9488),
                   ),
                 ),
                 SizedBox(width: 4),
-                Icon(Icons.chevron_right_rounded, size: 16, color: Color(0xFF006A61)),
+                Icon(Icons.chevron_right_rounded, size: 16, color: Color(0xFF0D9488)),
               ],
             ),
           ],
@@ -1471,7 +1471,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
               }
             }
           },
-          style: const TextStyle(fontSize: 13, color: Color(0xFF131B2E)),
+          style: const TextStyle(fontSize: 13, color: Color(0xFF0F172A)),
           decoration: InputDecoration(
             hintText: 'Cari obat, SKU, kandungan zat aktif, atau scan barcode...',
             hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF6D7A72)),
@@ -1646,7 +1646,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      CircularProgressIndicator(color: Color(0xFF006948)),
+                      CircularProgressIndicator(color: Color(0xFF059669)),
                       SizedBox(height: 16),
                       Text(
                         'Menghubungkan ke Database Velora...',
@@ -1674,8 +1674,8 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                             icon: const Icon(Icons.refresh_rounded, size: 16),
                             label: const Text('Sinkronkan Katalog Obat'),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFF006948),
-                              side: const BorderSide(color: Color(0xFF006948)),
+                              foregroundColor: const Color(0xFF059669),
+                              side: const BorderSide(color: Color(0xFF059669)),
                             ),
                           ),
                         ],

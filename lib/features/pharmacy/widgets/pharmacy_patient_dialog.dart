@@ -107,7 +107,7 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF006948);
+    const emeraldPrimary = Color(0xFF059669);
     const borderColor = Color(0xFFE2E8F0);
     const surfaceCanvas = Color(0xFFFAF8FF);
 
@@ -138,7 +138,7 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
                   'Identitas Pasien & Dokter',
                   style: TextStyle(
                     fontFamily: 'Plus Jakarta Sans',
-                    color: Color(0xFF131B2E),
+                    color: Color(0xFF0F172A),
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -162,7 +162,7 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
             children: [
               const Text(
                 'Kategori Pasien / Penjamin:',
-                style: TextStyle(color: Color(0xFF131B2E), fontSize: 12, fontWeight: FontWeight.w600),
+                style: TextStyle(color: Color(0xFF0F172A), fontSize: 12, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               Wrap(
@@ -243,12 +243,12 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
                         fontFamily: 'JetBrains Mono',
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF131B2E),
+                        color: Color(0xFF0F172A),
                       ),
                       decoration: InputDecoration(
                         labelText: 'No. Rekam Medis (RM)',
                         labelStyle: const TextStyle(color: Color(0xFF6D7A72), fontSize: 11.5),
-                        prefixIcon: const Icon(Icons.badge_outlined, size: 16, color: Color(0xFF006A61)),
+                        prefixIcon: const Icon(Icons.badge_outlined, size: 16, color: Color(0xFF0D9488)),
                         filled: true,
                         fillColor: surfaceCanvas,
                         border: OutlineInputBorder(
@@ -272,7 +272,7 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
               const SizedBox(height: 12),
               TextField(
                 controller: _patientController,
-                style: const TextStyle(fontSize: 13, color: Color(0xFF131B2E)),
+                style: const TextStyle(fontSize: 13, color: Color(0xFF0F172A)),
                 decoration: InputDecoration(
                   labelText: 'Nama Lengkap Pasien',
                   labelStyle: const TextStyle(color: Color(0xFF6D7A72), fontSize: 11.5),
@@ -299,7 +299,7 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
               const SizedBox(height: 12),
               TextField(
                 controller: _doctorController,
-                style: const TextStyle(fontSize: 13, color: Color(0xFF131B2E)),
+                style: const TextStyle(fontSize: 13, color: Color(0xFF0F172A)),
                 decoration: InputDecoration(
                   labelText: 'Dokter Pemeriksa & SIP',
                   labelStyle: const TextStyle(color: Color(0xFF6D7A72), fontSize: 11.5),

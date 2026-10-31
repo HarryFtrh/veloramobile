@@ -80,7 +80,7 @@ class _PharmacyQueueScreenState extends State<PharmacyQueueScreen> {
             ),
           ],
         ),
-        backgroundColor: const Color(0xFF006948),
+        backgroundColor: const Color(0xFF059669),
         duration: const Duration(seconds: 3),
       ),
     );
@@ -106,7 +106,7 @@ class _PharmacyQueueScreenState extends State<PharmacyQueueScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Pasien ${item.queueNumber} (${item.patientName}) dimuat ke Kasir POS.'),
-        backgroundColor: const Color(0xFF006948),
+        backgroundColor: const Color(0xFF059669),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -114,8 +114,8 @@ class _PharmacyQueueScreenState extends State<PharmacyQueueScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF006948);
-    const textPrimary = Color(0xFF131B2E);
+    const emeraldPrimary = Color(0xFF059669);
+    const textPrimary = Color(0xFF0F172A);
     const textMuted = Color(0xFF6D7A72);
     const borderColor = Color(0xFFE2E8F0);
 
@@ -394,7 +394,7 @@ class _PharmacyQueueScreenState extends State<PharmacyQueueScreen> {
                           fontFamily: 'Plus Jakarta Sans',
                           fontWeight: FontWeight.bold,
                           fontSize: 13.5,
-                          color: Color(0xFF131B2E),
+                          color: Color(0xFF0F172A),
                         ),
                       ),
                       Text(
@@ -437,7 +437,7 @@ class _PharmacyQueueScreenState extends State<PharmacyQueueScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('📢 Pemanggilan antrean audio loket diaktifkan.'),
-                        backgroundColor: Color(0xFF006948),
+                        backgroundColor: Color(0xFF059669),
                       ),
                     );
                   },
@@ -554,7 +554,7 @@ class _PharmacyQueueScreenState extends State<PharmacyQueueScreen> {
                         fontFamily: 'Plus Jakarta Sans',
                         fontWeight: FontWeight.w700,
                         fontSize: 14,
-                        color: Color(0xFF131B2E),
+                        color: Color(0xFF0F172A),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -576,7 +576,7 @@ class _PharmacyQueueScreenState extends State<PharmacyQueueScreen> {
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     color: isReady
-                        ? const Color(0xFF006948)
+                        ? const Color(0xFF059669)
                         : (isDone ? const Color(0xFF64748B) : const Color(0xFFB45309)),
                   ),
                 ),

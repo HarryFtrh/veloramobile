@@ -17,9 +17,9 @@ class PharmacyDrugCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const primaryEmerald = Color(0xFF006948);
+    const primaryEmerald = Color(0xFF059669);
     const borderColor = Color(0xFFE2E8F0);
-    const textPrimary = Color(0xFF131B2E);
+    const textPrimary = Color(0xFF0F172A);
     const textMuted = Color(0xFF6D7A72);
 
     final isRx = item['isDotRed'] == true ||
@@ -388,9 +388,9 @@ class PharmacyDrugRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const primaryEmerald = Color(0xFF006948);
+    const primaryEmerald = Color(0xFF059669);
     const borderColor = Color(0xFFE2E8F0);
-    const textPrimary = Color(0xFF131B2E);
+    const textPrimary = Color(0xFF0F172A);
     const textMuted = Color(0xFF6D7A72);
 
     final isRx = item['isDotRed'] == true ||

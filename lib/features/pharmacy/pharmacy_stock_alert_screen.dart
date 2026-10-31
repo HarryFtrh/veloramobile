@@ -70,8 +70,8 @@ class _PharmacyStockAlertScreenState extends State<PharmacyStockAlertScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF006948);
-    const textPrimary = Color(0xFF131B2E);
+    const emeraldPrimary = Color(0xFF059669);
+    const textPrimary = Color(0xFF0F172A);
     const textMuted = Color(0xFF6D7A72);
     const borderColor = Color(0xFFE2E8F0);
 
@@ -382,7 +382,7 @@ class _PharmacyStockAlertScreenState extends State<PharmacyStockAlertScreen> {
 
     final badgeColor = isCritical
         ? const Color(0xFFBA1A1A)
-        : (isWarning ? const Color(0xFFB45309) : const Color(0xFF006948));
+        : (isWarning ? const Color(0xFFB45309) : const Color(0xFF059669));
     final badgeBg = isCritical
         ? const Color(0xFFFFDAD6)
         : (isWarning ? const Color(0xFFFEF3C7) : const Color(0xFFD4F8E8));
@@ -434,7 +434,7 @@ class _PharmacyStockAlertScreenState extends State<PharmacyStockAlertScreen> {
                           fontFamily: 'Plus Jakarta Sans',
                           fontWeight: FontWeight.bold,
                           fontSize: 13.5,
-                          color: Color(0xFF131B2E),
+                          color: Color(0xFF0F172A),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -488,7 +488,7 @@ class _PharmacyStockAlertScreenState extends State<PharmacyStockAlertScreen> {
                       fontFamily: 'JetBrains Mono',
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
-                      color: item.stock <= 10 ? const Color(0xFFBA1A1A) : const Color(0xFF131B2E),
+                      color: item.stock <= 10 ? const Color(0xFFBA1A1A) : const Color(0xFF0F172A),
                     ),
                   ),
                 ],

@@ -75,9 +75,9 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF006948);
+    const emeraldPrimary = Color(0xFF059669);
     const borderColor = Color(0xFFE2E8F0);
-    const textPrimary = Color(0xFF131B2E);
+    const textPrimary = Color(0xFF0F172A);
     const textMuted = Color(0xFF6D7A72);
     const tertiaryCyan = Color(0xFF006577);
 
@@ -173,7 +173,7 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
                             decoration: BoxDecoration(
                               color: const Color(0xFF86F2E4).withValues(alpha: 0.3),
                               shape: BoxShape.circle,
-                              border: Border.all(color: const Color(0xFF006A61).withValues(alpha: 0.3)),
+                              border: Border.all(color: const Color(0xFF0D9488).withValues(alpha: 0.3)),
                             ),
                             child: Center(
                               child: Text(
@@ -181,7 +181,7 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
                                 style: const TextStyle(
                                   fontFamily: 'Plus Jakarta Sans',
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF006A61),
+                                  color: Color(0xFF0D9488),
                                   fontSize: 14,
                                 ),
                               ),
@@ -507,7 +507,7 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
                             totalRevenue > 0 ? '${((_qrisRevenue / totalRevenue) * 100).toStringAsFixed(1)}% dari total' : '0% dari total',
                             _qrisRevenue,
                             Icons.qr_code_2_rounded,
-                            const Color(0xFF006A61),
+                            const Color(0xFF0D9488),
                           ),
                           const SizedBox(height: 8),
                           _buildChannelRow(

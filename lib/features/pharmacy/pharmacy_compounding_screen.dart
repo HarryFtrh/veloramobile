@@ -107,7 +107,7 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 title: const Row(
                   children: [
-                    Icon(Icons.medication_liquid_rounded, color: Color(0xFF006948)),
+                    Icon(Icons.medication_liquid_rounded, color: Color(0xFF059669)),
                     SizedBox(width: 8),
                     Text('Pilih Bahan Baku Racikan', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                   ],
@@ -139,7 +139,7 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
                                     dense: true,
                                     title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                                     subtitle: Text('Stok: ${p.stock.toInt()} • ${p.sku.isNotEmpty ? p.sku : p.category}'),
-                                    trailing: const Icon(Icons.add_circle_outline, color: Color(0xFF006948)),
+                                    trailing: const Icon(Icons.add_circle_outline, color: Color(0xFF059669)),
                                     onTap: () {
                                       Navigator.pop(ctx);
                                       _promptIngredientDose(p.name, 'Unit');
@@ -189,7 +189,7 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF006948), foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), foregroundColor: Colors.white),
             onPressed: () {
               final val = doseCtrl.text.trim();
               final numVal = num.tryParse(val) ?? 1;
@@ -220,7 +220,7 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
           content: Text(
             '✓ Etiket ${_labelType == 'putih' ? 'Putih (Obat Dalam)' : 'Biru (Obat Luar)'} tercetak untuk $_selectedPatient.',
           ),
-          backgroundColor: const Color(0xFF006948),
+          backgroundColor: const Color(0xFF059669),
         ),
       );
     }
@@ -231,7 +231,7 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('✓ Racikan "$_recipeName" selesai dan diserahkan ke Meja Penyerahan Resep Loket Farmasi.'),
-        backgroundColor: const Color(0xFF006948),
+        backgroundColor: const Color(0xFF059669),
         duration: const Duration(seconds: 3),
       ),
     );
@@ -239,8 +239,8 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF006948);
-    const textPrimary = Color(0xFF131B2E);
+    const emeraldPrimary = Color(0xFF059669);
+    const textPrimary = Color(0xFF0F172A);
     const textMuted = Color(0xFF6D7A72);
     const borderColor = Color(0xFFE2E8F0);
 
@@ -546,7 +546,7 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
                         color: _labelType == 'putih' ? Colors.white : const Color(0xFFEFF6FF),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: _labelType == 'putih' ? const Color(0xFF006948) : const Color(0xFF2563EB),
+                          color: _labelType == 'putih' ? const Color(0xFF059669) : const Color(0xFF2563EB),
                           width: 1.5,
                         ),
                       ),
@@ -562,7 +562,7 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
                                   fontFamily: 'JetBrains Mono',
                                   fontWeight: FontWeight.w800,
                                   fontSize: 12,
-                                  color: _labelType == 'putih' ? const Color(0xFF006948) : const Color(0xFF2563EB),
+                                  color: _labelType == 'putih' ? const Color(0xFF059669) : const Color(0xFF2563EB),
                                 ),
                               ),
                               Row(
@@ -603,7 +603,7 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
                             ),
                             child: Text(
                               _signa,
-                              style: const TextStyle(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF131B2E)),
+                              style: const TextStyle(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0F172A)),
                             ),
                           ),
                           const SizedBox(height: 6),

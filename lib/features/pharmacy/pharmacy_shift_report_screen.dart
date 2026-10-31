@@ -68,7 +68,7 @@ class _PharmacyShiftReportScreenState extends State<PharmacyShiftReportScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Mencetak rekap rekonsiliasi shift ke printer thermal ESC/POS...'),
-          backgroundColor: Color(0xFF006948),
+          backgroundColor: Color(0xFF059669),
         ),
       );
     }
@@ -136,7 +136,7 @@ class _PharmacyShiftReportScreenState extends State<PharmacyShiftReportScreen> {
                     ),
                     Text(
                       CurrencyFormatter.format(calculatedSum),
-                      style: const TextStyle(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF006948)),
+                      style: const TextStyle(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF059669)),
                     ),
                   ],
                 ),
@@ -166,7 +166,7 @@ class _PharmacyShiftReportScreenState extends State<PharmacyShiftReportScreen> {
                               child: Text('${counts[denom]}', style: const TextStyle(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.bold)),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.add_circle_outline, size: 20, color: Color(0xFF006948)),
+                              icon: const Icon(Icons.add_circle_outline, size: 20, color: Color(0xFF059669)),
                               onPressed: () {
                                 setModalState(() => counts[denom] = counts[denom]! + 1);
                               },
@@ -191,7 +191,7 @@ class _PharmacyShiftReportScreenState extends State<PharmacyShiftReportScreen> {
                       Navigator.pop(ctx);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF006948),
+                      backgroundColor: const Color(0xFF059669),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -209,8 +209,8 @@ class _PharmacyShiftReportScreenState extends State<PharmacyShiftReportScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF006948);
-    const textPrimary = Color(0xFF131B2E);
+    const emeraldPrimary = Color(0xFF059669);
+    const textPrimary = Color(0xFF0F172A);
     const textMuted = Color(0xFF6D7A72);
     const borderColor = Color(0xFFE2E8F0);
 
@@ -445,7 +445,7 @@ class _PharmacyShiftReportScreenState extends State<PharmacyShiftReportScreen> {
                                   ],
                                 ),
                                 const SizedBox(height: 12),
-                                _buildMethodRow('Tunai (Cash)', _cashRevenue, Icons.money_rounded, const Color(0xFF006948)),
+                                _buildMethodRow('Tunai (Cash)', _cashRevenue, Icons.money_rounded, const Color(0xFF059669)),
                                 const Divider(height: 16, color: Color(0xFFF1F5F9)),
                                 _buildMethodRow('QRIS (Statis / Dinamis)', _qrisRevenue, Icons.qr_code_2_rounded, const Color(0xFF0284C7)),
                                 const Divider(height: 16, color: Color(0xFFF1F5F9)),
@@ -540,7 +540,7 @@ class _PharmacyShiftReportScreenState extends State<PharmacyShiftReportScreen> {
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.bold,
                                                 color: discrepancy == 0
-                                                    ? const Color(0xFF006948)
+                                                    ? const Color(0xFF059669)
                                                     : (discrepancy < 0 ? const Color(0xFFBA1A1A) : const Color(0xFF0369A1)),
                                               ),
                                             ),
@@ -552,7 +552,7 @@ class _PharmacyShiftReportScreenState extends State<PharmacyShiftReportScreen> {
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.w800,
                                                 color: discrepancy == 0
-                                                    ? const Color(0xFF006948)
+                                                    ? const Color(0xFF059669)
                                                     : (discrepancy < 0 ? const Color(0xFFBA1A1A) : const Color(0xFF0369A1)),
                                               ),
                                             ),
@@ -658,7 +658,7 @@ class _PharmacyShiftReportScreenState extends State<PharmacyShiftReportScreen> {
               fontFamily: 'JetBrains Mono',
               fontWeight: FontWeight.w800,
               fontSize: 14.5,
-              color: const Color(0xFF131B2E),
+              color: const Color(0xFF0F172A),
             ),
           ),
         ],
@@ -681,7 +681,7 @@ class _PharmacyShiftReportScreenState extends State<PharmacyShiftReportScreen> {
         Expanded(
           child: Text(
             name,
-            style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF131B2E)),
+            style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
           ),
         ),
         Text(
@@ -690,7 +690,7 @@ class _PharmacyShiftReportScreenState extends State<PharmacyShiftReportScreen> {
             fontFamily: 'JetBrains Mono',
             fontSize: 13.5,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF131B2E),
+            color: Color(0xFF0F172A),
           ),
         ),
       ],

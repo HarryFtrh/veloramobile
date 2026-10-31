@@ -134,7 +134,7 @@ class _PharmacyStockOpnameScreenState extends State<PharmacyStockOpnameScreen> {
           content: Text(
             '✓ Berita Acara Stock Opname disimpan ke server. Terdeteksi $totalDiscrepancies item selisih disesuaikan ke sistem.',
           ),
-          backgroundColor: const Color(0xFF006948),
+          backgroundColor: const Color(0xFF059669),
           duration: const Duration(seconds: 4),
         ),
       );
@@ -143,8 +143,8 @@ class _PharmacyStockOpnameScreenState extends State<PharmacyStockOpnameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF006948);
-    const textPrimary = Color(0xFF131B2E);
+    const emeraldPrimary = Color(0xFF059669);
+    const textPrimary = Color(0xFF0F172A);
     const textMuted = Color(0xFF6D7A72);
     const borderColor = Color(0xFFE2E8F0);
 

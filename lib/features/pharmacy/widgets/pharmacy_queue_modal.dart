@@ -85,7 +85,7 @@ class _PharmacyQueueModalState extends State<PharmacyQueueModal> {
 
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFF006948); // Clinical Emerald
+    const primaryColor = Color(0xFF059669); // Clinical Emerald
     const canvasColor = Color(0xFFFAF8FF);
 
     final filtered = _queueItems.where((item) {
@@ -149,7 +149,7 @@ class _PharmacyQueueModalState extends State<PharmacyQueueModal> {
                             fontFamily: 'Plus Jakarta Sans',
                             fontWeight: FontWeight.w800,
                             fontSize: 17,
-                            color: Color(0xFF131B2E),
+                            color: Color(0xFF0F172A),
                           ),
                         ),
                         Text(
@@ -303,7 +303,7 @@ class _PharmacyQueueModalState extends State<PharmacyQueueModal> {
                         fontFamily: 'JetBrains Mono',
                         fontWeight: FontWeight.w800,
                         fontSize: 12,
-                        color: Color(0xFF006948),
+                        color: Color(0xFF059669),
                       ),
                     ),
                   ),
@@ -314,7 +314,7 @@ class _PharmacyQueueModalState extends State<PharmacyQueueModal> {
                       fontFamily: 'Plus Jakarta Sans',
                       fontWeight: FontWeight.w700,
                       fontSize: 14.5,
-                      color: Color(0xFF131B2E),
+                      color: Color(0xFF0F172A),
                     ),
                   ),
                 ],
@@ -333,7 +333,7 @@ class _PharmacyQueueModalState extends State<PharmacyQueueModal> {
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700,
                     color: isReady
-                        ? const Color(0xFF006948)
+                        ? const Color(0xFF059669)
                         : (isDone ? const Color(0xFF64748B) : const Color(0xFFB45309)),
                   ),
                 ),
@@ -411,7 +411,7 @@ class _PharmacyQueueModalState extends State<PharmacyQueueModal> {
                       fontFamily: 'JetBrains Mono',
                       fontWeight: FontWeight.w800,
                       fontSize: 14,
-                      color: Color(0xFF006948),
+                      color: Color(0xFF059669),
                     ),
                   ),
                 ],
