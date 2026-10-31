@@ -89,7 +89,7 @@ server {
     ssl_certificate /etc/nginx/certs/velora_origin.crt;
     ssl_certificate_key /etc/nginx/certs/velora_origin.key;
 
-    # 🛡️ Cloudflare Authenticated Origin Pull (mTLS)
+    # 🛡️ Cloudflare Authenticated Origin Pull (mTLS) - Aktifkan hanya jika mewajibkan Cloudflare
     ssl_client_certificate /etc/nginx/certs/cloudflare_origin_pull_ca.pem;
     ssl_verify_client on;
 
@@ -107,6 +107,36 @@ server {
     }
 }
 ```
+
+---
+
+## 5. Konfigurasi Caddy Reverse Proxy (Opsi Modern, Cepat & Otomatis)
+
+Jika Anda menggunakan **Caddy** (bukan Nginx), konfigurasinya jauh lebih sederhana dan langsung bekerja baik lewat Cloudflare maupun tanpa Cloudflare (Direct):
+
+### 5.1. Contoh Caddyfile Siap Pakai:
+```caddy
+velora.co.id {
+    # 🔒 Caddy secara otomatis mengurus sertifikat SSL (Let's Encrypt / ZeroSSL)
+    reverse_proxy 127.0.0.1:8000 {
+        # Teruskan IP asli klien dan header WebSocket
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+}
+
+# Jika Reverb WebSocket berjalan di port berbeda (misal 8080):
+# ws.velora.co.id {
+#     reverse_proxy 127.0.0.1:8080
+# }
+```
+
+### 5.2. Mengapa Caddy Sangat Cocok untuk Velora Mobile:
+1. **Auto-HTTPS Tanpa Ribet**: Caddy otomatis menerbitkan dan merotasi sertifikat SSL (Let's Encrypt / ZeroSSL).
+2. **Sangat Aman & Kompatibel**: SPKI Root CA Let's Encrypt (`ISRG Root X1`) dan ZeroSSL (`USERTrust RSA/ECC`) sudah terdaftar di `network_security_config.xml` aplikasi mobile Velora, jadi koneksi langsung dijamin tidak akan ditolak Android.
+3. **Dukungan WebSocket Otomatis**: Caddy secara bawaan menangani koneksi WebSocket Reverb tanpa butuh konfigurasi upgrade header manual.
 
 ---
 

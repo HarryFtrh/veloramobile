@@ -10,22 +10,26 @@
         </trust-anchors>
     </base-config>
 
-    <!-- Konfigurasi domain khusus velora.co.id dengan Cloudflare SPKI Pinning -->
+    <!-- Konfigurasi domain khusus velora.co.id dengan SPKI Pinning (Cloudflare & Caddy Direct) -->
     <domain-config cleartextTrafficPermitted="false">
         <domain includeSubdomains="true">velora.co.id</domain>
-        <!-- SPKI Pinning untuk Root CAs resmi penerbit sertifikat Cloudflare Edge.
-             Pinning pada level Root CA (bukan leaf) menjamin rotasi sertifikat 90 harian
-             Cloudflare tidak akan memutuskan koneksi POS kasir di lapangan.
+        <!-- SPKI Pinning untuk Root CAs resmi Cloudflare Edge & Caddy Auto-HTTPS (Let's Encrypt & ZeroSSL).
+             Pinning pada level Root CA menjamin rotasi sertifikat otomatis Caddy / Cloudflare
+             tidak akan memutuskan koneksi POS kasir di lapangan.
              Atribut expiration memastikan fallback aman ke system trust setelah 2027. -->
         <pin-set expiration="2027-12-31">
-            <!-- Google Trust Services Root R1 (GTS Root R1 - Primary Cloudflare Edge CA) -->
+            <!-- Google Trust Services Root R1 (Primary Cloudflare Edge CA) -->
             <pin digest="SHA-256">hxqRlPTuQjvW/P31ipWfYMe++bjYhIRb3ugCzRnCh3g=</pin>
-            <!-- ISRG Root X1 (Let's Encrypt - Secondary Cloudflare Edge CA) -->
+            <!-- ISRG Root X1 (Let's Encrypt - Primary Caddy Auto-HTTPS & Secondary Cloudflare) -->
             <pin digest="SHA-256">C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M=</pin>
             <!-- DigiCert Global Root G2 (Cloudflare Backup Edge CA) -->
             <pin digest="SHA-256">i7WTqTvh0OioIruIfFR4kRrhULVEwL+gu9o3D1ootAU=</pin>
-            <!-- DigiCert Global Root CA (Cloudflare Enterprise Root) -->
+            <!-- DigiCert Global Root CA (Enterprise Root) -->
             <pin digest="SHA-256">r/mIkG3eEpVdm+u/ko/cwxzOMo1bk4TyHIlByIBb4MQ=</pin>
+            <!-- USERTrust RSA Certification Authority (Caddy ZeroSSL Fallback CA) -->
+            <pin digest="SHA-256">x4QzPSC810K5/cMjb05Qm4k3Bw5zdr4FSDTgoquWAja=</pin>
+            <!-- USERTrust ECC Certification Authority (Caddy ZeroSSL ECC Fallback CA) -->
+            <pin digest="SHA-256">JbQbUG5JMtulbeCLDxUCXTFGsQAAYuL+2el29zvL+DA=</pin>
         </pin-set>
         <trust-anchors>
             <certificates src="system" />
