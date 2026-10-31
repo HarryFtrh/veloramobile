@@ -435,9 +435,20 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
                                     Expanded(
                                       child: ListView(
                                         children: catalog.products.map((p) => ListTile(
-                                          leading: const Icon(Icons.medication_rounded, color: emeraldPrimary),
+                                          leading: p.imageUrl != null && p.imageUrl!.isNotEmpty
+                                              ? ClipRRect(
+                                                  borderRadius: BorderRadius.circular(6),
+                                                  child: Image.network(
+                                                    p.imageUrl!,
+                                                    width: 34,
+                                                    height: 34,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder: (_, _, _) => const Icon(Icons.medication_rounded, color: emeraldPrimary),
+                                                  ),
+                                                )
+                                              : const Icon(Icons.medication_rounded, color: emeraldPrimary),
                                           title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                                          subtitle: Text(p.category, style: const TextStyle(fontSize: 11)),
+                                          subtitle: Text(p.description ?? p.category, style: const TextStyle(fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
                                           onTap: () {
                                             setState(() {
                                               _prescribedItems.add({

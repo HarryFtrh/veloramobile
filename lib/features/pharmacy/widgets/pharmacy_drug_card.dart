@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/utils/currency_formatter.dart';
+import '../../shared_pos/product_catalog_service.dart';
 
 class PharmacyDrugCard extends StatelessWidget {
   final Map<String, dynamic> item;
@@ -722,25 +723,8 @@ class _DrugThumbnailWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rawUrl = item['imageUrl'] ?? item['image'] ?? item['photo'] ?? item['photo_url'];
-    String? imgUrl = (rawUrl != null && rawUrl is String && rawUrl.trim().isNotEmpty && rawUrl.trim() != '-')
-        ? rawUrl.trim()
-        : null;
-
-    if (imgUrl != null) {
-      final lower = imgUrl.toLowerCase();
-      if (lower.contains('ui-avatars') ||
-          lower.contains('placeholder') ||
-          lower.contains('dummyimage') ||
-          lower.contains('dicebear') ||
-          lower.contains('avatar') ||
-          lower.contains('default-avatar') ||
-          lower.contains('no-image') ||
-          lower.contains('no_image') ||
-          lower.contains('default_drug')) {
-        imgUrl = null;
-      }
-    }
+    final rawUrl = item['imageUrl'] ?? item['image'] ?? item['image_url'] ?? item['photo'] ?? item['photo_url'] ?? item['thumbnail'];
+    final String? imgUrl = ProductCatalogService.resolveImageUrl(rawUrl?.toString());
 
     final fallback = Container(
       width: size,
@@ -772,6 +756,19 @@ class _DrugThumbnailWidget extends StatelessWidget {
       return fallback;
     }
 
+    final loadingBox = Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(8),
+      ),
+    );
+
+    final String? altUrl = imgUrl.contains('/storage/')
+        ? imgUrl.replaceFirst('/storage/', '/')
+        : null;
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: SizedBox(
@@ -782,9 +779,20 @@ class _DrugThumbnailWidget extends StatelessWidget {
           width: size,
           height: size,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => fallback,
           loadingBuilder: (context, child, loadingProgress) {
             if (loadingProgress == null) return child;
+            return loadingBox;
+          },
+          errorBuilder: (context, error, stackTrace) {
+            if (altUrl != null && altUrl != imgUrl) {
+              return Image.network(
+                altUrl,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => fallback,
+              );
+            }
             return fallback;
           },
         ),

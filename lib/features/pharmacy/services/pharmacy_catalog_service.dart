@@ -62,7 +62,7 @@ class PharmacyCatalogService {
   PosProduct? findBySku(String sku) => _skuMap[sku.trim().toLowerCase()];
   PosProduct? findById(String id) => _idMap[id.trim()];
 
-  /// Pencarian cepat di memori lokal Apotek (Barcode -> SKU -> Nama Obat -> Kandungan -> Golongan)
+  /// Pencarian cepat di memori lokal Apotek (Barcode -> SKU -> Nama Obat -> Kandungan -> Fungsi/Indikasi -> Klasifikasi -> Golongan)
   List<PosProduct> searchFast(String query) {
     _ensureTenantScope();
     if (query.isEmpty) return _cachedCatalog?.products ?? const [];
@@ -75,14 +75,7 @@ class PharmacyCatalogService {
     if (sMatch != null) return [sMatch];
 
     final list = _cachedCatalog?.products ?? const [];
-    return list
-        .where((p) =>
-            p.name.toLowerCase().contains(q) ||
-            p.sku.toLowerCase().contains(q) ||
-            p.barcode.toLowerCase().contains(q) ||
-            (p.description ?? '').toLowerCase().contains(q) ||
-            p.category.toLowerCase().contains(q))
-        .toList();
+    return list.where((p) => p.matchesQuery(q)).toList();
   }
 
   /// Ambil katalog obat siap jual untuk Kasir Apotek, Racikan, EMR Dokter, dan Stock Opname
@@ -189,14 +182,15 @@ class PharmacyCatalogService {
     final locId = SessionStorage.instance.getLocationId();
     final queryParams = <String, dynamic>{
       'search': trimmed,
+      'q': trimmed,
       'limit': limit,
       'per_page': limit,
       if (locId != null && locId.isNotEmpty) 'location_id': locId,
     };
 
     const candidateEndpoints = [
-      '/v1/pos/products-sync',
       '/v1/pharmacy/products',
+      '/v1/pos/products-sync',
       '/v1/pharmacy/inventory',
     ];
 
@@ -485,17 +479,31 @@ class PharmacyCatalogService {
       finalUnits.add(PosProductUnit(name: unitStr, price: priceVal, conversion: 1, isDefault: true));
     }
 
-    final rawDesc = json.getString('kandungan').isNotEmpty
-        ? json.getString('kandungan')
-        : (json.getString('fungsi').isNotEmpty
-            ? json.getString('fungsi')
-            : (json.getString('description').isNotEmpty
-                ? json.getString('description')
-                : gp.getString('kandungan')));
+    final rawKandungan = json.getString('kandungan', fallback: gp.getString('kandungan'));
+    final rawFungsi = json.getString('fungsi', fallback: gp.getString('fungsi'));
+    final rawKlasifikasi = json.getString('klasifikasi', fallback: gp.getString('klasifikasi'));
+    final rawSediaan = json.getString('sediaan', fallback: gp.getString('sediaan'));
 
-    final rawImg = json.getString('image').isNotEmpty
-        ? json.getString('image')
-        : (json.getString('image_url').isNotEmpty ? json.getString('image_url') : gp.getString('image'));
+    String rawDesc = '';
+    if (rawKandungan.isNotEmpty && rawFungsi.isNotEmpty) {
+      rawDesc = '$rawKandungan • $rawFungsi';
+    } else if (rawKandungan.isNotEmpty) {
+      rawDesc = rawKandungan;
+    } else if (rawFungsi.isNotEmpty) {
+      rawDesc = rawFungsi;
+    } else if (rawKlasifikasi.isNotEmpty) {
+      rawDesc = rawKlasifikasi;
+    } else {
+      rawDesc = json.getString('description', fallback: gp.getString('description'));
+    }
+
+    String rawImg = json.getString('image');
+    if (rawImg.isEmpty || rawImg == '-') rawImg = json.getString('image_url');
+    if (rawImg.isEmpty || rawImg == '-') rawImg = json.getString('photo_url');
+    if (rawImg.isEmpty || rawImg == '-') rawImg = json.getString('thumbnail');
+    if (rawImg.isEmpty || rawImg == '-') rawImg = gp.getString('image');
+    if (rawImg.isEmpty || rawImg == '-') rawImg = gp.getString('image_url');
+    final resolvedImgUrl = ProductCatalogService.resolveImageUrl(rawImg);
 
     return PosProduct(
       id: json.getString('id', fallback: json.getString('pharmacy_product_id')),
@@ -507,9 +515,13 @@ class PharmacyCatalogService {
       sku: skuVal,
       barcode: barcodeVal,
       unit: unitStr,
-      imageUrl: rawImg.isNotEmpty ? rawImg : null,
-      tag: json['sediaan']?.toString() ?? json['klasifikasi']?.toString(),
+      imageUrl: resolvedImgUrl,
+      tag: rawSediaan.isNotEmpty ? rawSediaan : (rawKlasifikasi.isNotEmpty ? rawKlasifikasi : null),
       description: rawDesc.isNotEmpty ? rawDesc : null,
+      fungsi: rawFungsi.isNotEmpty ? rawFungsi : null,
+      kandungan: rawKandungan.isNotEmpty ? rawKandungan : null,
+      klasifikasi: rawKlasifikasi.isNotEmpty ? rawKlasifikasi : null,
+      sediaan: rawSediaan.isNotEmpty ? rawSediaan : null,
       isPrescriptionOnly: isRx,
       batches: finalBatches,
       units: finalUnits,

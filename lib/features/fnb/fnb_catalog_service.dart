@@ -315,7 +315,7 @@ class FnbCatalogService {
       stock: stockVal,
       sku: skuVal,
       barcode: barcodeVal,
-      imageUrl: img.isNotEmpty && img != '-' ? img : null,
+      imageUrl: ProductCatalogService.resolveImageUrl(img),
       tag: productTag.isNotEmpty ? productTag : null,
       description: desc.isNotEmpty ? desc : null,
       unit: unitVal,

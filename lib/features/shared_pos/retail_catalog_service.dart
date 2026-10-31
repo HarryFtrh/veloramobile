@@ -319,7 +319,7 @@ class RetailCatalogService {
       stock: stockVal,
       sku: skuVal,
       barcode: barcodeVal,
-      imageUrl: img.isNotEmpty && img != '-' ? img : null,
+      imageUrl: ProductCatalogService.resolveImageUrl(img),
       tag: json.getString('shelf_location').isNotEmpty ? json.getString('shelf_location') : null,
       description: json.getString('description').isNotEmpty ? json.getString('description') : null,
       unit: finalUnits.first.name,

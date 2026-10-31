@@ -78,6 +78,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
 
   List<String> _categories = const ['Semua'];
   final List<Map<String, dynamic>> _drugItems = [];
+  final Set<String> _remoteSearchMatchIds = {};
 
   /// Tuslah/embalase dari konfigurasi tenant (/v1/pos/config), bukan hardcode.
   num get _tuslahFee => PharmacyService.instance.tuslahFee.value;
@@ -181,6 +182,10 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
         'imageUrl': p.imageUrl,
         'image': p.imageUrl,
         'description': p.description,
+        'fungsi': p.fungsi,
+        'kandungan': p.kandungan,
+        'klasifikasi': p.klasifikasi,
+        'sediaan': p.sediaan,
         'batches': p.batches
             .map((b) => {
                   'id': b.id,
@@ -225,7 +230,12 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
   }
 
   void _onSearchChanged(String val) {
-    setState(() => _searchQuery = val);
+    setState(() {
+      _searchQuery = val;
+      if (val.trim().length < 2) {
+        _remoteSearchMatchIds.clear();
+      }
+    });
     _searchDebounce?.cancel();
     final trimmed = val.trim();
     if (trimmed.length < 2) {
@@ -241,7 +251,11 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
       try {
         final results = await PharmacyCatalogService.instance.searchProductsRemote(trimmed);
         if (mounted && _searchQuery.trim() == trimmed) {
+          _remoteSearchMatchIds
+            ..clear()
+            ..addAll(results.map((p) => p.id.toString()));
           _mergeRemoteProducts(results);
+          setState(() {});
         }
       } finally {
         if (mounted) {
@@ -1750,6 +1764,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                       _searchController.clear();
                       setState(() {
                         _searchQuery = '';
+                        _remoteSearchMatchIds.clear();
                         _isSearchingRemote = false;
                       });
                     },
@@ -1915,11 +1930,17 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
       }
 
       final q = _searchQuery.toLowerCase().trim();
+      final itemId = item['id'].toString();
       final matchesSearch = q.isEmpty ||
+          _remoteSearchMatchIds.contains(itemId) ||
           item['name'].toString().toLowerCase().contains(q) ||
           item['sku'].toString().toLowerCase().contains(q) ||
           (item['barcode'] != null && item['barcode'].toString().toLowerCase().contains(q)) ||
           (item['description'] != null && item['description'].toString().toLowerCase().contains(q)) ||
+          (item['fungsi'] != null && item['fungsi'].toString().toLowerCase().contains(q)) ||
+          (item['kandungan'] != null && item['kandungan'].toString().toLowerCase().contains(q)) ||
+          (item['klasifikasi'] != null && item['klasifikasi'].toString().toLowerCase().contains(q)) ||
+          (item['sediaan'] != null && item['sediaan'].toString().toLowerCase().contains(q)) ||
           (item['category'] != null && item['category'].toString().toLowerCase().contains(q));
 
       return matchesCategory && matchesSearch;

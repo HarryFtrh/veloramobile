@@ -128,6 +128,10 @@ class PosProduct {
   final String? imageUrl;
   final String? tag;
   final String? description;
+  final String? fungsi;
+  final String? kandungan;
+  final String? klasifikasi;
+  final String? sediaan;
   final String? unit;
   final bool isPrescriptionOnly;
   final List<PosProductBatch> batches;
@@ -146,12 +150,32 @@ class PosProduct {
     this.imageUrl,
     this.tag,
     this.description,
+    this.fungsi,
+    this.kandungan,
+    this.klasifikasi,
+    this.sediaan,
     this.unit,
     this.isPrescriptionOnly = false,
     this.batches = const [],
     this.units = const [],
     this.modifierGroups = const [],
   });
+
+  /// Cek kecocokan pencarian lokal (nama, SKU, barcode, golongan, kandungan, fungsi/indikasi, klasifikasi, sediaan)
+  bool matchesQuery(String query) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return true;
+    return name.toLowerCase().contains(q) ||
+        sku.toLowerCase().contains(q) ||
+        barcode.toLowerCase().contains(q) ||
+        category.toLowerCase().contains(q) ||
+        (description ?? '').toLowerCase().contains(q) ||
+        (fungsi ?? '').toLowerCase().contains(q) ||
+        (kandungan ?? '').toLowerCase().contains(q) ||
+        (klasifikasi ?? '').toLowerCase().contains(q) ||
+        (sediaan ?? '').toLowerCase().contains(q) ||
+        (tag ?? '').toLowerCase().contains(q);
+  }
 
   factory PosProduct.fromJson(Map<String, dynamic>? json, {String? businessType}) {
     if (json == null) {
@@ -210,6 +234,54 @@ class PosCatalogData {
 class ProductCatalogService {
   static final ProductCatalogService instance = ProductCatalogService._();
   ProductCatalogService._();
+
+  /// Normalisasi URL gambar produk dari backend (mendukung URL penuh S3/CDN maupun path relatif storage Laravel)
+  static String? resolveImageUrl(String? raw) {
+    if (raw == null) return null;
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty ||
+        trimmed == '-' ||
+        trimmed.toLowerCase() == 'null' ||
+        trimmed.toLowerCase() == 'undefined') {
+      return null;
+    }
+
+    final lower = trimmed.toLowerCase();
+    if (lower.contains('ui-avatars') ||
+        lower.contains('placeholder') ||
+        lower.contains('dummyimage') ||
+        lower.contains('dicebear') ||
+        lower.contains('default-avatar') ||
+        lower.contains('no-image') ||
+        lower.contains('no_image') ||
+        lower.contains('default_drug')) {
+      return null;
+    }
+
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed;
+    }
+    if (trimmed.startsWith('//')) {
+      return 'https:$trimmed';
+    }
+
+    String origin = 'https://velora.co.id';
+    try {
+      final uri = Uri.parse(AppConfig.instance.apiBaseUrl);
+      if (uri.hasScheme && uri.host.isNotEmpty) {
+        origin = '${uri.scheme}://${uri.host}${uri.hasPort && uri.port != 80 && uri.port != 443 ? ':${uri.port}' : ''}';
+      }
+    } catch (_) {}
+
+    final cleanPath = trimmed.replaceFirst(RegExp(r'^/+'), '');
+    if (cleanPath.startsWith('storage/') ||
+        cleanPath.startsWith('images/') ||
+        cleanPath.startsWith('uploads/') ||
+        cleanPath.startsWith('assets/')) {
+      return '$origin/$cleanPath';
+    }
+    return '$origin/storage/$cleanPath';
+  }
 
   static String activeVertical() {
     final raw = (SessionStorage.instance.getBusinessType() ?? '').toLowerCase().trim();

@@ -97,11 +97,7 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
           String searchQ = '';
           return StatefulBuilder(
             builder: (ctx, setDialogState) {
-              final filtered = catalog.products.where((p) {
-                if (searchQ.isEmpty) return true;
-                return p.name.toLowerCase().contains(searchQ.toLowerCase()) ||
-                    p.sku.toLowerCase().contains(searchQ.toLowerCase());
-              }).toList();
+              final filtered = catalog.products.where((p) => p.matchesQuery(searchQ)).toList();
 
               return AlertDialog(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -137,8 +133,24 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
                                   final p = filtered[idx];
                                   return ListTile(
                                     dense: true,
+                                    leading: p.imageUrl != null && p.imageUrl!.isNotEmpty
+                                        ? ClipRRect(
+                                            borderRadius: BorderRadius.circular(6),
+                                            child: Image.network(
+                                              p.imageUrl!,
+                                              width: 32,
+                                              height: 32,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (_, _, _) => const Icon(Icons.medication_rounded, color: Color(0xFF059669)),
+                                            ),
+                                          )
+                                        : const Icon(Icons.medication_rounded, color: Color(0xFF059669)),
                                     title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                    subtitle: Text('Stok: ${p.stock.toInt()} • ${p.sku.isNotEmpty ? p.sku : p.category}'),
+                                    subtitle: Text(
+                                      'Stok: ${p.stock.toInt()} • ${p.description ?? (p.sku.isNotEmpty ? p.sku : p.category)}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                     trailing: const Icon(Icons.add_circle_outline, color: Color(0xFF059669)),
                                     onTap: () {
                                       Navigator.pop(ctx);

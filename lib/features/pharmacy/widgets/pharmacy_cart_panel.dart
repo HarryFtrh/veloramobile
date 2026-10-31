@@ -4,6 +4,7 @@ import '../../../core/storage/session_storage.dart';
 import '../../../core/utils/audio_helper.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../shared_pos/pos_checkout_service.dart';
+import '../../shared_pos/product_catalog_service.dart';
 import '../../shared_pos/receipt_printer_service.dart';
 import '../../shared_pos/sales_history_drawer.dart';
 import '../pharmacy_service.dart';
@@ -900,19 +901,8 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                         (item['category']?.toString().toLowerCase().contains('keras') ?? false);
                     final isAlkes = (item['category']?.toString().toLowerCase().contains('alkes') ?? false);
 
-                    final rawImg = item['imageUrl'] ?? item['image'];
-                    String? imgUrl = (rawImg is String && rawImg.isNotEmpty && rawImg != '-') ? rawImg : null;
-                    if (imgUrl != null) {
-                      final lower = imgUrl.toLowerCase();
-                      if (lower.contains('ui-avatars') ||
-                          lower.contains('placeholder') ||
-                          lower.contains('dummyimage') ||
-                          lower.contains('dicebear') ||
-                          lower.contains('avatar') ||
-                          lower.contains('default')) {
-                        imgUrl = null;
-                      }
-                    }
+                    final rawImg = item['imageUrl'] ?? item['image'] ?? item['image_url'];
+                    final String? imgUrl = ProductCatalogService.resolveImageUrl(rawImg?.toString());
 
                     return Container(
                       padding: const EdgeInsets.all(10),
