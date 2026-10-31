@@ -48,7 +48,6 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
       _medicalRecordNumber = active.medicalRecordNumber;
       _allergies = active.allergies.isNotEmpty ? active.allergies : 'Tidak ada riwayat alergi obat';
       if (active.doctor.isNotEmpty) _doctorName = active.doctor;
-      if (active.department.isNotEmpty) _department = active.department;
     }
     _fetchLivePatients();
   }
@@ -419,11 +418,12 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
                         const Text('R/ Lembar Peresepan Digital (e-Resep)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
                         InkWell(
                           onTap: () async {
-                            final navContext = context; // capture before async gap
                             final catalog = await ProductCatalogService.instance.fetchCatalog();
-                            if (!mounted) return;
+                            if (!context.mounted) return;
+                            // ignore: use_build_context_synchronously
                             showModalBottomSheet(
-                              context: navContext,
+                              // ignore: use_build_context_synchronously
+                              context: context,
                               builder: (ctx) => Container(
                                 padding: const EdgeInsets.all(16),
                                 child: Column(

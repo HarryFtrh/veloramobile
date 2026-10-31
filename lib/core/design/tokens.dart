@@ -90,9 +90,9 @@ class AppPalette extends ThemeExtension<AppPalette> {
   Color get surfaceDim => surfaceMuted;
 
   static const light = AppPalette(
-    primary: Color(0xFF7A431D),
-    secondary: Color(0xFFD9822B),
-    tertiary: Color(0xFF4D6B53),
+    primary: Color(0xFF0F172A),
+    secondary: Color(0xFF475569),
+    tertiary: Color(0xFF0D9488),
     canvas: Color(0xFFF6F7F9),
     surface: Color(0xFFFFFFFF),
     surfaceMuted: Color(0xFFF0F2F5),

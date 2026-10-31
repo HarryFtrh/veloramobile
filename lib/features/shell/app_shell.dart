@@ -136,7 +136,7 @@ class _AppShellState extends State<AppShell> {
                   children: [
                     Text(
                       tenant,
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: WarmPalette.textPrimary),
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: p.textPrimary),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -144,12 +144,12 @@ class _AppShellState extends State<AppShell> {
                       margin: const EdgeInsets.only(top: 2),
                       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                       decoration: BoxDecoration(
-                        color: WarmPalette.secondary.withValues(alpha: 0.15),
+                        color: brandPrimary.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         location,
-                        style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.w700, color: WarmPalette.secondary),
+                        style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w700, color: brandPrimary),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -240,9 +240,9 @@ class _AppShellState extends State<AppShell> {
                   icon: const Icon(Icons.lock_open_rounded, size: 14),
                   label: const Text('Buka Laci', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: WarmPalette.primary,
+                    foregroundColor: brandPrimary,
                     minimumSize: const Size(0, 32),
-                    side: const BorderSide(color: WarmPalette.line),
+                    side: BorderSide(color: p.line),
                     shape: const StadiumBorder(),
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     visualDensity: VisualDensity.compact,
@@ -251,7 +251,7 @@ class _AppShellState extends State<AppShell> {
               else
                 IconButton(
                   tooltip: 'Buka Laci Kasir',
-                  icon: const Icon(Icons.lock_open_rounded, size: 18, color: WarmPalette.primary),
+                  icon: Icon(Icons.lock_open_rounded, size: 18, color: brandPrimary),
                   onPressed: () async {
                     await ReceiptPrinterService.instance.openCashDrawer();
                     if (context.mounted) {
@@ -268,10 +268,10 @@ class _AppShellState extends State<AppShell> {
               const SizedBox(width: 4),
               CircleAvatar(
                 radius: 14,
-                backgroundColor: WarmPalette.primary.withValues(alpha: 0.15),
+                backgroundColor: brandPrimary.withValues(alpha: 0.15),
                 child: Text(
                   user.isNotEmpty ? user[0].toUpperCase() : 'K',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: WarmPalette.primary),
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: brandPrimary),
                 ),
               ),
             ],
@@ -510,7 +510,7 @@ class _AppShellState extends State<AppShell> {
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border(
-            top: BorderSide(color: isPharmacy ? const Color(0xFFE2E8F0) : WarmPalette.line, width: 1.2),
+            top: BorderSide(color: isPharmacy ? const Color(0xFFE2E8F0) : p.line, width: 1.2),
           ),
           boxShadow: const [
             BoxShadow(

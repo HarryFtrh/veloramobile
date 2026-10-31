@@ -92,7 +92,7 @@ class _MethodTab extends StatelessWidget {
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
           decoration: BoxDecoration(
-            color: isSelected ? WarmPalette.primary : Colors.transparent,
+            color: isSelected ? accentColor : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -207,12 +207,12 @@ class _CashPresetButton extends StatelessWidget {
         onSelected(amount);
       },
       style: OutlinedButton.styleFrom(
-        foregroundColor: isSelected ? WarmPalette.primary : WarmPalette.textPrimary,
+        foregroundColor: isSelected ? accentColor : WarmPalette.textPrimary,
         backgroundColor: isSelected
-            ? WarmPalette.primary.withValues(alpha: 0.12)
+            ? accentColor.withValues(alpha: 0.12)
             : Colors.white,
         side: BorderSide(
-          color: isSelected ? WarmPalette.primary : WarmPalette.line,
+          color: isSelected ? accentColor : WarmPalette.line,
           width: isSelected ? 1.5 : 1.0,
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

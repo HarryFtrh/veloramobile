@@ -35,8 +35,9 @@ class AppTheme {
   static ThemeData build(AppFlavor flavor, Brightness brightness) {
     final isDark = brightness == Brightness.dark;
     final isWarm = (flavor == AppFlavor.fnb || flavor == AppFlavor.customer) && !isDark;
-    final palette = isDark ? AppPalette.dark : (isWarm ? AppPalette.warm : AppPalette.light);
-    final accent = isWarm ? palette.primary : getAccentColor(flavor);
+    final basePalette = isDark ? AppPalette.dark : (isWarm ? AppPalette.warm : AppPalette.light);
+    final accent = isWarm ? basePalette.primary : getAccentColor(flavor);
+    final palette = isWarm ? basePalette : basePalette.copyWith(primary: accent);
     final onAccent = accent.computeLuminance() > 0.4 ? Colors.black : Colors.white;
     final buttonShape = isWarm ? const StadiumBorder() : RoundedRectangleBorder(borderRadius: Corner.medium);
     final base = isDark ? ThemeData.dark() : ThemeData.light();
@@ -63,8 +64,8 @@ class AppTheme {
         seedColor: accent,
         brightness: brightness,
       ).copyWith(
-        primary: palette.primary,
-        secondary: palette.secondary,
+        primary: accent,
+        secondary: isWarm ? palette.secondary : accent,
         tertiary: palette.tertiary,
         onPrimary: onAccent,
         surface: palette.surface,

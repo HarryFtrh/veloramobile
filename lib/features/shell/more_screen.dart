@@ -74,24 +74,26 @@ class MoreScreen extends StatelessWidget {
     final p = context.palette;
     final isWide = MediaQuery.sizeOf(context).width >= 600;
     final canPop = ModalRoute.of(context)?.canPop ?? false;
+    final p = context.palette;
+    final brandPrimary = Theme.of(context).colorScheme.primary;
 
     final userName = SessionStorage.instance.getUserName() ?? 'Kasir Bertugas';
     final tenantName = SessionStorage.instance.getTenantName() ?? 'Velora POS';
     final locationName = SessionStorage.instance.getLocationName() ?? 'Outlet Utama';
 
     return Scaffold(
-      backgroundColor: WarmPalette.canvas,
+      backgroundColor: p.canvas,
       appBar: (!isWide || canPop)
           ? AppBar(
-              backgroundColor: Colors.white,
+              backgroundColor: p.surface,
               elevation: 0,
-              title: const Text(
+              title: Text(
                 'Menu & Lainnya',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17, color: WarmPalette.textPrimary),
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17, color: p.textPrimary),
               ),
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(1),
-                child: Container(color: WarmPalette.line, height: 1),
+                child: Container(color: p.line, height: 1),
               ),
             )
           : null,
@@ -107,7 +109,7 @@ class MoreScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: WarmPalette.line, width: 1.2),
+                  border: Border.all(color: p.line, width: 1.2),
                   boxShadow: const [
                     BoxShadow(
                       color: Color(0x06000000),
@@ -120,13 +122,13 @@ class MoreScreen extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 24,
-                      backgroundColor: WarmPalette.primary.withValues(alpha: 0.12),
+                      backgroundColor: brandPrimary.withValues(alpha: 0.12),
                       child: Text(
                         userName.isNotEmpty ? userName[0].toUpperCase() : 'K',
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: WarmPalette.primary,
+                          color: brandPrimary,
                         ),
                       ),
                     ),
@@ -140,7 +142,7 @@ class MoreScreen extends StatelessWidget {
                             style: const TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w800,
-                              color: WarmPalette.textPrimary,
+                              color: p.textPrimary,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -150,7 +152,7 @@ class MoreScreen extends StatelessWidget {
                             '$tenantName • $locationName',
                             style: const TextStyle(
                               fontSize: 12,
-                              color: WarmPalette.textSecondary,
+                              color: p.textSecondary,
                               fontWeight: FontWeight.w600,
                             ),
                             maxLines: 1,
@@ -162,21 +164,21 @@ class MoreScreen extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: WarmPalette.tertiary.withValues(alpha: 0.12),
+                        color: p.tertiary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: WarmPalette.tertiary.withValues(alpha: 0.3)),
+                        border: Border.all(color: p.tertiary.withValues(alpha: 0.3)),
                       ),
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.circle, size: 7, color: WarmPalette.tertiary),
+                          Icon(Icons.circle, size: 7, color: p.tertiary),
                           SizedBox(width: 4),
                           Text(
                             'ONLINE',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w800,
-                              color: WarmPalette.tertiary,
+                              color: p.tertiary,
                             ),
                           ),
                         ],
@@ -197,7 +199,7 @@ class MoreScreen extends StatelessWidget {
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.6,
-                    color: WarmPalette.textTertiary,
+                    color: p.textTertiary,
                   ),
                 ),
               ),
@@ -208,7 +210,7 @@ class MoreScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: WarmPalette.line),
+                  border: Border.all(color: p.line),
                 ),
                 child: Column(
                   children: [
@@ -218,18 +220,18 @@ class MoreScreen extends StatelessWidget {
                       children: [
                         const Row(
                           children: [
-                            Icon(Icons.lock_clock_outlined, size: 18, color: WarmPalette.primary),
+                            Icon(Icons.lock_clock_outlined, size: 18, color: brandPrimary),
                             SizedBox(width: 8),
                             Text(
                               'Shift Register',
-                              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: WarmPalette.textPrimary),
+                              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: p.textPrimary),
                             ),
                           ],
                         ),
                         const CashierShiftBadge(),
                       ],
                     ),
-                    const Divider(height: 20, color: WarmPalette.line),
+                    const Divider(height: 20, color: p.line),
                     // Row 2: Quick buttons: Buka laci & Printer
                     Row(
                       children: [
@@ -249,8 +251,8 @@ class MoreScreen extends StatelessWidget {
                               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
                             ),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: WarmPalette.primary,
-                              side: const BorderSide(color: WarmPalette.line),
+                              foregroundColor: brandPrimary,
+                              side: const BorderSide(color: p.line),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               padding: const EdgeInsets.symmetric(vertical: 10),
                             ),
@@ -266,8 +268,8 @@ class MoreScreen extends StatelessWidget {
                               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
                             ),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: WarmPalette.textPrimary,
-                              side: const BorderSide(color: WarmPalette.line),
+                              foregroundColor: p.textPrimary,
+                              side: const BorderSide(color: p.line),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               padding: const EdgeInsets.symmetric(vertical: 10),
                             ),
@@ -290,7 +292,7 @@ class MoreScreen extends StatelessWidget {
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.6,
-                    color: WarmPalette.textTertiary,
+                    color: p.textTertiary,
                   ),
                 ),
               ),
@@ -300,7 +302,7 @@ class MoreScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: WarmPalette.line),
+                  border: Border.all(color: p.line),
                 ),
                 child: Column(
                   children: [
@@ -322,10 +324,10 @@ class MoreScreen extends StatelessWidget {
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: WarmPalette.primary.withValues(alpha: 0.1),
+                                    color: brandPrimary.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
-                                  child: Icon(entries[i].icon, color: WarmPalette.primary, size: 20),
+                                  child: Icon(entries[i].icon, color: brandPrimary, size: 20),
                                 ),
                                 const SizedBox(width: 14),
                                 Expanded(
@@ -337,7 +339,7 @@ class MoreScreen extends StatelessWidget {
                                         style: const TextStyle(
                                           fontWeight: FontWeight.w700,
                                           fontSize: 13.5,
-                                          color: WarmPalette.textPrimary,
+                                          color: p.textPrimary,
                                         ),
                                       ),
                                       const SizedBox(height: 2),
@@ -345,20 +347,20 @@ class MoreScreen extends StatelessWidget {
                                         entries[i].subtitle,
                                         style: const TextStyle(
                                           fontSize: 11.5,
-                                          color: WarmPalette.textSecondary,
+                                          color: p.textSecondary,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                                const Icon(Icons.chevron_right_rounded, color: WarmPalette.textTertiary, size: 20),
+                                const Icon(Icons.chevron_right_rounded, color: p.textTertiary, size: 20),
                               ],
                             ),
                           ),
                         ),
                       ),
                       if (i < entries.length - 1)
-                        const Divider(height: 1, indent: 56, endIndent: 16, color: WarmPalette.line),
+                        const Divider(height: 1, indent: 56, endIndent: 16, color: p.line),
                     ],
                   ],
                 ),
@@ -371,8 +373,8 @@ class MoreScreen extends StatelessWidget {
                 OutlinedButton.icon(
                   onPressed: () => _confirmLogout(context),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: WarmPalette.danger,
-                    side: BorderSide(color: WarmPalette.danger.withValues(alpha: 0.3)),
+                    foregroundColor: p.danger,
+                    side: BorderSide(color: p.danger.withValues(alpha: 0.3)),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(vertical: 13),
                   ),

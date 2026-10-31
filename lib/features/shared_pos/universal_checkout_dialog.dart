@@ -221,7 +221,7 @@ class _UniversalCheckoutDialogState extends State<UniversalCheckoutDialog> {
           const SizedBox(height: 18),
           CheckoutPaymentMethodSelector(
             selectedMethod: _selectedMethod,
-            accentColor: WarmPalette.primary,
+            accentColor: widget.accentColor,
             onChanged: (method) => setState(() => _selectedMethod = method),
           ),
           const SizedBox(height: 20),
@@ -261,10 +261,10 @@ class _UniversalCheckoutDialogState extends State<UniversalCheckoutDialog> {
             ),
             Text(
               CurrencyFormatter.format(widget.grandTotal),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.w800,
-                color: WarmPalette.primary,
+                color: widget.accentColor,
               ),
             ),
           ],
@@ -279,10 +279,10 @@ class _UniversalCheckoutDialogState extends State<UniversalCheckoutDialog> {
               ),
               Text(
                 CurrencyFormatter.format(_changeAmount),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
-                  color: WarmPalette.tertiary,
+                  color: widget.accentColor,
                 ),
               ),
             ],
@@ -296,7 +296,7 @@ class _UniversalCheckoutDialogState extends State<UniversalCheckoutDialog> {
       PosPaymentMethod.cash => CashPaymentPanel(
         totalAmount: widget.grandTotal,
         paidAmount: _paidAmount,
-        accentColor: WarmPalette.primary,
+        accentColor: widget.accentColor,
         onPaidChanged: (amount) => setState(() => _paidAmount = amount),
       ),
       PosPaymentMethod.qris => QrisPaymentPanel(
@@ -307,7 +307,7 @@ class _UniversalCheckoutDialogState extends State<UniversalCheckoutDialog> {
         selectedBank: _selectedEdcBank,
         onBankChanged: (bank) => setState(() => _selectedEdcBank = bank),
         approvalCodeController: _approvalCodeController,
-        accentColor: WarmPalette.primary,
+        accentColor: widget.accentColor,
         onApprovalCodeChanged: () => setState(() {}),
       ),
     };
@@ -324,7 +324,7 @@ class _UniversalCheckoutDialogState extends State<UniversalCheckoutDialog> {
     return ElevatedButton(
       onPressed: _isPayable ? _processPayment : null,
       style: ElevatedButton.styleFrom(
-        backgroundColor: WarmPalette.primary,
+        backgroundColor: widget.accentColor,
         foregroundColor: Colors.white,
         minimumSize: const Size.fromHeight(54),
         shape: const StadiumBorder(),
