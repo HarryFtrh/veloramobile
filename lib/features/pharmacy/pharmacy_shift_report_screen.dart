@@ -83,6 +83,128 @@ class _PharmacyShiftReportScreenState extends State<PharmacyShiftReportScreen> {
     );
   }
 
+  void _openDenominationCalculator() {
+    AudioHelper.tapFeedback();
+    final Map<int, int> counts = {
+      100000: 0,
+      50000: 0,
+      20000: 0,
+      10000: 0,
+      5000: 0,
+      2000: 0,
+      1000: 0,
+      500: 0,
+    };
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          num calculatedSum = 0;
+          counts.forEach((denom, qty) {
+            calculatedSum += denom * qty;
+          });
+
+          return Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(color: const Color(0xFFE2E8F0), borderRadius: BorderRadius.circular(2)),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Kalkulator Pecahan Uang Fisik Laci',
+                      style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 15),
+                    ),
+                    Text(
+                      CurrencyFormatter.format(calculatedSum),
+                      style: const TextStyle(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF006948)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ...counts.keys.map((denom) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Pecahan Rp ${CurrencyFormatter.format(denom).replaceAll('Rp ', '')}:', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.remove_circle_outline, size: 20),
+                              onPressed: counts[denom]! > 0
+                                  ? () {
+                                      setModalState(() => counts[denom] = counts[denom]! - 1);
+                                    }
+                                  : null,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                            Container(
+                              width: 40,
+                              alignment: Alignment.center,
+                              child: Text('${counts[denom]}', style: const TextStyle(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.bold)),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.add_circle_outline, size: 20, color: Color(0xFF006948)),
+                              onPressed: () {
+                                setModalState(() => counts[denom] = counts[denom]! + 1);
+                              },
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _countedCash = calculatedSum;
+                        _countedCashController.text = calculatedSum.toInt().toString();
+                      });
+                      Navigator.pop(ctx);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF006948),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: const Text('Gunakan Total Fisik Ini'),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     const emeraldPrimary = Color(0xFF006948);
@@ -158,6 +280,89 @@ class _PharmacyShiftReportScreenState extends State<PharmacyShiftReportScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Handover Pair Card (Stitch Serah Terima Workstation)
+                          Container(
+                            padding: const EdgeInsets.all(14),
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: borderColor),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 8,
+                                          height: 8,
+                                          decoration: const BoxDecoration(color: Color(0xFFB45309), shape: BoxShape.circle),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        const Text(
+                                          'Sesi Serah Terima Shift Berlangsung',
+                                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFB45309)),
+                                        ),
+                                      ],
+                                    ),
+                                    Text(
+                                      'Shift Pagi → Siang',
+                                      style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11, fontWeight: FontWeight.bold, color: emeraldPrimary),
+                                    ),
+                                  ],
+                                ),
+                                const Divider(height: 16, color: Color(0xFFF1F5F9)),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF8FAFC),
+                                          borderRadius: BorderRadius.circular(10),
+                                          border: Border.all(color: borderColor),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            const Text('KASIR MENYERAHKAN (SHIFT 1)', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: textMuted)),
+                                            const SizedBox(height: 3),
+                                            Text(cashierName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+                                            const Text('Shift Pagi (07:00 - 15:00) • Loket 01', style: TextStyle(fontSize: 10, color: textMuted)),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF8FAFC),
+                                          borderRadius: BorderRadius.circular(10),
+                                          border: Border.all(color: borderColor),
+                                        ),
+                                        child: const Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text('KASIR PENERIMA (SHIFT 2)', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: textMuted)),
+                                            SizedBox(height: 3),
+                                            Text('Apoteker Shift Pengganti', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+                                            Text('Shift Siang (15:00 - 22:00) • Loket 01', style: TextStyle(fontSize: 10, color: textMuted)),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+
                           // 4 Top Cards (Stitch Screen 4)
                           LayoutBuilder(
                             builder: (context, constraints) {
@@ -351,6 +556,24 @@ class _PharmacyShiftReportScreenState extends State<PharmacyShiftReportScreen> {
                                       ),
                                     ),
                                   ],
+                                ),
+                                const SizedBox(height: 14),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    onPressed: _openDenominationCalculator,
+                                    icon: const Icon(Icons.calculate_outlined, size: 16),
+                                    label: const Text(
+                                      'Hitung Pecahan Uang Kertas & Koin Laci',
+                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: emeraldPrimary,
+                                      side: const BorderSide(color: emeraldPrimary),
+                                      padding: const EdgeInsets.symmetric(vertical: 10),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),

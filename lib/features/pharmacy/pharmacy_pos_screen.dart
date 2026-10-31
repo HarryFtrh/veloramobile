@@ -398,6 +398,111 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
     );
   }
 
+  void _openBarcodeScanner() {
+    AudioHelper.tapFeedback();
+    final barcodeCtrl = TextEditingController();
+    String? localError;
+
+    showDialog<void>(
+      context: context,
+      builder: (dCtx) => StatefulBuilder(
+        builder: (context, setDState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.qr_code_scanner_rounded, color: Color(0xFF006948)),
+              SizedBox(width: 10),
+              Text(
+                'Pindai Barcode / SKU Obat',
+                style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Arahkan scanner barcode atau ketik kode barcode/SKU sediaan obat:',
+                  style: TextStyle(fontSize: 12, color: Color(0xFF6D7A72)),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: barcodeCtrl,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: 'Kode Barcode / SKU',
+                    hintText: 'Contoh: 8991234567...',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    errorText: localError,
+                    prefixIcon: const Icon(Icons.qr_code_rounded, color: Color(0xFF006948)),
+                  ),
+                  onSubmitted: (val) {
+                    final code = val.trim().toLowerCase();
+                    if (code.isEmpty) return;
+                    final match = _drugItems.firstWhere(
+                      (it) => it['sku']?.toString().toLowerCase() == code || it['id']?.toString() == code,
+                      orElse: () => <String, dynamic>{},
+                    );
+                    if (match.isNotEmpty) {
+                      _addToCart(match['id'].toString());
+                      AudioHelper.actionFeedback();
+                      Navigator.pop(dCtx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('✓ ${match['name']} ditambahkan ke keranjang resep.'),
+                          backgroundColor: const Color(0xFF006948),
+                        ),
+                      );
+                    } else {
+                      setDState(() => localError = 'Obat dengan barcode "$val" tidak ditemukan.');
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dCtx),
+              child: const Text('Batal', style: TextStyle(color: Color(0xFF6D7A72))),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final code = barcodeCtrl.text.trim().toLowerCase();
+                if (code.isEmpty) return;
+                final match = _drugItems.firstWhere(
+                  (it) => it['sku']?.toString().toLowerCase() == code || it['id']?.toString() == code,
+                  orElse: () => <String, dynamic>{},
+                );
+                if (match.isNotEmpty) {
+                  _addToCart(match['id'].toString());
+                  AudioHelper.actionFeedback();
+                  Navigator.pop(dCtx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('✓ ${match['name']} ditambahkan ke keranjang resep.'),
+                      backgroundColor: const Color(0xFF006948),
+                    ),
+                  );
+                } else {
+                  setDState(() => localError = 'Obat dengan barcode "${barcodeCtrl.text}" tidak ditemukan.');
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF006948),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text('Cari & Tambah'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _addToCart(String id) {
     AudioHelper.tapFeedback();
     setState(() {
@@ -821,15 +926,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
               IconButton(
                 icon: const Icon(Icons.qr_code_scanner_rounded, size: 20, color: emeraldPrimary),
                 tooltip: 'Scan Barcode Produk',
-                onPressed: () {
-                  _searchController.clear();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Arahkan scanner hardware atau ketik barcode obat di kolom pencarian.'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                },
+                onPressed: _openBarcodeScanner,
               ),
               IconButton(
                 icon: Icon(
@@ -1207,7 +1304,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                 IconButton(
                   icon: const Icon(Icons.qr_code_scanner_rounded, size: 18, color: emeraldPrimary),
                   tooltip: 'Scan Barcode',
-                  onPressed: () {},
+                  onPressed: _openBarcodeScanner,
                 ),
               ],
             ),
