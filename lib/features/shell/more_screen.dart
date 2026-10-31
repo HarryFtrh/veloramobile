@@ -3,6 +3,7 @@ import '../../core/design/tokens.dart';
 import '../../core/storage/session_storage.dart';
 import '../shared_pos/receipt_printer_service.dart';
 import '../shared_pos/shift_badge.dart';
+import 'menu_service.dart';
 
 class MoreEntry {
   const MoreEntry({
@@ -21,11 +22,46 @@ class MoreEntry {
 }
 
 /// Menu Hub "Lainnya" untuk operasional kasir, profil outlet, dan fitur sekunder.
-class MoreScreen extends StatelessWidget {
+/// Mendukung Server-Driven Menu via GET /api/my-menu dari backend Velora.
+class MoreScreen extends StatefulWidget {
   const MoreScreen({super.key, required this.entries, this.onLogout});
 
   final List<MoreEntry> entries;
   final VoidCallback? onLogout;
+
+  @override
+  State<MoreScreen> createState() => _MoreScreenState();
+}
+
+class _MoreScreenState extends State<MoreScreen> {
+  List<MoreEntry>? _serverEntries;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _serverEntries = MenuService.instance.cachedEntries;
+    _fetchServerMenu();
+  }
+
+  Future<void> _fetchServerMenu({bool force = false}) async {
+    if (_serverEntries == null) {
+      setState(() => _isLoading = true);
+    }
+    try {
+      final items = await MenuService.instance.fetchMyMenu(forceRefresh: force);
+      if (mounted && items.isNotEmpty) {
+        setState(() {
+          _serverEntries = items;
+          _isLoading = false;
+        });
+      } else if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   Future<void> _confirmLogout(BuildContext context) async {
     final ok = await showDialog<bool>(
@@ -68,7 +104,7 @@ class MoreScreen extends StatelessWidget {
         ],
       ),
     );
-    if (ok == true) onLogout?.call();
+    if (ok == true) widget.onLogout?.call();
   }
 
   @override
@@ -82,6 +118,10 @@ class MoreScreen extends StatelessWidget {
     final tenantName = SessionStorage.instance.getTenantName() ?? 'Velora POS';
     final locationName = SessionStorage.instance.getLocationName() ?? 'Outlet Utama';
 
+    final effectiveEntries = (_serverEntries != null && _serverEntries!.isNotEmpty)
+        ? _serverEntries!
+        : widget.entries;
+
     return Scaffold(
       backgroundColor: p.canvas,
       appBar: (!isWide || canPop)
@@ -92,16 +132,27 @@ class MoreScreen extends StatelessWidget {
                 'Menu & Lainnya',
                 style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17, color: p.textPrimary),
               ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.refresh_rounded, size: 20),
+                  tooltip: 'Sinkronkan Menu Server',
+                  onPressed: () => _fetchServerMenu(force: true),
+                ),
+              ],
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(1),
                 child: Container(color: p.line, height: 1),
               ),
             )
           : null,
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 680),
-          child: ListView(
+      body: RefreshIndicator(
+        onRefresh: () => _fetchServerMenu(force: true),
+        color: brandPrimary,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 680),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
             children: [
               // 1. Profile / Store Card
@@ -287,7 +338,7 @@ class MoreScreen extends StatelessWidget {
               // 3. Section(s): Categorized Features or Grouped Menu Cards
               ...() {
                 final Map<String, List<MoreEntry>> groupedEntries = {};
-                for (final entry in entries) {
+                for (final entry in effectiveEntries) {
                   final cat = entry.category ?? 'Fitur & Pengaturan Toko';
                   groupedEntries.putIfAbsent(cat, () => []).add(entry);
                 }
@@ -395,7 +446,7 @@ class MoreScreen extends StatelessWidget {
               const SizedBox(height: 8),
 
               // 4. Logout Button
-              if (onLogout != null) ...[
+              if (widget.onLogout != null) ...[
                 OutlinedButton.icon(
                   onPressed: () => _confirmLogout(context),
                   style: OutlinedButton.styleFrom(
@@ -421,6 +472,7 @@ class MoreScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }
