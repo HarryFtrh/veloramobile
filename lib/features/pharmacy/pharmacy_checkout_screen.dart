@@ -257,19 +257,21 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> {
         if (_autoPrintReceipt) {
           try {
             await ReceiptPrinterService.instance.printReceipt(
-              storeName: SessionStorage.instance.getTenantName() ?? 'Velora Pharmacy',
-              storeAddress: SessionStorage.instance.getStoreAddress() ?? '-',
-              storePhone: SessionStorage.instance.getStorePhone() ?? '-',
-              invoiceNumber: res.invoiceNumber,
-              cashierName: SessionStorage.instance.getUserName() ?? 'Apoteker',
-              tableName: '${widget.patientName} (${widget.queueNumber})',
-              items: widget.items,
-              subtotal: widget.subtotal,
-              tax: widget.taxAmount,
-              grandTotal: widget.grandTotal,
-              paymentMethod: methodLabel,
-              paidAmount: paidAmount,
-              changeAmount: res.changeAmount,
+              ReceiptData(
+                storeName: SessionStorage.instance.getTenantName() ?? 'Velora Pharmacy',
+                storeAddress: SessionStorage.instance.getStoreAddress() ?? '-',
+                storePhone: SessionStorage.instance.getStorePhone() ?? '-',
+                invoiceNumber: res.invoiceNumber,
+                cashierName: SessionStorage.instance.getUserName() ?? 'Apoteker',
+                tableOrPatient: '${widget.patientName} (${widget.queueNumber})',
+                items: widget.items,
+                subtotal: widget.subtotal,
+                tax: widget.taxAmount,
+                grandTotal: widget.grandTotal,
+                paymentMethod: methodLabel,
+                paidAmount: paidAmount,
+                changeAmount: res.changeAmount,
+              ),
             );
           } catch (e) {
             debugPrint('⚠️ [ReceiptPrinter] Gagal auto print: $e');
@@ -279,11 +281,12 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> {
         // Notify parent callback
         widget.onCompleted(res, methodLabel);
 
+        if (!mounted) return;
+
         // Close checkout screen
         Navigator.of(context).pop(res);
 
         // Show official receipt dialog
-        // ignore: use_build_context_synchronously
         PharmacyReceiptDialog.show(
           context: context,
           result: res,
@@ -864,7 +867,7 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> {
                           if (widget.embalaseFee > 0)
                             _buildFinancialRow('Biaya Embalase & Wadah', widget.embalaseFee, isSubtle: true),
                           if (widget.taxAmount > 0)
-                            _buildFinancialRow('${widget.taxName}', widget.taxAmount, isSubtle: true),
+                            _buildFinancialRow(widget.taxName, widget.taxAmount, isSubtle: true),
                           if (widget.discountAmount > 0)
                             _buildFinancialRow('Diskon', -widget.discountAmount, isDiscount: true),
 
@@ -1165,7 +1168,7 @@ class _PharmacyCheckoutScreenState extends State<PharmacyCheckoutScreen> {
   // CASH FORM COMPONENT
   // ---------------------------------------------------------------------------
   Widget _buildCashPaymentForm({required num changeAmount, required num shortAmount}) {
-    final List<num> presets = [
+    final presets = <num>[
       widget.grandTotal,
       (widget.grandTotal / 10000).ceil() * 10000,
       50000,

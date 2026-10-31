@@ -12,6 +12,8 @@ class CurrencyFormatter {
     return _formatter.format(amount);
   }
 
+  static String formatRupiah(num? amount) => format(amount);
+
   static String formatCompact(num? amount) {
     if (amount == null) return '0';
     if (amount >= 1000000) {

@@ -1,4 +1,4 @@
-import '../shared_pos/pos_checkout_service.dart';
+import '../../shared_pos/pos_checkout_service.dart';
 
 enum ClinicalSafetyLevel {
   safe,
@@ -48,7 +48,7 @@ class PharmacyClinicalSafetyService {
             alerts.add(ClinicalSafetyAlert(
               level: ClinicalSafetyLevel.contraindication,
               title: 'Alergi Obat: Golongan Penisilin',
-              message: 'Pasien memiliki riwayat alergi "${patientAllergies}". Pemberian ${item.name} berisiko memicu reaksi anafilaksis / hipersensitivitas.',
+              message: 'Pasien memiliki riwayat alergi $patientAllergies. Pemberian ${item.name} berisiko memicu reaksi anafilaksis / hipersensitivitas.',
               recommendation: 'Ganti dengan antibiotik golongan makrolida (Azithromycin/Erythromycin) setelah konfirmasi dokter.',
               involvedDrugs: [item.name],
             ));

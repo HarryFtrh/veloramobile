@@ -9,7 +9,6 @@ import '../shared_pos/product_catalog_service.dart';
 import '../shared_pos/pos_checkout_service.dart';
 import '../shared_pos/shift_service.dart';
 import '../shared_pos/shift_modal.dart';
-import '../shared_pos/universal_checkout_dialog.dart';
 import '../shared_pos/sales_history_drawer.dart';
 import '../shared_pos/printer_settings_modal.dart';
 import 'widgets/pharmacy_patient_dialog.dart';
@@ -20,7 +19,6 @@ import 'widgets/pharmacy_stock_alert_modal.dart';
 import 'widgets/pharmacy_shift_report_modal.dart';
 import 'widgets/pharmacy_prescription_review_modal.dart';
 import 'widgets/pharmacy_medical_records_modal.dart';
-import 'widgets/pharmacy_receipt_dialog.dart';
 import 'pharmacy_service.dart';
 import 'pharmacy_checkout_screen.dart';
 

@@ -3,7 +3,6 @@ import '../../../core/design/tokens.dart';
 import '../../../core/storage/session_storage.dart';
 import '../../../core/utils/audio_helper.dart';
 import '../../shared_pos/pos_checkout_service.dart';
-import '../../shared_pos/receipt_printer_service.dart';
 
 class PharmacyEtiketItem {
   final PosCartItem item;
@@ -135,7 +134,7 @@ class _PharmacyEtiketDialogState extends State<PharmacyEtiketDialog> {
         sb.writeln('Tanggal: ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}');
         sb.writeln('--------------------------------');
         sb.writeln('OBAT: ${e.item.name}');
-        sb.writeln('Jumlah: ${e.item.quantity} ${e.item.modifiers != null ? e.item.modifiers : ""}');
+        sb.writeln('Jumlah: ${e.item.quantity} ${e.item.modifiers ?? ""}');
         if (e.item.batchNumber != null) sb.writeln('No. Batch: ${e.item.batchNumber}');
         if (e.item.expiryDate != null) sb.writeln('Exp Date : ${e.item.expiryDate}');
         sb.writeln('--------------------------------');

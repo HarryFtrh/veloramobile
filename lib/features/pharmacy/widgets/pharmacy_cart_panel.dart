@@ -59,6 +59,13 @@ class PharmacyCartPanel extends StatefulWidget {
 }
 
 class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
+  static const primaryEmerald = Color(0xFF006948);
+  static const secondaryTeal = Color(0xFF006A61);
+  static const borderColor = Color(0xFFE2E8F0);
+  static const canvasColor = Color(0xFFFAF8FF);
+  static const textPrimary = Color(0xFF131B2E);
+  static const textMuted = Color(0xFF6D7A72);
+
   PharmacyCartPanelMode _panelMode = PharmacyCartPanelMode.cartItems;
   int _selectedPaymentMethod = 1; // 0: QRIS, 1: Tunai, 2: Debit/EDC, 3: Asuransi, 4: Split
 
@@ -274,19 +281,21 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
         if (_autoPrintReceipt) {
           try {
             await ReceiptPrinterService.instance.printReceipt(
-              storeName: SessionStorage.instance.getTenantName() ?? 'Velora Pharmacy',
-              storeAddress: SessionStorage.instance.getStoreAddress() ?? '-',
-              storePhone: SessionStorage.instance.getStorePhone() ?? '-',
-              invoiceNumber: res.invoiceNumber,
-              cashierName: SessionStorage.instance.getUserName() ?? 'Apoteker',
-              tableName: '${widget.selectedPatient} (${widget.queueNumber})',
-              items: cartItems,
-              subtotal: widget.totalPrice,
-              tax: 0,
-              grandTotal: grandTotal,
-              paymentMethod: methodLabel,
-              paidAmount: paidAmount,
-              changeAmount: res.changeAmount,
+              ReceiptData(
+                storeName: SessionStorage.instance.getTenantName() ?? 'Velora Pharmacy',
+                storeAddress: SessionStorage.instance.getStoreAddress() ?? '-',
+                storePhone: SessionStorage.instance.getStorePhone() ?? '-',
+                invoiceNumber: res.invoiceNumber,
+                cashierName: SessionStorage.instance.getUserName() ?? 'Apoteker',
+                tableOrPatient: '${widget.selectedPatient} (${widget.queueNumber})',
+                items: cartItems,
+                subtotal: widget.totalPrice,
+                tax: 0,
+                grandTotal: grandTotal,
+                paymentMethod: methodLabel,
+                paidAmount: paidAmount,
+                changeAmount: res.changeAmount,
+              ),
             );
           } catch (e) {
             debugPrint('⚠️ [ReceiptPrinter] Gagal auto print: $e');
@@ -297,7 +306,8 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
         widget.onClearCart();
         setState(() => _panelMode = PharmacyCartPanelMode.cartItems);
 
-        // ignore: use_build_context_synchronously
+        if (!mounted) return;
+
         PharmacyReceiptDialog.show(
           context: context,
           result: res,
@@ -332,13 +342,6 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
 
   @override
   Widget build(BuildContext context) {
-    const primaryEmerald = Color(0xFF006948);
-    const secondaryTeal = Color(0xFF006A61);
-    const borderColor = Color(0xFFE2E8F0);
-    const canvasColor = Color(0xFFFAF8FF);
-    const textPrimary = Color(0xFF131B2E);
-    const textMuted = Color(0xFF6D7A72);
-
     final effectiveTuslah = widget.totalPrice > 0 ? widget.tuslahFee : 0;
     final taxEnabled = PharmacyService.instance.taxEnabled.value;
     final taxRate = PharmacyService.instance.taxRate.value;
@@ -364,12 +367,6 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
             ? _buildInPlaceTenderView(
                 grandTotal: grandTotal,
                 totalQty: totalQty,
-                primaryEmerald: primaryEmerald,
-                secondaryTeal: secondaryTeal,
-                borderColor: borderColor,
-                canvasColor: canvasColor,
-                textPrimary: textPrimary,
-                textMuted: textMuted,
               )
             : _buildCartItemsView(
                 grandTotal: grandTotal,
@@ -380,12 +377,6 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                 taxInclusive: taxInclusive,
                 taxAmount: taxAmount,
                 totalQty: totalQty,
-                primaryEmerald: primaryEmerald,
-                secondaryTeal: secondaryTeal,
-                borderColor: borderColor,
-                canvasColor: canvasColor,
-                textPrimary: textPrimary,
-                textMuted: textMuted,
               ),
       ),
     );
@@ -403,12 +394,6 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
     required bool taxInclusive,
     required num taxAmount,
     required int totalQty,
-    required Color primaryEmerald,
-    required Color secondaryTeal,
-    required Color borderColor,
-    required Color canvasColor,
-    required Color textPrimary,
-    required Color textMuted,
   }) {
     return Column(
       key: const ValueKey('CartItemsView'),
@@ -952,12 +937,6 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
   Widget _buildInPlaceTenderView({
     required num grandTotal,
     required int totalQty,
-    required Color primaryEmerald,
-    required Color secondaryTeal,
-    required Color borderColor,
-    required Color canvasColor,
-    required Color textPrimary,
-    required Color textMuted,
   }) {
     final num changeAmount = (_tenderAmount >= grandTotal) ? (_tenderAmount - grandTotal) : 0;
     final num shortAmount = (_tenderAmount < grandTotal) ? (grandTotal - _tenderAmount) : 0;
@@ -969,7 +948,7 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
       patientAllergies: widget.patientAllergies,
     );
 
-    final List<num> cashPresets = [
+    final cashPresets = <num>[
       grandTotal,
       (grandTotal / 10000).ceil() * 10000,
       50000,
@@ -1395,10 +1374,27 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                         const Text('Sisa Tagihan (Non-Tunai):', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                         Text(
                           CurrencyFormatter.formatRupiah(secondarySplitAmount),
-                          style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 13, fontWeight: FontWeight.bold, color: primaryEmerald),
+                          style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 13, fontWeight: FontWeight.bold, color: primaryEmerald),
                         ),
                       ],
                     ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    children: ['QRIS Dinamis', 'Debit EDC', 'Iur Biaya BPJS'].map((m) {
+                      final isSel = _splitSecondaryMethod == m;
+                      return ChoiceChip(
+                        label: Text(m),
+                        selected: isSel,
+                        selectedColor: primaryEmerald,
+                        backgroundColor: const Color(0xFFF1F5F9),
+                        labelStyle: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isSel ? Colors.white : textPrimary),
+                        onSelected: (val) {
+                          if (val) setState(() => _splitSecondaryMethod = m);
+                        },
+                      );
+                    }).toList(),
                   ),
                 ],
               ],
