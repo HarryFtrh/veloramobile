@@ -109,6 +109,10 @@ class PharmacyService {
   /// Biaya tuslah/embalase per transaksi resep dari konfigurasi tenant (/v1/pos/config).
   /// Default 0 (tidak dikenakan) bila backend tidak mengatur.
   final ValueNotifier<num> tuslahFee = ValueNotifier<num>(0);
+  final ValueNotifier<bool> taxEnabled = ValueNotifier<bool>(false);
+  final ValueNotifier<double> taxRate = ValueNotifier<double>(0.0);
+  final ValueNotifier<String> taxName = ValueNotifier<String>('PPN');
+  final ValueNotifier<bool> taxInclusive = ValueNotifier<bool>(true);
 
   Future<num> fetchTuslahFee() async {
     const endpoints = ['/v1/pos/config', '/v1/pos/preferences', '/v1/preferences'];
@@ -127,6 +131,18 @@ class PharmacyService {
                 d['prescription_fee'];
             final fee = v is num ? v : num.tryParse(v?.toString() ?? '') ?? 0;
             tuslahFee.value = fee;
+
+            final bool isTaxOn = d['tax_enabled'] == true ||
+                d['enable_tax'] == true ||
+                d['pb1_enabled'] == true ||
+                pharm['tax_enabled'] == true;
+            final num rawTaxRate = d['tax_rate'] ?? d['pb1_rate'] ?? pharm['tax_rate'] ?? 0;
+            final double rate = (rawTaxRate > 1) ? (rawTaxRate / 100).toDouble() : rawTaxRate.toDouble();
+            taxEnabled.value = isTaxOn && rate > 0;
+            taxRate.value = rate;
+            taxName.value = (d['tax_name'] ?? pharm['tax_name'] ?? 'PPN').toString();
+            taxInclusive.value = d['tax_inclusive'] != false;
+
             return fee;
           }
         }

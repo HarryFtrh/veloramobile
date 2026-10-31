@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/audio_helper.dart';
+import '../pharmacy_service.dart';
 
 class PharmacyCartPanel extends StatefulWidget {
   final Map<String, int> cart;
@@ -60,9 +61,18 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
     const textMuted = Color(0xFF6D7A72);
 
     final effectiveTuslah = widget.totalPrice > 0 ? widget.tuslahFee : 0;
-    final grandTotal = widget.totalPrice + effectiveTuslah;
+    final taxEnabled = PharmacyService.instance.taxEnabled.value;
+    final taxRate = PharmacyService.instance.taxRate.value;
+    final taxName = PharmacyService.instance.taxName.value;
+    final taxInclusive = PharmacyService.instance.taxInclusive.value;
+
+    final taxAmount = (taxEnabled && taxRate > 0)
+        ? (taxInclusive
+            ? (widget.totalPrice * taxRate / (1 + taxRate)).round()
+            : (widget.totalPrice * taxRate).round())
+        : 0;
+    final grandTotal = widget.totalPrice + effectiveTuslah + (taxInclusive ? 0 : taxAmount);
     final totalQty = widget.cart.values.fold<int>(0, (s, q) => s + q);
-    final ppnEstimated = (widget.totalPrice * 0.11 / 1.11).round();
 
     return Container(
       color: Colors.white,
@@ -497,36 +507,44 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                   ],
                 ),
                 const SizedBox(height: 3),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Tuslah & Embalase Resep', style: TextStyle(color: textMuted, fontSize: 11.5)),
-                    Text(
-                      CurrencyFormatter.format(effectiveTuslah),
-                      style: const TextStyle(
-                        fontFamily: 'JetBrains Mono',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: textPrimary,
+                if (effectiveTuslah > 0) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Tuslah & Embalase Resep', style: TextStyle(color: textMuted, fontSize: 11.5)),
+                      Text(
+                        CurrencyFormatter.format(effectiveTuslah),
+                        style: const TextStyle(
+                          fontFamily: 'JetBrains Mono',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: textPrimary,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 3),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('PPN Farmasi (Termasuk 11%)', style: TextStyle(color: textMuted, fontSize: 11)),
-                    Text(
-                      CurrencyFormatter.format(ppnEstimated),
-                      style: const TextStyle(
-                        fontFamily: 'JetBrains Mono',
-                        fontSize: 11,
-                        color: Color(0xFF6D7A72),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                ],
+                if (taxEnabled && taxRate > 0) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '$taxName (${(taxRate * 100).toStringAsFixed(0)}%${taxInclusive ? " Termasuk" : ""})',
+                        style: const TextStyle(color: textMuted, fontSize: 11),
                       ),
-                    ),
-                  ],
-                ),
+                      Text(
+                        CurrencyFormatter.format(taxAmount),
+                        style: const TextStyle(
+                          fontFamily: 'JetBrains Mono',
+                          fontSize: 11,
+                          color: Color(0xFF6D7A72),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                ],
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 8),
                   child: Divider(color: borderColor, height: 1),
