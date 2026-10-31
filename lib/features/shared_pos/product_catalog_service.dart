@@ -257,6 +257,23 @@ class PosProduct {
     if (img.isEmpty || img == '-') img = json.getString('picture');
     if (img.isEmpty || img == '-') img = json.getString('img');
 
+    // Filter out dummy/avatar generator placeholders (e.g. ui-avatars that render initials 'PA', 'Pr')
+    if (img.isNotEmpty) {
+      final lowerImg = img.toLowerCase().trim();
+      final bool isPlaceholder = lowerImg.contains('ui-avatars') ||
+          lowerImg.contains('placeholder') ||
+          lowerImg.contains('dummyimage') ||
+          lowerImg.contains('dicebear') ||
+          lowerImg.contains('default-avatar') ||
+          lowerImg.contains('no-image') ||
+          lowerImg.contains('no_image') ||
+          lowerImg.contains('default_drug') ||
+          lowerImg.contains('avatar');
+      if (isPlaceholder) {
+        img = '';
+      }
+    }
+
     // Unit / Satuan resolution
     String unitVal = json.getString('unit');
     if (unitVal.isEmpty || unitVal == '-') unitVal = json.getString('satuan');

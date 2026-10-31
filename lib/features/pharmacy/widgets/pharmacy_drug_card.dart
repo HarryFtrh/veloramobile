@@ -510,7 +510,6 @@ class PharmacyDrugRow extends StatelessWidget {
               isAlkes: isAlkes,
               size: 36,
               primaryEmerald: primaryEmerald,
-              showTextBadge: true,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -712,7 +711,6 @@ class _DrugThumbnailWidget extends StatelessWidget {
   final bool isAlkes;
   final double size;
   final Color primaryEmerald;
-  final bool showTextBadge;
 
   const _DrugThumbnailWidget({
     required this.item,
@@ -720,15 +718,29 @@ class _DrugThumbnailWidget extends StatelessWidget {
     required this.isAlkes,
     required this.size,
     required this.primaryEmerald,
-    this.showTextBadge = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final rawUrl = item['imageUrl'] ?? item['image'] ?? item['photo'] ?? item['photo_url'];
-    final String? imgUrl = (rawUrl != null && rawUrl is String && rawUrl.trim().isNotEmpty && rawUrl.trim() != '-')
+    String? imgUrl = (rawUrl != null && rawUrl is String && rawUrl.trim().isNotEmpty && rawUrl.trim() != '-')
         ? rawUrl.trim()
         : null;
+
+    if (imgUrl != null) {
+      final lower = imgUrl.toLowerCase();
+      if (lower.contains('ui-avatars') ||
+          lower.contains('placeholder') ||
+          lower.contains('dummyimage') ||
+          lower.contains('dicebear') ||
+          lower.contains('avatar') ||
+          lower.contains('default-avatar') ||
+          lower.contains('no-image') ||
+          lower.contains('no_image') ||
+          lower.contains('default_drug')) {
+        imgUrl = null;
+      }
+    }
 
     final fallback = Container(
       width: size,
@@ -741,35 +753,19 @@ class _DrugThumbnailWidget extends StatelessWidget {
                 : const Color(0xFFF0FDF4),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: showTextBadge
-          ? Center(
-              child: Text(
-                isRx ? 'Rx' : isAlkes ? 'Alkes' : 'OTC',
-                style: TextStyle(
-                  fontFamily: 'JetBrains Mono',
-                  color: isRx
-                      ? const Color(0xFFBA1A1A)
-                      : isAlkes
-                          ? const Color(0xFF0284C7)
-                          : primaryEmerald,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 10.5,
-                ),
-              ),
-            )
-          : Icon(
-              isRx
-                  ? Icons.medication_rounded
-                  : isAlkes
-                      ? Icons.devices_rounded
-                      : Icons.vaccines_rounded,
-              size: size * 0.55,
-              color: isRx
-                  ? const Color(0xFFBA1A1A)
-                  : isAlkes
-                      ? const Color(0xFF0284C7)
-                      : primaryEmerald,
-            ),
+      child: Icon(
+        isRx
+            ? Icons.medication_rounded
+            : isAlkes
+                ? Icons.devices_rounded
+                : Icons.vaccines_rounded,
+        size: size * 0.55,
+        color: isRx
+            ? const Color(0xFFBA1A1A)
+            : isAlkes
+                ? const Color(0xFF0284C7)
+                : primaryEmerald,
+      ),
     );
 
     if (imgUrl == null) {

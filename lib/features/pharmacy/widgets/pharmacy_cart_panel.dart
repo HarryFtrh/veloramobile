@@ -781,7 +781,18 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
                     final isAlkes = (item['category']?.toString().toLowerCase().contains('alkes') ?? false);
 
                     final rawImg = item['imageUrl'] ?? item['image'];
-                    final String? imgUrl = (rawImg is String && rawImg.isNotEmpty && rawImg != '-') ? rawImg : null;
+                    String? imgUrl = (rawImg is String && rawImg.isNotEmpty && rawImg != '-') ? rawImg : null;
+                    if (imgUrl != null) {
+                      final lower = imgUrl.toLowerCase();
+                      if (lower.contains('ui-avatars') ||
+                          lower.contains('placeholder') ||
+                          lower.contains('dummyimage') ||
+                          lower.contains('dicebear') ||
+                          lower.contains('avatar') ||
+                          lower.contains('default')) {
+                        imgUrl = null;
+                      }
+                    }
 
                     return Container(
                       padding: const EdgeInsets.all(10),
