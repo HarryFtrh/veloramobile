@@ -96,7 +96,12 @@ class AppTheme {
         backgroundColor: palette.canvas,
         surfaceTintColor: Colors.transparent,
         foregroundColor: palette.textPrimary,
-        titleTextStyle: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+        iconTheme: IconThemeData(color: palette.textPrimary),
+        titleTextStyle: textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.w700,
+          fontSize: 17,
+          color: palette.textPrimary,
+        ),
       ),
       cardTheme: CardThemeData(
         elevation: 0,
