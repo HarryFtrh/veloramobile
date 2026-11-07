@@ -23,12 +23,13 @@ class CheckoutPaymentMethodSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMobile = context.isMobile;
+    final p = context.palette;
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: WarmPalette.surfaceMuted,
+        color: p.surfaceMuted,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: WarmPalette.line),
+        border: Border.all(color: p.line),
       ),
       child: Row(
         children: [
@@ -82,6 +83,7 @@ class _MethodTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isSelected = selectedMethod == method;
+    final p = context.palette;
     return Expanded(
       child: GestureDetector(
         onTap: () {
@@ -101,7 +103,7 @@ class _MethodTab extends StatelessWidget {
               Icon(
                 icon,
                 size: 16,
-                color: isSelected ? Colors.white : WarmPalette.textSecondary,
+                color: isSelected ? Colors.white : p.textSecondary,
               ),
               const SizedBox(width: 6),
               Flexible(
@@ -112,7 +114,7 @@ class _MethodTab extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: isSelected ? Colors.white : WarmPalette.textSecondary,
+                    color: isSelected ? Colors.white : p.textSecondary,
                   ),
                 ),
               ),
@@ -201,18 +203,19 @@ class _CashPresetButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isSelected = paidAmount == amount;
+    final p = context.palette;
     return OutlinedButton(
       onPressed: () {
         AudioHelper.tapFeedback();
         onSelected(amount);
       },
       style: OutlinedButton.styleFrom(
-        foregroundColor: isSelected ? accentColor : WarmPalette.textPrimary,
+        foregroundColor: isSelected ? accentColor : p.textPrimary,
         backgroundColor: isSelected
             ? accentColor.withValues(alpha: 0.12)
             : Colors.white,
         side: BorderSide(
-          color: isSelected ? accentColor : WarmPalette.line,
+          color: isSelected ? accentColor : p.line,
           width: isSelected ? 1.5 : 1.0,
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -241,13 +244,14 @@ class QrisPaymentPanel extends StatelessWidget {
         qrisNmid ??
         SessionStorage.instance.getQrisNmid() ??
         'NMID-${SessionStorage.instance.getTenantId() ?? SessionStorage.instance.getLocationId() ?? "VELORA"}';
+    final p = context.palette;
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: WarmPalette.line),
+        border: Border.all(color: p.line),
       ),
       child: Column(
         children: [
@@ -262,28 +266,28 @@ class QrisPaymentPanel extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: WarmPalette.danger.withValues(alpha: 0.1),
+                      color: p.danger.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(
-                        color: WarmPalette.danger.withValues(alpha: 0.3),
+                        color: p.danger.withValues(alpha: 0.3),
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       'QRIS',
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 13,
-                        color: WarmPalette.danger,
+                        color: p.danger,
                       ),
                     ),
                   ),
                   const SizedBox(width: 10),
-                  const Text(
+                  Text(
                     'GPN • Standar Pembayaran Nasional',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: WarmPalette.textSecondary,
+                      color: p.textSecondary,
                     ),
                   ),
                 ],
@@ -291,23 +295,23 @@ class QrisPaymentPanel extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: WarmPalette.tertiary.withValues(alpha: 0.12),
+                  color: p.tertiary.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
                     Icon(
                       Icons.timer_outlined,
                       size: 12,
-                      color: WarmPalette.tertiary,
+                      color: p.tertiary,
                     ),
-                    SizedBox(width: 4),
+                    const SizedBox(width: 4),
                     Text(
                       '04:59',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
-                        color: WarmPalette.tertiary,
+                        color: p.tertiary,
                       ),
                     ),
                   ],
@@ -319,38 +323,38 @@ class QrisPaymentPanel extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: WarmPalette.canvas,
+              color: p.canvas,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: WarmPalette.line),
+              border: Border.all(color: p.line),
             ),
             child: Column(
               children: [
-                const Icon(
+                Icon(
                   Icons.qr_code_2_rounded,
                   size: 160,
-                  color: WarmPalette.textPrimary,
+                  color: p.textPrimary,
                 ),
                 Text(
                   storeName.toUpperCase(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 12,
-                    color: WarmPalette.textPrimary,
+                    color: p.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   'NMID: $effectiveNmid',
-                  style: const TextStyle(fontSize: 10, color: WarmPalette.textSecondary, fontWeight: FontWeight.w500),
+                  style: TextStyle(fontSize: 10, color: p.textSecondary, fontWeight: FontWeight.w500),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Minta pelanggan scan QRIS di atas dengan BCA, Mandiri, GoPay, OVO, Dana, ShopeePay',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12, color: WarmPalette.textSecondary),
+            style: TextStyle(fontSize: 12, color: p.textSecondary),
           ),
         ],
       ),
@@ -377,19 +381,22 @@ class DebitPaymentPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const banks = ['BCA', 'Mandiri', 'BRI', 'BNI'];
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: WarmPalette.line),
+        border: Border.all(color: p.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Pilih Mesin EDC / Bank',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: WarmPalette.textSecondary),
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: p.textSecondary),
           ),
           const SizedBox(height: 10),
           Row(
@@ -405,15 +412,15 @@ class DebitPaymentPanel extends StatelessWidget {
                     },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: isSelected
-                          ? WarmPalette.primary
-                          : WarmPalette.textSecondary,
+                          ? primaryColor
+                          : p.textSecondary,
                       backgroundColor: isSelected
-                          ? WarmPalette.primary.withValues(alpha: 0.12)
-                          : WarmPalette.surfaceMuted,
+                          ? primaryColor.withValues(alpha: 0.12)
+                          : p.surfaceMuted,
                       side: BorderSide(
                         color: isSelected
-                            ? WarmPalette.primary
-                            : WarmPalette.line,
+                            ? primaryColor
+                            : p.line,
                         width: isSelected ? 1.5 : 1.0,
                       ),
                       shape: RoundedRectangleBorder(
@@ -435,44 +442,44 @@ class DebitPaymentPanel extends StatelessWidget {
             }).toList(),
           ),
           const SizedBox(height: 18),
-          const Text(
+          Text(
             'Approval Code / No. Referensi EDC',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: WarmPalette.textSecondary),
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: p.textSecondary),
           ),
           const SizedBox(height: 6),
           TextField(
             controller: approvalCodeController,
             keyboardType: TextInputType.number,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: WarmPalette.textPrimary),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: p.textPrimary),
             decoration: InputDecoration(
               hintText: 'Cth: 839201',
-              hintStyle: const TextStyle(color: WarmPalette.textSecondary),
-              prefixIcon: const Icon(
+              hintStyle: TextStyle(color: p.textSecondary),
+              prefixIcon: Icon(
                 Icons.pin_rounded,
                 size: 20,
-                color: WarmPalette.textSecondary,
+                color: p.textSecondary,
               ),
               filled: true,
-              fillColor: WarmPalette.canvas,
+              fillColor: p.canvas,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: WarmPalette.line),
+                borderSide: BorderSide(color: p.line),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: WarmPalette.line),
+                borderSide: BorderSide(color: p.line),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: WarmPalette.primary),
+                borderSide: BorderSide(color: primaryColor),
               ),
             ),
             onChanged: (_) => onApprovalCodeChanged(),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Ketik 6 digit nomor approval yang tertera pada kertas struk EDC setelah nasabah memasukkan PIN.',
-            style: TextStyle(fontSize: 11, color: WarmPalette.textSecondary),
+            style: TextStyle(fontSize: 11, color: p.textSecondary),
           ),
         ],
       ),

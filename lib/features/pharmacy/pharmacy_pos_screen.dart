@@ -3,9 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../core/design/tokens.dart';
 import '../../core/utils/audio_helper.dart';
-import '../../core/utils/currency_formatter.dart';
 import '../../core/storage/session_storage.dart';
-import '../shared_pos/offline_sync_badge.dart';
 import '../shared_pos/product_catalog_service.dart';
 import '../shared_pos/pos_checkout_service.dart';
 import '../shared_pos/shift_service.dart';
@@ -14,15 +12,24 @@ import '../shared_pos/sales_history_drawer.dart';
 import '../shared_pos/printer_settings_modal.dart';
 import 'services/pharmacy_catalog_service.dart';
 import 'widgets/pharmacy_patient_dialog.dart';
-import 'widgets/pharmacy_drug_card.dart';
 import 'widgets/pharmacy_cart_panel.dart';
 import 'widgets/pharmacy_queue_modal.dart';
 import 'widgets/pharmacy_stock_alert_modal.dart';
 import 'widgets/pharmacy_shift_report_modal.dart';
 import 'widgets/pharmacy_prescription_review_modal.dart';
 import 'widgets/pharmacy_medical_records_modal.dart';
+import 'widgets/pos/pharmacy_pos_header.dart';
+import 'widgets/pos/pharmacy_patient_banner.dart';
+import 'widgets/pos/pharmacy_search_and_categories.dart';
+import 'widgets/pos/pharmacy_floating_cart_drawer.dart';
+import 'widgets/pos/pharmacy_barcode_dialog.dart';
+import 'widgets/pos/pharmacy_patient_source_sheet.dart';
+import 'widgets/pos/pharmacy_catalog_view.dart';
+import 'widgets/pos/pharmacy_pos_cart_bridge.dart';
 import 'pharmacy_service.dart';
 import 'pharmacy_checkout_screen.dart';
+
+export 'widgets/pos/pharmacy_pos_cart_bridge.dart';
 
 class PharmacyPosScreen extends StatefulWidget {
   final VoidCallback? onLogout;
@@ -47,25 +54,12 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
   String _medicalRecordNumber = '-';
   String _patientCategory = 'Umum';
   String _patientAllergies = '';
+  bool _isPrescriptionValidated = false;
 
   bool get _isClinicPatientLoaded =>
       (_queueNumber != '-' && _queueNumber.isNotEmpty) ||
       (_medicalRecordNumber != '-' && _medicalRecordNumber.isNotEmpty) ||
       (_selectedPatient != 'Pelanggan Umum (Walk-in)' && _selectedPatient.isNotEmpty);
-
-  bool get _hasRxInCart {
-    for (final key in _cart.keys) {
-      final baseId = key.contains(':') ? key.split(':').first : key;
-      final item = _drugItems.firstWhere(
-        (it) => it['id'].toString() == baseId,
-        orElse: () => const {},
-      );
-      if (item.isNotEmpty && (item['isDotRed'] == true || item['isPrescriptionOnly'] == true)) {
-        return true;
-      }
-    }
-    return false;
-  }
 
   bool _isLoadingCatalog = false;
   bool _isSearchingRemote = false;
@@ -78,7 +72,46 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
 
   List<String> _categories = const ['Semua'];
   final List<Map<String, dynamic>> _drugItems = [];
+  final Map<String, Map<String, dynamic>> _drugItemsById = {};
+  final Map<String, Map<String, dynamic>> _drugItemsByCode = {};
+  final Map<String, int> _drugQuantityCache = {};
   final Set<String> _remoteSearchMatchIds = {};
+
+  void _syncDrugItemsIndex() {
+    _drugItemsById.clear();
+    _drugItemsByCode.clear();
+    for (final item in _drugItems) {
+      final id = item['id']?.toString();
+      if (id != null) {
+        _drugItemsById[id] = item;
+        _drugItemsByCode[id.toLowerCase()] = item;
+      }
+      final sku = item['sku']?.toString().toLowerCase().trim();
+      if (sku != null && sku.isNotEmpty && sku != '-') {
+        _drugItemsByCode[sku] = item;
+      }
+      final barcode = item['barcode']?.toString().toLowerCase().trim();
+      if (barcode != null && barcode.isNotEmpty && barcode != '-') {
+        _drugItemsByCode[barcode] = item;
+      }
+    }
+  }
+
+  void _syncCartQuantityCache() {
+    _drugQuantityCache.clear();
+    _drugQuantityCache.addAll(PharmacyPosCartBridge.buildCartQuantityMap(_cart));
+  }
+
+  List<String> _ensureCategories(List<String> raw) {
+    final list = <String>['Semua'];
+    for (final c in raw) {
+      final clean = c.trim();
+      if (clean.isNotEmpty && clean != 'Semua' && clean != 'Umum') {
+        if (!list.contains(clean)) list.add(clean);
+      }
+    }
+    return list;
+  }
 
   /// Tuslah/embalase dari konfigurasi tenant (/v1/pos/config), bukan hardcode.
   num get _tuslahFee => PharmacyService.instance.tuslahFee.value;
@@ -99,6 +132,13 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
   }
 
   @override
+  void reassemble() {
+    super.reassemble();
+    PharmacyCatalogService.instance.clearMemoryCache();
+    _fetchCatalog();
+  }
+
+  @override
   void dispose() {
     _searchDebounce?.cancel();
     PharmacyService.instance.activePatient.removeListener(_onActivePatientChanged);
@@ -116,6 +156,38 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
         _medicalRecordNumber = data.medicalRecordNumber;
         _patientCategory = data.patientCategory;
         _patientAllergies = data.allergies;
+
+        // Auto-populate obat resep dokter yang telah diverifikasi ke keranjang kasir
+        if (data.prescribedDrugs.isNotEmpty && _drugItems.isNotEmpty) {
+          for (final drugStr in data.prescribedDrugs) {
+            final cleanDrugName = drugStr.contains('(')
+                ? drugStr.split('(').first.trim().toLowerCase()
+                : drugStr.trim().toLowerCase();
+
+            int requestedQty = 1;
+            final qtyMatch = RegExp(r'(\d+)\s*(?:sediaan|tablet|tab|kapsul|pcs|strip|bungkus|unit)', caseSensitive: false).firstMatch(drugStr);
+            if (qtyMatch != null && qtyMatch.group(1) != null) {
+              requestedQty = int.tryParse(qtyMatch.group(1)!) ?? 1;
+            }
+
+            final match = _drugItems.firstWhere(
+              (item) {
+                final itemName = (item['name'] ?? '').toString().toLowerCase();
+                return itemName.contains(cleanDrugName) || cleanDrugName.contains(itemName);
+              },
+              orElse: () => <String, dynamic>{},
+            );
+
+            if (match.isNotEmpty) {
+              final baseId = match['id'].toString();
+              final targetUnit = match['selectedUnit'] ?? match['unit'] ?? 'TAB';
+              final fullKey = '$baseId:$targetUnit';
+              _cart[fullKey] = requestedQty;
+            }
+          }
+          _calculateTotal();
+          _persistCart();
+        }
       });
     }
   }
@@ -164,39 +236,8 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
     }
   }
 
-  Map<String, dynamic> _posProductToDrugMap(PosProduct p) => {
-        'id': p.id,
-        'name': p.name,
-        'sku': p.sku.isNotEmpty ? p.sku : (p.barcode.isNotEmpty ? p.barcode : '-'),
-        'barcode': p.barcode,
-        'category': p.category,
-        'price': p.price,
-        'isDotRed': p.isPrescriptionOnly,
-        'isPrescriptionOnly': p.isPrescriptionOnly,
-        'batch': p.batches.isNotEmpty ? p.batches.first.batchNumber : '-',
-        'ed': p.batches.isNotEmpty ? p.batches.first.expiryDate : '-',
-        'stock': p.stock.toInt(),
-        'unit': p.unit ?? 'TAB',
-        'selectedUnit': p.units.isNotEmpty ? p.units.first.name : (p.unit ?? 'TAB'),
-        'units': p.units.map((u) => u.toJson()).toList(),
-        'imageUrl': p.imageUrl,
-        'image': p.imageUrl,
-        'description': p.description,
-        'fungsi': p.fungsi,
-        'kandungan': p.kandungan,
-        'klasifikasi': p.klasifikasi,
-        'sediaan': p.sediaan,
-        'batches': p.batches
-            .map((b) => {
-                  'id': b.id,
-                  'batch': b.batchNumber,
-                  'batch_number': b.batchNumber,
-                  'ed': b.expiryDate,
-                  'expiry_date': b.expiryDate,
-                  'stock': b.stock,
-                })
-            .toList(),
-      };
+  Map<String, dynamic> _posProductToDrugMap(PosProduct p) =>
+      PharmacyPosCartBridge.posProductToDrugMap(p);
 
   void _mergeRemoteProducts(List<PosProduct> products) {
     if (products.isEmpty || !mounted) return;
@@ -223,8 +264,9 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
     }
 
     if (changed && mounted) {
+      _syncDrugItemsIndex();
       setState(() {
-        _categories = newCategories.toList();
+        _categories = _ensureCategories(newCategories.toList());
       });
     }
   }
@@ -271,10 +313,11 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
       final catalog = await PharmacyCatalogService.instance.fetchCatalog();
       if (mounted) {
         setState(() {
-          _categories = catalog.categories.isNotEmpty ? catalog.categories : const ['Semua'];
+          _categories = _ensureCategories(catalog.categories);
           _selectedCategoryIndex = 0;
           _drugItems.clear();
           _drugItems.addAll(catalog.products.map(_posProductToDrugMap));
+          _syncDrugItemsIndex();
           _isLoadingCatalog = false;
           _syncError = null;
         });
@@ -309,156 +352,29 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Berhasil sinkron: ${res['synced']} transaksi. Tersisa: ${res['remaining']}'),
-          backgroundColor: res['remaining'] == 0 ? const Color(0xFF059669) : const Color(0xFFF59E0B),
+          backgroundColor: res['remaining'] == 0 ? const Color(0xFF059669) : const Color(0xFFEA580C),
         ),
       );
     }
   }
 
   void _showChangePatientOptions() {
-    AudioHelper.tapFeedback();
-    showModalBottomSheet(
+    PharmacyPatientSourceSheet.show(
       context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE2E8F0),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Pilih Sumber Data Pasien',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Muat data dari antrean resep poli klinik atau input identitas langsung',
-                style: TextStyle(color: Color(0xFF6D7A72), fontSize: 12),
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(color: Color(0xFFE2E8F0)),
-                ),
-                leading: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF059669).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.people_outline_rounded, color: Color(0xFF059669)),
-                ),
-                title: const Text(
-                  'Antrean Klinik & Billing Pasien',
-                  style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 13.5),
-                ),
-                subtitle: const Text(
-                  'Pilih pasien dari loket poli rawat jalan / dokter klinik',
-                  style: TextStyle(fontSize: 11, color: Color(0xFF6D7A72)),
-                ),
-                trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFF6D7A72)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _openQueueModal();
-                },
-              ),
-              const SizedBox(height: 10),
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(color: Color(0xFFE2E8F0)),
-                ),
-                leading: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0D9488).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.badge_outlined, color: Color(0xFF0D9488)),
-                ),
-                title: const Text(
-                  'Edit Identitas Pasien Manual',
-                  style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 13.5),
-                ),
-                subtitle: const Text(
-                  'Ketik manual nama pasien, No. RM, dokter perujuk, dan alergi',
-                  style: TextStyle(fontSize: 11, color: Color(0xFF6D7A72)),
-                ),
-                trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFF6D7A72)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _changePatientDialog();
-                },
-              ),
-              if (_isClinicPatientLoaded) ...[
-                const SizedBox(height: 10),
-                ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: const BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
-                  leading: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFBA1A1A).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.person_off_outlined, color: Color(0xFFBA1A1A)),
-                  ),
-                  title: const Text(
-                    'Reset ke Pelanggan Walk-in (Umum)',
-                    style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 13.5),
-                  ),
-                  subtitle: const Text(
-                    'Hapus data pasien klinik & kembali ke transaksi umum',
-                    style: TextStyle(fontSize: 11, color: Color(0xFF6D7A72)),
-                  ),
-                  trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFF6D7A72)),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    setState(() {
-                      _selectedPatient = 'Pelanggan Umum (Walk-in)';
-                      _selectedDoctor = '-';
-                      _queueNumber = '-';
-                      _medicalRecordNumber = '-';
-                      _patientCategory = 'Umum';
-                      _patientAllergies = '';
-                    });
-                  },
-                ),
-              ],
-              const SizedBox(height: 12),
-            ],
-          ),
-        ),
-      ),
+      isClinicPatientLoaded: _isClinicPatientLoaded,
+      onOpenQueue: _openQueueModal,
+      onOpenManualDialog: _changePatientDialog,
+      onResetToWalkIn: () {
+        setState(() {
+          _selectedPatient = 'Pelanggan Umum (Walk-in)';
+          _selectedDoctor = '-';
+          _queueNumber = '-';
+          _medicalRecordNumber = '-';
+          _patientCategory = 'Umum';
+          _patientAllergies = '';
+          _isPrescriptionValidated = false;
+        });
+      },
     );
   }
 
@@ -474,6 +390,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
           _medicalRecordNumber = data.medicalRecordNumber;
           _patientCategory = data.patientCategory;
           _patientAllergies = data.allergies;
+          _isPrescriptionValidated = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -514,6 +431,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
       patientData: patientData,
       cartItems: cartItems,
       onApprove: () {
+        setState(() => _isPrescriptionValidated = true);
         if (_cart.isEmpty && _drugItems.isNotEmpty) {
           _addToCart(_drugItems.first['id'].toString());
         }
@@ -566,6 +484,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
           _medicalRecordNumber = data.medicalRecordNumber;
           _patientCategory = data.patientCategory;
           _patientAllergies = data.allergies;
+          _isPrescriptionValidated = false;
         });
       },
     );
@@ -575,13 +494,14 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
     final code = rawCode.trim().toLowerCase();
     if (code.isEmpty) return false;
 
-    final match = _drugItems.firstWhere(
-      (it) =>
-          it['sku']?.toString().toLowerCase() == code ||
-          it['barcode']?.toString().toLowerCase() == code ||
-          it['id']?.toString().toLowerCase() == code,
-      orElse: () => <String, dynamic>{},
-    );
+    final match = _drugItemsByCode[code] ??
+        _drugItems.firstWhere(
+          (it) =>
+              it['sku']?.toString().toLowerCase() == code ||
+              it['barcode']?.toString().toLowerCase() == code ||
+              it['id']?.toString().toLowerCase() == code,
+          orElse: () => <String, dynamic>{},
+        );
 
     if (match.isNotEmpty) {
       _addToCart(match['id'].toString());
@@ -616,151 +536,20 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
   }
 
   void _openBarcodeScanner() {
-    AudioHelper.tapFeedback();
-    final barcodeCtrl = TextEditingController();
-    String? localError;
-    bool isScanning = false;
-
-    showDialog<void>(
+    PharmacyBarcodeDialog.show(
       context: context,
-      builder: (dCtx) => StatefulBuilder(
-        builder: (context, setDState) {
-          Future<void> handleScan(String val) async {
-            final trimmed = val.trim();
-            if (trimmed.isEmpty || isScanning) return;
-            setDState(() {
-              isScanning = true;
-              localError = null;
-            });
-            final found = await _resolveAndAddBarcode(trimmed);
-            if (!dCtx.mounted) return;
-            if (found) {
-              Navigator.pop(dCtx);
-            } else {
-              setDState(() {
-                isScanning = false;
-                localError = 'Obat dengan barcode "$trimmed" tidak ditemukan di katalog.';
-              });
-            }
-          }
-
-          return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: const Row(
-              children: [
-                Icon(Icons.qr_code_scanner_rounded, color: Color(0xFF059669)),
-                SizedBox(width: 10),
-                Text(
-                  'Pindai Barcode / SKU Obat',
-                  style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Arahkan scanner barcode atau ketik kode barcode/SKU sediaan obat:',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF6D7A72)),
-                  ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: barcodeCtrl,
-                    autofocus: true,
-                    decoration: InputDecoration(
-                      labelText: 'Kode Barcode / SKU',
-                      hintText: 'Contoh: 8991234567...',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                      errorText: localError,
-                      prefixIcon: const Icon(Icons.qr_code_rounded, color: Color(0xFF059669)),
-                    ),
-                    onSubmitted: handleScan,
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dCtx),
-                child: const Text('Batal', style: TextStyle(color: Color(0xFF6D7A72))),
-              ),
-              ElevatedButton(
-                onPressed: isScanning ? null : () => handleScan(barcodeCtrl.text),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF059669),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                child: Text(isScanning ? 'Mencari...' : 'Cari & Tambah'),
-              ),
-            ],
-          );
-        },
-      ),
+      onScanBarcode: _resolveAndAddBarcode,
     );
   }
 
-  Map<String, dynamic> _getItemFromCartKey(String key) {
-    final id = key.contains(':') ? key.split(':').first : key;
-    return _drugItems.firstWhere(
-      (m) => m['id'].toString() == id.toString(),
-      orElse: () => <String, dynamic>{'id': id, 'name': 'Obat', 'price': 0},
-    );
-  }
+  num _getPriceForCartKey(String key, Map<String, dynamic> item) =>
+      PharmacyPosCartBridge.getPriceForCartKey(key, item);
 
-  String _getUnitFromCartKey(String key, Map<String, dynamic> item) {
-    if (key.contains(':')) {
-      return key.split(':').last;
-    }
-    return item['selectedUnit']?.toString() ?? item['unit']?.toString() ?? 'TAB';
-  }
+  int _getCartQuantityForDrug(dynamic id) =>
+      PharmacyPosCartBridge.getCartQuantityForDrug(id, _cart, quantityCache: _drugQuantityCache);
 
-  num _getPriceForCartKey(String key, Map<String, dynamic> item) {
-    final unit = _getUnitFromCartKey(key, item);
-    final rawUnits = item['units'];
-    if (rawUnits is List) {
-      for (final u in rawUnits) {
-        if (u is Map && u['name']?.toString().toUpperCase() == unit.toUpperCase()) {
-          return (u['price'] as num?) ?? (item['price'] as num? ?? 0);
-        }
-      }
-    }
-    return item['price'] as num? ?? 0;
-  }
-
-  int _getCartQuantityForDrug(dynamic id) {
-    final strId = id.toString();
-    int total = 0;
-    _cart.forEach((k, q) {
-      final baseId = k.contains(':') ? k.split(':').first : k;
-      if (baseId.toString() == strId) {
-        total += q;
-      }
-    });
-    return total;
-  }
-
-  List<PosCartItem> _buildPosCartItems() {
-    return _cart.entries.map((e) {
-      final item = _getItemFromCartKey(e.key);
-      final unit = _getUnitFromCartKey(e.key, item);
-      final price = _getPriceForCartKey(e.key, item);
-      final baseId = e.key.contains(':') ? e.key.split(':').first : e.key;
-
-      return PosCartItem(
-        productId: baseId,
-        name: '${item['name']?.toString() ?? 'Obat'} ($unit)',
-        unit: unit,
-        price: price,
-        quantity: e.value,
-        batchNumber: item['batch']?.toString(),
-        expiryDate: (item['ed'] ?? item['exp'])?.toString(),
-        modifiers: {'Satuan': unit},
-      );
-    }).toList();
-  }
+  List<PosCartItem> _buildPosCartItems() =>
+      PharmacyPosCartBridge.buildPosCartItems(_cart, _drugItems, drugItemsById: _drugItemsById);
 
   void _onChangeCartItemUnit(String oldKey, String newUnit) {
     AudioHelper.tapFeedback();
@@ -775,13 +564,28 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
   }
 
   void _addToCart(String id, [String? unit]) {
+    final baseId = id.contains(':') ? id.split(':').first : id;
+    final item = _drugItemsById[baseId.toString()] ??
+        _drugItems.firstWhere(
+          (e) => e['id'].toString() == baseId.toString(),
+          orElse: () => <String, dynamic>{},
+        );
+    final stock = (item['stock'] as num? ?? 0).toInt();
+    if (stock <= 0) {
+      AudioHelper.errorFeedback();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('⚠️ Stok ${item['name'] ?? 'obat'} sedang habis.'),
+            backgroundColor: const Color(0xFFBA1A1A),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
     AudioHelper.tapFeedback();
     setState(() {
-      final baseId = id.contains(':') ? id.split(':').first : id;
-      final item = _drugItems.firstWhere(
-        (e) => e['id'].toString() == baseId.toString(),
-        orElse: () => <String, dynamic>{},
-      );
       final targetUnit = unit ??
           (id.contains(':')
               ? id.split(':').last
@@ -821,15 +625,17 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
   void _clearCart() {
     setState(() {
       _cart.clear();
+      _drugQuantityCache.clear();
       _totalPrice = 0;
       _persistCart();
     });
   }
 
   void _calculateTotal() {
+    _syncCartQuantityCache();
     num total = 0;
     _cart.forEach((key, qty) {
-      final item = _getItemFromCartKey(key);
+      final item = PharmacyPosCartBridge.getItemFromCartKeyFast(key, _drugItemsById);
       final price = _getPriceForCartKey(key, item);
       total += price * qty;
     });
@@ -876,6 +682,14 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
   }
 
   void _onSettlementCompleted(PosCheckoutResult result, String paymentMethodName) {
+    if (_queueNumber != '-' && _queueNumber.isNotEmpty) {
+      PharmacyService.instance.completeQueueItem(
+        queueNumber: _queueNumber,
+        patientName: _selectedPatient,
+      );
+    }
+    PharmacyService.instance.activePatient.value = null;
+
     setState(() {
       _cart.clear();
       _totalPrice = 0;
@@ -908,6 +722,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
           child: PharmacyCartPanel(
             cart: _cart,
             drugItems: _drugItems,
+            drugItemsById: _drugItemsById,
             totalPrice: _totalPrice,
             tuslahFee: _tuslahFee,
             selectedPatient: _selectedPatient,
@@ -946,177 +761,19 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
   Widget _buildMobileFloatingCartDrawer() {
     final totalItems = _cart.values.fold<int>(0, (sum, q) => sum + q);
     final grandTotal = _totalPrice + (_totalPrice > 0 ? _tuslahFee : 0);
-    const primaryEmerald = Color(0xFF059669);
-    const darkSurface = Color(0xFF283044);
 
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: darkSurface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF6D7A72).withValues(alpha: 0.3)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Items summary & details toggle
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: primaryEmerald,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Center(
-                      child: Text(
-                        '$totalItems',
-                        style: const TextStyle(
-                          fontFamily: 'JetBrains Mono',
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '$totalItems Item Terpilih (Keranjang)',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.white.withValues(alpha: 0.75),
-                        ),
-                      ),
-                      Text(
-                        'Total: ${CurrencyFormatter.format(grandTotal)}',
-                        style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              InkWell(
-                onTap: _openMobileCartSheet,
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Rincian',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(width: 2),
-                      Icon(Icons.keyboard_arrow_up_rounded, size: 18, color: Colors.white.withValues(alpha: 0.8)),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          // Payment mode pills
-          Row(
-            children: [
-              _buildPaymentPill(0, 'Tunai'),
-              const SizedBox(width: 6),
-              _buildPaymentPill(1, 'QRIS'),
-              const SizedBox(width: 6),
-              _buildPaymentPill(2, 'Debit'),
-              const SizedBox(width: 6),
-              _buildPaymentPill(3, 'Asuransi'),
-            ],
-          ),
-          const SizedBox(height: 10),
-
-          // Action CTA
-          SizedBox(
-            width: double.infinity,
-            height: 44,
-            child: ElevatedButton.icon(
-              onPressed: _showCheckoutDialog,
-              icon: const Icon(Icons.payments_rounded, size: 18),
-              label: const Text(
-                'Proses Pembayaran / Bayar Cepat',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00855D),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                elevation: 0,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPaymentPill(int index, String label) {
-    final isSelected = _mobilePaymentMode == index;
-    return Expanded(
-      child: InkWell(
-        onTap: () => setState(() => _mobilePaymentMode = index),
-        borderRadius: BorderRadius.circular(6),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF0D9488) : Colors.white.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'JetBrains Mono',
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.75),
-              ),
-            ),
-          ),
-        ),
-      ),
+    return PharmacyFloatingCartDrawer(
+      totalItems: totalItems,
+      grandTotal: grandTotal,
+      selectedPaymentMode: _mobilePaymentMode,
+      onSelectPaymentMode: (index) => setState(() => _mobilePaymentMode = index),
+      onOpenCartSheet: _openMobileCartSheet,
+      onCheckout: _showCheckoutDialog,
     );
   }
 
   // Top App Bar Header
   Widget _buildTopHeader(bool isMobile, double screenWidth) {
-    const emeraldPrimary = ClinicalPalette.primary;
-    const borderColor = Color(0xFFE2E8F0);
     final tenant = SessionStorage.instance.getTenantName() ?? 'Velora Pharmacy';
     final location = SessionStorage.instance.getLocationName() ?? tenant;
     final shift = ShiftService.instance.currentStatus;
@@ -1130,778 +787,119 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
             : (shift?.shiftId != null ? 'Shift #${shift!.shiftId}' : 'Shift Aktif'))
         : 'Shift Tutup';
 
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 18, vertical: 8),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: borderColor, width: 1)),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x04000000),
-            blurRadius: 6,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Clinic Icon & Name & Branch (Stitch Precision)
-          Expanded(
-            child: Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF059669), Color(0xFF0D9488)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: [
-                      BoxShadow(
-                        color: emeraldPrimary.withValues(alpha: 0.2),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(Icons.local_hospital_rounded, color: Colors.white, size: 20),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        tenant,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontWeight: FontWeight.w800,
-                          fontSize: 14.5,
-                          color: Color(0xFF0F172A),
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                      const SizedBox(height: 1),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              location,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontFamily: 'JetBrains Mono',
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF475569),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-
-          // Actions Cluster & Cashier Shift
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (!isMobile && screenWidth >= 980) ...[
-                InkWell(
-                  onTap: _openShiftReportModal,
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: borderColor),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.badge_outlined,
-                          size: 14,
-                          color: isShiftOpen ? const Color(0xFF0D9488) : Colors.orange.shade800,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          cashier,
-                          style: const TextStyle(
-                            fontFamily: 'JetBrains Mono',
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF0F172A),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Container(
-                          width: 1,
-                          height: 12,
-                          color: borderColor,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          shiftText,
-                          style: TextStyle(
-                            fontFamily: 'JetBrains Mono',
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.w600,
-                            color: isShiftOpen ? const Color(0xFF0D9488) : Colors.deepOrange.shade800,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-              ],
-              const OfflineSyncBadge(showClock: false),
-              const SizedBox(width: 6),
-
-              // Segmented Action Bar
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: borderColor),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (!isMobile) ...[
-                      IconButton(
-                        icon: const Icon(Icons.people_outline_rounded, size: 18, color: Color(0xFF0D9488)),
-                        tooltip: 'Antrean Pasien & Billing',
-                        constraints: const BoxConstraints(minWidth: 36, minHeight: 34),
-                        padding: EdgeInsets.zero,
-                        onPressed: _openQueueModal,
-                      ),
-                    ],
-                    IconButton(
-                      icon: const Icon(Icons.receipt_long_rounded, size: 18, color: Color(0xFF64748B)),
-                      tooltip: 'Riwayat Transaksi',
-                      constraints: const BoxConstraints(minWidth: 36, minHeight: 34),
-                      padding: EdgeInsets.zero,
-                      onPressed: () {
-                        AudioHelper.tapFeedback();
-                        SalesHistoryDrawer.show(
-                          context,
-                          storeName: SessionStorage.instance.getTenantName() ?? 'Velora Pharmacy',
-                          storeAddress: SessionStorage.instance.getStoreAddress() ?? '',
-                          storePhone: SessionStorage.instance.getStorePhone() ?? '-',
-                          cashierName: SessionStorage.instance.getUserName() ?? 'Apoteker',
-                          accentColor: emeraldPrimary,
-                        );
-                      },
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        _isGridView ? Icons.grid_view_rounded : Icons.view_list_rounded,
-                        size: 18,
-                        color: const Color(0xFF0D9488),
-                      ),
-                      tooltip: _isGridView ? 'Beralih ke List' : 'Beralih ke Grid',
-                      constraints: const BoxConstraints(minWidth: 36, minHeight: 34),
-                      padding: EdgeInsets.zero,
-                      onPressed: () {
-                        AudioHelper.tapFeedback();
-                        setState(() => _isGridView = !_isGridView);
-                      },
-                    ),
-                    PopupMenuButton<String>(
-                      constraints: const BoxConstraints(minWidth: 200, maxWidth: 260),
-                      icon: const Icon(Icons.more_vert_rounded, size: 18, color: Color(0xFF64748B)),
-                      tooltip: 'Menu Tambahan',
-                      padding: EdgeInsets.zero,
-                      onSelected: (val) {
-                  AudioHelper.tapFeedback();
-                  switch (val) {
-                    case 'sync':
-                      if (!_isLoadingCatalog) _fetchCatalog();
-                      break;
-                    case 'queue':
-                      _openQueueModal();
-                      break;
-                    case 'review':
-                      _openPrescriptionReviewModal();
-                      break;
-                    case 'stock_alert':
-                      _openStockAlertModal();
-                      break;
-                    case 'printer':
-                      PrinterSettingsModal.show(context);
-                      break;
-                    case 'offline':
-                      _syncOfflineQueue();
-                      break;
-                    case 'logout':
-                      widget.onLogout?.call();
-                      break;
-                  }
-                },
-                itemBuilder: (ctx) => [
-                  PopupMenuItem(
-                    value: 'sync',
-                    child: Row(
-                      children: [
-                        Icon(Icons.sync_rounded, size: 18, color: _isLoadingCatalog ? Colors.grey : emeraldPrimary),
-                        const SizedBox(width: 10),
-                        const Expanded(
-                          child: Text('Sinkronkan Katalog', overflow: TextOverflow.ellipsis),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (isMobile)
-                    const PopupMenuItem(
-                      value: 'queue',
-                      child: Row(
-                        children: [
-                          Icon(Icons.people_outline_rounded, size: 18, color: Color(0xFF0D9488)),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: Text('Antrean Pasien', overflow: TextOverflow.ellipsis),
-                          ),
-                        ],
-                      ),
-                    ),
-                  const PopupMenuItem(
-                    value: 'review',
-                    child: Row(
-                      children: [
-                        Icon(Icons.assignment_outlined, size: 18, color: Color(0xFF0D9488)),
-                        SizedBox(width: 10),
-                        Expanded(
-                          child: Text('Telaah Resep', overflow: TextOverflow.ellipsis),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'stock_alert',
-                    child: Row(
-                      children: [
-                        Icon(Icons.warning_amber_rounded, size: 18, color: Color(0xFFB45309)),
-                        SizedBox(width: 10),
-                        Expanded(
-                          child: Text('Alert Stok & FEFO', overflow: TextOverflow.ellipsis),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'printer',
-                    child: Row(
-                      children: [
-                        Icon(Icons.print_outlined, size: 18, color: Color(0xFF6D7A72)),
-                        SizedBox(width: 10),
-                        Expanded(
-                          child: Text('Pengaturan Printer', overflow: TextOverflow.ellipsis),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (PosCheckoutService.instance.pendingOfflineCount > 0)
-                    PopupMenuItem(
-                      value: 'offline',
-                      child: Row(
-                        children: [
-                          const Icon(Icons.cloud_upload_outlined, size: 18, color: emeraldPrimary),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'Sync Offline (${PosCheckoutService.instance.pendingOfflineCount})',
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  if (widget.onLogout != null)
-                    const PopupMenuItem(
-                      value: 'logout',
-                      child: Row(
-                        children: [
-                          Icon(Icons.logout_rounded, size: 18, color: Color(0xFFBA1A1A)),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'Keluar Kasir',
-                              style: TextStyle(color: Color(0xFFBA1A1A)),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+    return PharmacyPosHeader(
+      isMobile: isMobile,
+      screenWidth: screenWidth,
+      tenant: tenant,
+      location: location,
+      isShiftOpen: isShiftOpen,
+      shiftText: shiftText,
+      cashier: cashier,
+      isGridView: _isGridView,
+      isLoadingCatalog: _isLoadingCatalog,
+      pendingOfflineCount: PosCheckoutService.instance.pendingOfflineCount,
+      onOpenShiftReport: _openShiftReportModal,
+      onOpenQueue: _openQueueModal,
+      onOpenHistory: () {
+        AudioHelper.tapFeedback();
+        SalesHistoryDrawer.show(
+          context,
+          storeName: tenant,
+          storeAddress: SessionStorage.instance.getStoreAddress() ?? '',
+          storePhone: SessionStorage.instance.getStorePhone() ?? '-',
+          cashierName: SessionStorage.instance.getUserName() ?? 'Apoteker',
+          accentColor: ClinicalPalette.primary,
+        );
+      },
+      onToggleViewMode: () {
+        AudioHelper.tapFeedback();
+        setState(() => _isGridView = !_isGridView);
+      },
+      onSyncCatalog: () {
+        if (!_isLoadingCatalog) _fetchCatalog();
+      },
+      onOpenPrescriptionReview: _openPrescriptionReviewModal,
+      onOpenStockAlert: _openStockAlertModal,
+      onOpenPrinterSettings: () => PrinterSettingsModal.show(context),
+      onSyncOffline: _syncOfflineQueue,
+      onLogout: widget.onLogout,
     );
   }
 
-  // Clinical Context Patient Strip
-  Widget _buildPatientContextStrip(bool isWide) {
-    // If wide screen (desktop split view) and walk-in, the cart panel on the right
-    // already has the patient selector. Do not duplicate it on the left to keep screen tidy!
-    if (isWide && !_isClinicPatientLoaded) {
-      return const SizedBox.shrink();
-    }
-
-    const emeraldPrimary = ClinicalPalette.primary;
-    const secondaryTeal = ClinicalPalette.secondary;
-    const borderColor = Color(0xFFE2E8F0);
-
-    final isWalkIn = !_isClinicPatientLoaded;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.03),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: isWalkIn
-                  ? emeraldPrimary.withValues(alpha: 0.1)
-                  : secondaryTeal.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              isWalkIn ? Icons.storefront_outlined : Icons.badge_outlined,
-              size: 18,
-              color: isWalkIn ? emeraldPrimary : secondaryTeal,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        isWalkIn ? 'Pelanggan Walk-in (Umum)' : _selectedPatient,
-                        style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF0F172A),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                      decoration: BoxDecoration(
-                        color: isWalkIn
-                            ? emeraldPrimary.withValues(alpha: 0.1)
-                            : secondaryTeal.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        isWalkIn ? 'Bebas' : 'Antrean $_queueNumber',
-                        style: TextStyle(
-                          fontFamily: 'JetBrains Mono',
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: isWalkIn ? emeraldPrimary : secondaryTeal,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  isWalkIn
-                      ? 'Penjualan kasir langsung tanpa antrean klinik'
-                      : 'No. RM: $_medicalRecordNumber • Dokter: ${_selectedDoctor != '-' && _selectedDoctor.isNotEmpty ? _selectedDoctor : 'Resep Luar'}'
-                          '${_patientAllergies.isNotEmpty ? " • Alergi: $_patientAllergies" : ""}',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: _patientAllergies.isNotEmpty ? const Color(0xFFBA1A1A) : const Color(0xFF6D7A72),
-                    fontWeight: _patientAllergies.isNotEmpty ? FontWeight.w600 : FontWeight.normal,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          if (!isWalkIn) ...[
-            InkWell(
-              onTap: _openMedicalRecordsModal,
-              borderRadius: BorderRadius.circular(6),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFAF8FF),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: borderColor),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.assignment_outlined, size: 14, color: secondaryTeal),
-                    SizedBox(width: 4),
-                    Text(
-                      'Rekam Medis',
-                      style: TextStyle(
-                        color: secondaryTeal,
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: 6),
-          ],
-          InkWell(
-            onTap: isWalkIn ? _openQueueModal : _showChangePatientOptions,
-            borderRadius: BorderRadius.circular(6),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFAF8FF),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: borderColor),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    isWalkIn ? Icons.people_outline_rounded : Icons.sync_alt_rounded,
-                    size: 14,
-                    color: emeraldPrimary,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    isWalkIn ? 'Muat Antrean' : 'Ganti',
-                    style: const TextStyle(
-                      color: emeraldPrimary,
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+  // Clinical Context Patient Strip & Prescription Validation
+  Widget _buildPatientBanner(bool isWide) {
+    return PharmacyPatientBanner(
+      isClinicPatientLoaded: _isClinicPatientLoaded,
+      selectedPatient: _selectedPatient,
+      queueNumber: _queueNumber,
+      medicalRecordNumber: _medicalRecordNumber,
+      selectedDoctor: _selectedDoctor,
+      patientAllergies: _patientAllergies,
+      isPrescriptionValidated: _isPrescriptionValidated,
+      onOpenMedicalRecords: _openMedicalRecordsModal,
+      onChangePatient: !_isClinicPatientLoaded ? _openQueueModal : _showChangePatientOptions,
+      onReviewPrescription: _openPrescriptionReviewModal,
+      isWide: isWide,
     );
   }
 
-  // Prescription Prompt Info Banner
-  Widget _buildPrescriptionValidationBanner() {
-    // Only display when a clinical prescription patient is loaded OR when cart has Rx drugs!
-    if (!_isClinicPatientLoaded && !_hasRxInCart) {
-      return const SizedBox.shrink();
-    }
-
-    const secondaryTeal = ClinicalPalette.secondary;
-
-    return InkWell(
-      onTap: _openPrescriptionReviewModal,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: secondaryTeal.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: secondaryTeal.withValues(alpha: 0.2)),
-        ),
-        child: const Row(
-          children: [
-            Icon(Icons.health_and_safety_outlined, size: 18, color: secondaryTeal),
-            SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Penjualan Resep / Obat Keras Aktif (7 Benar)',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF0F172A),
-                    ),
-                  ),
-                  Text(
-                    'Sediaan bertanda Rx / resep terdeteksi. Buka telaah klinis & SIP dokter.',
-                    style: TextStyle(fontSize: 10, color: Color(0xFF6D7A72)),
-                  ),
-                ],
-              ),
-            ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Telaah Klinis',
-                  style: TextStyle(
-                    fontFamily: 'JetBrains Mono',
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: secondaryTeal,
-                  ),
-                ),
-                SizedBox(width: 4),
-                Icon(Icons.chevron_right_rounded, size: 16, color: secondaryTeal),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Search & Barcode Input
-  Widget _buildSearchField() {
-    const emeraldPrimary = ClinicalPalette.primary;
-    const borderColor = Color(0xFFE2E8F0);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Container(
-        height: 42,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x06000000),
-              blurRadius: 4,
-              offset: Offset(0, 1),
-            ),
-          ],
-        ),
-        child: TextField(
-          controller: _searchController,
-          onChanged: _onSearchChanged,
-          onSubmitted: (val) async {
-            final trimmed = val.trim();
-            if (trimmed.isEmpty) return;
-            final added = await _resolveAndAddBarcode(trimmed);
-            if (added && mounted) {
-              _searchController.clear();
-              setState(() => _searchQuery = '');
-            }
-          },
-          style: const TextStyle(fontSize: 12.5, color: Color(0xFF0F172A), fontWeight: FontWeight.w500),
-          decoration: InputDecoration(
-            hintText: 'Cari obat, SKU, kandungan zat aktif, atau scan barcode...',
-            hintStyle: const TextStyle(fontSize: 11.5, color: Color(0xFF94A3B8)),
-            prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Color(0xFF94A3B8)),
-            suffixIcon: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_isSearchingRemote)
-                  const Padding(
-                    padding: EdgeInsets.only(right: 6),
-                    child: SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: emeraldPrimary,
-                      ),
-                    ),
-                  ),
-                if (_searchQuery.isNotEmpty)
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 15, color: Color(0xFF94A3B8)),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                    onPressed: () {
-                      _searchDebounce?.cancel();
-                      _searchController.clear();
-                      setState(() {
-                        _searchQuery = '';
-                        _remoteSearchMatchIds.clear();
-                        _isSearchingRemote = false;
-                      });
-                    },
-                  ),
-                InkWell(
-                  onTap: _openBarcodeScanner,
-                  borderRadius: BorderRadius.circular(6),
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 6),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: emeraldPrimary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.qr_code_scanner_rounded, size: 15, color: emeraldPrimary),
-                        SizedBox(width: 4),
-                        Text(
-                          'Scan',
-                          style: TextStyle(
-                            fontFamily: 'JetBrains Mono',
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: emeraldPrimary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: borderColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: borderColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: emeraldPrimary, width: 1.5),
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Horizontal Category Tabs
-  Widget _buildCategoryTabs() {
-    const emeraldPrimary = ClinicalPalette.primary;
-    const borderColor = Color(0xFFE2E8F0);
-
-    return Container(
-      height: 42,
-      padding: const EdgeInsets.only(bottom: 6),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _categories.length,
-        itemBuilder: (context, idx) {
-          final isSelected = idx == _selectedCategoryIndex;
-          final catName = _categories[idx];
-          final isRx = catName.contains('Keras') || catName.contains('Rx');
-
-          return Padding(
-            padding: const EdgeInsets.only(right: 6),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(20),
-              onTap: () {
-                AudioHelper.tapFeedback();
-                setState(() => _selectedCategoryIndex = idx);
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                decoration: BoxDecoration(
-                  gradient: isSelected
-                      ? const LinearGradient(
-                          colors: [Color(0xFF059669), Color(0xFF0D9488)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        )
-                      : null,
-                  color: isSelected ? null : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isSelected ? Colors.transparent : borderColor,
-                    width: 1,
-                  ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: emeraldPrimary.withValues(alpha: 0.25),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (isRx && !isSelected) ...[
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFDC2626),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 5),
-                    ],
-                    Text(
-                      catName,
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 11,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                        color: isSelected ? Colors.white : const Color(0xFF475569),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
+  // Search Field & Category Tabs
+  Widget _buildSearchAndCategories() {
+    return PharmacySearchAndCategories(
+      searchController: _searchController,
+      searchQuery: _searchQuery,
+      isSearchingRemote: _isSearchingRemote,
+      onSearchChanged: _onSearchChanged,
+      onSearchSubmitted: (val) async {
+        final trimmed = val.trim();
+        if (trimmed.isEmpty) return;
+        final isLikelyBarcode = !trimmed.contains(' ') &&
+            (RegExp(r'^[0-9]{6,}$').hasMatch(trimmed) ||
+                trimmed.toUpperCase().startsWith('VP-') ||
+                _drugItems.any((item) {
+                  final code = trimmed.toLowerCase();
+                  return (item['barcode']?.toString().toLowerCase() == code) ||
+                      (item['sku']?.toString().toLowerCase() == code);
+                }));
+        if (isLikelyBarcode) {
+          final added = await _resolveAndAddBarcode(trimmed);
+          if (added && mounted) {
+            _searchController.clear();
+            setState(() => _searchQuery = '');
+          }
+          return;
+        }
+        _searchDebounce?.cancel();
+        setState(() => _isSearchingRemote = true);
+        try {
+          final results = await PharmacyCatalogService.instance.searchProductsRemote(trimmed);
+          if (mounted && _searchQuery.trim() == trimmed) {
+            _remoteSearchMatchIds
+              ..clear()
+              ..addAll(results.map((e) => e.id));
+            _mergeRemoteProducts(results);
+          }
+        } finally {
+          if (mounted) {
+            setState(() => _isSearchingRemote = false);
+          }
+        }
+      },
+      onClearSearch: () {
+        _searchDebounce?.cancel();
+        _searchController.clear();
+        setState(() {
+          _searchQuery = '';
+          _remoteSearchMatchIds.clear();
+          _isSearchingRemote = false;
+        });
+      },
+      onOpenBarcodeScanner: _openBarcodeScanner,
+      categories: _categories,
+      selectedCategoryIndex: _selectedCategoryIndex,
+      onSelectCategory: (idx) {
+        setState(() => _selectedCategoryIndex = idx);
+      },
     );
   }
 
@@ -1916,32 +914,57 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
         : 'Semua';
 
     final filteredItems = _drugItems.where((item) {
+      final q = _searchQuery.toLowerCase().trim();
+      final itemId = item['id'].toString();
+
+      if (q.isNotEmpty && _remoteSearchMatchIds.contains(itemId)) {
+        return true;
+      }
+
       bool matchesCategory = true;
       if (_selectedCategoryIndex > 0 && selectedCategoryName != 'Semua') {
         final itemCat = (item['category'] ?? '').toString().toLowerCase().trim();
         final selCat = selectedCategoryName.toLowerCase().trim();
-        if (selCat == 'obat keras (rx)' || selCat == 'obat keras' || selCat == 'rx') {
-          matchesCategory = item['isDotRed'] == true || item['isPrescriptionOnly'] == true || itemCat.contains('keras');
-        } else if (selCat == 'obat bebas (otc)' || selCat == 'obat bebas' || selCat == 'otc') {
-          matchesCategory = item['isDotRed'] != true && item['isPrescriptionOnly'] != true && (itemCat.contains('bebas') || itemCat.isEmpty);
+
+        final isItemBebasTerbatas = itemCat.contains('terbatas') || itemCat.contains('biru');
+        final isItemBebas = (itemCat.contains('bebas') && !isItemBebasTerbatas) || itemCat.contains('hijau');
+        final isItemKeras = !isItemBebas && !isItemBebasTerbatas && (
+            item['isDotRed'] == true ||
+            item['isPrescriptionOnly'] == true ||
+            itemCat.contains('keras') ||
+            itemCat.contains('rx')
+        );
+
+        if (selCat.contains('terbatas')) {
+          matchesCategory = isItemBebasTerbatas;
+        } else if (selCat == 'bebas' || selCat.contains('bebas') || selCat.contains('otc')) {
+          matchesCategory = isItemBebas;
+        } else if (selCat == 'keras' || selCat.contains('keras') || selCat.contains('rx')) {
+          matchesCategory = isItemKeras;
         } else {
           matchesCategory = itemCat == selCat || itemCat.contains(selCat);
         }
       }
 
-      final q = _searchQuery.toLowerCase().trim();
-      final itemId = item['id'].toString();
-      final matchesSearch = q.isEmpty ||
-          _remoteSearchMatchIds.contains(itemId) ||
-          item['name'].toString().toLowerCase().contains(q) ||
-          item['sku'].toString().toLowerCase().contains(q) ||
-          (item['barcode'] != null && item['barcode'].toString().toLowerCase().contains(q)) ||
-          (item['description'] != null && item['description'].toString().toLowerCase().contains(q)) ||
-          (item['fungsi'] != null && item['fungsi'].toString().toLowerCase().contains(q)) ||
-          (item['kandungan'] != null && item['kandungan'].toString().toLowerCase().contains(q)) ||
-          (item['klasifikasi'] != null && item['klasifikasi'].toString().toLowerCase().contains(q)) ||
-          (item['sediaan'] != null && item['sediaan'].toString().toLowerCase().contains(q)) ||
-          (item['category'] != null && item['category'].toString().toLowerCase().contains(q));
+      if (q.isEmpty) return matchesCategory;
+
+      final searchableBlob = [
+        item['name'],
+        item['sku'],
+        item['barcode'],
+        item['description'],
+        item['fungsi'],
+        item['kandungan'],
+        item['klasifikasi'],
+        item['sediaan'],
+        item['category'],
+      ].where((e) => e != null).map((e) => e.toString().toLowerCase()).join(' ');
+
+      final expandedQ = PharmacyCatalogService.expandPharmacyQuery(q);
+      final tokens = q.split(RegExp(r'\s+')).where((t) => t.isNotEmpty).toList();
+      final matchesSearch = searchableBlob.contains(q) ||
+          (expandedQ != q && searchableBlob.contains(expandedQ)) ||
+          (tokens.length > 1 && tokens.every((t) => searchableBlob.contains(t)));
 
       return matchesCategory && matchesSearch;
     }).toList();
@@ -1950,93 +973,24 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildTopHeader(isMobile, screenWidth),
-        _buildPatientContextStrip(isWide),
-        _buildPrescriptionValidationBanner(),
-        _buildSearchField(),
-        _buildCategoryTabs(),
+        _buildPatientBanner(isWide),
+        _buildSearchAndCategories(),
 
         // Catalog Grid or List
         Expanded(
-          child: _isLoadingCatalog
-              ? const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircularProgressIndicator(color: Color(0xFF059669)),
-                      SizedBox(height: 16),
-                      Text(
-                        'Menghubungkan ke Database Velora...',
-                        style: TextStyle(color: Color(0xFF6D7A72), fontSize: 13),
-                      ),
-                    ],
-                  ),
-                )
-              : filteredItems.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.medication_liquid_outlined, size: 48, color: Colors.grey.shade400),
-                          const SizedBox(height: 12),
-                          Text(
-                            _searchQuery.isNotEmpty
-                                ? 'Tidak ada obat yang cocok dengan "$_searchQuery"'
-                                : 'Katalog Obat Belum Terisi',
-                            style: const TextStyle(color: Color(0xFF6D7A72), fontSize: 13),
-                          ),
-                          const SizedBox(height: 12),
-                          OutlinedButton.icon(
-                            onPressed: _fetchCatalog,
-                            icon: const Icon(Icons.refresh_rounded, size: 16),
-                            label: const Text('Sinkronkan Katalog Obat'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFF059669),
-                              side: const BorderSide(color: Color(0xFF059669)),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : _isGridView
-                      ? GridView.builder(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                            maxCrossAxisExtent: isMobile ? 220 : 250,
-                            childAspectRatio: isMobile ? 0.82 : 0.86,
-                            mainAxisSpacing: 10,
-                            crossAxisSpacing: 10,
-                          ),
-                          itemCount: filteredItems.length,
-                          itemBuilder: (context, index) {
-                            final item = filteredItems[index];
-                            final idStr = item['id'].toString();
-                            final qty = _getCartQuantityForDrug(idStr);
-                            return PharmacyDrugCard(
-                              item: item,
-                              quantity: qty,
-                              onAdd: () => _addToCart(idStr),
-                              onRemove: () => _removeFromCart(idStr),
-                              onSelectUnit: (unit) => _addToCart(idStr, unit),
-                            );
-                          },
-                        )
-                      : ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                          itemCount: filteredItems.length,
-                          separatorBuilder: (_, _) => const SizedBox(height: 8),
-                          itemBuilder: (context, index) {
-                            final item = filteredItems[index];
-                            final idStr = item['id'].toString();
-                            final qty = _getCartQuantityForDrug(idStr);
-                            return PharmacyDrugRow(
-                              item: item,
-                              quantity: qty,
-                              onAdd: () => _addToCart(idStr),
-                              onRemove: () => _removeFromCart(idStr),
-                              onSelectUnit: (unit) => _addToCart(idStr, unit),
-                            );
-                          },
-                        ),
+          child: PharmacyCatalogView(
+            isLoading: _isLoadingCatalog,
+            isSearchingRemote: _isSearchingRemote,
+            searchQuery: _searchQuery,
+            items: filteredItems,
+            isGridView: _isGridView,
+            isMobile: isMobile,
+            getCartQuantity: _getCartQuantityForDrug,
+            onAddToCart: _addToCart,
+            onRemoveFromCart: _removeFromCart,
+            onSelectUnit: (id, unit) => _addToCart(id, unit),
+            onSyncCatalog: _fetchCatalog,
+          ),
         ),
       ],
     );
@@ -2061,6 +1015,7 @@ class _PharmacyPosScreenState extends State<PharmacyPosScreen> {
                     child: PharmacyCartPanel(
                       cart: _cart,
                       drugItems: _drugItems,
+                      drugItemsById: _drugItemsById,
                       totalPrice: _totalPrice,
                       tuslahFee: _tuslahFee,
                       selectedPatient: _selectedPatient,

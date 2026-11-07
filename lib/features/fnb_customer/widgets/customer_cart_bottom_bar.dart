@@ -26,11 +26,14 @@ class CustomerCartBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: const Border(top: BorderSide(color: WarmPalette.line)),
+        border: Border(top: BorderSide(color: p.line)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.06),
@@ -49,12 +52,12 @@ class CustomerCartBottomBar extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'TOTAL TAGIHAN',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
-                        color: WarmPalette.textSecondary,
+                        color: p.textSecondary,
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -63,10 +66,10 @@ class CustomerCartBottomBar extends StatelessWidget {
                       alignment: Alignment.centerLeft,
                       child: Text(
                         'Rp ${_formatRupiah(grandTotal)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
-                          color: WarmPalette.textPrimary,
+                          color: p.textPrimary,
                         ),
                       ),
                     ),
@@ -81,21 +84,21 @@ class CustomerCartBottomBar extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: WarmPalette.tertiary.withValues(alpha: 0.12),
+                    color: p.tertiary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.check_circle_outline,
                         size: 14,
-                        color: WarmPalette.tertiary,
+                        color: p.tertiary,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         'Hemat ${discount >= 1000 ? "${(discount / 1000).round()}k" : "Rp $discount"}',
-                        style: const TextStyle(
-                          color: WarmPalette.tertiary,
+                        style: TextStyle(
+                          color: p.tertiary,
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                         ),
@@ -113,7 +116,7 @@ class CustomerCartBottomBar extends StatelessWidget {
             child: ElevatedButton(
               onPressed: isSubmitting ? null : onCheckout,
               style: ElevatedButton.styleFrom(
-                backgroundColor: WarmPalette.primary,
+                backgroundColor: primaryColor,
                 foregroundColor: Colors.white,
                 shape: const StadiumBorder(),
                 elevation: 0,

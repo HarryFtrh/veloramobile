@@ -23,6 +23,8 @@ class OrderHeaderBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -39,17 +41,17 @@ class OrderHeaderBar extends StatelessWidget {
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 backgroundColor: WidgetStateProperty.resolveWith((states) {
                   if (states.contains(WidgetState.selected)) {
-                    return WarmPalette.primary;
+                    return primaryColor;
                   }
-                  return Colors.white;
+                  return p.surface;
                 }),
                 foregroundColor: WidgetStateProperty.resolveWith((states) {
                   if (states.contains(WidgetState.selected)) {
                     return Colors.white;
                   }
-                  return WarmPalette.textPrimary;
+                  return p.textPrimary;
                 }),
-                side: WidgetStateProperty.all(const BorderSide(color: WarmPalette.line)),
+                side: WidgetStateProperty.all(BorderSide(color: p.line)),
                 shape: WidgetStateProperty.all(
                   RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
@@ -106,9 +108,9 @@ class OrderHeaderBar extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: Gap.sm, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: p.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: WarmPalette.line),
+              border: Border.all(color: p.line),
             ),
             child: Row(
               children: [
@@ -126,7 +128,7 @@ class OrderHeaderBar extends StatelessWidget {
                                 ? const Color(0xFFFEF3C7)
                                 : (ctrl.customerName.isNotEmpty
                                     ? const Color(0xFFE0E7FF)
-                                    : WarmPalette.surfaceMuted),
+                                    : p.surfaceMuted),
                             child: Icon(
                               ctrl.memberTier != null
                                   ? Icons.stars_rounded
@@ -134,7 +136,7 @@ class OrderHeaderBar extends StatelessWidget {
                               size: 17,
                               color: ctrl.memberTier != null
                                   ? const Color(0xFFD97706)
-                                  : (ctrl.customerName.isNotEmpty ? const Color(0xFF4338CA) : WarmPalette.textSecondary),
+                                  : (ctrl.customerName.isNotEmpty ? const Color(0xFF4338CA) : p.textSecondary),
                             ),
                           ),
                           const SizedBox(width: Gap.xs + 2),
@@ -148,7 +150,7 @@ class OrderHeaderBar extends StatelessWidget {
                                   style: text.bodyMedium?.copyWith(
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w800,
-                                    color: ctrl.customerName.isNotEmpty ? WarmPalette.textPrimary : WarmPalette.textSecondary,
+                                    color: ctrl.customerName.isNotEmpty ? p.textPrimary : p.textSecondary,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -180,11 +182,11 @@ class OrderHeaderBar extends StatelessWidget {
                                 child: Container(
                                   padding: const EdgeInsets.all(4),
                                   margin: const EdgeInsets.only(right: 4),
-                                  decoration: const BoxDecoration(
-                                    color: WarmPalette.surfaceMuted,
+                                  decoration: BoxDecoration(
+                                    color: p.surfaceMuted,
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(Icons.close_rounded, size: 14, color: WarmPalette.textSecondary),
+                                  child: Icon(Icons.close_rounded, size: 14, color: p.textSecondary),
                                 ),
                               ),
                             ),
@@ -192,15 +194,15 @@ class OrderHeaderBar extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: WarmPalette.surfaceMuted,
+                              color: primaryColor.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            child: const Text(
+                            child: Text(
                               'Ganti',
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF6F3512),
+                                color: primaryColor,
                               ),
                             ),
                           ),
@@ -219,12 +221,12 @@ class OrderHeaderBar extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: ctrl.table == null
                             ? const Color(0xFFFEF3C7)
-                            : WarmPalette.tertiary.withValues(alpha: 0.12),
+                            : const Color(0xFF059669).withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: ctrl.table == null
                               ? const Color(0xFFF59E0B)
-                              : WarmPalette.tertiary.withValues(alpha: 0.4),
+                              : const Color(0xFF059669).withValues(alpha: 0.4),
                           width: 1,
                         ),
                       ),
@@ -236,7 +238,7 @@ class OrderHeaderBar extends StatelessWidget {
                             size: 13,
                             color: ctrl.table == null
                                 ? const Color(0xFFB45309)
-                                : WarmPalette.tertiary,
+                                : const Color(0xFF059669),
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -246,7 +248,7 @@ class OrderHeaderBar extends StatelessWidget {
                               fontWeight: FontWeight.w800,
                               color: ctrl.table == null
                                   ? const Color(0xFFB45309)
-                                  : WarmPalette.tertiary,
+                                  : const Color(0xFF059669),
                             ),
                           ),
                         ],

@@ -1,3 +1,5 @@
 #include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"
 #include "Generated.xcconfig"
-FLUTTER_TARGET=lib/main_fnb.dart
+FLUTTER_TARGET=lib/main.dart
+APP_DISPLAY_NAME=Velora POS
+PRODUCT_BUNDLE_IDENTIFIER=com.velora.veloraMobile

@@ -14,6 +14,7 @@ class LoyaltyMember {
     required this.phone,
     required this.points,
     required this.totalSpend,
+    this.tier = 'Reguler',
   });
 
   final String id;
@@ -21,6 +22,7 @@ class LoyaltyMember {
   final String phone;
   final int points;
   final double totalSpend;
+  final String tier;
 
   factory LoyaltyMember.fromJson(Map<String, dynamic> json) => LoyaltyMember(
         id: json.getString('id'),
@@ -28,6 +30,7 @@ class LoyaltyMember {
         phone: json.getString('phone'),
         points: json.getInt('total_points'),
         totalSpend: json.getDouble('total_spend'),
+        tier: json.getString('tier', fallback: json.getString('membership_tier', fallback: 'Reguler')),
       );
 }
 
@@ -177,6 +180,11 @@ class CustomerService {
     } catch (e) {
       throw ApiException.from(e);
     }
+  }
+
+  Future<List<LoyaltyMember>> searchLoyaltyMembers(String query) async {
+    final paged = await members(search: query, page: 1);
+    return paged.items;
   }
 
   Future<void> createCustomer({required String name, required String phone, String? email}) async {

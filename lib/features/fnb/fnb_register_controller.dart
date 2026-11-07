@@ -78,6 +78,7 @@ class RegisterController extends ChangeNotifier {
       final catalog = await FnbCatalogService.instance.fetchCatalog();
       products = catalog.products;
       categories = catalog.categories;
+      _recomputeVisibleProducts();
       if (catalog.modifiers.isNotEmpty) {
         modifierGroups = catalog.modifiers;
       }
@@ -175,15 +176,24 @@ class RegisterController extends ChangeNotifier {
     }
   }
 
-  List<PosProduct> get visibleProducts {
+  List<PosProduct> _memoizedVisibleProducts = const [];
+
+  /// Getter ter-memoize O(1) untuk menghindari alokasi List baru dan linear filter O(N) tiap frame render.
+  List<PosProduct> get visibleProducts => _memoizedVisibleProducts;
+
+  void _recomputeVisibleProducts() {
     final q = search.trim().toLowerCase();
-    return products.where((p) {
+    if (products.isEmpty) {
+      _memoizedVisibleProducts = const [];
+      return;
+    }
+    _memoizedVisibleProducts = products.where((p) {
       final inCategory = category == 'Semua' || p.category == category;
       final matches = q.isEmpty ||
           p.name.toLowerCase().contains(q) ||
           p.sku.toLowerCase().contains(q);
       return inCategory && matches;
-    }).toList();
+    }).toList(growable: false);
   }
 
   num get subtotal => lines.fold<num>(0, (sum, l) => sum + l.subtotal);
@@ -292,12 +302,16 @@ class RegisterController extends ChangeNotifier {
   }
 
   void setCategory(String c) {
+    if (category == c) return;
     category = c;
+    _recomputeVisibleProducts();
     notifyListeners();
   }
 
   void setSearch(String q) {
+    if (search == q) return;
     search = q;
+    _recomputeVisibleProducts();
     notifyListeners();
   }
 
@@ -328,9 +342,9 @@ class RegisterController extends ChangeNotifier {
       note: note?.trim().isEmpty == true ? null : note?.trim(),
       options: options,
     );
-    final existing = lines.where((l) => l.mergeKey == candidate.mergeKey);
-    if (existing.isNotEmpty) {
-      existing.first.quantity += quantity;
+    final idx = lines.indexWhere((l) => l.mergeKey == candidate.mergeKey);
+    if (idx != -1) {
+      lines[idx].quantity += quantity;
     } else {
       lines.add(candidate);
     }

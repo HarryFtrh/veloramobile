@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../../core/utils/currency_formatter.dart';
 import '../pharmacy_service.dart';
+import 'pbf/pharmacy_pbf_order_card.dart';
+import 'pbf/pharmacy_pbf_order_kpi_card.dart';
+
+export 'pbf/pharmacy_pbf_order_card.dart';
+export 'pbf/pharmacy_pbf_order_kpi_card.dart';
 
 class PharmacyPbfOrderModal extends StatefulWidget {
   final bool showDragHandle;
@@ -50,6 +54,123 @@ class _PharmacyPbfOrderModalState extends State<PharmacyPbfOrderModal> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _showCreateSpDialog() async {
+    final pbfCtrl = TextEditingController(text: 'PT Kimia Farma Trading & Distribution');
+    final itemCountCtrl = TextEditingController(text: '5');
+    final totalCtrl = TextEditingController(text: '2500000');
+    String spType = 'Reguler';
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text(
+            'Buat Surat Pesanan (SP) PBF Baru',
+            style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 15, fontWeight: FontWeight.bold),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: pbfCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Nama Distributor / PBF Resmi',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: spType,
+                  decoration: const InputDecoration(
+                    labelText: 'Jenis Surat Pesanan (BPOM)',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'Reguler', child: Text('SP Reguler (Obat Bebas / Keras)')),
+                    DropdownMenuItem(value: 'Prekursor', child: Text('SP Khusus Prekursor Farmasi')),
+                    DropdownMenuItem(value: 'OOT', child: Text('SP Obat-Obat Tertentu (OOT)')),
+                    DropdownMenuItem(value: 'Psikotropika', child: Text('SP Psikotropika / Narkotika')),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) setDialogState(() => spType = val);
+                  },
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: itemCountCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Jumlah Item',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      flex: 2,
+                      child: TextField(
+                        controller: totalCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Estimasi Nilai PO (Rp)',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF059669),
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () async {
+                final pbfName = pbfCtrl.text.trim();
+                if (pbfName.isEmpty) return;
+                final count = int.tryParse(itemCountCtrl.text.trim()) ?? 1;
+                final total = num.tryParse(totalCtrl.text.trim().replaceAll('.', '')) ?? 0;
+                Navigator.pop(ctx);
+                setState(() => _isLoading = true);
+                await PharmacyService.instance.createPbfOrder(
+                  pbfName: pbfName,
+                  spType: spType,
+                  itemCount: count,
+                  totalAmount: total,
+                );
+                await _loadPbfOrders();
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('✓ Surat Pesanan ($spType) ke $pbfName berhasil diterbitkan & dikirim.'),
+                    backgroundColor: const Color(0xFF059669),
+                  ),
+                );
+              },
+              child: const Text('Terbitkan SP'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -134,60 +255,12 @@ class _PharmacyPbfOrderModalState extends State<PharmacyPbfOrderModal> {
             padding: const EdgeInsets.all(16),
             children: [
               // KPI Cards Grid (4 counters)
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: borderColor),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('Total PO Periode Ini', style: TextStyle(fontSize: 11, color: textMuted)),
-                          const SizedBox(height: 4),
-                          Text(
-                            CurrencyFormatter.format(totalPoAmount),
-                            style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13.5, fontWeight: FontWeight.bold, color: textPrimary),
-                          ),
-                          Text(
-                            '$totalPoCount Faktur • $uniquePbfCount PBF',
-                            style: const TextStyle(fontSize: 10, color: emeraldPrimary, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        border: const Border(left: BorderSide(color: Color(0xFFBA1A1A), width: 3)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('Jatuh Tempo Segera', style: TextStyle(fontSize: 11, color: Color(0xFFBA1A1A), fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 4),
-                          Text(
-                            CurrencyFormatter.format(dueSoonAmount),
-                            style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFFBA1A1A)),
-                          ),
-                          Text(
-                            '${dueSoonOrders.length} Faktur Segera Bayar',
-                            style: const TextStyle(fontSize: 10, color: textMuted),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+              PharmacyPbfOrderKpiCard(
+                totalPoAmount: totalPoAmount,
+                totalPoCount: totalPoCount,
+                uniquePbfCount: uniquePbfCount,
+                dueSoonAmount: dueSoonAmount,
+                dueSoonCount: dueSoonOrders.length,
               ),
               const SizedBox(height: 14),
 
@@ -200,11 +273,7 @@ class _PharmacyPbfOrderModalState extends State<PharmacyPbfOrderModal> {
                     style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13.5, fontWeight: FontWeight.bold),
                   ),
                   OutlinedButton.icon(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Formulir SP Elektronik dibuka.')),
-                      );
-                    },
+                    onPressed: _showCreateSpDialog,
                     icon: const Icon(Icons.add, size: 14),
                     label: const Text('Buat SP Baru', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                     style: OutlinedButton.styleFrom(
@@ -221,86 +290,7 @@ class _PharmacyPbfOrderModalState extends State<PharmacyPbfOrderModal> {
               if (_isLoading)
                 const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator(color: emeraldPrimary)))
               else if (_orders.isNotEmpty)
-                ..._orders.map((po) {
-                  final isDueSoon = po.status == 'due_soon';
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: isDueSoon ? const Color(0xFFBA1A1A).withValues(alpha: 0.4) : borderColor),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              po.poNumber,
-                              style: const TextStyle(
-                                fontFamily: 'JetBrains Mono',
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: textPrimary,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: isDueSoon ? const Color(0xFFFFDAD6) : const Color(0xFF0D9488).withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                isDueSoon ? 'JATUH TEMPO' : po.status.toUpperCase(),
-                                style: TextStyle(
-                                  fontFamily: 'JetBrains Mono',
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDueSoon ? const Color(0xFFBA1A1A) : const Color(0xFF0D9488),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          po.pbfName,
-                          style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 12.5, fontWeight: FontWeight.bold, color: textPrimary),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Tanggal: ${po.date} • Jatuh Tempo: ${po.dueDate}',
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            color: isDueSoon ? const Color(0xFFBA1A1A) : textMuted,
-                            fontWeight: isDueSoon ? FontWeight.w600 : FontWeight.normal,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '${po.itemCount} Item Obat',
-                              style: const TextStyle(fontSize: 11, color: textMuted),
-                            ),
-                            Text(
-                              CurrencyFormatter.format(po.totalAmount),
-                              style: const TextStyle(
-                                fontFamily: 'JetBrains Mono',
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: emeraldPrimary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  );
-                })
+                ..._orders.map((po) => PharmacyPbfOrderCard(order: po))
               else
                 Container(
                   padding: const EdgeInsets.all(24),

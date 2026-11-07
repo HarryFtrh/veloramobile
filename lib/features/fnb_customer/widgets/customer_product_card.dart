@@ -14,13 +14,16 @@ class CustomerProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: WarmPalette.line),
+          border: Border.all(color: p.line),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.03),
@@ -42,10 +45,10 @@ class CustomerProductCard extends StatelessWidget {
                     fit: BoxFit.cover,
                     cacheWidth: 360,
                     errorBuilder: (_, _, _) => Container(
-                      color: WarmPalette.surfaceMuted,
-                      child: const Icon(
+                      color: p.surfaceMuted,
+                      child: Icon(
                         Icons.coffee,
-                        color: WarmPalette.primary,
+                        color: primaryColor,
                       ),
                     ),
                   ),
@@ -64,10 +67,10 @@ class CustomerProductCard extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.star_rounded,
                           size: 13,
-                          color: WarmPalette.secondary,
+                          color: p.secondary,
                         ),
                         const SizedBox(width: 2),
                         Text(
@@ -91,7 +94,7 @@ class CustomerProductCard extends StatelessWidget {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF24150D).withValues(alpha: 0.8),
+                        color: p.textPrimary.withValues(alpha: 0.85),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -115,10 +118,10 @@ class CustomerProductCard extends StatelessWidget {
                     item.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
-                      color: WarmPalette.textPrimary,
+                      color: p.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -126,9 +129,9 @@ class CustomerProductCard extends StatelessWidget {
                     item.description,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: WarmPalette.textSecondary,
+                      color: p.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -141,10 +144,10 @@ class CustomerProductCard extends StatelessWidget {
                           alignment: Alignment.centerLeft,
                           child: Text(
                             'Rp ${item.basePrice.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w800,
                               fontSize: 13,
-                              color: WarmPalette.primary,
+                              color: primaryColor,
                             ),
                           ),
                         ),
@@ -153,8 +156,8 @@ class CustomerProductCard extends StatelessWidget {
                       Container(
                         width: 28,
                         height: 28,
-                        decoration: const BoxDecoration(
-                          color: WarmPalette.primary,
+                        decoration: BoxDecoration(
+                          color: primaryColor,
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(

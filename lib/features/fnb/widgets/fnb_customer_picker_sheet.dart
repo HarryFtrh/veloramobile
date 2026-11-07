@@ -1,32 +1,18 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../core/design/tokens.dart';
-import '../../../core/network/api_exception.dart';
 import '../../../core/utils/audio_helper.dart';
 import '../../customers/customer_service.dart';
+import 'customer/fnb_create_member_dialog.dart';
+import 'customer/fnb_loyalty_member_tile.dart';
+import 'customer/fnb_manual_guest_form.dart';
 
-class FnbCustomerPickerResult {
-  final String name;
-  final String? phone;
-  final String? tier;
-  final double discountPercent;
-  final bool isGeneralCustomer;
-  final String? memberId;
+import '../models/fnb_customer_picker_result.dart';
 
-  const FnbCustomerPickerResult({
-    required this.name,
-    this.phone,
-    this.tier,
-    this.discountPercent = 0,
-    this.isGeneralCustomer = false,
-    this.memberId,
-  });
-
-  static const general = FnbCustomerPickerResult(
-    name: '',
-    isGeneralCustomer: true,
-  );
-}
+export '../models/fnb_customer_picker_result.dart';
+export 'customer/fnb_create_member_dialog.dart';
+export 'customer/fnb_loyalty_member_tile.dart';
+export 'customer/fnb_manual_guest_form.dart';
 
 /// Modal Bottom Sheet modern & interaktif untuk memilih Pelanggan Umum,
 /// mencari Member Loyalitas terdaftar, atau memasukkan Nama Tamu manual.
@@ -84,7 +70,6 @@ class _FnbCustomerPickerSheetState extends State<FnbCustomerPickerSheet> with Si
   final TextEditingController _manualNameCtrl = TextEditingController();
   final TextEditingController _manualDiscountCtrl = TextEditingController();
 
-  // State pencarian member
   List<LoyaltyMember> _members = [];
   bool _isLoadingMembers = false;
   String? _memberError;
@@ -99,15 +84,14 @@ class _FnbCustomerPickerSheetState extends State<FnbCustomerPickerSheet> with Si
     if (widget.currentDiscount > 0) {
       _manualDiscountCtrl.text = widget.currentDiscount.toStringAsFixed(0);
     }
-
     _loadMembers();
 
     _searchCtrl.addListener(() {
-      final val = _searchCtrl.text.trim();
-      if (val != _query) {
-        _query = val;
+      final q = _searchCtrl.text.trim();
+      if (q != _query) {
+        _query = q;
         _debounce?.cancel();
-        _debounce = Timer(const Duration(milliseconds: 350), () {
+        _debounce = Timer(const Duration(milliseconds: 300), () {
           _loadMembers(search: _query);
         });
       }
@@ -124,49 +108,42 @@ class _FnbCustomerPickerSheetState extends State<FnbCustomerPickerSheet> with Si
     super.dispose();
   }
 
-  Future<void> _loadMembers({String? search}) async {
+  Future<void> _loadMembers({String search = ''}) async {
     setState(() {
       _isLoadingMembers = true;
       _memberError = null;
     });
 
     try {
-      final res = await CustomerService.instance.members(search: search, page: 1);
+      final res = await CustomerService.instance.searchLoyaltyMembers(search);
       if (mounted) {
         setState(() {
-          _members = res.items;
+          _members = res;
           _isLoadingMembers = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
+          _memberError = 'Gagal memuat member: $e';
           _isLoadingMembers = false;
-          _memberError = ApiException.from(e).message;
         });
       }
     }
   }
 
   void _selectGeneralCustomer() {
-    AudioHelper.successFeedback();
+    AudioHelper.tapFeedback();
     Navigator.pop(context, FnbCustomerPickerResult.general);
   }
 
   void _selectMember(LoyaltyMember member) {
-    AudioHelper.successFeedback();
-    // Default tier & diskon berbasis points jika ada
-    String tier = 'Member';
-    double discount = 0;
-    if (member.points >= 500) {
-      tier = 'Gold Member';
-      discount = 15;
-    } else if (member.points >= 200) {
-      tier = 'Silver Member';
-      discount = 10;
-    } else if (member.points >= 50) {
-      tier = 'Bronze Member';
-      discount = 5;
+    AudioHelper.tapFeedback();
+    double disc = 0;
+    if (member.tier.toLowerCase().contains('gold') || member.tier.toLowerCase().contains('vip')) {
+      disc = 10;
+    } else if (member.tier.toLowerCase().contains('silver')) {
+      disc = 5;
     }
 
     Navigator.pop(
@@ -174,172 +151,47 @@ class _FnbCustomerPickerSheetState extends State<FnbCustomerPickerSheet> with Si
       FnbCustomerPickerResult(
         name: member.name,
         phone: member.phone,
-        tier: tier,
-        discountPercent: discount,
+        tier: member.tier,
+        discountPercent: disc,
         memberId: member.id,
       ),
     );
   }
 
   void _applyManualCustomer() {
+    AudioHelper.tapFeedback();
     final name = _manualNameCtrl.text.trim();
     if (name.isEmpty) {
       _selectGeneralCustomer();
       return;
     }
 
-    AudioHelper.successFeedback();
-    final rawDisc = double.tryParse(_manualDiscountCtrl.text.trim()) ?? 0;
-    final disc = rawDisc.clamp(0.0, 100.0);
+    double disc = 0;
+    final discText = _manualDiscountCtrl.text.trim();
+    if (discText.isNotEmpty) {
+      disc = double.tryParse(discText) ?? 0;
+    }
 
     Navigator.pop(
       context,
       FnbCustomerPickerResult(
         name: name,
-        tier: disc > 0 ? 'Diskon Khusus' : null,
         discountPercent: disc,
       ),
     );
   }
 
-  void _showCreateMemberDialog() {
-    final nameCtrl = TextEditingController();
-    final phoneCtrl = TextEditingController();
-    final emailCtrl = TextEditingController();
-    String? err;
-    bool saving = false;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDlgState) {
-          final p = context.palette;
-          return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: p.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(Icons.person_add_alt_1_rounded, color: p.primary, size: 20),
-                ),
-                const SizedBox(width: 10),
-                const Text('Daftar Member Baru', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-              ],
-            ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (err != null) ...[
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: p.danger.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(err!, style: TextStyle(color: p.danger, fontSize: 12)),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  TextField(
-                    controller: nameCtrl,
-                    autofocus: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Nama Lengkap',
-                      prefixIcon: Icon(Icons.badge_outlined),
-                      hintText: 'Mis. Cindy Wijaya',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: phoneCtrl,
-                    keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(
-                      labelText: 'Nomor WhatsApp / HP',
-                      prefixIcon: Icon(Icons.phone_outlined),
-                      hintText: 'Mis. 081234567890',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: emailCtrl,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
-                      labelText: 'Email (Opsional)',
-                      prefixIcon: Icon(Icons.email_outlined),
-                      hintText: 'nama@email.com',
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: saving ? null : () => Navigator.pop(ctx),
-                child: const Text('Batal'),
-              ),
-              FilledButton(
-                onPressed: saving
-                    ? null
-                    : () async {
-                        final nm = nameCtrl.text.trim();
-                        final ph = phoneCtrl.text.trim();
-                        if (nm.isEmpty || ph.isEmpty) {
-                          setDlgState(() => err = 'Nama dan Nomor HP wajib diisi');
-                          return;
-                        }
-
-                        setDlgState(() {
-                          saving = true;
-                          err = null;
-                        });
-
-                        try {
-                          await CustomerService.instance.createCustomer(
-                            name: nm,
-                            phone: ph,
-                            email: emailCtrl.text.trim().isNotEmpty ? emailCtrl.text.trim() : null,
-                          );
-
-                          if (ctx.mounted) Navigator.pop(ctx);
-                          if (mounted) {
-                            // Segera gunakan member baru tersebut
-                            Navigator.pop(
-                              context,
-                              FnbCustomerPickerResult(
-                                name: nm,
-                                phone: ph,
-                                tier: 'Member Baru',
-                                discountPercent: 0,
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          setDlgState(() {
-                            saving = false;
-                            err = ApiException.from(e).message;
-                          });
-                        }
-                      },
-                child: saving
-                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Text('Simpan & Pilih'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
+  Future<void> _showCreateMemberDialog() async {
+    final result = await FnbCreateMemberDialog.show(context);
+    if (result != null && mounted) {
+      Navigator.pop(context, result);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final isGeneralSelected = widget.currentName.trim().isEmpty;
 
     return Padding(
@@ -355,12 +207,12 @@ class _FnbCustomerPickerSheetState extends State<FnbCustomerPickerSheet> with Si
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF6F3512).withValues(alpha: 0.12),
+                    color: primaryColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.people_alt_rounded,
-                    color: Color(0xFF6F3512),
+                    color: primaryColor,
                     size: 22,
                   ),
                 ),
@@ -369,12 +221,12 @@ class _FnbCustomerPickerSheetState extends State<FnbCustomerPickerSheet> with Si
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Pilih Pelanggan & Member',
                         style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.w800,
-                          color: WarmPalette.textPrimary,
+                          color: p.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -409,12 +261,12 @@ class _FnbCustomerPickerSheetState extends State<FnbCustomerPickerSheet> with Si
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: isGeneralSelected
-                        ? const Color(0xFF6F3512).withValues(alpha: 0.08)
+                        ? primaryColor.withValues(alpha: 0.08)
                         : p.surfaceMuted,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: isGeneralSelected
-                          ? const Color(0xFF6F3512)
+                          ? primaryColor
                           : p.line,
                       width: isGeneralSelected ? 1.8 : 1.0,
                     ),
@@ -424,7 +276,7 @@ class _FnbCustomerPickerSheetState extends State<FnbCustomerPickerSheet> with Si
                       CircleAvatar(
                         radius: 20,
                         backgroundColor: isGeneralSelected
-                            ? const Color(0xFF6F3512)
+                            ? primaryColor
                             : p.line.withValues(alpha: 0.5),
                         child: Icon(
                           Icons.person_outline_rounded,
@@ -439,12 +291,12 @@ class _FnbCustomerPickerSheetState extends State<FnbCustomerPickerSheet> with Si
                           children: [
                             Row(
                               children: [
-                                const Text(
+                                Text(
                                   'Pelanggan Umum (Walk-in)',
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w800,
-                                    color: WarmPalette.textPrimary,
+                                    color: p.textPrimary,
                                   ),
                                 ),
                                 if (isGeneralSelected) ...[
@@ -452,7 +304,7 @@ class _FnbCustomerPickerSheetState extends State<FnbCustomerPickerSheet> with Si
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF6F3512),
+                                      color: primaryColor,
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: const Text(
@@ -479,7 +331,7 @@ class _FnbCustomerPickerSheetState extends State<FnbCustomerPickerSheet> with Si
                         isGeneralSelected
                             ? Icons.check_circle_rounded
                             : Icons.chevron_right_rounded,
-                        color: isGeneralSelected ? const Color(0xFF6F3512) : p.textSecondary,
+                        color: isGeneralSelected ? primaryColor : p.textSecondary,
                         size: 24,
                       ),
                     ],
@@ -491,7 +343,7 @@ class _FnbCustomerPickerSheetState extends State<FnbCustomerPickerSheet> with Si
 
           const SizedBox(height: 14),
 
-          // Tab Bar Navigasi: Member Loyalitas vs Nama Tamu Manual
+          // Tab Bar Navigasi
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Container(
@@ -514,7 +366,7 @@ class _FnbCustomerPickerSheetState extends State<FnbCustomerPickerSheet> with Si
                     ),
                   ],
                 ),
-                labelColor: const Color(0xFF6F3512),
+                labelColor: primaryColor,
                 unselectedLabelColor: p.textSecondary,
                 labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
                 unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
@@ -551,11 +403,20 @@ class _FnbCustomerPickerSheetState extends State<FnbCustomerPickerSheet> with Si
             child: TabBarView(
               controller: _tabController,
               children: [
-                // Tab 1: Member Loyalitas List & Search
-                _buildMemberListTab(p),
-
-                // Tab 2: Nama Tamu Manual Form
-                _buildManualGuestTab(p),
+                _buildMemberListTab(p, primaryColor),
+                FnbManualGuestForm(
+                  nameController: _manualNameCtrl,
+                  discountController: _manualDiscountCtrl,
+                  onApply: _applyManualCustomer,
+                  onSelectPreset: (label) {
+                    setState(() => _manualNameCtrl.text = label);
+                  },
+                  onSelectQuickDiscount: (percent) {
+                    setState(() {
+                      _manualDiscountCtrl.text = percent > 0 ? percent.toString() : '';
+                    });
+                  },
+                ),
               ],
             ),
           ),
@@ -564,7 +425,7 @@ class _FnbCustomerPickerSheetState extends State<FnbCustomerPickerSheet> with Si
     );
   }
 
-  Widget _buildMemberListTab(AppPalette p) {
+  Widget _buildMemberListTab(AppPalette p, Color primaryColor) {
     return Column(
       children: [
         // Search & Add Bar
@@ -605,8 +466,8 @@ class _FnbCustomerPickerSheetState extends State<FnbCustomerPickerSheet> with Si
                 icon: const Icon(Icons.person_add_rounded, size: 16),
                 label: const Text('+ Member'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF6F3512),
-                  side: const BorderSide(color: Color(0xFF6F3512)),
+                  foregroundColor: primaryColor,
+                  side: BorderSide(color: primaryColor),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 ),
@@ -620,8 +481,8 @@ class _FnbCustomerPickerSheetState extends State<FnbCustomerPickerSheet> with Si
         // List Members
         Expanded(
           child: _isLoadingMembers
-              ? const Center(
-                  child: CircularProgressIndicator(color: Color(0xFF6F3512), strokeWidth: 2.5),
+              ? Center(
+                  child: CircularProgressIndicator(color: primaryColor, strokeWidth: 2.5),
                 )
               : _memberError != null
                   ? Center(
@@ -676,7 +537,7 @@ class _FnbCustomerPickerSheetState extends State<FnbCustomerPickerSheet> with Si
                                   icon: const Icon(Icons.person_add_rounded, size: 18),
                                   label: const Text('Daftarkan Member Baru'),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF6F3512),
+                                    backgroundColor: primaryColor,
                                     foregroundColor: Colors.white,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                   ),
@@ -692,242 +553,15 @@ class _FnbCustomerPickerSheetState extends State<FnbCustomerPickerSheet> with Si
                           itemBuilder: (ctx, idx) {
                             final m = _members[idx];
                             final isCurrentSelected = widget.currentName.trim().toLowerCase() == m.name.trim().toLowerCase();
-
-                            return Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(14),
-                                onTap: () => _selectMember(m),
-                                child: Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: isCurrentSelected
-                                        ? const Color(0xFFFEF3C7)
-                                        : p.surface,
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(
-                                      color: isCurrentSelected
-                                          ? const Color(0xFFD97706)
-                                          : p.line,
-                                      width: isCurrentSelected ? 1.5 : 1.0,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 18,
-                                        backgroundColor: const Color(0xFFFEF3C7),
-                                        child: Text(
-                                          m.name.isNotEmpty ? m.name[0].toUpperCase() : 'M',
-                                          style: const TextStyle(
-                                            color: Color(0xFFB45309),
-                                            fontWeight: FontWeight.w800,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              m.name,
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w800,
-                                                color: WarmPalette.textPrimary,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Row(
-                                              children: [
-                                                Icon(Icons.phone_outlined, size: 12, color: p.textSecondary),
-                                                const SizedBox(width: 4),
-                                                Text(
-                                                  m.phone.isNotEmpty ? m.phone : '-',
-                                                  style: TextStyle(fontSize: 11, color: p.textSecondary),
-                                                ),
-                                                const SizedBox(width: 10),
-                                                Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                                  decoration: BoxDecoration(
-                                                    color: const Color(0xFFFEF3C7),
-                                                    borderRadius: BorderRadius.circular(4),
-                                                  ),
-                                                  child: Text(
-                                                    '${m.points} Poin',
-                                                    style: const TextStyle(
-                                                      fontSize: 10,
-                                                      fontWeight: FontWeight.w800,
-                                                      color: Color(0xFFB45309),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      if (isCurrentSelected)
-                                        const Icon(Icons.check_circle_rounded, color: Color(0xFFD97706), size: 22)
-                                      else
-                                        Icon(Icons.add_circle_outline_rounded, color: p.textSecondary, size: 22),
-                                    ],
-                                  ),
-                                ),
-                              ),
+                            return FnbLoyaltyMemberTile(
+                              member: m,
+                              isSelected: isCurrentSelected,
+                              onSelect: () => _selectMember(m),
                             );
                           },
                         ),
         ),
       ],
-    );
-  }
-
-  Widget _buildManualGuestTab(AppPalette p) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Nama Pemesan / Meja',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: p.textPrimary),
-          ),
-          const SizedBox(height: 6),
-          TextField(
-            controller: _manualNameCtrl,
-            decoration: InputDecoration(
-              hintText: 'Mis. Pak Bambang, Tamu Meja 4, Rombongan A',
-              prefixIcon: const Icon(Icons.person_pin_rounded),
-              filled: true,
-              fillColor: p.surfaceMuted,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Preset Chips
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _buildPresetChip('Walk-In', p),
-              _buildPresetChip('Tamu Spesial', p),
-              _buildPresetChip('VIP Lounge', p),
-              _buildPresetChip('Takeaway', p),
-            ],
-          ),
-
-          const SizedBox(height: 20),
-          Text(
-            'Diskon Khusus (%) - Opsional',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: p.textPrimary),
-          ),
-          const SizedBox(height: 6),
-          TextField(
-            controller: _manualDiscountCtrl,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              hintText: 'Mis. 10 (untuk 10%)',
-              prefixIcon: const Icon(Icons.percent_rounded),
-              filled: true,
-              fillColor: p.surfaceMuted,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-
-          // Quick Discount Buttons
-          Row(
-            children: [
-              _buildDiscountQuickBtn(0, p),
-              const SizedBox(width: 8),
-              _buildDiscountQuickBtn(5, p),
-              const SizedBox(width: 8),
-              _buildDiscountQuickBtn(10, p),
-              const SizedBox(width: 8),
-              _buildDiscountQuickBtn(15, p),
-              const SizedBox(width: 8),
-              _buildDiscountQuickBtn(20, p),
-            ],
-          ),
-
-          const SizedBox(height: 28),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton(
-              onPressed: _applyManualCustomer,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6F3512),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                elevation: 1,
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.check_rounded, size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    'Terapkan Nama Pelanggan',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPresetChip(String label, AppPalette p) {
-    return ActionChip(
-      label: Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-      backgroundColor: p.surfaceMuted,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      onPressed: () {
-        setState(() {
-          _manualNameCtrl.text = label;
-        });
-      },
-    );
-  }
-
-  Widget _buildDiscountQuickBtn(int percent, AppPalette p) {
-    final isSelected = _manualDiscountCtrl.text.trim() == percent.toString() ||
-        (percent == 0 && (_manualDiscountCtrl.text.trim().isEmpty || _manualDiscountCtrl.text.trim() == '0'));
-
-    return Expanded(
-      child: OutlinedButton(
-        onPressed: () {
-          setState(() {
-            _manualDiscountCtrl.text = percent > 0 ? percent.toString() : '';
-          });
-        },
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          backgroundColor: isSelected ? const Color(0xFF6F3512) : p.surface,
-          foregroundColor: isSelected ? Colors.white : p.textPrimary,
-          side: BorderSide(
-            color: isSelected ? const Color(0xFF6F3512) : p.line,
-          ),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-        child: Text(
-          '$percent%',
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-        ),
-      ),
     );
   }
 }

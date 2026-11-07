@@ -24,18 +24,20 @@ class _KitchenView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final isWide = MediaQuery.sizeOf(context).width >= 600;
     final canPop = ModalRoute.of(context)?.canPop ?? false;
     return Scaffold(
-      backgroundColor: WarmPalette.canvas,
+      backgroundColor: p.canvas,
       appBar: (!isWide || canPop) ? AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: p.surface,
         elevation: 0,
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: WarmPalette.primary, borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(color: primaryColor, borderRadius: BorderRadius.circular(10)),
               child: const Icon(Icons.coffee_maker_rounded, color: Colors.white, size: 20),
             ),
             const SizedBox(width: 12),
@@ -49,7 +51,7 @@ class _KitchenView extends StatelessWidget {
                       Flexible(
                         child: Text(
                           SessionStorage.instance.getTenantName() ?? SessionStorage.instance.getLocationName() ?? 'Kitchen Display',
-                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: WarmPalette.textPrimary),
+                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: p.textPrimary),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -57,13 +59,13 @@ class _KitchenView extends StatelessWidget {
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(color: WarmPalette.tertiary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
+                        decoration: BoxDecoration(color: const Color(0xFF059669).withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.circle, size: 6, color: WarmPalette.tertiary),
+                            Icon(Icons.circle, size: 6, color: Color(0xFF059669)),
                             SizedBox(width: 4),
-                            Text('LIVE', style: TextStyle(color: WarmPalette.tertiary, fontSize: 9, fontWeight: FontWeight.w800)),
+                            Text('LIVE', style: TextStyle(color: Color(0xFF059669), fontSize: 9, fontWeight: FontWeight.w800)),
                           ],
                         ),
                       ),
@@ -71,7 +73,7 @@ class _KitchenView extends StatelessWidget {
                   ),
                   Text(
                     'Barista & Kitchen Display (KDS)',
-                    style: const TextStyle(fontSize: 11, color: WarmPalette.textSecondary),
+                    style: TextStyle(fontSize: 11, color: p.textSecondary),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -82,11 +84,11 @@ class _KitchenView extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: WarmPalette.textPrimary),
+            icon: Icon(Icons.refresh_rounded, color: p.textPrimary),
             onPressed: () => context.read<KitchenCubit>().refresh(silent: false),
           ),
           IconButton(
-            icon: const Icon(Icons.volume_up_outlined, color: WarmPalette.textPrimary),
+            icon: Icon(Icons.volume_up_outlined, color: p.textPrimary),
             tooltip: 'Suara Peringatan KDS',
             onPressed: () {
               AudioHelper.successFeedback();
@@ -109,18 +111,18 @@ class _KitchenView extends StatelessWidget {
             ..showSnackBar(SnackBar(content: Text(msg)));
         },
         builder: (context, state) => switch (state) {
-          KitchenLoading() => const Center(child: CircularProgressIndicator(color: WarmPalette.primary)),
+          KitchenLoading() => Center(child: CircularProgressIndicator(color: primaryColor)),
           KitchenFailed(:final message) => Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.cloud_off, size: 48, color: WarmPalette.danger),
+                  Icon(Icons.cloud_off, size: 48, color: p.danger),
                   const SizedBox(height: 8),
                   Text(message, style: const TextStyle(fontWeight: FontWeight.w700)),
                   const SizedBox(height: 12),
                   ElevatedButton(
                     onPressed: () => context.read<KitchenCubit>().refresh(silent: false),
-                    style: ElevatedButton.styleFrom(backgroundColor: WarmPalette.primary, foregroundColor: Colors.white),
+                    style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white),
                     child: const Text('Coba Lagi'),
                   ),
                 ],
@@ -145,6 +147,8 @@ class _Board extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final cubit = context.read<KitchenCubit>();
     final allOrders = state.orders;
     final delayedOrders = allOrders.where((o) {
@@ -165,7 +169,7 @@ class _Board extends StatelessWidget {
         // Header Metric Banners
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          color: Colors.white,
+          color: p.surface,
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -173,30 +177,33 @@ class _Board extends StatelessWidget {
                 ConstrainedBox(
                   constraints: const BoxConstraints(minWidth: 140),
                   child: _buildMetricCard(
+                    context: context,
                     icon: Icons.hourglass_top_rounded,
                     label: 'ANTREAN',
                     value: '${allOrders.length} Tiket',
-                    color: WarmPalette.primary,
+                    color: primaryColor,
                   ),
                 ),
                 const SizedBox(width: 10),
                 ConstrainedBox(
                   constraints: const BoxConstraints(minWidth: 150),
                   child: _buildMetricCard(
+                    context: context,
                     icon: Icons.timer_outlined,
                     label: 'RATA-RATA SEDUH',
                     value: avgLabel,
-                    color: WarmPalette.tertiary,
+                    color: const Color(0xFF059669),
                   ),
                 ),
                 const SizedBox(width: 10),
                 ConstrainedBox(
                   constraints: const BoxConstraints(minWidth: 170),
                   child: _buildMetricCard(
+                    context: context,
                     icon: Icons.warning_amber_rounded,
                     label: 'MELEBIHI TARGET (>7m)',
                     value: '$delayedOrders Tiket',
-                    color: delayedOrders > 0 ? WarmPalette.danger : WarmPalette.textSecondary,
+                    color: delayedOrders > 0 ? p.danger : p.textSecondary,
                     isAlert: delayedOrders > 0,
                   ),
                 ),
@@ -208,22 +215,22 @@ class _Board extends StatelessWidget {
         // Station Filters
         Container(
           height: 48,
-          color: Colors.white,
+          color: p.surface,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: [
-              _buildStationChip('Semua Station', state.station == null, () => cubit.filterStation(null)),
-              _buildStationChip('Espresso Bar', state.station == 'Espresso Bar', () => cubit.filterStation('Espresso Bar')),
-              _buildStationChip('Manual Brew & Pour Over', state.station == 'Manual Brew', () => cubit.filterStation('Manual Brew')),
-              _buildStationChip('Pastry & Toast', state.station == 'Pastry & Toast', () => cubit.filterStation('Pastry & Toast')),
+              _buildStationChip(context, 'Semua Station', state.station == null, () => cubit.filterStation(null)),
+              _buildStationChip(context, 'Espresso Bar', state.station == 'Espresso Bar', () => cubit.filterStation('Espresso Bar')),
+              _buildStationChip(context, 'Manual Brew & Pour Over', state.station == 'Manual Brew', () => cubit.filterStation('Manual Brew')),
+              _buildStationChip(context, 'Pastry & Toast', state.station == 'Pastry & Toast', () => cubit.filterStation('Pastry & Toast')),
               for (final s in state.stations)
                 if (!['Espresso Bar', 'Manual Brew', 'Pastry & Toast'].contains(s))
-                  _buildStationChip(s, state.station == s, () => cubit.filterStation(s)),
+                  _buildStationChip(context, s, state.station == s, () => cubit.filterStation(s)),
             ],
           ),
         ),
-        const Divider(height: 1, color: WarmPalette.line),
+        Divider(height: 1, color: p.line),
 
         // Kanban Board Columns
         Expanded(
@@ -266,9 +273,9 @@ class _Board extends StatelessWidget {
                 child: Column(
                   children: [
                     TabBar(
-                      indicatorColor: WarmPalette.primary,
-                      labelColor: WarmPalette.primary,
-                      unselectedLabelColor: WarmPalette.textSecondary,
+                      indicatorColor: primaryColor,
+                      labelColor: primaryColor,
+                      unselectedLabelColor: p.textSecondary,
                       tabs: [
                         for (final s in _stages)
                           Tab(text: '${s.$2.split(" / ")[0]} (${state.byStage(s.$1).length})'),
@@ -289,19 +296,19 @@ class _Board extends StatelessWidget {
         // Footer Station & Hardware Status
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          color: Colors.white,
-          child: const Row(
+          color: p.surface,
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
                 child: Row(
                   children: [
-                    Icon(Icons.wifi_tethering_rounded, size: 14, color: WarmPalette.tertiary),
-                    SizedBox(width: 6),
+                    const Icon(Icons.wifi_tethering_rounded, size: 14, color: Color(0xFF059669)),
+                    const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         'KDS Live Sync Terhubung',
-                        style: TextStyle(fontSize: 11, color: WarmPalette.textSecondary),
+                        style: TextStyle(fontSize: 11, color: p.textSecondary),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -309,15 +316,15 @@ class _Board extends StatelessWidget {
                   ],
                 ),
               ),
-              SizedBox(width: 8),
-              Row(
+              const SizedBox(width: 8),
+              const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.print_outlined, size: 14, color: WarmPalette.tertiary),
+                  Icon(Icons.print_outlined, size: 14, color: Color(0xFF059669)),
                   SizedBox(width: 4),
                   Text(
                     'Thermal Printer [OK]',
-                    style: TextStyle(fontSize: 11, color: WarmPalette.tertiary, fontWeight: FontWeight.w700),
+                    style: TextStyle(fontSize: 11, color: Color(0xFF059669), fontWeight: FontWeight.w700),
                   ),
                 ],
               ),
@@ -328,13 +335,14 @@ class _Board extends StatelessWidget {
     );
   }
 
-  Widget _buildMetricCard({required IconData icon, required String label, required String value, required Color color, bool isAlert = false}) {
+  Widget _buildMetricCard({required BuildContext context, required IconData icon, required String label, required String value, required Color color, bool isAlert = false}) {
+    final p = context.palette;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: isAlert ? WarmPalette.danger.withValues(alpha: 0.1) : WarmPalette.surfaceMuted,
+        color: isAlert ? p.danger.withValues(alpha: 0.1) : p.surfaceMuted,
         borderRadius: BorderRadius.circular(12),
-        border: isAlert ? Border.all(color: WarmPalette.danger.withValues(alpha: 0.3)) : null,
+        border: isAlert ? Border.all(color: p.danger.withValues(alpha: 0.3)) : null,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -346,7 +354,7 @@ class _Board extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: color, letterSpacing: 0.4)),
-              Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: isAlert ? WarmPalette.danger : WarmPalette.textPrimary)),
+              Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: isAlert ? p.danger : p.textPrimary)),
             ],
           ),
         ],
@@ -354,17 +362,19 @@ class _Board extends StatelessWidget {
     );
   }
 
-  Widget _buildStationChip(String label, bool isSelected, VoidCallback onTap) {
+  Widget _buildStationChip(BuildContext context, String label, bool isSelected, VoidCallback onTap) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: FilterChip(
         label: Text(label),
         selected: isSelected,
         onSelected: (_) => onTap(),
-        selectedColor: WarmPalette.primary,
-        backgroundColor: WarmPalette.surfaceMuted,
+        selectedColor: primaryColor,
+        backgroundColor: p.surfaceMuted,
         labelStyle: TextStyle(
-          color: isSelected ? Colors.white : WarmPalette.textPrimary,
+          color: isSelected ? Colors.white : p.textPrimary,
           fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
           fontSize: 12,
         ),
@@ -392,10 +402,11 @@ class _KanbanColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     final (tintColor, dotColor) = switch (stage) {
-      KitchenStage.fresh => (WarmPalette.surfaceMuted, WarmPalette.textSecondary),
-      KitchenStage.preparing => (const Color(0xFFFDF0E3), WarmPalette.secondary),
-      KitchenStage.ready => (const Color(0xFFEAF4EC), WarmPalette.tertiary),
+      KitchenStage.fresh => (p.surfaceMuted, p.textSecondary),
+      KitchenStage.preparing => (const Color(0xFFFEF3C7), const Color(0xFFD97706)),
+      KitchenStage.ready => (const Color(0xFFD1FAE5), const Color(0xFF059669)),
     };
 
     return Container(
@@ -403,7 +414,7 @@ class _KanbanColumn extends StatelessWidget {
       decoration: BoxDecoration(
         color: tintColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: WarmPalette.line),
+        border: Border.all(color: p.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -415,13 +426,13 @@ class _KanbanColumn extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: WarmPalette.textPrimary),
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: p.textPrimary),
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-                child: Text('${orders.length} Tiket', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: WarmPalette.textPrimary)),
+                decoration: BoxDecoration(color: p.surface, borderRadius: BorderRadius.circular(12)),
+                child: Text('${orders.length} Tiket', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: p.textPrimary)),
               ),
             ],
           ),
@@ -429,7 +440,7 @@ class _KanbanColumn extends StatelessWidget {
           Expanded(
             child: orders.isEmpty
                 ? Center(
-                    child: Text('Tidak ada tiket', style: TextStyle(color: WarmPalette.textSecondary.withValues(alpha: 0.6), fontSize: 13)),
+                    child: Text('Tidak ada tiket', style: TextStyle(color: p.textSecondary.withValues(alpha: 0.6), fontSize: 13)),
                   )
                 : ListView.separated(
                     itemCount: orders.length,

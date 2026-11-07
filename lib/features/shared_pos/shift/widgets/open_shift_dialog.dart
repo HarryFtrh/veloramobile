@@ -23,11 +23,14 @@ Future<bool> showOpenShiftModal(
       return StatefulBuilder(
         builder: (context, setState) {
           final isMobile = context.isMobile;
+          final p = context.palette;
+          final primaryColor = Theme.of(context).colorScheme.primary;
+
           return Dialog(
-            backgroundColor: WarmPalette.canvas,
+            backgroundColor: p.canvas,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(24),
-              side: const BorderSide(color: WarmPalette.line, width: 1.5),
+              side: BorderSide(color: p.line, width: 1.5),
             ),
             insetPadding: EdgeInsets.symmetric(
               horizontal: isMobile ? 16 : 40,
@@ -46,17 +49,17 @@ Future<bool> showOpenShiftModal(
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: WarmPalette.primary.withValues(alpha: 0.12),
+                            color: primaryColor.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(14),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.point_of_sale_rounded,
-                            color: WarmPalette.primary,
+                            color: primaryColor,
                             size: 26,
                           ),
                         ),
                         const SizedBox(width: 16),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -65,15 +68,15 @@ Future<bool> showOpenShiftModal(
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
-                                  color: WarmPalette.textPrimary,
+                                  color: p.textPrimary,
                                 ),
                               ),
-                              SizedBox(height: 2),
+                              const SizedBox(height: 2),
                               Text(
                                 'Masukkan modal uang tunai awal di laci register',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: WarmPalette.textSecondary,
+                                  color: p.textSecondary,
                                 ),
                               ),
                             ],
@@ -82,12 +85,12 @@ Future<bool> showOpenShiftModal(
                       ],
                     ),
                     const SizedBox(height: 24),
-                    const Text(
+                    Text(
                       'Modal Awal (Starting Cash)',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: WarmPalette.textPrimary,
+                        color: p.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -96,14 +99,14 @@ Future<bool> showOpenShiftModal(
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: WarmPalette.line),
+                        border: Border.all(color: p.line),
                       ),
                       child: Row(
                         children: [
-                          const Text(
+                          Text(
                             'Rp',
                             style: TextStyle(
-                              color: WarmPalette.textSecondary,
+                              color: p.textSecondary,
                               fontWeight: FontWeight.w800,
                               fontSize: 18,
                             ),
@@ -113,10 +116,10 @@ Future<bool> showOpenShiftModal(
                             child: TextField(
                               controller: cashController,
                               keyboardType: TextInputType.number,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w800,
-                                color: WarmPalette.primary,
+                                color: primaryColor,
                               ),
                               decoration: const InputDecoration(
                                 border: InputBorder.none,
@@ -146,14 +149,14 @@ Future<bool> showOpenShiftModal(
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: isSelected ? Colors.white : WarmPalette.textSecondary,
+                              color: isSelected ? Colors.white : p.textSecondary,
                             ),
                           ),
                           selected: isSelected,
-                          selectedColor: WarmPalette.primary,
-                          backgroundColor: WarmPalette.surfaceMuted,
+                          selectedColor: primaryColor,
+                          backgroundColor: p.surfaceMuted,
                           side: BorderSide(
-                            color: isSelected ? WarmPalette.primary : WarmPalette.line,
+                            color: isSelected ? primaryColor : p.line,
                           ),
                           shape: const StadiumBorder(),
                           onSelected: (selected) {
@@ -169,24 +172,24 @@ Future<bool> showOpenShiftModal(
                     const SizedBox(height: 16),
                     TextField(
                       controller: notesController,
-                      style: const TextStyle(fontSize: 13, color: WarmPalette.textPrimary),
+                      style: TextStyle(fontSize: 13, color: p.textPrimary),
                       decoration: InputDecoration(
                         hintText: 'Catatan pembukaan shift (opsional)...',
-                        hintStyle: const TextStyle(fontSize: 12, color: WarmPalette.textSecondary),
+                        hintStyle: TextStyle(fontSize: 12, color: p.textSecondary),
                         filled: true,
                         fillColor: Colors.white,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: WarmPalette.line),
+                          borderSide: BorderSide(color: p.line),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: WarmPalette.line),
+                          borderSide: BorderSide(color: p.line),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: WarmPalette.primary),
+                          borderSide: BorderSide(color: primaryColor),
                         ),
                       ),
                     ),
@@ -215,14 +218,14 @@ Future<bool> showOpenShiftModal(
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text('Gagal membuka shift: $e'),
-                                      backgroundColor: WarmPalette.danger,
+                                      backgroundColor: p.danger,
                                     ),
                                   );
                                 }
                               }
                             },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: WarmPalette.primary,
+                        backgroundColor: primaryColor,
                         foregroundColor: Colors.white,
                         minimumSize: const Size.fromHeight(50),
                         shape: const StadiumBorder(),

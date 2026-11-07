@@ -168,6 +168,8 @@ class BillingSettings {
     this.enableKitchen = true,
     this.enableOpenBills = true,
     this.rawPreferences = const {},
+    this.npwpd = '',
+    this.taxDeviceId = '',
   });
 
   final bool serviceChargeEnabled;
@@ -206,6 +208,33 @@ class BillingSettings {
   final bool enableKitchen;
   final bool enableOpenBills;
   final Map<String, dynamic> rawPreferences;
+
+  /// Nomor Pokok Wajib Pajak Daerah (NPWPD) untuk kepatuhan Bapenda
+  final String npwpd;
+
+  /// ID mesin tapping box / recorder pajak daerah Pemda
+  final String taxDeviceId;
+
+  /// Helper untuk audit dan ekspor rekonsiliasi Pajak Restoran (PB1 10%) Bapenda
+  Map<String, dynamic> toBapendaAuditPayload({
+    required String invoiceNumber,
+    required num subtotal,
+    required num taxAmount,
+    required num totalAmount,
+    required DateTime transactionTime,
+  }) {
+    return {
+      'npwpd': npwpd.isNotEmpty ? npwpd : 'PEMDA-TAX-PENDING',
+      'device_id': taxDeviceId.isNotEmpty ? taxDeviceId : 'VELORA-POS-TERMINAL',
+      'bill_no': invoiceNumber,
+      'subtotal': subtotal,
+      'tax_rate': pb1Rate,
+      'tax_amount': taxAmount,
+      'total_amount': totalAmount,
+      'timestamp': transactionTime.toIso8601String(),
+      'tax_name': taxName,
+    };
+  }
 
   bool get roundsTotal => roundingEnabled && (roundingScope == 'both' || roundingScope == 'total_only');
 
@@ -296,6 +325,8 @@ class BillingSettings {
       enableKitchen: json.getBool('enable_kitchen', fallback: true),
       enableOpenBills: json.getBool('enable_open_bills', fallback: true),
       rawPreferences: json,
+      npwpd: json.getString('npwpd', fallback: json.getString('tax_id')),
+      taxDeviceId: json.getString('tax_device_id', fallback: json.getString('tapping_box_id')),
     );
   }
 
@@ -321,6 +352,8 @@ class BillingSettings {
     bool? enableKitchen,
     bool? enableOpenBills,
     Map<String, dynamic>? rawPreferences,
+    String? npwpd,
+    String? taxDeviceId,
   }) {
     return BillingSettings(
       serviceChargeEnabled: serviceChargeEnabled ?? this.serviceChargeEnabled,
@@ -344,6 +377,8 @@ class BillingSettings {
       enableKitchen: enableKitchen ?? this.enableKitchen,
       enableOpenBills: enableOpenBills ?? this.enableOpenBills,
       rawPreferences: rawPreferences ?? this.rawPreferences,
+      npwpd: npwpd ?? this.npwpd,
+      taxDeviceId: taxDeviceId ?? this.taxDeviceId,
     );
   }
 

@@ -142,11 +142,13 @@ tasks.whenTaskAdded {
                 apks.forEach { apk ->
                     apk.copyTo(File(targetFlutterApk, apk.name), overwrite = true)
                 }
-                // Prioritas: salin fnb-debug sebagai app-debug.apk
-                val fnbApk = apks.find { it.name.contains("fnb", ignoreCase = true) && it.name.contains("debug", ignoreCase = true) }
-                    ?: apks.find { it.name.contains("default", ignoreCase = true) && it.name.contains("debug", ignoreCase = true) }
-                    ?: apks.firstOrNull { it.name.contains("debug", ignoreCase = true) }
-                fnbApk?.copyTo(File(targetFlutterApk, "app-debug.apk"), overwrite = true)
+                // Duplicate default flavor as standard app-debug.apk / app-release.apk
+                // so `flutter run` / `flutter build apk` without --flavor succeeds seamlessly
+                val defaultDebug = apks.find { it.name.contains("default-debug") } ?: apks.find { it.name.contains("debug") }
+                defaultDebug?.copyTo(File(targetFlutterApk, "app-debug.apk"), overwrite = true)
+
+                val defaultRelease = apks.find { it.name.contains("default-release") } ?: apks.find { it.name.contains("release") }
+                defaultRelease?.copyTo(File(targetFlutterApk, "app-release.apk"), overwrite = true)
             }
         }
     }
@@ -162,6 +164,9 @@ tasks.whenTaskAdded {
                 aabs.forEach { aab ->
                     aab.copyTo(File(targetFlutterBundle, aab.name), overwrite = true)
                 }
+                // Duplicate default bundle as standard app-release.aab
+                val defaultBundle = aabs.find { it.name.contains("default-release") } ?: aabs.find { it.name.contains("release") }
+                defaultBundle?.copyTo(File(targetFlutterBundle, "app-release.aab"), overwrite = true)
             }
         }
     }

@@ -175,7 +175,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   decoration: BoxDecoration(
                                     color: (user.isOwnerOrAdmin
                                             ? Theme.of(context).colorScheme.primary
-                                            : const Color(0xFF7A431D))
+                                            : p.secondary)
                                         .withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
@@ -186,7 +186,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       fontWeight: FontWeight.w800,
                                       color: user.isOwnerOrAdmin
                                         ? Theme.of(context).colorScheme.primary
-                                        : const Color(0xFF7A431D),
+                                        : p.secondary,
                                     ),
                                   ),
                                 ),

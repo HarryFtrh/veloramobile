@@ -1,4 +1,5 @@
 import '../../core/network/api_client.dart';
+import '../../core/storage/session_storage.dart';
 import '../../core/utils/safe_json.dart';
 
 class SalesVisit {
@@ -55,23 +56,36 @@ class SalesService {
     required double longitude,
     String? selfiePhotoPath,
   }) async {
+    final empId = SessionStorage.instance.getUserId()?.toString();
     final payload = <String, dynamic>{
-      'gps_latitude': latitude,
-      'gps_longitude': longitude,
+      if (empId != null && empId.isNotEmpty) 'employee_id': empId,
+      'gps_latitude': latitude.toString(),
+      'gps_longitude': longitude.toString(),
+      'latitude': latitude,
+      'longitude': longitude,
     };
     if (selfiePhotoPath != null) {
       payload['selfie_photo_path'] = selfiePhotoPath;
     }
 
-    final response = await ApiClient.instance.dio.post(
+    final endpoints = [
       '/v1/mobile/salesman/clock-in',
-      data: payload,
-    );
+      '/mobile/salesman/clock-in',
+      '/v1/salesman/clock-in',
+    ];
 
-    final rawData = response.data;
-    if (rawData is Map) {
-      final inner = rawData['data'];
-      return inner is Map ? Map<String, dynamic>.from(inner) : Map<String, dynamic>.from(rawData);
+    for (final ep in endpoints) {
+      try {
+        final response = await ApiClient.instance.dio.post(
+          ep,
+          data: payload,
+        );
+        final rawData = response.data;
+        if (rawData is Map) {
+          final inner = rawData['data'];
+          return inner is Map ? Map<String, dynamic>.from(inner) : Map<String, dynamic>.from(rawData);
+        }
+      } catch (_) {}
     }
     return {};
   }
@@ -80,25 +94,55 @@ class SalesService {
     required double latitude,
     required double longitude,
   }) async {
-    final response = await ApiClient.instance.dio.post(
-      '/v1/mobile/salesman/clock-out',
-      data: {
-        'gps_latitude': latitude,
-        'gps_longitude': longitude,
-      },
-    );
+    final empId = SessionStorage.instance.getUserId()?.toString();
+    final payload = {
+      if (empId != null && empId.isNotEmpty) 'employee_id': empId,
+      'gps_latitude': latitude.toString(),
+      'gps_longitude': longitude.toString(),
+      'latitude': latitude,
+      'longitude': longitude,
+    };
 
-    final rawData = response.data;
-    if (rawData is Map) {
-      final inner = rawData['data'];
-      return inner is Map ? Map<String, dynamic>.from(inner) : Map<String, dynamic>.from(rawData);
+    final endpoints = [
+      '/v1/mobile/salesman/clock-out',
+      '/mobile/salesman/clock-out',
+      '/v1/salesman/clock-out',
+    ];
+
+    for (final ep in endpoints) {
+      try {
+        final response = await ApiClient.instance.dio.post(
+          ep,
+          data: payload,
+        );
+        final rawData = response.data;
+        if (rawData is Map) {
+          final inner = rawData['data'];
+          return inner is Map ? Map<String, dynamic>.from(inner) : Map<String, dynamic>.from(rawData);
+        }
+      } catch (_) {}
     }
     return {};
   }
 
   Future<List<SalesVisit>> getScheduledVisits() async {
-    final response = await ApiClient.instance.dio.get('/v1/mobile/salesman/schedule-visits');
-    final rawData = response.data;
+    final endpoints = [
+      '/v1/mobile/salesman/schedule-visits',
+      '/mobile/salesman/schedule-visits',
+      '/v1/salesman/visits',
+    ];
+
+    dynamic rawData;
+    for (final ep in endpoints) {
+      try {
+        final response = await ApiClient.instance.dio.get(ep);
+        if (response.statusCode == 200 && response.data != null) {
+          rawData = response.data;
+          break;
+        }
+      } catch (_) {}
+    }
+
     List items = [];
     if (rawData is Map) {
       final inner = rawData['data'];
@@ -122,23 +166,34 @@ class SalesService {
     String? visitType,
     String? notes,
   }) async {
-    final response = await ApiClient.instance.dio.post(
-      '/v1/mobile/salesman/visit-logs',
-      data: {
-        'customer_name': customerName,
-        'customer_address': customerAddress,
-        'latitude': latitude,
-        'longitude': longitude,
-        'visit_type': visitType ?? 'routine_visit',
-        'status': 'completed',
-        'notes': notes,
-      },
-    );
+    final payload = {
+      'customer_name': customerName,
+      'customer_address': customerAddress,
+      'latitude': latitude,
+      'longitude': longitude,
+      'visit_type': visitType ?? 'routine_visit',
+      'status': 'completed',
+      'notes': notes,
+    };
 
-    final rawData = response.data;
-    if (rawData is Map) {
-      final inner = rawData['data'];
-      return inner is Map ? Map<String, dynamic>.from(inner) : Map<String, dynamic>.from(rawData);
+    final endpoints = [
+      '/v1/mobile/salesman/visit-logs',
+      '/mobile/salesman/visit-logs',
+      '/v1/salesman/visit-logs',
+    ];
+
+    for (final ep in endpoints) {
+      try {
+        final response = await ApiClient.instance.dio.post(
+          ep,
+          data: payload,
+        );
+        final rawData = response.data;
+        if (rawData is Map) {
+          final inner = rawData['data'];
+          return inner is Map ? Map<String, dynamic>.from(inner) : Map<String, dynamic>.from(rawData);
+        }
+      } catch (_) {}
     }
     return {};
   }
@@ -149,21 +204,32 @@ class SalesService {
     String? notes,
     String? paymentTerms,
   }) async {
-    final response = await ApiClient.instance.dio.post(
-      '/v1/mobile/salesman/order-taking',
-      data: {
-        'customer_name': customerName,
-        'customer_type': 'offline',
-        'items': items,
-        'payment_terms': paymentTerms ?? 'TOP_30',
-        'notes': notes,
-      },
-    );
+    final payload = {
+      'customer_name': customerName,
+      'customer_type': 'offline',
+      'items': items,
+      'payment_terms': paymentTerms ?? 'TOP_30',
+      'notes': notes,
+    };
 
-    final rawData = response.data;
-    if (rawData is Map) {
-      final inner = rawData['data'];
-      return inner is Map ? Map<String, dynamic>.from(inner) : Map<String, dynamic>.from(rawData);
+    final endpoints = [
+      '/v1/mobile/salesman/order-taking',
+      '/mobile/salesman/order-taking',
+      '/v1/salesman/orders',
+    ];
+
+    for (final ep in endpoints) {
+      try {
+        final response = await ApiClient.instance.dio.post(
+          ep,
+          data: payload,
+        );
+        final rawData = response.data;
+        if (rawData is Map) {
+          final inner = rawData['data'];
+          return inner is Map ? Map<String, dynamic>.from(inner) : Map<String, dynamic>.from(rawData);
+        }
+      } catch (_) {}
     }
     return {};
   }

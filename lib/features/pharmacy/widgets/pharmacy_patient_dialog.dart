@@ -2,24 +2,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../core/design/tokens.dart';
 import '../pharmacy_service.dart';
+import 'patient/pharmacy_patient_category_chips.dart';
+import 'patient/pharmacy_patient_autocomplete.dart';
 
-class PharmacyPatientData {
-  final String patient;
-  final String doctor;
-  final String queueNumber;
-  final String medicalRecordNumber;
-  final String patientCategory;
-  final String allergies;
-
-  const PharmacyPatientData({
-    required this.patient,
-    required this.doctor,
-    this.queueNumber = '-',
-    this.medicalRecordNumber = '-',
-    this.patientCategory = 'Umum',
-    this.allergies = '',
-  });
-}
+export '../models/pharmacy_patient_data.dart';
+export 'patient/pharmacy_patient_category_chips.dart';
+export 'patient/pharmacy_patient_autocomplete.dart';
 
 class PharmacyPatientDialog extends StatefulWidget {
   final String initialPatient;
@@ -71,6 +59,8 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
   late final TextEditingController _queueController;
   late final TextEditingController _rmController;
   late final TextEditingController _allergiesController;
+  late final TextEditingController _nikController;
+  bool _pdpConsent = true;
   late String _selectedCategory;
 
   Timer? _patientDebounce;
@@ -95,6 +85,7 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
     _queueController = TextEditingController(text: widget.initialQueueNumber ?? '');
     _rmController = TextEditingController(text: widget.initialMedicalRecordNumber ?? '');
     _allergiesController = TextEditingController(text: widget.initialAllergies ?? '');
+    _nikController = TextEditingController();
     _selectedCategory = 'Umum';
     for (final cat in presetCategories) {
       if (widget.initialPatient.toLowerCase().contains(cat.toLowerCase())) {
@@ -113,6 +104,7 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
     _queueController.dispose();
     _rmController.dispose();
     _allergiesController.dispose();
+    _nikController.dispose();
     super.dispose();
   }
 
@@ -223,44 +215,19 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Kategori Pasien / Penjamin:',
-                style: TextStyle(color: Color(0xFF0F172A), fontSize: 12, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: presetCategories.map((cat) {
-                  final isSelected = cat == _selectedCategory;
-                  return ChoiceChip(
-                    label: Text(cat),
-                    selected: isSelected,
-                    selectedColor: emeraldPrimary,
-                    backgroundColor: surfaceCanvas,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      side: BorderSide(
-                        color: isSelected ? emeraldPrimary : borderColor,
-                      ),
-                    ),
-                    labelStyle: TextStyle(
-                      color: isSelected ? Colors.white : const Color(0xFF3D4A42),
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                      fontSize: 11.5,
-                    ),
-                    onSelected: (_) {
-                      setState(() {
-                        _selectedCategory = cat;
-                        if (_patientController.text.isEmpty ||
-                            _patientController.text == 'Pasien Umum / Walk-in' ||
-                            presetCategories.contains(_patientController.text)) {
-                          _patientController.text = cat == 'Umum' ? 'Pelanggan Umum (Walk-in)' : 'Pasien $cat';
-                        }
-                      });
-                    },
-                  );
-                }).toList(),
+              PharmacyPatientCategoryChips(
+                categories: presetCategories,
+                selectedCategory: _selectedCategory,
+                onSelectCategory: (cat) {
+                  setState(() {
+                    _selectedCategory = cat;
+                    if (_patientController.text.isEmpty ||
+                        _patientController.text == 'Pasien Umum / Walk-in' ||
+                        presetCategories.contains(_patientController.text)) {
+                      _patientController.text = cat == 'Umum' ? 'Pelanggan Umum (Walk-in)' : 'Pasien $cat';
+                    }
+                  });
+                },
               ),
               const SizedBox(height: 16),
               Row(
@@ -371,77 +338,28 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 ),
               ),
-              if (_patientSuggestions.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Container(
-                  constraints: const BoxConstraints(maxHeight: 150),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: emeraldPrimary.withValues(alpha: 0.3)),
-                  ),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    itemCount: _patientSuggestions.length,
-                    separatorBuilder: (_, _) => const Divider(height: 1, color: borderColor),
-                    itemBuilder: (ctx, i) {
-                      final p = _patientSuggestions[i];
-                      return InkWell(
-                        onTap: () {
-                          setState(() {
-                            _patientController.text = p.patient;
-                            if (p.medicalRecordNumber != '-' && p.medicalRecordNumber.isNotEmpty) {
-                              _rmController.text = p.medicalRecordNumber;
-                            }
-                            if (p.allergies.isNotEmpty) {
-                              _allergiesController.text = p.allergies;
-                            }
-                            if (p.doctor != '-' && p.doctor.isNotEmpty) {
-                              _doctorController.text = p.doctor;
-                            }
-                            if (presetCategories.contains(p.patientCategory)) {
-                              _selectedCategory = p.patientCategory;
-                            }
-                            _patientSuggestions = const [];
-                          });
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.person_pin_rounded, size: 16, color: emeraldPrimary),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      p.patient,
-                                      style: const TextStyle(
-                                        fontSize: 12.5,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF0F172A),
-                                      ),
-                                    ),
-                                    Text(
-                                      'RM: ${p.medicalRecordNumber} • ${p.patientCategory}${p.allergies.isNotEmpty ? " • Alergi: ${p.allergies}" : ""}',
-                                      style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const Icon(Icons.north_west_rounded, size: 14, color: emeraldPrimary),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+              if (_patientSuggestions.isNotEmpty)
+                PharmacyPatientAutocompleteList(
+                  suggestions: _patientSuggestions,
+                  onSelect: (p) {
+                    setState(() {
+                      _patientController.text = p.patient;
+                      if (p.medicalRecordNumber != '-' && p.medicalRecordNumber.isNotEmpty) {
+                        _rmController.text = p.medicalRecordNumber;
+                      }
+                      if (p.allergies.isNotEmpty) {
+                        _allergiesController.text = p.allergies;
+                      }
+                      if (p.doctor != '-' && p.doctor.isNotEmpty) {
+                        _doctorController.text = p.doctor;
+                      }
+                      if (presetCategories.contains(p.patientCategory)) {
+                        _selectedCategory = p.patientCategory;
+                      }
+                      _patientSuggestions = const [];
+                    });
+                  },
                 ),
-              ],
               const SizedBox(height: 12),
               TextField(
                 controller: _doctorController,
@@ -480,55 +398,16 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 ),
               ),
-              if (_doctorSuggestions.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Container(
-                  constraints: const BoxConstraints(maxHeight: 130),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFF0D9488).withValues(alpha: 0.3)),
-                  ),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    itemCount: _doctorSuggestions.length,
-                    separatorBuilder: (_, _) => const Divider(height: 1, color: borderColor),
-                    itemBuilder: (ctx, i) {
-                      final d = _doctorSuggestions[i];
-                      return InkWell(
-                        onTap: () {
-                          setState(() {
-                            _doctorController.text = d['display'] ?? d['name'] ?? '';
-                            _doctorSuggestions = const [];
-                          });
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.medical_information_outlined, size: 16, color: Color(0xFF0D9488)),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  '${d['display'] ?? d['name']} • ${d['specialization'] ?? 'Umum'}',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF0F172A),
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+              if (_doctorSuggestions.isNotEmpty)
+                PharmacyDoctorAutocompleteList(
+                  suggestions: _doctorSuggestions,
+                  onSelect: (d) {
+                    setState(() {
+                      _doctorController.text = d['display'] ?? d['name'] ?? '';
+                      _doctorSuggestions = const [];
+                    });
+                  },
                 ),
-              ],
               const SizedBox(height: 12),
               TextField(
                 controller: _allergiesController,
@@ -556,6 +435,65 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 ),
               ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _nikController,
+                keyboardType: TextInputType.number,
+                maxLength: 16,
+                style: const TextStyle(fontSize: 13, color: Color(0xFF191C1E)),
+                decoration: InputDecoration(
+                  counterText: '',
+                  labelText: 'NIK Pasien (SatuSehat Kemenkes RI)',
+                  labelStyle: const TextStyle(color: Color(0xFF6D7A72), fontSize: 11.5),
+                  hintText: '16 digit NIK untuk integrasi SatuSehat',
+                  hintStyle: const TextStyle(color: Color(0xFFBCCAC0), fontSize: 12),
+                  prefixIcon: const Icon(Icons.verified_user_outlined, size: 18, color: Color(0xFF006C4C)),
+                  filled: true,
+                  fillColor: surfaceCanvas,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: borderColor),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: borderColor),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: emeraldPrimary, width: 1.5),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Kepatuhan UU PDP No. 27/2022
+              InkWell(
+                onTap: () => setState(() => _pdpConsent = !_pdpConsent),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: Checkbox(
+                          value: _pdpConsent,
+                          activeColor: emeraldPrimary,
+                          onChanged: (val) => setState(() => _pdpConsent = val ?? true),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'Persetujuan UU PDP No. 27/2022: Pasien menyetujui penyimpanan data medis untuk pelayanan kefarmasian.',
+                          style: TextStyle(fontSize: 10.5, color: Color(0xFF6D7A72)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -580,6 +518,7 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
             final queueText = _queueController.text.trim();
             final rmText = _rmController.text.trim();
             final allergiesText = _allergiesController.text.trim();
+            final nikText = _nikController.text.trim();
 
             widget.onSave(
               PharmacyPatientData(
@@ -589,6 +528,8 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
                 medicalRecordNumber: rmText.isNotEmpty ? rmText : '-',
                 patientCategory: _selectedCategory,
                 allergies: allergiesText,
+                nik: nikText.isNotEmpty ? nikText : null,
+                pdpConsentGiven: _pdpConsent,
               ),
             );
             Navigator.pop(context);

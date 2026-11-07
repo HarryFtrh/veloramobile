@@ -22,3 +22,4 @@ export 'widgets/pharmacy_prescription_review_modal.dart';
 export 'widgets/pharmacy_pbf_order_modal.dart';
 export 'widgets/pharmacy_receipt_dialog.dart';
 export 'widgets/pharmacy_medical_records_modal.dart';
+export 'widgets/pharmacy_app_shell.dart';

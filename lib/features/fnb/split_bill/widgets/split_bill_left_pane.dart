@@ -43,7 +43,8 @@ class SplitBillLeftPane extends StatelessWidget {
   final VoidCallback onDeselectAllItems;
   final BillingSettings? billingSettings;
 
-  Widget _buildPriceRow(String label, String value) {
+  Widget _buildPriceRow(BuildContext context, String label, String value) {
+    final p = context.palette;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
@@ -51,18 +52,18 @@ class SplitBillLeftPane extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: WarmPalette.textSecondary,
+              color: p.textSecondary,
               fontWeight: FontWeight.w600,
             ),
           ),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.w700,
-              color: WarmPalette.textPrimary,
+              color: p.textPrimary,
             ),
           ),
         ],
@@ -72,6 +73,8 @@ class SplitBillLeftPane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final isWide = MediaQuery.of(context).size.width >= 860;
 
     return Column(
@@ -81,7 +84,7 @@ class SplitBillLeftPane extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: WarmPalette.surfaceMuted,
+            color: p.surfaceMuted,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
@@ -93,7 +96,7 @@ class SplitBillLeftPane extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
                     decoration: BoxDecoration(
                       color: !isSplitBill
-                          ? WarmPalette.primary
+                          ? primaryColor
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -106,7 +109,7 @@ class SplitBillLeftPane extends StatelessWidget {
                           size: 16,
                           color: !isSplitBill
                               ? Colors.white
-                              : WarmPalette.textSecondary,
+                              : p.textSecondary,
                         ),
                         const SizedBox(width: 6),
                         Flexible(
@@ -121,7 +124,7 @@ class SplitBillLeftPane extends StatelessWidget {
                                     : FontWeight.w600,
                                 color: !isSplitBill
                                     ? Colors.white
-                                    : WarmPalette.textSecondary,
+                                    : p.textSecondary,
                               ),
                             ),
                           ),
@@ -138,7 +141,7 @@ class SplitBillLeftPane extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
                     decoration: BoxDecoration(
                       color: isSplitBill
-                          ? WarmPalette.secondary
+                          ? p.secondary
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -151,7 +154,7 @@ class SplitBillLeftPane extends StatelessWidget {
                           size: 16,
                           color: isSplitBill
                               ? Colors.white
-                              : WarmPalette.textSecondary,
+                              : p.textSecondary,
                         ),
                         const SizedBox(width: 6),
                         Flexible(
@@ -166,7 +169,7 @@ class SplitBillLeftPane extends StatelessWidget {
                                     : FontWeight.w600,
                                 color: isSplitBill
                                     ? Colors.white
-                                    : WarmPalette.textSecondary,
+                                    : p.textSecondary,
                               ),
                             ),
                           ),
@@ -188,7 +191,7 @@ class SplitBillLeftPane extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: WarmPalette.line),
+              border: Border.all(color: p.line),
             ),
             child: Row(
               children: [
@@ -198,20 +201,20 @@ class SplitBillLeftPane extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 7),
                       decoration: BoxDecoration(
-                        color: splitMode == 'item' ? WarmPalette.surfaceMuted : Colors.transparent,
+                        color: splitMode == 'item' ? p.surfaceMuted : Colors.transparent,
                         borderRadius: BorderRadius.circular(9),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.checklist_rounded, size: 14, color: splitMode == 'item' ? WarmPalette.primary : WarmPalette.textSecondary),
+                          Icon(Icons.checklist_rounded, size: 14, color: splitMode == 'item' ? primaryColor : p.textSecondary),
                           const SizedBox(width: 5),
                           Text(
                             'Pilih Per Item',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: splitMode == 'item' ? FontWeight.w800 : FontWeight.w600,
-                              color: splitMode == 'item' ? WarmPalette.primary : WarmPalette.textSecondary,
+                              color: splitMode == 'item' ? primaryColor : p.textSecondary,
                             ),
                           ),
                         ],
@@ -225,20 +228,20 @@ class SplitBillLeftPane extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 7),
                       decoration: BoxDecoration(
-                        color: splitMode == 'equal' ? WarmPalette.surfaceMuted : Colors.transparent,
+                        color: splitMode == 'equal' ? p.surfaceMuted : Colors.transparent,
                         borderRadius: BorderRadius.circular(9),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.pie_chart_rounded, size: 14, color: splitMode == 'equal' ? WarmPalette.secondary : WarmPalette.textSecondary),
+                          Icon(Icons.pie_chart_rounded, size: 14, color: splitMode == 'equal' ? p.secondary : p.textSecondary),
                           const SizedBox(width: 5),
                           Text(
                             'Bagi Rata (Pax)',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: splitMode == 'equal' ? FontWeight.w800 : FontWeight.w600,
-                              color: splitMode == 'equal' ? WarmPalette.secondary : WarmPalette.textSecondary,
+                              color: splitMode == 'equal' ? p.secondary : p.textSecondary,
                             ),
                           ),
                         ],
@@ -258,7 +261,7 @@ class SplitBillLeftPane extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: WarmPalette.line),
+            border: Border.all(color: p.line),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -289,7 +292,7 @@ class SplitBillLeftPane extends StatelessWidget {
                           onPressed: paxCount < 20
                               ? () => onPaxCountChanged(paxCount + 1)
                               : null,
-                          icon: const Icon(Icons.add_circle_outline_rounded, size: 20, color: WarmPalette.primary),
+                          icon: Icon(Icons.add_circle_outline_rounded, size: 20, color: primaryColor),
                           visualDensity: VisualDensity.compact,
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
@@ -302,7 +305,7 @@ class SplitBillLeftPane extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: WarmPalette.surfaceMuted,
+                    color: p.surfaceMuted,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Column(
@@ -310,7 +313,7 @@ class SplitBillLeftPane extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Total Seluruh Tagihan', style: TextStyle(fontSize: 12, color: WarmPalette.textSecondary)),
+                          Text('Total Seluruh Tagihan', style: TextStyle(fontSize: 12, color: p.textSecondary)),
                           Text(
                             'Rp ${totalBillAmount.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
                             style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
@@ -321,14 +324,14 @@ class SplitBillLeftPane extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Bagian per 1 Orang', style: TextStyle(fontSize: 12, color: WarmPalette.textSecondary)),
+                          Text('Bagian per 1 Orang', style: TextStyle(fontSize: 12, color: p.textSecondary)),
                           Text(
                             'Rp ${(totalBillAmount / (paxCount > 0 ? paxCount : 1)).ceil().toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
-                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: WarmPalette.secondary),
+                            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: p.secondary),
                           ),
                         ],
                       ),
-                      const Divider(height: 16, color: WarmPalette.line),
+                      Divider(height: 16, color: p.line),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -374,10 +377,10 @@ class SplitBillLeftPane extends StatelessWidget {
                     Flexible(
                       child: Text(
                         'Item Dipesan (${billItems.length})',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 14,
-                          color: WarmPalette.textPrimary,
+                          color: p.textPrimary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -395,23 +398,23 @@ class SplitBillLeftPane extends StatelessWidget {
                             ),
                             child: const Text('Pilih Semua', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
                           ),
-                          const Text('•', style: TextStyle(color: WarmPalette.line)),
+                          Text('•', style: TextStyle(color: p.line)),
                           TextButton(
                             onPressed: onDeselectAllItems,
                             style: TextButton.styleFrom(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               visualDensity: VisualDensity.compact,
                             ),
-                            child: const Text('Lepas Semua', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: WarmPalette.textSecondary)),
+                            child: Text('Lepas Semua', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: p.textSecondary)),
                           ),
                         ],
                       ),
                     ] else ...[
-                      const Text(
+                      Text(
                         'Dapur: Siap Dibayar',
                         style: TextStyle(
                           fontSize: 11,
-                          color: WarmPalette.tertiary,
+                          color: p.tertiary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -434,7 +437,7 @@ class SplitBillLeftPane extends StatelessWidget {
                         margin: const EdgeInsets.only(bottom: 10),
                         decoration: BoxDecoration(
                           color: isSplitBill && isChecked
-                              ? WarmPalette.primary.withValues(alpha: 0.04)
+                              ? primaryColor.withValues(alpha: 0.04)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -453,7 +456,7 @@ class SplitBillLeftPane extends StatelessWidget {
                                     padding: const EdgeInsets.only(right: 6),
                                     child: Checkbox(
                                       value: isChecked,
-                                      activeColor: WarmPalette.primary,
+                                      activeColor: primaryColor,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(4),
                                       ),
@@ -462,12 +465,12 @@ class SplitBillLeftPane extends StatelessWidget {
                                     ),
                                   )
                                 else
-                                  const Padding(
-                                    padding: EdgeInsets.only(right: 8, top: 4),
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 8, top: 4),
                                     child: Icon(
                                       Icons.check_circle_rounded,
                                       size: 18,
-                                      color: WarmPalette.tertiary,
+                                      color: p.tertiary,
                                     ),
                                   ),
                                 Expanded(
@@ -480,16 +483,16 @@ class SplitBillLeftPane extends StatelessWidget {
                                           fontWeight: FontWeight.w700,
                                           fontSize: 13,
                                           color: isSplitBill && !isChecked
-                                              ? WarmPalette.textSecondary
-                                              : WarmPalette.textPrimary,
+                                              ? p.textSecondary
+                                              : p.textPrimary,
                                         ),
                                       ),
                                       if (notes.isNotEmpty)
                                         Text(
                                           notes,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 11,
-                                            color: WarmPalette.textSecondary,
+                                            color: p.textSecondary,
                                           ),
                                         ),
                                       if (isSplitBill && isChecked && totalQty > 1) ...[
@@ -497,7 +500,7 @@ class SplitBillLeftPane extends StatelessWidget {
                                         Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            const Text('Bayar: ', style: TextStyle(fontSize: 10.5, color: WarmPalette.textSecondary)),
+                                            Text('Bayar: ', style: TextStyle(fontSize: 10.5, color: p.textSecondary)),
                                             InkWell(
                                               onTap: payQty > 1
                                                   ? () => onItemPayQtyChanged(i, payQty - 1)
@@ -506,10 +509,10 @@ class SplitBillLeftPane extends StatelessWidget {
                                               child: Container(
                                                 padding: const EdgeInsets.all(2),
                                                 decoration: BoxDecoration(
-                                                  color: WarmPalette.surfaceMuted,
+                                                  color: p.surfaceMuted,
                                                   borderRadius: BorderRadius.circular(6),
                                                 ),
-                                                child: Icon(Icons.remove, size: 14, color: payQty > 1 ? WarmPalette.textPrimary : WarmPalette.textSecondary),
+                                                child: Icon(Icons.remove, size: 14, color: payQty > 1 ? p.textPrimary : p.textSecondary),
                                               ),
                                             ),
                                             Padding(
@@ -524,13 +527,13 @@ class SplitBillLeftPane extends StatelessWidget {
                                               child: Container(
                                                 padding: const EdgeInsets.all(2),
                                                 decoration: BoxDecoration(
-                                                  color: WarmPalette.surfaceMuted,
+                                                  color: p.surfaceMuted,
                                                   borderRadius: BorderRadius.circular(6),
                                                 ),
-                                                child: Icon(Icons.add, size: 14, color: payQty < totalQty ? WarmPalette.textPrimary : WarmPalette.textSecondary),
+                                                child: Icon(Icons.add, size: 14, color: payQty < totalQty ? p.textPrimary : p.textSecondary),
                                               ),
                                             ),
-                                            Text(' dari $totalQty porsi', style: const TextStyle(fontSize: 10.5, color: WarmPalette.textSecondary)),
+                                            Text(' dari $totalQty porsi', style: TextStyle(fontSize: 10.5, color: p.textSecondary)),
                                           ],
                                         ),
                                       ],
@@ -543,8 +546,8 @@ class SplitBillLeftPane extends StatelessWidget {
                                     fontWeight: FontWeight.w800,
                                     fontSize: 13,
                                     color: isSplitBill && !isChecked
-                                        ? WarmPalette.textSecondary
-                                        : WarmPalette.textPrimary,
+                                        ? p.textSecondary
+                                        : p.textPrimary,
                                   ),
                                 ),
                               ],
@@ -557,13 +560,15 @@ class SplitBillLeftPane extends StatelessWidget {
                 ],
               ],
 
-              const Divider(color: WarmPalette.line),
+              Divider(color: p.line),
               const SizedBox(height: 6),
               _buildPriceRow(
+                context,
                 'Subtotal Item',
                 'Rp ${selectedItemsTotal.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
               ),
               _buildPriceRow(
+                context,
                 'PB1 Pajak Resto & Servis',
                 billingSettings == null
                     ? 'Termasuk'
@@ -575,13 +580,13 @@ class SplitBillLeftPane extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Flexible(
+                  Flexible(
                     child: Text(
                       'Total Yang Harus Dibayar',
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 14,
-                        color: WarmPalette.textPrimary,
+                        color: p.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -589,10 +594,10 @@ class SplitBillLeftPane extends StatelessWidget {
                   ),
                   Text(
                     'Rp ${selectedItemsTotal.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 16,
-                      color: WarmPalette.primary,
+                      color: primaryColor,
                     ),
                   ),
                 ],

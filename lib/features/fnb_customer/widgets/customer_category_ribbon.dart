@@ -36,6 +36,9 @@ class CustomerCategoryRibbon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -43,12 +46,12 @@ class CustomerCategoryRibbon extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'Kategori',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
-                color: WarmPalette.textPrimary,
+                color: p.textPrimary,
               ),
             ),
             TextButton(
@@ -79,15 +82,15 @@ class CustomerCategoryRibbon extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: isSel ? const Color(0xFF2C1810) : Colors.white,
+                      color: isSel ? primaryColor : Colors.white,
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: isSel ? const Color(0xFF2C1810) : WarmPalette.line,
+                        color: isSel ? primaryColor : p.line,
                       ),
                       boxShadow: isSel
                           ? [
                               BoxShadow(
-                                color: const Color(0xFF2C1810).withValues(alpha: 0.2),
+                                color: primaryColor.withValues(alpha: 0.2),
                                 blurRadius: 6,
                                 offset: const Offset(0, 2),
                               ),
@@ -100,13 +103,13 @@ class CustomerCategoryRibbon extends StatelessWidget {
                         Icon(
                           icon,
                           size: 16,
-                          color: isSel ? Colors.white : WarmPalette.textPrimary,
+                          color: isSel ? Colors.white : p.textPrimary,
                         ),
                         const SizedBox(width: 6),
                         Text(
                           title,
                           style: TextStyle(
-                            color: isSel ? Colors.white : WarmPalette.textPrimary,
+                            color: isSel ? Colors.white : p.textPrimary,
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
                           ),

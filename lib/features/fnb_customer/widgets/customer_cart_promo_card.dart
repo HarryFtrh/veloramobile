@@ -34,6 +34,9 @@ class CustomerCartPromoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     if ((!voucherApplied) && (billing?.activePromotions.isEmpty ?? true)) {
       return const SizedBox.shrink();
     }
@@ -41,18 +44,18 @@ class CustomerCartPromoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFFDF0E3),
+        color: p.surfaceMuted,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: WarmPalette.secondary.withValues(alpha: 0.3),
+          color: p.secondary.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: const BoxDecoration(
-              color: WarmPalette.primary,
+            decoration: BoxDecoration(
+              color: primaryColor,
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -70,10 +73,10 @@ class CustomerCartPromoCard extends StatelessWidget {
                   children: [
                     Text(
                       voucherCode ?? 'Promosi Toko',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 14,
-                        color: WarmPalette.textPrimary,
+                        color: p.textPrimary,
                       ),
                     ),
                     if (voucherApplied) ...[
@@ -84,7 +87,7 @@ class CustomerCartPromoCard extends StatelessWidget {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: WarmPalette.tertiary,
+                          color: p.tertiary,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: const Text(
@@ -104,9 +107,9 @@ class CustomerCartPromoCard extends StatelessWidget {
                   voucherApplied
                       ? 'Potongan Rp ${_formatRupiah(voucherDiscount)} diterapkan'
                       : 'Gunakan promo diskon spesial toko',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: WarmPalette.textSecondary,
+                    color: p.textSecondary,
                   ),
                 ),
               ],
@@ -131,7 +134,7 @@ class CustomerCartPromoCard extends StatelessWidget {
             },
             style: OutlinedButton.styleFrom(
               backgroundColor: Colors.white,
-              side: const BorderSide(color: WarmPalette.line),
+              side: BorderSide(color: p.line),
               shape: const StadiumBorder(),
               padding: const EdgeInsets.symmetric(
                 horizontal: 12,
@@ -141,10 +144,10 @@ class CustomerCartPromoCard extends StatelessWidget {
             ),
             child: Text(
               voucherApplied ? 'Hapus' : 'Pakai Promo',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: WarmPalette.primary,
+                color: primaryColor,
               ),
             ),
           ),

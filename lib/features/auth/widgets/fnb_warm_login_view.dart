@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/components/velora_logo.dart';
 import '../../../core/design/components.dart';
 import '../../../core/design/tokens.dart';
 
@@ -39,21 +38,24 @@ class FnbWarmLoginView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF24150D),
+      backgroundColor: p.textPrimary,
       body: Stack(
         children: [
-          // Atmospheric espresso coffee background gradient
+          // Atmospheric vertical background gradient
           Positioned.fill(
             child: Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Color(0xFF381F12),
-                    Color(0xFF24150D),
-                    Color(0xFF160D07),
+                    primaryColor.withValues(alpha: 0.9),
+                    Color.alphaBlend(primaryColor.withValues(alpha: 0.7), Colors.black),
+                    Colors.black,
                   ],
                 ),
               ),
@@ -101,7 +103,7 @@ class FnbWarmLoginView extends StatelessWidget {
                         width: double.infinity,
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: WarmPalette.canvas,
+                          color: p.canvas,
                           borderRadius: BorderRadius.circular(28),
                           boxShadow: [
                             BoxShadow(
@@ -114,31 +116,31 @@ class FnbWarmLoginView extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Masuk ke Velora',
                               style: TextStyle(
                                 fontWeight: FontWeight.w800,
                                 fontSize: 22,
-                                color: WarmPalette.textPrimary,
+                                color: p.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 4),
-                            const Text(
+                            Text(
                               'Masukkan email atau username dan kata sandi Anda',
                               style: TextStyle(
                                 fontSize: 13,
-                                color: WarmPalette.textSecondary,
+                                color: p.textSecondary,
                               ),
                             ),
                             const SizedBox(height: 20),
 
                             // Email atau Username
-                            const Text(
+                            Text(
                               'Email atau Username',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: WarmPalette.textPrimary,
+                                color: p.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 6),
@@ -147,13 +149,13 @@ class FnbWarmLoginView extends StatelessWidget {
                               keyboardType: TextInputType.emailAddress,
                               decoration: InputDecoration(
                                 hintText: 'nama@email.com atau username',
-                                prefixIcon: const Icon(
+                                prefixIcon: Icon(
                                   Icons.mail_outline_rounded,
                                   size: 20,
-                                  color: WarmPalette.textSecondary,
+                                  color: p.textSecondary,
                                 ),
                                 filled: true,
-                                fillColor: WarmPalette.surfaceMuted,
+                                fillColor: p.surfaceMuted,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(14),
                                   borderSide: BorderSide.none,
@@ -167,22 +169,22 @@ class FnbWarmLoginView extends StatelessWidget {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text(
+                                Text(
                                   'Kata Sandi',
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
-                                    color: WarmPalette.textPrimary,
+                                    color: p.textPrimary,
                                   ),
                                 ),
                                 GestureDetector(
                                   onTap: onForgotPassword,
-                                  child: const Text(
+                                  child: Text(
                                     'Lupa kata sandi?',
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
-                                      color: Color(0xFF6F3512),
+                                      color: primaryColor,
                                     ),
                                   ),
                                 ),
@@ -194,21 +196,21 @@ class FnbWarmLoginView extends StatelessWidget {
                               obscureText: obscurePassword,
                               decoration: InputDecoration(
                                 hintText: 'Masukkan kata sandi',
-                                prefixIcon: const Icon(
+                                prefixIcon: Icon(
                                   Icons.lock_outline_rounded,
                                   size: 20,
-                                  color: WarmPalette.textSecondary,
+                                  color: p.textSecondary,
                                 ),
                                 suffixIcon: IconButton(
                                   icon: Icon(
                                     obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
                                     size: 20,
-                                    color: WarmPalette.textSecondary,
+                                    color: p.textSecondary,
                                   ),
                                   onPressed: onToggleObscurePassword,
                                 ),
                                 filled: true,
-                                fillColor: WarmPalette.surfaceMuted,
+                                fillColor: p.surfaceMuted,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(14),
                                   borderSide: BorderSide.none,
@@ -225,12 +227,12 @@ class FnbWarmLoginView extends StatelessWidget {
                                 Checkbox(
                                   value: rememberMe,
                                   onChanged: (v) => onToggleRememberMe(v ?? false),
-                                  activeColor: const Color(0xFF6F3512),
+                                  activeColor: primaryColor,
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                                 ),
-                                const Text(
+                                Text(
                                   'Ingat saya di perangkat ini',
-                                  style: TextStyle(fontSize: 13, color: WarmPalette.textSecondary),
+                                  style: TextStyle(fontSize: 13, color: p.textSecondary),
                                 ),
                               ],
                             ),
@@ -240,19 +242,19 @@ class FnbWarmLoginView extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                                 decoration: BoxDecoration(
-                                  color: WarmPalette.danger.withValues(alpha: 0.12),
+                                  color: p.danger.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: WarmPalette.danger.withValues(alpha: 0.3)),
+                                  border: Border.all(color: p.danger.withValues(alpha: 0.3)),
                                 ),
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.error_outline_rounded, size: 18, color: WarmPalette.danger),
+                                    Icon(Icons.error_outline_rounded, size: 18, color: p.danger),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
                                         errorMessage!,
-                                        style: const TextStyle(
-                                          color: WarmPalette.danger,
+                                        style: TextStyle(
+                                          color: p.danger,
                                           fontSize: 12,
                                           fontWeight: FontWeight.w600,
                                         ),
@@ -271,7 +273,7 @@ class FnbWarmLoginView extends StatelessWidget {
                               child: ElevatedButton(
                                 onPressed: (isLoading || isGoogleLoading) ? null : onLogin,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF6F3512),
+                                  backgroundColor: primaryColor,
                                   foregroundColor: Colors.white,
                                   shape: const StadiumBorder(),
                                   elevation: 2,
@@ -300,7 +302,7 @@ class FnbWarmLoginView extends StatelessWidget {
                             // Divider ATAU MASUK DENGAN
                             Row(
                               children: [
-                                const Expanded(child: Divider(color: WarmPalette.line)),
+                                Expanded(child: Divider(color: p.line)),
                                 Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 12),
                                   child: Text(
@@ -308,11 +310,11 @@ class FnbWarmLoginView extends StatelessWidget {
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
-                                      color: WarmPalette.textSecondary.withValues(alpha: 0.8),
+                                      color: p.textSecondary.withValues(alpha: 0.8),
                                     ),
                                   ),
                                 ),
-                                const Expanded(child: Divider(color: WarmPalette.line)),
+                                Expanded(child: Divider(color: p.line)),
                               ],
                             ),
                             const SizedBox(height: 16),
@@ -324,7 +326,7 @@ class FnbWarmLoginView extends StatelessWidget {
                                 onPressed: (isLoading || isGoogleLoading) ? null : onGoogleLogin,
                                 style: OutlinedButton.styleFrom(
                                   backgroundColor: Colors.white,
-                                  side: const BorderSide(color: WarmPalette.line),
+                                  side: BorderSide(color: p.line),
                                   shape: const StadiumBorder(),
                                   padding: const EdgeInsets.symmetric(vertical: 12),
                                 ),
@@ -334,15 +336,15 @@ class FnbWarmLoginView extends StatelessWidget {
                                         height: 18,
                                         child: CircularProgressIndicator(strokeWidth: 2),
                                       )
-                                    : const Row(
+                                    : Row(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
-                                          GoogleLogo(size: 18),
-                                          SizedBox(width: 8),
+                                          const GoogleLogo(size: 18),
+                                          const SizedBox(width: 8),
                                           Text(
                                             'Google',
                                             style: TextStyle(
-                                              color: WarmPalette.textPrimary,
+                                              color: p.textPrimary,
                                               fontWeight: FontWeight.w600,
                                               fontSize: 13,
                                             ),
@@ -360,9 +362,9 @@ class FnbWarmLoginView extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text(
+                          Text(
                             'Toko belum terdaftar? ',
-                            style: TextStyle(color: WarmPalette.line, fontSize: 13),
+                            style: TextStyle(color: p.line, fontSize: 13),
                           ),
                           GestureDetector(
                             onTap: onRegister,

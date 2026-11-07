@@ -1,33 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../core/network/api_client.dart';
 import '../../core/utils/audio_helper.dart';
-import '../../core/utils/currency_formatter.dart';
 import 'services/pharmacy_catalog_service.dart';
+import 'widgets/opname/pharmacy_stock_opname_item_card.dart';
+import 'widgets/opname/pharmacy_stock_opname_kpi_strip.dart';
 
-class OpnameItem {
-  final String id;
-  final String name;
-  final String batchNumber;
-  final String expiryDate;
-  final int systemStock;
-  int physicalStock;
-  final num price;
-  final String unit;
-
-  OpnameItem({
-    required this.id,
-    required this.name,
-    required this.batchNumber,
-    required this.expiryDate,
-    required this.systemStock,
-    required this.physicalStock,
-    required this.price,
-    required this.unit,
-  });
-
-  int get difference => physicalStock - systemStock;
-  num get differenceValue => difference * price;
-}
+export 'widgets/opname/pharmacy_stock_opname_item_card.dart';
+export 'widgets/opname/pharmacy_stock_opname_kpi_strip.dart';
 
 /// Workstation Gudang Farmasi: Stock Opname Fisik & Lot Audit (Google Stitch)
 class PharmacyStockOpnameScreen extends StatefulWidget {
@@ -192,52 +171,12 @@ class _PharmacyStockOpnameScreenState extends State<PharmacyStockOpnameScreen> {
         child: Column(
           children: [
             // KPI Summary Strip (Stitch Gudang)
-            Container(
-              padding: const EdgeInsets.all(14),
-              color: Colors.white,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildMetricTile(
-                      label: 'Total Batch',
-                      value: '$totalItems Lot',
-                      color: emeraldPrimary,
-                      bg: emeraldPrimary.withValues(alpha: 0.08),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildMetricTile(
-                      label: 'Stok Sistem',
-                      value: '$totalSystemQty Unit',
-                      color: const Color(0xFF0D9488),
-                      bg: const Color(0xFFE0F2FE),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildMetricTile(
-                      label: 'Stok Fisik',
-                      value: '$totalPhysicalQty Unit',
-                      color: totalDiffQty == 0 ? emeraldPrimary : const Color(0xFFB45309),
-                      bg: totalDiffQty == 0 ? const Color(0xFFD4F8E8) : const Color(0xFFFEF3C7),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildMetricTile(
-                      label: 'Selisih Nilai',
-                      value: CurrencyFormatter.format(totalDiffValue),
-                      color: totalDiffValue == 0
-                          ? emeraldPrimary
-                          : (totalDiffValue < 0 ? const Color(0xFFBA1A1A) : const Color(0xFF0284C7)),
-                      bg: totalDiffValue == 0
-                          ? const Color(0xFFD4F8E8)
-                          : (totalDiffValue < 0 ? const Color(0xFFFFDAD6) : const Color(0xFFE0F2FE)),
-                    ),
-                  ),
-                ],
-              ),
+            PharmacyStockOpnameKpiStrip(
+              totalItems: totalItems,
+              totalSystemQty: totalSystemQty,
+              totalPhysicalQty: totalPhysicalQty,
+              totalDiffQty: totalDiffQty,
+              totalDiffValue: totalDiffValue,
             ),
             const Divider(height: 1, color: borderColor),
 
@@ -308,123 +247,10 @@ class _PharmacyStockOpnameScreenState extends State<PharmacyStockOpnameScreen> {
                           separatorBuilder: (_, idx) => const SizedBox(height: 10),
                           itemBuilder: (context, index) {
                             final item = filtered[index];
-                            final isDiff = item.difference != 0;
-
-                            return Container(
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: isDiff ? const Color(0xFFBA1A1A).withValues(alpha: 0.5) : borderColor,
-                                  width: isDiff ? 1.4 : 1,
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          item.name,
-                                          style: const TextStyle(
-                                            fontFamily: 'Plus Jakarta Sans',
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                            color: textPrimary,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                        decoration: BoxDecoration(
-                                          color: isDiff ? const Color(0xFFFFDAD6) : const Color(0xFFD4F8E8),
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
-                                        child: Text(
-                                          isDiff ? 'Selisih ${item.difference} ${item.unit}' : 'Cocok Sesuai',
-                                          style: TextStyle(
-                                            fontFamily: 'JetBrains Mono',
-                                            fontSize: 10.5,
-                                            fontWeight: FontWeight.bold,
-                                            color: isDiff ? const Color(0xFFBA1A1A) : emeraldPrimary,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    'Lot Batch: ${item.batchNumber}  •  ED: ${item.expiryDate}',
-                                    style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11, color: textMuted),
-                                  ),
-                                  const SizedBox(height: 10),
-
-                                  // Counter and System comparison
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          const Text('Stok Buku Sistem:', style: TextStyle(fontSize: 10.5, color: textMuted)),
-                                          Text(
-                                            '${item.systemStock} ${item.unit}',
-                                            style: const TextStyle(
-                                              fontFamily: 'JetBrains Mono',
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 13,
-                                              color: textPrimary,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      Row(
-                                        children: [
-                                          const Text('Fisik:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                                          const SizedBox(width: 8),
-                                          IconButton(
-                                            icon: const Icon(Icons.remove_circle_outline_rounded, size: 20),
-                                            onPressed: item.physicalStock > 0
-                                                ? () {
-                                                    AudioHelper.tapFeedback();
-                                                    setState(() => item.physicalStock--);
-                                                  }
-                                                : null,
-                                            padding: EdgeInsets.zero,
-                                            constraints: const BoxConstraints(),
-                                          ),
-                                          Container(
-                                            width: 44,
-                                            alignment: Alignment.center,
-                                            child: Text(
-                                              '${item.physicalStock}',
-                                              style: const TextStyle(
-                                                fontFamily: 'JetBrains Mono',
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w800,
-                                              ),
-                                            ),
-                                          ),
-                                          IconButton(
-                                            icon: const Icon(Icons.add_circle_outline_rounded, size: 20, color: emeraldPrimary),
-                                            onPressed: () {
-                                              AudioHelper.tapFeedback();
-                                              setState(() => item.physicalStock++);
-                                            },
-                                            padding: EdgeInsets.zero,
-                                            constraints: const BoxConstraints(),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
+                            return PharmacyStockOpnameItemCard(
+                              item: item,
+                              onIncrement: () => setState(() => item.physicalStock++),
+                              onDecrement: () => setState(() => item.physicalStock--),
                             );
                           },
                         ),
@@ -458,37 +284,6 @@ class _PharmacyStockOpnameScreenState extends State<PharmacyStockOpnameScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildMetricTile({
-    required String label,
-    required String value,
-    required Color color,
-    required Color bg,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color)),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            style: TextStyle(
-              fontFamily: 'JetBrains Mono',
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: color,
-            ),
-          ),
-        ],
       ),
     );
   }

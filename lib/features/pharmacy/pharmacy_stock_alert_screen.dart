@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import '../../core/network/api_client.dart';
 import '../../core/utils/audio_helper.dart';
 import 'pharmacy_service.dart';
-import 'widgets/pharmacy_stock_alert_modal.dart';
 import 'widgets/pharmacy_pbf_order_modal.dart';
+import 'widgets/stock_alert/pharmacy_stock_alert_kpi_cards.dart';
+import 'widgets/stock_alert/pharmacy_stock_alert_card.dart';
+
+export 'widgets/stock_alert/pharmacy_stock_alert_kpi_cards.dart';
+export 'widgets/stock_alert/pharmacy_stock_alert_card.dart';
 
 /// Screen 3: Stok Obat & Alert ED FEFO (Google Stitch "Clinical Precision")
 class PharmacyStockAlertScreen extends StatefulWidget {
@@ -113,10 +117,11 @@ class _PharmacyStockAlertScreenState extends State<PharmacyStockAlertScreen> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFEF3C7),
+                      color: const Color(0xFFFFF7ED),
                       borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFFED7AA), width: 0.8),
                     ),
-                    child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFB45309), size: 22),
+                    child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFEA580C), size: 22),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -135,83 +140,39 @@ class _PharmacyStockAlertScreenState extends State<PharmacyStockAlertScreen> {
                               ),
                             ),
                             SizedBox(width: 8),
-                            CircleAvatar(radius: 4, backgroundColor: Color(0xFFB45309)),
+                            CircleAvatar(radius: 4, backgroundColor: Color(0xFFEA580C)),
                             SizedBox(width: 4),
                             Text(
                               'FEFO Active',
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFFB45309),
+                                color: Color(0xFFC2410C),
                               ),
                             ),
                           ],
                         ),
                         Text(
-                          'Sistem Pengendalian First-Expired First-Out • Deteksi Dini Kedaluwarsa',
+                          'Deteksi Dini Obat Menjelang Kadaluarsa & Buffer Stock Kritis',
                           style: const TextStyle(fontSize: 11.5, color: textMuted),
                         ),
                       ],
                     ),
                   ),
-                  OutlinedButton.icon(
-                    onPressed: _openPbfProcurement,
-                    icon: const Icon(Icons.local_shipping_outlined, size: 16),
-                    label: const Text('Order PBF', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: emeraldPrimary,
-                      side: const BorderSide(color: emeraldPrimary),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
                   IconButton(
                     onPressed: _fetchAlerts,
-                    tooltip: 'Segarkan Alert',
+                    tooltip: 'Segarkan Data Stok',
                     icon: const Icon(Icons.refresh_rounded, color: emeraldPrimary),
                   ),
                 ],
               ),
             ),
 
-            // KPI Summary Strip (Stitch 3 metrics)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              color: Colors.white,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildKpiCard(
-                      label: 'ED < 30 Hari',
-                      value: '$criticalCount Batch',
-                      color: const Color(0xFFBA1A1A),
-                      bg: const Color(0xFFFFDAD6),
-                      icon: Icons.error_outline_rounded,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildKpiCard(
-                      label: 'ED < 90 Hari',
-                      value: '$warningCount Batch',
-                      color: const Color(0xFFB45309),
-                      bg: const Color(0xFFFEF3C7),
-                      icon: Icons.warning_amber_rounded,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildKpiCard(
-                      label: 'Stok Menipis',
-                      value: '$lowStockCount Obat',
-                      color: const Color(0xFF0D9488),
-                      bg: const Color(0xFFE0F2FE),
-                      icon: Icons.inventory_2_outlined,
-                    ),
-                  ),
-                ],
-              ),
+            // Top KPI Badges
+            PharmacyStockAlertKpiCards(
+              criticalCount: criticalCount,
+              warningCount: warningCount,
+              lowStockCount: lowStockCount,
             ),
 
             // Search Bar & Filter Chips
@@ -302,49 +263,33 @@ class _PharmacyStockAlertScreenState extends State<PharmacyStockAlertScreen> {
                                 mainAxisSpacing: 12,
                               ),
                               itemCount: filtered.length,
-                              itemBuilder: (context, index) => _buildAlertCard(filtered[index], emeraldPrimary),
+                              itemBuilder: (context, index) {
+                                final item = filtered[index];
+                                return PharmacyStockAlertCard(
+                                  item: item,
+                                  primary: emeraldPrimary,
+                                  onQuarantine: () => _quarantineItem(item),
+                                  onRestock: _openPbfProcurement,
+                                );
+                              },
                             )
                           : ListView.separated(
                               padding: const EdgeInsets.all(14),
                               itemCount: filtered.length,
                               separatorBuilder: (_, idx) => const SizedBox(height: 10),
-                              itemBuilder: (context, index) => _buildAlertCard(filtered[index], emeraldPrimary),
+                              itemBuilder: (context, index) {
+                                final item = filtered[index];
+                                return PharmacyStockAlertCard(
+                                  item: item,
+                                  primary: emeraldPrimary,
+                                  onQuarantine: () => _quarantineItem(item),
+                                  onRestock: _openPbfProcurement,
+                                );
+                              },
                             ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildKpiCard({
-    required String label,
-    required String value,
-    required Color color,
-    required Color bg,
-    required IconData icon,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 18),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color)),
-                Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: color)),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -372,160 +317,6 @@ class _PharmacyStockAlertScreenState extends State<PharmacyStockAlertScreen> {
             color: isSel ? Colors.white : const Color(0xFF475569),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildAlertCard(PharmacyStockAlertItem item, Color primary) {
-    final isCritical = item.daysToExpiry <= 30;
-    final isWarning = item.daysToExpiry > 30 && item.daysToExpiry <= 90;
-
-    final badgeColor = isCritical
-        ? const Color(0xFFBA1A1A)
-        : (isWarning ? const Color(0xFFB45309) : const Color(0xFF059669));
-    final badgeBg = isCritical
-        ? const Color(0xFFFFDAD6)
-        : (isWarning ? const Color(0xFFFEF3C7) : const Color(0xFFD4F8E8));
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isCritical
-              ? const Color(0xFFBA1A1A).withValues(alpha: 0.5)
-              : const Color(0xFFE2E8F0),
-          width: isCritical ? 1.4 : 1,
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x060F172A),
-            blurRadius: 6,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header: Name + Rx dot + Expiry Tag
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    if (item.isHardDrug) ...[
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFBA1A1A),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                    ],
-                    Expanded(
-                      child: Text(
-                        item.name,
-                        style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13.5,
-                          color: Color(0xFF0F172A),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                decoration: BoxDecoration(
-                  color: badgeBg,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  '${item.daysToExpiry} Hari Lagi (ED: ${item.expiryDate})',
-                  style: TextStyle(
-                    fontFamily: 'JetBrains Mono',
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: badgeColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-
-          // Batch & Category
-          Row(
-            children: [
-              Text('Batch: ${item.batchNumber}', style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF475569))),
-              const SizedBox(width: 8),
-              Text('•  ${item.category}', style: const TextStyle(fontSize: 11, color: Color(0xFF6D7A72))),
-            ],
-          ),
-
-          const Spacer(),
-          const Divider(height: 10, color: Color(0xFFF1F5F9)),
-
-          // Sisa Stok & Action Buttons
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Text('Sisa Stok: ', style: TextStyle(fontSize: 11, color: Color(0xFF6D7A72))),
-                  Text(
-                    '${item.stock} ${item.unit}',
-                    style: TextStyle(
-                      fontFamily: 'JetBrains Mono',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      color: item.stock <= 10 ? const Color(0xFFBA1A1A) : const Color(0xFF0F172A),
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                children: [
-                  OutlinedButton(
-                    onPressed: () => _quarantineItem(item),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFFBA1A1A),
-                      side: const BorderSide(color: Color(0xFFBA1A1A)),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      minimumSize: const Size(0, 28),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    child: const Text('Karantina / Retur', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700)),
-                  ),
-                  const SizedBox(width: 6),
-                  ElevatedButton(
-                    onPressed: () {
-                      PharmacyService.instance.switchTab(0);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      minimumSize: const Size(0, 28),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    child: const Text('Jual di Kasir', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700)),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }

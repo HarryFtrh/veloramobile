@@ -10,15 +10,11 @@ import 'core/utils/fallback_localizations.dart';
 import 'features/auth/cubit/auth_cubit.dart';
 import 'features/auth/cubit/auth_state.dart';
 import 'features/auth/login_screen.dart';
-import 'features/dashboard/dashboard_screen.dart';
-import 'features/finance/expenses_screen.dart';
-import 'features/finance/return_screen.dart';
 import 'features/pharmacy/pharmacy.dart';
 import 'features/shared_pos/offline_sync_manager.dart';
 import 'core/services/app_update_service.dart';
-import 'features/shell/app_shell.dart';
-import 'features/shell/more_screen.dart';
-import 'features/settings/settings_screen.dart';
+import 'features/shared_pos/printer_settings_modal.dart';
+import 'features/shared_pos/receipt_printer_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,6 +30,7 @@ void main() async {
     await SessionStorage.init();
     ApiClient.init();
     AppUpdateService.init();
+    ReceiptPrinterService.onOpenSettings = PrinterSettingsModal.show;
     OfflineSyncManager.instance.startAutoSync();
   } catch (e) {
     debugPrint('Bootstrap initialization error: $e');
@@ -79,131 +76,9 @@ class VeloraPharmacyApp extends StatelessWidget {
             );
           }
           if (state is Authenticated) {
-            return AppShell(
-              key: ValueKey(state.activeLocationName),
-              tabControllerNotifier: PharmacyService.instance.activeTabNotifier,
-              tabs: [
-                ShellTab(
-                  label: 'Kasir',
-                  icon: Icons.point_of_sale_outlined,
-                  selectedIcon: Icons.point_of_sale_rounded,
-                  builder: (_) => PharmacyPosScreen(
-                    onLogout: () => context.read<AuthCubit>().logout(),
-                  ),
-                ),
-                ShellTab(
-                  label: 'Antrean',
-                  icon: Icons.receipt_long_outlined,
-                  selectedIcon: Icons.receipt_long_rounded,
-                  builder: (_) => const PharmacyQueueScreen(),
-                ),
-                ShellTab(
-                  label: 'Stok Obat',
-                  icon: Icons.medication_outlined,
-                  selectedIcon: Icons.medication_rounded,
-                  builder: (_) => const PharmacyStockAlertScreen(),
-                ),
-                ShellTab(
-                  label: 'Laporan',
-                  icon: Icons.analytics_outlined,
-                  selectedIcon: Icons.analytics_rounded,
-                  builder: (_) => const PharmacyShiftReportScreen(),
-                ),
-                ShellTab(
-                  label: 'Lainnya',
-                  icon: Icons.grid_view_outlined,
-                  selectedIcon: Icons.grid_view_rounded,
-                  builder: (_) => MoreScreen(
-                    onLogout: () => context.read<AuthCubit>().logout(),
-                    entries: [
-                      MoreEntry(
-                        category: 'Pelayanan Resep & Farmasi Klinis',
-                        icon: Icons.assignment_outlined,
-                        title: 'Telaah Resep Dokter',
-                        subtitle: 'Skrining 7 Benar & racikan pulveres',
-                        builder: (_) => const PharmacyPrescriptionReviewPage(),
-                      ),
-                      MoreEntry(
-                        category: 'Pelayanan Resep & Farmasi Klinis',
-                        icon: Icons.science_outlined,
-                        title: 'Meja Racik & Etiket',
-                        subtitle: 'Kalkulator DTD, mortar digital, cetak etiket',
-                        builder: (_) => const PharmacyCompoundingScreen(),
-                      ),
-                      MoreEntry(
-                        category: 'Pelayanan Resep & Farmasi Klinis',
-                        icon: Icons.medical_information_outlined,
-                        title: 'Rekam Medis & Riwayat Pasien',
-                        subtitle: 'Histori obat, profil alergi, dan ulangi resep',
-                        builder: (_) => const PharmacyMedicalRecordsPage(),
-                      ),
-                      MoreEntry(
-                        category: 'Pelayanan Resep & Farmasi Klinis',
-                        icon: Icons.tv_rounded,
-                        title: 'Display Antrean Loket',
-                        subtitle: 'Layar pemanggil nomor antrean publik',
-                        builder: (_) => const PharmacyCallingDisplayScreen(),
-                      ),
-                      MoreEntry(
-                        category: 'Pengadaan & Logistik Obat',
-                        icon: Icons.local_shipping_outlined,
-                        title: 'Pengadaan Order PBF',
-                        subtitle: 'Surat Pesanan (SP) & jatuh tempo faktur',
-                        builder: (_) => const PharmacyPbfOrderPage(),
-                      ),
-                      MoreEntry(
-                        category: 'Pengadaan & Logistik Obat',
-                        icon: Icons.inventory_rounded,
-                        title: 'Gudang & Stock Opname Fisik',
-                        subtitle: 'Audit stok fisik, batch lot, dan berita acara',
-                        builder: (_) => const PharmacyStockOpnameScreen(),
-                      ),
-                      MoreEntry(
-                        category: 'Pengadaan & Logistik Obat',
-                        icon: Icons.assignment_return_outlined,
-                        title: 'Retur Obat & Faktur',
-                        subtitle: 'Retur obat dari invoice atau ke PBF',
-                        builder: (_) => const ReturnScreen(),
-                      ),
-                      MoreEntry(
-                        category: 'Integrasi Dokter & Poli',
-                        icon: Icons.medical_services_outlined,
-                        title: 'Workstation Dokter & e-Resep',
-                        subtitle: 'EMR pasien, ICD-10, dan peresepan digital',
-                        builder: (_) => const PharmacyDoctorEmrScreen(),
-                      ),
-                      MoreEntry(
-                        category: 'Keuangan & Analitik Bisnis',
-                        icon: Icons.insights_rounded,
-                        title: 'Executive Analytics & Laba Rugi',
-                        subtitle: 'Gross margin, HPP, laba bersih, dan tren Q4',
-                        builder: (_) => const PharmacyExecutiveAnalyticsScreen(),
-                      ),
-                      MoreEntry(
-                        category: 'Keuangan & Analitik Bisnis',
-                        icon: Icons.bar_chart_rounded,
-                        title: 'Analitik Apotek',
-                        subtitle: 'Ringkasan omzet, laba kotor, dan tren',
-                        builder: (_) => const DashboardScreen(),
-                      ),
-                      MoreEntry(
-                        category: 'Keuangan & Analitik Bisnis',
-                        icon: Icons.payments_outlined,
-                        title: 'Pengeluaran Kasir',
-                        subtitle: 'Biaya operasional kas kecil apotek',
-                        builder: (_) => const ExpensesScreen(),
-                      ),
-                      MoreEntry(
-                        category: 'Konfigurasi & Hardware',
-                        icon: Icons.settings_outlined,
-                        title: 'Pengaturan & Printer',
-                        subtitle: 'Akun, cabang, printer thermal, PIN',
-                        builder: (_) => const SettingsScreen(),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            return PharmacyAppShell(
+              user: state.user,
+              locationName: state.activeLocationName ?? 'Outlet Utama',
             );
           }
           return LoginScreen(

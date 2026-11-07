@@ -189,23 +189,26 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return Scaffold(
-      backgroundColor: WarmPalette.canvas,
+      backgroundColor: p.canvas,
       appBar: AppBar(
-        backgroundColor: WarmPalette.canvas,
+        backgroundColor: p.canvas,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: WarmPalette.textPrimary),
+          icon: Icon(Icons.arrow_back_rounded, color: p.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Column(
           children: [
-            const Text(
+            Text(
               'Pesanan Saya (Keranjang)',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
-                color: WarmPalette.textPrimary,
+                color: p.textPrimary,
               ),
             ),
             Row(
@@ -214,17 +217,17 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                 Container(
                   width: 6,
                   height: 6,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: WarmPalette.primary,
+                    color: primaryColor,
                   ),
                 ),
                 const SizedBox(width: 4),
                 Text(
                   SessionStorage.instance.getTenantName() ?? 'Velora Eatery',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: WarmPalette.textSecondary,
+                    color: p.textSecondary,
                   ),
                 ),
               ],
@@ -235,15 +238,15 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
         actions: [
           TextButton.icon(
             onPressed: widget.cartItems.isEmpty ? null : widget.onClearCart,
-            icon: const Icon(
+            icon: Icon(
               Icons.delete_outline_rounded,
               size: 16,
-              color: WarmPalette.danger,
+              color: p.danger,
             ),
-            label: const Text(
+            label: Text(
               'Hapus',
               style: TextStyle(
-                color: WarmPalette.danger,
+                color: p.danger,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -262,19 +265,19 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                     color: Color(0xFFA09389),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'Keranjang Belanja Kosong',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: WarmPalette.textPrimary,
+                      color: p.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
+                  Text(
                     'Pilih minuman atau bakery favoritmu sekarang',
                     style: TextStyle(
-                      color: WarmPalette.textSecondary,
+                      color: p.textSecondary,
                       fontSize: 13,
                     ),
                   ),
@@ -282,7 +285,7 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                   ElevatedButton(
                     onPressed: () => Navigator.of(context).pop(),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: WarmPalette.primary,
+                      backgroundColor: primaryColor,
                       foregroundColor: Colors.white,
                       shape: const StadiumBorder(),
                     ),
@@ -316,12 +319,12 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
+                            Text(
                               'Menu yang Dipesan',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
-                                color: WarmPalette.textPrimary,
+                                color: p.textPrimary,
                               ),
                             ),
                             Container(
@@ -330,14 +333,14 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: WarmPalette.tertiary
+                                color: p.tertiary
                                     .withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
                                 '${widget.cartItems.length} Item',
-                                style: const TextStyle(
-                                  color: WarmPalette.tertiary,
+                                style: TextStyle(
+                                  color: p.tertiary,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -362,12 +365,12 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                             onQuantityChanged: (newQty) {
                               if (newQty <= 0) {
                                 final updated =
-                                    List<CustomerCartItem>.from(widget.cartItems)
-                                      ..removeAt(idx);
+                                  List<CustomerCartItem>.from(widget.cartItems)
+                                    ..removeAt(idx);
                                 widget.onUpdateCart(updated);
                               } else {
                                 final updated =
-                                    List<CustomerCartItem>.from(widget.cartItems);
+                                  List<CustomerCartItem>.from(widget.cartItems);
                                 updated[idx] = item.copyWith(quantity: newQty);
                                 widget.onUpdateCart(updated);
                               }
@@ -384,9 +387,9 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
                             style: TextStyle(fontWeight: FontWeight.w700),
                           ),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: WarmPalette.primary,
-                            side: const BorderSide(
-                              color: WarmPalette.primary,
+                            foregroundColor: primaryColor,
+                            side: BorderSide(
+                              color: primaryColor,
                               width: 1.2,
                               style: BorderStyle.solid,
                             ),

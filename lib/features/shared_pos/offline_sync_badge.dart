@@ -91,7 +91,7 @@ class OfflineSyncBadge extends StatelessWidget {
                 }
 
                 // Skenario 2: Antrean kosong (Online Normal atau Offline Bersih)
-                final activeColor = isOnline ? WarmPalette.tertiary : Colors.orange.shade800;
+                final activeColor = isOnline ? p.tertiary : p.warning;
                 final label = isOnline ? 'ONLINE' : 'OFFLINE';
 
                 return InkWell(

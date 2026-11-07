@@ -7,44 +7,46 @@ import '../../shift_service.dart';
 import 'shift_dialog_helpers.dart';
 import 'shift_report_dialog.dart';
 
-/// Modal dialog to reconcile cash drawer and close shift with denomination helpers.
+/// Modal dialog for cashier reconciliation and closing the shift.
 Future<void> showCloseShiftModal(
   BuildContext context,
   ShiftStatus currentShift, {
   required VoidCallback onClosed,
 }) async {
-  final actualCashController = TextEditingController();
+  final expectedCash = (currentShift.startingCash ?? 0) +
+      currentShift.cashSales +
+      currentShift.cashIn -
+      currentShift.cashOut;
+
+  num actualCash = expectedCash;
+  final actualCashController = TextEditingController(text: expectedCash.toString());
   final notesController = TextEditingController();
   bool isSubmitting = false;
 
-  // Calculate expected cash in drawer
-  final expectedCash = currentShift.expectedCash > 0
-      ? currentShift.expectedCash
-      : ((currentShift.startingCash ?? 0) + currentShift.cashSales + currentShift.cashIn - currentShift.cashOut);
-
-  final nonCashTotal = currentShift.qrisSales + currentShift.transferSales + currentShift.cardSales + currentShift.otherSales;
-
-  num actualCash = 0;
+  final nonCashTotal = currentShift.qrisSales + currentShift.debitSales + currentShift.transferSales;
 
   await showDialog<void>(
     context: context,
+    barrierDismissible: false,
     builder: (ctx) {
       return StatefulBuilder(
         builder: (context, setState) {
           final isMobile = context.isMobile;
+          final p = context.palette;
+          final primaryColor = Theme.of(context).colorScheme.primary;
           final difference = actualCash - expectedCash;
 
-          void addDenom(num amount) {
+          void addDenom(num val) {
             AudioHelper.tapFeedback();
-            actualCash += amount;
-            actualCashController.text = actualCash.toInt().toString();
+            actualCash += val;
+            actualCashController.text = actualCash.toString();
             setState(() {});
           }
 
           void setPas() {
             AudioHelper.tapFeedback();
             actualCash = expectedCash;
-            actualCashController.text = actualCash.toInt().toString();
+            actualCashController.text = expectedCash.toString();
             setState(() {});
           }
 
@@ -56,10 +58,10 @@ Future<void> showCloseShiftModal(
           }
 
           return Dialog(
-            backgroundColor: WarmPalette.canvas,
+            backgroundColor: p.canvas,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(24),
-              side: const BorderSide(color: WarmPalette.line, width: 1.5),
+              side: BorderSide(color: p.line, width: 1.5),
             ),
             insetPadding: EdgeInsets.symmetric(
               horizontal: isMobile ? 14 : 36,
@@ -79,10 +81,10 @@ Future<void> showCloseShiftModal(
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: WarmPalette.secondary.withValues(alpha: 0.15),
+                            color: p.secondary.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(14),
                           ),
-                          child: const Icon(Icons.lock_clock_rounded, color: WarmPalette.secondary, size: 24),
+                          child: Icon(Icons.lock_clock_rounded, color: p.secondary, size: 24),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
@@ -93,12 +95,12 @@ Future<void> showCloseShiftModal(
                                 currentShift.cashierName != null && currentShift.cashierName != 'Kasir'
                                     ? 'Tutup Shift: ${currentShift.cashierName}'
                                     : 'Tutup Shift & Rekonsiliasi Kasir',
-                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: WarmPalette.textPrimary),
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: p.textPrimary),
                               ),
                               const SizedBox(height: 2),
-                              const Text(
+                              Text(
                                 'Hitung total uang fisik di laci kasir & cetak Z-Report',
-                                style: TextStyle(fontSize: 12, color: WarmPalette.textSecondary),
+                                style: TextStyle(fontSize: 12, color: p.textSecondary),
                               ),
                             ],
                           ),
@@ -113,7 +115,7 @@ Future<void> showCloseShiftModal(
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: WarmPalette.line),
+                        border: Border.all(color: p.line),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -124,11 +126,11 @@ Future<void> showCloseShiftModal(
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('Kasir Bertugas', style: TextStyle(fontSize: 11, color: WarmPalette.textSecondary)),
+                                  Text('Kasir Bertugas', style: TextStyle(fontSize: 11, color: p.textSecondary)),
                                   const SizedBox(height: 2),
                                   Text(
                                     currentShift.cashierName ?? 'Kasir',
-                                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: WarmPalette.textPrimary),
+                                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: p.textPrimary),
                                   ),
                                 ],
                               ),
@@ -136,33 +138,35 @@ Future<void> showCloseShiftModal(
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                   decoration: BoxDecoration(
-                                    color: WarmPalette.primary.withValues(alpha: 0.1),
+                                    color: primaryColor.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
                                     'Shift #${currentShift.shiftId}',
-                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: WarmPalette.primary),
+                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: primaryColor),
                                   ),
                                 ),
                             ],
                           ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 8),
-                            child: Divider(height: 1, color: WarmPalette.line),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Divider(height: 1, color: p.line),
                           ),
-                          buildSummaryRow('Modal Kas Awal', CurrencyFormatter.format(currentShift.startingCash ?? 0)),
+                          buildSummaryRow('Modal Kas Awal', CurrencyFormatter.format(currentShift.startingCash ?? 0), context: context),
                           const SizedBox(height: 6),
                           buildSummaryRow(
                             'Penjualan Tunai (+)',
                             CurrencyFormatter.format(currentShift.cashSales),
-                            textColor: WarmPalette.tertiary,
+                            textColor: p.tertiary,
+                            context: context,
                           ),
                           if (currentShift.cashIn > 0) ...[
                             const SizedBox(height: 6),
                             buildSummaryRow(
                               'Kas Masuk (+)',
                               CurrencyFormatter.format(currentShift.cashIn),
-                              textColor: WarmPalette.tertiary,
+                              textColor: p.tertiary,
+                              context: context,
                             ),
                           ],
                           if (currentShift.cashOut > 0) ...[
@@ -170,18 +174,20 @@ Future<void> showCloseShiftModal(
                             buildSummaryRow(
                               'Kas Keluar (-)',
                               CurrencyFormatter.format(currentShift.cashOut),
-                              textColor: WarmPalette.danger,
+                              textColor: p.danger,
+                              context: context,
                             ),
                           ],
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 8),
-                            child: Divider(height: 1, color: WarmPalette.line),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Divider(height: 1, color: p.line),
                           ),
                           buildSummaryRow(
                             'Estimasi Kas di Laci',
                             CurrencyFormatter.format(expectedCash),
                             isBold: true,
                             valueFontSize: 15,
+                            context: context,
                           ),
                           if (nonCashTotal > 0) ...[
                             const SizedBox(height: 8),
@@ -189,12 +195,12 @@ Future<void> showCloseShiftModal(
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                               decoration: BoxDecoration(
-                                color: WarmPalette.surfaceMuted,
+                                color: p.surfaceMuted,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 'Info Non-Tunai (QRIS/EDC/TF): ${CurrencyFormatter.format(nonCashTotal)}',
-                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: WarmPalette.textSecondary),
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: p.textSecondary),
                               ),
                             ),
                           ],
@@ -207,10 +213,10 @@ Future<void> showCloseShiftModal(
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Flexible(
+                        Flexible(
                           child: Text(
                             'Hitung Uang Fisik di Laci (Actual Cash)',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: WarmPalette.textPrimary),
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: p.textPrimary),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -222,7 +228,7 @@ Future<void> showCloseShiftModal(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             child: Text(
                               'Hitung Pas (${CurrencyFormatter.format(expectedCash)})',
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: WarmPalette.primary),
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: primaryColor),
                             ),
                           ),
                         ),
@@ -232,7 +238,7 @@ Future<void> showCloseShiftModal(
                     TextField(
                       controller: actualCashController,
                       keyboardType: TextInputType.number,
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: WarmPalette.primary),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: primaryColor),
                       decoration: InputDecoration(
                         prefixText: 'Rp ',
                         hintText: '0',
@@ -241,15 +247,15 @@ Future<void> showCloseShiftModal(
                         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: WarmPalette.line),
+                          borderSide: BorderSide(color: p.line),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: WarmPalette.line),
+                          borderSide: BorderSide(color: p.line),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: WarmPalette.primary),
+                          borderSide: BorderSide(color: primaryColor),
                         ),
                       ),
                       onChanged: (val) {
@@ -266,17 +272,17 @@ Future<void> showCloseShiftModal(
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
-                          buildQuickCashChip('+100rb', () => addDenom(100000)),
+                          buildQuickCashChip('+100rb', () => addDenom(100000), context: context),
                           const SizedBox(width: 6),
-                          buildQuickCashChip('+50rb', () => addDenom(50000)),
+                          buildQuickCashChip('+50rb', () => addDenom(50000), context: context),
                           const SizedBox(width: 6),
-                          buildQuickCashChip('+20rb', () => addDenom(20000)),
+                          buildQuickCashChip('+20rb', () => addDenom(20000), context: context),
                           const SizedBox(width: 6),
-                          buildQuickCashChip('+10rb', () => addDenom(10000)),
+                          buildQuickCashChip('+10rb', () => addDenom(10000), context: context),
                           const SizedBox(width: 6),
-                          buildQuickCashChip('+5rb', () => addDenom(5000)),
+                          buildQuickCashChip('+5rb', () => addDenom(5000), context: context),
                           const SizedBox(width: 6),
-                          buildQuickCashChip('Reset', resetCash, isDanger: true),
+                          buildQuickCashChip('Reset', resetCash, isDanger: true, context: context),
                         ],
                       ),
                     ),
@@ -288,15 +294,15 @@ Future<void> showCloseShiftModal(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
                         color: difference == 0
-                            ? WarmPalette.tertiary.withValues(alpha: 0.12)
+                            ? p.tertiary.withValues(alpha: 0.12)
                             : (difference > 0
                                 ? Colors.blue.withValues(alpha: 0.12)
-                                : WarmPalette.danger.withValues(alpha: 0.12)),
+                                : p.danger.withValues(alpha: 0.12)),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: difference == 0
-                              ? WarmPalette.tertiary.withValues(alpha: 0.35)
-                              : (difference > 0 ? Colors.blue.withValues(alpha: 0.35) : WarmPalette.danger.withValues(alpha: 0.35)),
+                              ? p.tertiary.withValues(alpha: 0.35)
+                              : (difference > 0 ? Colors.blue.withValues(alpha: 0.35) : p.danger.withValues(alpha: 0.35)),
                         ),
                       ),
                       child: Row(
@@ -307,8 +313,8 @@ Future<void> showCloseShiftModal(
                                 : (difference > 0 ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded),
                             size: 16,
                             color: difference == 0
-                                ? WarmPalette.tertiary
-                                : (difference > 0 ? Colors.blue.shade700 : WarmPalette.danger),
+                                ? p.tertiary
+                                : (difference > 0 ? Colors.blue.shade700 : p.danger),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -322,8 +328,8 @@ Future<void> showCloseShiftModal(
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w800,
                                 color: difference == 0
-                                    ? WarmPalette.tertiary
-                                    : (difference > 0 ? Colors.blue.shade800 : WarmPalette.danger),
+                                    ? p.tertiary
+                                    : (difference > 0 ? Colors.blue.shade800 : p.danger),
                               ),
                             ),
                           ),
@@ -335,24 +341,24 @@ Future<void> showCloseShiftModal(
                     // Notes TextField
                     TextField(
                       controller: notesController,
-                      style: const TextStyle(fontSize: 13, color: WarmPalette.textPrimary),
+                      style: TextStyle(fontSize: 13, color: p.textPrimary),
                       decoration: InputDecoration(
                         hintText: 'Catatan serah terima kasir / keterangan selisih...',
-                        hintStyle: const TextStyle(fontSize: 12, color: WarmPalette.textSecondary),
+                        hintStyle: TextStyle(fontSize: 12, color: p.textSecondary),
                         filled: true,
                         fillColor: Colors.white,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: WarmPalette.line),
+                          borderSide: BorderSide(color: p.line),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: WarmPalette.line),
+                          borderSide: BorderSide(color: p.line),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: WarmPalette.primary),
+                          borderSide: BorderSide(color: primaryColor),
                         ),
                       ),
                     ),
@@ -365,8 +371,8 @@ Future<void> showCloseShiftModal(
                           child: OutlinedButton(
                             onPressed: () => Navigator.pop(ctx),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: WarmPalette.textSecondary,
-                              side: const BorderSide(color: WarmPalette.line),
+                              foregroundColor: p.textSecondary,
+                              side: BorderSide(color: p.line),
                               shape: const StadiumBorder(),
                               padding: const EdgeInsets.symmetric(vertical: 13),
                             ),
@@ -406,14 +412,14 @@ Future<void> showCloseShiftModal(
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
                                             content: Text('Gagal menutup shift: $e'),
-                                            backgroundColor: WarmPalette.danger,
+                                            backgroundColor: p.danger,
                                           ),
                                         );
                                       }
                                     }
                                   },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: WarmPalette.primary,
+                              backgroundColor: primaryColor,
                               foregroundColor: Colors.white,
                               shape: const StadiumBorder(),
                               padding: const EdgeInsets.symmetric(vertical: 13),

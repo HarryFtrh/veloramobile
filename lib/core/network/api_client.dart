@@ -2,8 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:uuid/uuid.dart';
 import '../config/app_config.dart';
+import '../config/app_version_info.dart';
 import '../storage/session_storage.dart';
-import '../services/app_update_service.dart';
 
 class ApiClient {
   late final Dio dio;
@@ -67,7 +67,7 @@ class ApiClient {
           options.headers['X-App-Flavor'] = flavorName;
 
           try {
-            final ver = await AppUpdateService.instance.getAppVersion();
+            final ver = await AppVersionHelper.getAppVersion();
             options.headers['User-Agent'] = 'VeloraMobile/${ver.versionName} (Android; Flavor=$flavorName; Build=${ver.versionCode}; DeviceId=$deviceId)';
             options.headers['X-App-Version'] = ver.versionName;
             options.headers['X-App-Version-Code'] = ver.versionCode.toString();
@@ -182,14 +182,29 @@ class ApiClient {
     }
   }
 
-  /// Sanitasi data log untuk mencegah kebocoran kredensial (PIN, password, token) di console/logcat
+  /// Sanitasi data log untuk mencegah kebocoran kredensial (PIN, password, token)
+  /// dan PII medis pasien (NIK, KTP, Rekam Medis, Diagnosis) di console/logcat (UU PDP No. 27/2022)
   static dynamic _sanitizeData(dynamic data) {
     if (data is Map) {
       final copy = <String, dynamic>{};
       for (final entry in data.entries) {
         final k = entry.key.toString();
         final lower = k.toLowerCase();
-        if (lower.contains('password') || lower == 'pin' || lower.contains('secret') || lower.contains('token') || lower.contains('authorization')) {
+        final isSensitive = lower.contains('password') ||
+            lower == 'pin' ||
+            lower.contains('secret') ||
+            lower.contains('token') ||
+            lower.contains('authorization') ||
+            lower.contains('nik') ||
+            lower.contains('ktp') ||
+            lower.contains('medical_record') ||
+            lower.contains('no_rm') ||
+            lower.contains('rm_number') ||
+            lower.contains('diagnosis') ||
+            lower.contains('anamnesis') ||
+            lower.contains('allerg');
+
+        if (isSensitive) {
           copy[k] = '***REDACTED***';
         } else if (entry.value is Map || entry.value is List) {
           copy[k] = _sanitizeData(entry.value);

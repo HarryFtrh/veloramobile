@@ -3,28 +3,10 @@ import '../../core/design/tokens.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/audio_helper.dart';
 import 'receipt_printer_service.dart';
-import 'pos_checkout_service.dart';
+import 'sale_record.dart';
 import '../kitchen/kitchen_service.dart';
 
-class CompletedSaleRecord {
-  final String invoiceNumber;
-  final DateTime time;
-  final num total;
-  final String paymentMethod;
-  final String? tableOrCustomer;
-  final List<PosCartItem> items;
-  bool isVoided;
-
-  CompletedSaleRecord({
-    required this.invoiceNumber,
-    required this.time,
-    required this.total,
-    required this.paymentMethod,
-    this.tableOrCustomer,
-    required this.items,
-    this.isVoided = false,
-  });
-}
+export 'sale_record.dart';
 
 class SalesHistoryDrawer extends StatefulWidget {
   final String storeName;
@@ -43,10 +25,10 @@ class SalesHistoryDrawer extends StatefulWidget {
   });
 
   /// Static in-memory storage of completed sales for the active shift
-  static final List<CompletedSaleRecord> activeShiftSales = [];
+  static List<CompletedSaleRecord> get activeShiftSales => ShiftSalesStorage.activeShiftSales;
 
   static void addRecord(CompletedSaleRecord record) {
-    activeShiftSales.insert(0, record);
+    ShiftSalesStorage.add(record);
   }
 
   static Future<void> show(
@@ -111,10 +93,11 @@ class _SalesHistoryDrawerState extends State<SalesHistoryDrawer> {
       ),
     );
 
+    final p = context.palette;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('✓ Struk #${sale.invoiceNumber} berhasil dicetak ulang.'),
-        backgroundColor: WarmPalette.tertiary,
+        backgroundColor: p.success,
       ),
     );
   }
@@ -143,32 +126,33 @@ class _SalesHistoryDrawerState extends State<SalesHistoryDrawer> {
 
   void _voidTransaction(CompletedSaleRecord sale) {
     AudioHelper.actionFeedback();
+    final p = context.palette;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: WarmPalette.canvas,
+        backgroundColor: p.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: WarmPalette.line),
+          side: BorderSide(color: p.line),
         ),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: WarmPalette.danger, size: 24),
-            SizedBox(width: 10),
-            Text('Batalkan / Void Transaksi?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: WarmPalette.textPrimary)),
+            Icon(Icons.warning_amber_rounded, color: p.danger, size: 24),
+            const SizedBox(width: 10),
+            Text('Batalkan / Void Transaksi?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: p.textPrimary)),
           ],
         ),
         content: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: context.dialogMaxWidth),
           child: Text(
             'Faktur #${sale.invoiceNumber} senilai ${CurrencyFormatter.format(sale.total)} akan dibatalkan dan stok dikembalikan ke sistem.',
-            style: const TextStyle(fontSize: 13, color: WarmPalette.textSecondary),
+            style: TextStyle(fontSize: 13, color: p.textSecondary),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal', style: TextStyle(color: WarmPalette.textSecondary, fontWeight: FontWeight.w700)),
+            child: Text('Batal', style: TextStyle(color: p.textSecondary, fontWeight: FontWeight.w700)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -184,12 +168,12 @@ class _SalesHistoryDrawerState extends State<SalesHistoryDrawer> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text('✓ Transaksi #${sale.invoiceNumber} telah di-void.'),
-                  backgroundColor: WarmPalette.danger,
+                  backgroundColor: p.danger,
                 ),
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: WarmPalette.danger,
+              backgroundColor: p.danger,
               foregroundColor: Colors.white,
               shape: const StadiumBorder(),
             ),
@@ -203,15 +187,18 @@ class _SalesHistoryDrawerState extends State<SalesHistoryDrawer> {
   @override
   Widget build(BuildContext context) {
     final isMobile = context.isMobile;
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return Container(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.85,
       ),
       padding: EdgeInsets.fromLTRB(isMobile ? 16 : 24, 16, isMobile ? 16 : 24, 24),
-      decoration: const BoxDecoration(
-        color: WarmPalette.canvas,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border(top: BorderSide(color: WarmPalette.line, width: 1.5)),
+      decoration: BoxDecoration(
+        color: p.canvas,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        border: Border(top: BorderSide(color: p.line, width: 1.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -222,7 +209,7 @@ class _SalesHistoryDrawerState extends State<SalesHistoryDrawer> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: WarmPalette.line,
+                color: p.line,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -241,15 +228,15 @@ class _SalesHistoryDrawerState extends State<SalesHistoryDrawer> {
                       style: TextStyle(
                         fontSize: isMobile ? 16 : 18,
                         fontWeight: FontWeight.w800,
-                        color: WarmPalette.textPrimary,
+                        color: p.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
-                    const Text(
+                    Text(
                       'Daftar pesanan selesai, cetak struk & void',
-                      style: TextStyle(fontSize: 11, color: WarmPalette.textSecondary),
+                      style: TextStyle(fontSize: 11, color: p.textSecondary),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -262,10 +249,10 @@ class _SalesHistoryDrawerState extends State<SalesHistoryDrawer> {
                   AudioHelper.actionFeedback();
                   ReceiptPrinterService.instance.openCashDrawer();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('⚡ Sinyal RJ11 terkirim: Laci kasir terbuka.'),
-                      backgroundColor: WarmPalette.tertiary,
-                      duration: Duration(seconds: 2),
+                    SnackBar(
+                      content: const Text('⚡ Sinyal RJ11 terkirim: Laci kasir terbuka.'),
+                      backgroundColor: p.success,
+                      duration: const Duration(seconds: 2),
                     ),
                   );
                 },
@@ -275,8 +262,8 @@ class _SalesHistoryDrawerState extends State<SalesHistoryDrawer> {
                   style: const TextStyle(fontSize: 12),
                 ),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: WarmPalette.primary,
-                  side: const BorderSide(color: WarmPalette.line),
+                  foregroundColor: primaryColor,
+                  side: BorderSide(color: p.line),
                   shape: const StadiumBorder(),
                   padding: EdgeInsets.symmetric(horizontal: isMobile ? 10 : 14, vertical: 8),
                 ),
@@ -289,42 +276,42 @@ class _SalesHistoryDrawerState extends State<SalesHistoryDrawer> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: WarmPalette.surfaceMuted,
+              color: p.surfaceMuted,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: WarmPalette.line),
+              border: Border.all(color: p.line),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 Column(
                   children: [
-                    const Text('Total Penjualan', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: WarmPalette.textSecondary)),
+                    Text('Total Penjualan', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: p.textSecondary)),
                     const SizedBox(height: 4),
                     Text(
                       CurrencyFormatter.format(_totalSalesToday),
-                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: WarmPalette.primary),
+                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: primaryColor),
                     ),
                   ],
                 ),
-                Container(width: 1, height: 32, color: WarmPalette.line),
+                Container(width: 1, height: 32, color: p.line),
                 Column(
                   children: [
-                    const Text('Jumlah Transaksi', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: WarmPalette.textSecondary)),
+                    Text('Jumlah Transaksi', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: p.textSecondary)),
                     const SizedBox(height: 4),
                     Text(
                       '$_validTxCount Struk',
-                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: WarmPalette.textPrimary),
+                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: p.textPrimary),
                     ),
                   ],
                 ),
-                Container(width: 1, height: 32, color: WarmPalette.line),
+                Container(width: 1, height: 32, color: p.line),
                 Column(
                   children: [
-                    const Text('Kasir Bertugas', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: WarmPalette.textSecondary)),
+                    Text('Kasir Bertugas', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: p.textSecondary)),
                     const SizedBox(height: 4),
                     Text(
                       widget.cashierName,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: WarmPalette.tertiary),
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: p.tertiary),
                     ),
                   ],
                 ),
@@ -336,8 +323,8 @@ class _SalesHistoryDrawerState extends State<SalesHistoryDrawer> {
           // List of Completed Transactions
           Expanded(
             child: SalesHistoryDrawer.activeShiftSales.isEmpty
-                ? const Center(
-                    child: Text('Belum ada transaksi pada shift ini.', style: TextStyle(color: WarmPalette.textSecondary, fontWeight: FontWeight.w600)),
+                ? Center(
+                    child: Text('Belum ada transaksi pada shift ini.', style: TextStyle(color: p.textSecondary, fontWeight: FontWeight.w600)),
                   )
                 : ListView.separated(
                     itemCount: SalesHistoryDrawer.activeShiftSales.length,
@@ -349,12 +336,12 @@ class _SalesHistoryDrawerState extends State<SalesHistoryDrawer> {
                       return Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: p.surface,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
                             color: sale.isVoided
-                                ? WarmPalette.danger.withValues(alpha: 0.3)
-                                : WarmPalette.line,
+                                ? p.danger.withValues(alpha: 0.3)
+                                : p.line,
                           ),
                         ),
                         child: Row(
@@ -363,13 +350,13 @@ class _SalesHistoryDrawerState extends State<SalesHistoryDrawer> {
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
                                 color: sale.isVoided
-                                    ? WarmPalette.danger.withValues(alpha: 0.12)
-                                    : WarmPalette.primary.withValues(alpha: 0.12),
+                                    ? p.danger.withValues(alpha: 0.12)
+                                    : primaryColor.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Icon(
                                 sale.isVoided ? Icons.block_rounded : Icons.receipt_long_rounded,
-                                color: sale.isVoided ? WarmPalette.danger : WarmPalette.primary,
+                                color: sale.isVoided ? p.danger : primaryColor,
                                 size: 20,
                               ),
                             ),
@@ -385,7 +372,7 @@ class _SalesHistoryDrawerState extends State<SalesHistoryDrawer> {
                                         style: TextStyle(
                                           fontWeight: FontWeight.w800,
                                           fontSize: 13,
-                                          color: WarmPalette.textPrimary,
+                                          color: p.textPrimary,
                                           decoration: sale.isVoided ? TextDecoration.lineThrough : null,
                                         ),
                                       ),
@@ -393,12 +380,12 @@ class _SalesHistoryDrawerState extends State<SalesHistoryDrawer> {
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                         decoration: BoxDecoration(
-                                          color: WarmPalette.surfaceMuted,
+                                          color: p.surfaceMuted,
                                           borderRadius: BorderRadius.circular(6),
                                         ),
                                         child: Text(
                                           sale.paymentMethod,
-                                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: WarmPalette.primary),
+                                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: primaryColor),
                                         ),
                                       ),
                                     ],
@@ -406,7 +393,7 @@ class _SalesHistoryDrawerState extends State<SalesHistoryDrawer> {
                                   const SizedBox(height: 4),
                                   Text(
                                     '$timeStr • ${sale.tableOrCustomer ?? 'Umum'} • ${sale.items.length} item',
-                                    style: const TextStyle(fontSize: 11, color: WarmPalette.textSecondary),
+                                    style: TextStyle(fontSize: 11, color: p.textSecondary),
                                   ),
                                 ],
                               ),
@@ -419,7 +406,7 @@ class _SalesHistoryDrawerState extends State<SalesHistoryDrawer> {
                                   style: TextStyle(
                                     fontWeight: FontWeight.w800,
                                     fontSize: 14,
-                                    color: sale.isVoided ? WarmPalette.textSecondary : WarmPalette.textPrimary,
+                                    color: sale.isVoided ? p.textSecondary : p.textPrimary,
                                     decoration: sale.isVoided ? TextDecoration.lineThrough : null,
                                   ),
                                 ),
@@ -428,7 +415,7 @@ class _SalesHistoryDrawerState extends State<SalesHistoryDrawer> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     IconButton(
-                                      icon: const Icon(Icons.share_outlined, size: 18, color: WarmPalette.primary),
+                                      icon: Icon(Icons.share_outlined, size: 18, color: primaryColor),
                                       tooltip: 'Bagi Nota (WhatsApp)',
                                       constraints: const BoxConstraints(),
                                       padding: const EdgeInsets.all(4),
@@ -436,7 +423,7 @@ class _SalesHistoryDrawerState extends State<SalesHistoryDrawer> {
                                     ),
                                     const SizedBox(width: 4),
                                     IconButton(
-                                      icon: const Icon(Icons.print_outlined, size: 18, color: WarmPalette.primary),
+                                      icon: Icon(Icons.print_outlined, size: 18, color: primaryColor),
                                       tooltip: 'Cetak Ulang Struk',
                                       constraints: const BoxConstraints(),
                                       padding: const EdgeInsets.all(4),
@@ -445,7 +432,7 @@ class _SalesHistoryDrawerState extends State<SalesHistoryDrawer> {
                                     if (!sale.isVoided) ...[
                                       const SizedBox(width: 6),
                                       IconButton(
-                                        icon: const Icon(Icons.cancel_outlined, size: 18, color: WarmPalette.danger),
+                                        icon: Icon(Icons.cancel_outlined, size: 18, color: p.danger),
                                         tooltip: 'Void / Batalkan',
                                         constraints: const BoxConstraints(),
                                         padding: const EdgeInsets.all(4),

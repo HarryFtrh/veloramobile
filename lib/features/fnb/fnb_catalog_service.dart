@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../../core/network/api_client.dart';
 import '../../core/storage/session_storage.dart';
 import '../../core/utils/safe_json.dart';
-import '../shared_pos/product_catalog_service.dart';
+import '../shared_pos/models/pos_catalog_models.dart';
 import 'modifiers.dart';
 
 /// Layanan Katalog Khusus Bisnis F&B / CAFE / RESTORAN.
@@ -95,47 +95,30 @@ class FnbCatalogService {
   }) async {
     _ensureTenantScope();
     final scopeKey = _currentScopeKey();
-    final tenantId = SessionStorage.instance.getTenantId();
     final locId = SessionStorage.instance.getLocationId();
 
     final queryParams = <String, dynamic>{
       'limit': limit,
-      'per_page': limit,
-      if (tenantId != null && tenantId.isNotEmpty) 'tenant_id': tenantId,
       if (locId != null && locId.isNotEmpty) 'location_id': locId,
       if (search != null && search.isNotEmpty) 'search': search,
       if (categoryId != null && categoryId.isNotEmpty) 'category_id': categoryId,
       'since_version': ?sinceVersion,
     };
 
-    const candidateEndpoints = [
-      '/v1/pos/products-sync',
-      '/cafe/menu',
-      '/cafe/products',
-    ];
-
     Response<dynamic>? response;
     PosCatalogData? parsedCatalog;
-    String? successfulEndpoint;
 
-    for (final ep in candidateEndpoints) {
-      try {
-        final res = await ApiClient.instance.dio.get(ep, queryParameters: queryParams);
-        if (res.statusCode == 200 && res.data != null) {
-          final candidateData = _parseFnbCatalogData(res.data);
-          response ??= res;
-          parsedCatalog ??= candidateData;
-          successfulEndpoint ??= ep;
-          if (candidateData.products.isNotEmpty) {
-            response = res;
-            parsedCatalog = candidateData;
-            successfulEndpoint = ep;
-            break;
-          }
-        }
-      } catch (e) {
-        debugPrint('⚠️ [FNB CATALOG] Endpoint $ep gagal: $e');
+    try {
+      final res = await ApiClient.instance.dio.get(
+        '/v1/pos/products-sync',
+        queryParameters: queryParams,
+      );
+      if (res.statusCode == 200 && res.data != null) {
+        response = res;
+        parsedCatalog = _parseFnbCatalogData(res.data);
       }
+    } catch (e) {
+      debugPrint('⚠️ [FNB CATALOG] /v1/pos/products-sync gagal: $e');
     }
 
     if (response == null || parsedCatalog == null) {
@@ -166,7 +149,7 @@ class FnbCatalogService {
 
     final catalogData = parsedCatalog;
     debugPrint(
-      '☕ [FNB CATALOG] Loaded ${catalogData.products.length} menu across ${catalogData.categories.length} kategori from $successfulEndpoint ($scopeKey)',
+      '☕ [FNB CATALOG] Loaded ${catalogData.products.length} menu across ${catalogData.categories.length} kategori from /v1/pos/products-sync ($scopeKey)',
     );
     _rebuildIndex(catalogData.products);
     _cachedCatalog = catalogData;
@@ -178,7 +161,7 @@ class FnbCatalogService {
     return catalogData;
   }
 
-  /// Pencarian menu F&B ke backend
+  /// Pencarian menu F&B ke 1 endpoint resmi POS (`/v1/pos/products-sync?search=...`)
   Future<List<PosProduct>> searchProductsRemote(
     String query, {
     int limit = 50,
@@ -188,36 +171,28 @@ class FnbCatalogService {
     if (trimmed.isEmpty) return _cachedCatalog?.products ?? const [];
 
     final locId = SessionStorage.instance.getLocationId();
-    final queryParams = <String, dynamic>{
-      'search': trimmed,
-      'limit': limit,
-      'per_page': limit,
-      if (locId != null && locId.isNotEmpty) 'location_id': locId,
-    };
-
-    const candidateEndpoints = [
-      '/v1/pos/products-sync',
-      '/cafe/menu',
-      '/cafe/products',
-    ];
-
-    for (final ep in candidateEndpoints) {
-      try {
-        final res = await ApiClient.instance.dio.get(ep, queryParameters: queryParams);
-        if (res.statusCode == 200 && res.data != null) {
-          final parsed = _parseFnbCatalogData(res.data);
-          if (parsed.products.isNotEmpty) {
-            for (final p in parsed.products) {
-              if (p.id.isNotEmpty) _idMap[p.id] = p;
-              if (p.barcode.isNotEmpty) _barcodeMap[p.barcode.trim().toLowerCase()] = p;
-              if (p.sku.isNotEmpty) _skuMap[p.sku.trim().toLowerCase()] = p;
-            }
-            return parsed.products;
+    try {
+      final res = await ApiClient.instance.dio.get(
+        '/v1/pos/products-sync',
+        queryParameters: {
+          'search': trimmed,
+          'limit': limit,
+          if (locId != null && locId.isNotEmpty) 'location_id': locId,
+        },
+      );
+      if (res.statusCode == 200 && res.data != null) {
+        final parsed = _parseFnbCatalogData(res.data);
+        if (parsed.products.isNotEmpty) {
+          for (final p in parsed.products) {
+            if (p.id.isNotEmpty) _idMap[p.id] = p;
+            if (p.barcode.isNotEmpty) _barcodeMap[p.barcode.trim().toLowerCase()] = p;
+            if (p.sku.isNotEmpty) _skuMap[p.sku.trim().toLowerCase()] = p;
           }
+          return parsed.products;
         }
-      } catch (e) {
-        debugPrint('⚠️ [FNB SEARCH] $ep gagal: $e');
       }
+    } catch (e) {
+      debugPrint('⚠️ [FNB SEARCH] /v1/pos/products-sync?search gagal: $e');
     }
 
     return searchFast(trimmed);
@@ -315,7 +290,7 @@ class FnbCatalogService {
       stock: stockVal,
       sku: skuVal,
       barcode: barcodeVal,
-      imageUrl: ProductCatalogService.resolveImageUrl(img),
+      imageUrl: PosProduct.resolveImageUrl(img),
       tag: productTag.isNotEmpty ? productTag : null,
       description: desc.isNotEmpty ? desc : null,
       unit: unitVal,

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/components/velora_logo.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/design/components.dart';
 import '../../../core/design/tokens.dart';

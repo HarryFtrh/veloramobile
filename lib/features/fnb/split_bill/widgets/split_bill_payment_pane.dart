@@ -44,21 +44,24 @@ class SplitBillPaymentPane extends StatelessWidget {
   final VoidCallback onNumpadBackspace;
 
   Widget _buildMethodCard(
+    BuildContext context,
     String key,
     String title,
     String sub,
     IconData icon,
   ) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final isSel = selectedMethod == key;
     return GestureDetector(
       onTap: () => onSelectMethod(key),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
         decoration: BoxDecoration(
-          color: isSel ? WarmPalette.primary : Colors.white,
+          color: isSel ? primaryColor : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSel ? Colors.transparent : WarmPalette.line,
+            color: isSel ? Colors.transparent : p.line,
           ),
         ),
         child: Column(
@@ -68,7 +71,7 @@ class SplitBillPaymentPane extends StatelessWidget {
             Icon(
               icon,
               size: 20,
-              color: isSel ? Colors.white : WarmPalette.primary,
+              color: isSel ? Colors.white : primaryColor,
             ),
             const SizedBox(height: 3),
             FittedBox(
@@ -80,7 +83,7 @@ class SplitBillPaymentPane extends StatelessWidget {
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 12,
-                  color: isSel ? Colors.white : WarmPalette.textPrimary,
+                  color: isSel ? Colors.white : p.textPrimary,
                 ),
               ),
             ),
@@ -92,7 +95,7 @@ class SplitBillPaymentPane extends StatelessWidget {
                 maxLines: 1,
                 style: TextStyle(
                   fontSize: 10,
-                  color: isSel ? WarmPalette.surfaceMuted : WarmPalette.textSecondary,
+                  color: isSel ? p.surfaceMuted : p.textSecondary,
                 ),
               ),
             ),
@@ -102,14 +105,15 @@ class SplitBillPaymentPane extends StatelessWidget {
     );
   }
 
-  Widget _buildPresetCard(String title, int amount) {
+  Widget _buildPresetCard(BuildContext context, String title, int amount) {
+    final p = context.palette;
     final isMatch = cashReceived == amount;
     return GestureDetector(
       onTap: () => onSelectPreset(amount),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
         decoration: BoxDecoration(
-          color: isMatch ? WarmPalette.secondary : WarmPalette.surfaceMuted,
+          color: isMatch ? p.secondary : p.surfaceMuted,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Column(
@@ -124,7 +128,7 @@ class SplitBillPaymentPane extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
-                  color: isMatch ? Colors.white : WarmPalette.textSecondary,
+                  color: isMatch ? Colors.white : p.textSecondary,
                 ),
               ),
             ),
@@ -137,7 +141,7 @@ class SplitBillPaymentPane extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
-                  color: isMatch ? Colors.white : WarmPalette.textPrimary,
+                  color: isMatch ? Colors.white : p.textPrimary,
                 ),
               ),
             ),
@@ -149,6 +153,8 @@ class SplitBillPaymentPane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final isMobile = context.isMobile;
 
     return Column(
@@ -163,22 +169,22 @@ class SplitBillPaymentPane extends StatelessWidget {
             mainAxisSpacing: 8,
             childAspectRatio: 1.85,
             children: [
-              _buildMethodCard('cash', 'Tunai / Cash', 'Manual & Presets', Icons.money_rounded),
-              _buildMethodCard('qris', 'QRIS Dinamis', 'Customer Display', Icons.qr_code_rounded),
-              _buildMethodCard('card', 'Debit / Kredit', 'EDC BCA / Mandiri', Icons.credit_card_rounded),
-              _buildMethodCard('ewallet', 'E-Wallet', 'GoPay, Shopee', Icons.account_balance_wallet_rounded),
+              _buildMethodCard(context, 'cash', 'Tunai / Cash', 'Manual & Presets', Icons.money_rounded),
+              _buildMethodCard(context, 'qris', 'QRIS Dinamis', 'Customer Display', Icons.qr_code_rounded),
+              _buildMethodCard(context, 'card', 'Debit / Kredit', 'EDC BCA / Mandiri', Icons.credit_card_rounded),
+              _buildMethodCard(context, 'ewallet', 'E-Wallet', 'GoPay, Shopee', Icons.account_balance_wallet_rounded),
             ],
           )
         else
           Row(
             children: [
-              Expanded(child: _buildMethodCard('cash', 'Tunai / Cash', 'Manual & Presets', Icons.money_rounded)),
+              Expanded(child: _buildMethodCard(context, 'cash', 'Tunai / Cash', 'Manual & Presets', Icons.money_rounded)),
               const SizedBox(width: 8),
-              Expanded(child: _buildMethodCard('qris', 'QRIS Dinamis', 'Customer Display', Icons.qr_code_rounded)),
+              Expanded(child: _buildMethodCard(context, 'qris', 'QRIS Dinamis', 'Customer Display', Icons.qr_code_rounded)),
               const SizedBox(width: 8),
-              Expanded(child: _buildMethodCard('card', 'Debit / Kredit', 'EDC BCA / Mandiri', Icons.credit_card_rounded)),
+              Expanded(child: _buildMethodCard(context, 'card', 'Debit / Kredit', 'EDC BCA / Mandiri', Icons.credit_card_rounded)),
               const SizedBox(width: 8),
-              Expanded(child: _buildMethodCard('ewallet', 'E-Wallet', 'GoPay, Shopee', Icons.account_balance_wallet_rounded)),
+              Expanded(child: _buildMethodCard(context, 'ewallet', 'E-Wallet', 'GoPay, Shopee', Icons.account_balance_wallet_rounded)),
             ],
           ),
         const SizedBox(height: 16),
@@ -205,6 +211,7 @@ class SplitBillPaymentPane extends StatelessWidget {
                   children: [
                     for (int i = 0; i < list.length; i++)
                       _buildPresetCard(
+                        context,
                         i == 0 ? 'Uang Pas' : 'Pecahan',
                         list[i],
                       ),
@@ -217,6 +224,7 @@ class SplitBillPaymentPane extends StatelessWidget {
                     if (i > 0) const SizedBox(width: 8),
                     Expanded(
                       child: _buildPresetCard(
+                        context,
                         i == 0 ? 'Uang Pas' : 'Pecahan Lembar',
                         list[i],
                       ),
@@ -278,31 +286,31 @@ class SplitBillPaymentPane extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: WarmPalette.line),
+              border: Border.all(color: p.line),
             ),
             child: Center(
               child: Column(
                 children: [
                   if (generatingQris) ...[
                     const SizedBox(height: 30),
-                    const CircularProgressIndicator(
-                      color: WarmPalette.primary,
+                    CircularProgressIndicator(
+                      color: primaryColor,
                       strokeWidth: 3,
                     ),
                     const SizedBox(height: 20),
-                    const Text(
+                    Text(
                       'Menghubungkan ke gateway QRIS backend...',
                       style: TextStyle(
-                        color: WarmPalette.textSecondary,
+                        color: p.textSecondary,
                         fontSize: 13,
                       ),
                     ),
                     const SizedBox(height: 30),
                   ] else ...[
-                    const Icon(
+                    Icon(
                       Icons.qr_code_2_rounded,
                       size: 160,
-                      color: WarmPalette.textPrimary,
+                      color: p.textPrimary,
                     ),
                     if (qrisInvoice?.transactionId != null) ...[
                       Container(
@@ -311,15 +319,15 @@ class SplitBillPaymentPane extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: WarmPalette.surfaceMuted,
+                          color: p.surfaceMuted,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
                           'ID: ${qrisInvoice!.transactionId}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: WarmPalette.primary,
+                            color: primaryColor,
                           ),
                         ),
                       ),
@@ -327,10 +335,10 @@ class SplitBillPaymentPane extends StatelessWidget {
                     ],
                     Text(
                       'Total Tagihan: Rp ${selectedItemsTotal.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 18,
-                        color: WarmPalette.primary,
+                        color: primaryColor,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -338,7 +346,7 @@ class SplitBillPaymentPane extends StatelessWidget {
                       qrisInvoice?.nmid != null
                           ? 'NMID: ${qrisInvoice!.nmid} • Siap di-scan'
                           : 'Silakan scan QRIS di layar pelanggan / EDC',
-                      style: const TextStyle(color: WarmPalette.textSecondary),
+                      style: TextStyle(color: p.textSecondary),
                     ),
                     const SizedBox(height: 20),
                     ElevatedButton(
@@ -346,7 +354,7 @@ class SplitBillPaymentPane extends StatelessWidget {
                           ? null
                           : onVerifyQrisStatus,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: WarmPalette.primary,
+                        backgroundColor: primaryColor,
                         foregroundColor: Colors.white,
                         shape: const StadiumBorder(),
                         padding: const EdgeInsets.symmetric(
@@ -383,7 +391,7 @@ class SplitBillPaymentPane extends StatelessWidget {
                     TextButton(
                       onPressed: !submitting ? onFinishPayment : null,
                       style: TextButton.styleFrom(
-                        foregroundColor: WarmPalette.textSecondary,
+                        foregroundColor: p.textSecondary,
                       ),
                       child: const Text(
                         'Konfirmasi Manual (Bila Pelanggan Selesai Scan)',

@@ -23,6 +23,8 @@ class CustomerOrderTimelineStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -36,10 +38,10 @@ class CustomerOrderTimelineStep extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isDone
-                      ? WarmPalette.tertiary
+                      ? p.tertiary
                       : (isActive
-                            ? WarmPalette.secondary
-                            : WarmPalette.line),
+                            ? p.secondary
+                            : p.line),
                 ),
                 child: Center(
                   child: isDone
@@ -50,10 +52,10 @@ class CustomerOrderTimelineStep extends StatelessWidget {
                                 size: 16,
                                 color: Colors.white,
                               )
-                            : const Icon(
+                            : Icon(
                                 Icons.circle_outlined,
                                 size: 14,
-                                color: WarmPalette.textSecondary,
+                                color: p.textSecondary,
                               )),
                 ),
               ),
@@ -62,8 +64,8 @@ class CustomerOrderTimelineStep extends StatelessWidget {
                   child: Container(
                     width: 2,
                     color: isDone
-                        ? WarmPalette.tertiary
-                        : WarmPalette.line,
+                        ? p.tertiary
+                        : p.line,
                   ),
                 ),
             ],
@@ -77,10 +79,10 @@ class CustomerOrderTimelineStep extends StatelessWidget {
               padding: isActive ? const EdgeInsets.all(12) : EdgeInsets.zero,
               decoration: isActive
                   ? BoxDecoration(
-                      color: const Color(0xFFFDF0E3),
+                      color: p.secondary.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: WarmPalette.secondary.withValues(alpha: 0.3),
+                        color: p.secondary.withValues(alpha: 0.3),
                       ),
                     )
                   : null,
@@ -97,8 +99,8 @@ class CustomerOrderTimelineStep extends StatelessWidget {
                             fontWeight: FontWeight.w800,
                             fontSize: 14,
                             color: isActive
-                                ? WarmPalette.secondary
-                                : WarmPalette.textPrimary,
+                                ? p.secondary
+                                : p.textPrimary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -111,8 +113,8 @@ class CustomerOrderTimelineStep extends StatelessWidget {
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: isActive
-                              ? WarmPalette.secondary
-                              : WarmPalette.textSecondary,
+                              ? p.secondary
+                              : p.textSecondary,
                         ),
                       ),
                     ],
@@ -120,9 +122,9 @@ class CustomerOrderTimelineStep extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     desc,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: WarmPalette.textSecondary,
+                      color: p.textSecondary,
                       height: 1.3,
                     ),
                   ),
@@ -137,15 +139,15 @@ class CustomerOrderTimelineStep extends StatelessWidget {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: WarmPalette.secondary.withValues(alpha: 0.3),
+                          color: p.secondary.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Text(
                         badge!,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: WarmPalette.secondary,
+                          color: p.secondary,
                         ),
                       ),
                     ),

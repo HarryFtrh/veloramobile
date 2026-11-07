@@ -1,15 +1,24 @@
 // features/fnb_customer/customer_order_tracking_screen.dart
-import '../../core/design/tokens.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../core/design/tokens.dart';
 import '../../core/storage/session_storage.dart';
-import '../../core/utils/currency_formatter.dart';
 import '../kitchen/kitchen_service.dart';
 import 'customer_models.dart';
+import 'widgets/customer_order_action_footer.dart';
+import 'widgets/customer_order_estimate_banner.dart';
+import 'widgets/customer_order_summary_card.dart';
+import 'widgets/customer_order_table_card.dart';
 import 'widgets/customer_order_timeline_step.dart';
+
+export 'widgets/customer_order_action_footer.dart';
+export 'widgets/customer_order_estimate_banner.dart';
+export 'widgets/customer_order_summary_card.dart';
+export 'widgets/customer_order_table_card.dart';
+export 'widgets/customer_order_timeline_step.dart';
 
 class CustomerOrderTrackingScreen extends StatefulWidget {
   const CustomerOrderTrackingScreen({
@@ -77,20 +86,23 @@ class _CustomerOrderTrackingScreenState
   }
 
   void _requestBaristaAssistance() {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.support_agent_rounded, color: WarmPalette.secondary),
-            SizedBox(width: 8),
-            Text('Panggil Barista', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Icon(Icons.support_agent_rounded, color: p.secondary),
+            const SizedBox(width: 8),
+            const Text('Panggil Barista', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Text(
           'Barista akan segera mendatangi Meja ${widget.tableNumber}. Silakan tunggu sebentar.',
-          style: const TextStyle(fontSize: 13, height: 1.4, color: WarmPalette.textPrimary),
+          style: TextStyle(fontSize: 13, height: 1.4, color: p.textPrimary),
         ),
         actions: [
           FilledButton(
@@ -98,16 +110,22 @@ class _CustomerOrderTrackingScreenState
               Navigator.of(ctx).pop();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Pemberitahuan telah terkirim ke barista Meja ${widget.tableNumber}!'),
-                  backgroundColor: WarmPalette.success,
+                  content: const Row(
+                    children: [
+                      Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+                      SizedBox(width: 8),
+                      Text('Permintaan bantuan terkirim ke POS Barista'),
+                    ],
+                  ),
+                  backgroundColor: primaryColor,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  duration: const Duration(seconds: 2),
                 ),
               );
             },
-            style: FilledButton.styleFrom(
-              backgroundColor: WarmPalette.primary,
-              shape: const StadiumBorder(),
-            ),
-            child: const Text('OK'),
+            style: FilledButton.styleFrom(backgroundColor: primaryColor),
+            child: const Text('OK, Panggilkan'),
           ),
         ],
       ),
@@ -115,14 +133,34 @@ class _CustomerOrderTrackingScreenState
   }
 
   void _requestTableChange() {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Pindah Meja', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        content: Text(
-          'Saat ini pesanan Anda terdaftar di Meja ${widget.tableNumber}.\n\nJika Anda ingin berpindah meja, silakan beritahu barista atau kasir agar pesanan dan pengantaran kopi Anda diarahkan ke meja yang baru.',
-          style: const TextStyle(fontSize: 13, height: 1.4, color: WarmPalette.textSecondary),
+        title: Row(
+          children: [
+            Icon(Icons.sync_alt_rounded, color: primaryColor),
+            const SizedBox(width: 8),
+            const Text('Permintaan Pindah Meja', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Pesanan Anda terdaftar di Meja ${widget.tableNumber}.',
+              style: TextStyle(fontSize: 13, color: p.textPrimary),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Untuk menjaga akurasi pengantaran pesanan oleh runner, harap konfirmasi nomor meja baru Anda ke kasir atau barista.',
+              style: TextStyle(fontSize: 12, color: p.textSecondary, height: 1.4),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -134,11 +172,8 @@ class _CustomerOrderTrackingScreenState
               Navigator.of(ctx).pop();
               _requestBaristaAssistance();
             },
-            style: FilledButton.styleFrom(
-              backgroundColor: WarmPalette.primary,
-              shape: const StadiumBorder(),
-            ),
-            child: const Text('Panggil Barista'),
+            style: FilledButton.styleFrom(backgroundColor: primaryColor),
+            child: const Text('Panggil Crew'),
           ),
         ],
       ),
@@ -146,50 +181,58 @@ class _CustomerOrderTrackingScreenState
   }
 
   void _downloadOrShareReceipt() {
-    final buf = StringBuffer();
-    final storeName = SessionStorage.instance.getTenantName() ?? 'Velora Cafe & Eatery';
-    final loc = SessionStorage.instance.getLocationName() ?? 'Outlet Utama';
-    buf.writeln('================================');
-    buf.writeln('          $storeName');
-    buf.writeln('          $loc');
-    buf.writeln('================================');
-    buf.writeln('No. Pesanan: ${widget.orderNumber}');
-    buf.writeln('Meja       : ${widget.tableNumber}');
-    buf.writeln('Waktu      : ${DateTime.now().toLocal().toString().split('.').first}');
-    buf.writeln('--------------------------------');
-    for (final item in widget.items) {
-      buf.writeln('${item.name} x${item.quantity}');
-      buf.writeln('               ${CurrencyFormatter.format(item.subtotal)}');
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
+    final buf = StringBuffer()
+      ..writeln('================================')
+      ..writeln('       ${SessionStorage.instance.getLocationName() ?? "VELORA CAFE & ROASTERY"}')
+      ..writeln('   E-RECEIPT RESMI PEMESANAN DINE-IN')
+      ..writeln('================================')
+      ..writeln('No. Pesanan : ${widget.orderNumber}')
+      ..writeln('Meja        : ${widget.tableNumber}')
+      ..writeln('Waktu       : ${DateTime.now().hour.toString().padLeft(2, '0')}:${DateTime.now().minute.toString().padLeft(2, '0')} WIB')
+      ..writeln('--------------------------------');
+
+    for (final it in widget.items) {
+      buf.writeln('${it.quantity}x ${it.product.name.padRight(18)} Rp ${it.totalPrice}');
+      if (it.selectedModifiers.isNotEmpty) {
+        buf.writeln('   + ${it.selectedModifiers.join(", ")}');
+      }
     }
-    buf.writeln('--------------------------------');
-    buf.writeln('Total Bayar: ${CurrencyFormatter.format(widget.totalAmount)}');
-    buf.writeln('Status     : Terkonfirmasi / Lunas');
-    buf.writeln('================================');
-    buf.writeln('Terima kasih atas kunjungan Anda!');
-    buf.writeln('================================');
+
+    buf
+      ..writeln('--------------------------------')
+      ..writeln('Total Bayar : Rp ${widget.totalAmount}')
+      ..writeln('Metode      : QRIS Kasir (Lunas)')
+      ..writeln('Status      : Disiapkan oleh Barista')
+      ..writeln('================================')
+      ..writeln('Terima kasih atas kunjungan Anda!')
+      ..writeln('Simpan struk ini sebagai bukti pembayaran.');
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.receipt_long_rounded, color: WarmPalette.primary),
-            SizedBox(width: 8),
-            Text('Nota Digital / E-Receipt', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Icon(Icons.receipt_long_rounded, color: primaryColor),
+            const SizedBox(width: 8),
+            const Text('Nota Digital (E-Receipt)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Container(
+          width: double.maxFinite,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: WarmPalette.canvas,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: WarmPalette.line),
+            color: p.surfaceMuted,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: p.line),
           ),
           child: SingleChildScrollView(
             child: Text(
               buf.toString(),
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 11, height: 1.4),
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 11, height: 1.35),
             ),
           ),
         ),
@@ -205,7 +248,7 @@ class _CustomerOrderTrackingScreenState
             },
             icon: const Icon(Icons.share_rounded, size: 16),
             label: const Text('Bagikan'),
-            style: FilledButton.styleFrom(backgroundColor: WarmPalette.primary),
+            style: FilledButton.styleFrom(backgroundColor: primaryColor),
           ),
         ],
       ),
@@ -217,34 +260,36 @@ class _CustomerOrderTrackingScreenState
     final isFresh = _currentStage == KitchenStage.fresh;
     final isPreparing = _currentStage == KitchenStage.preparing;
     final isReady = _currentStage == KitchenStage.ready;
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
-      backgroundColor: WarmPalette.canvas,
+      backgroundColor: p.canvas,
       appBar: AppBar(
-        backgroundColor: WarmPalette.canvas,
+        backgroundColor: p.canvas,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close_rounded, color: WarmPalette.textPrimary),
+          icon: Icon(Icons.close_rounded, color: p.textPrimary),
           onPressed: () =>
               Navigator.of(context).popUntil((route) => route.isFirst),
         ),
         title: Column(
           children: [
-            const Text(
+            Text(
               'STATUS PESANAN',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: WarmPalette.textSecondary,
+                color: p.textSecondary,
                 letterSpacing: 0.5,
               ),
             ),
             Text(
               widget.orderNumber,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
-                color: WarmPalette.textPrimary,
+                color: p.textPrimary,
               ),
             ),
           ],
@@ -260,13 +305,12 @@ class _CustomerOrderTrackingScreenState
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color:
-                      (isReady
-                              ? WarmPalette.tertiary
-                              : (isPreparing
-                                    ? WarmPalette.primary
-                                    : WarmPalette.secondary))
-                          .withValues(alpha: 0.15),
+                  color: (isReady
+                          ? p.tertiary
+                          : (isPreparing
+                              ? primaryColor
+                              : p.secondary))
+                      .withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
@@ -276,26 +320,26 @@ class _CustomerOrderTrackingScreenState
                       Icons.circle,
                       size: 8,
                       color: isReady
-                          ? WarmPalette.tertiary
+                          ? p.tertiary
                           : (isPreparing
-                                ? WarmPalette.primary
-                                : WarmPalette.secondary),
+                              ? primaryColor
+                              : p.secondary),
                     ),
                     const SizedBox(width: 6),
                     Text(
                       isReady
                           ? 'Siap Diantar'
                           : (isPreparing
-                                ? 'Sedang Diramu'
-                                : 'Pesanan Diterima'),
+                              ? 'Sedang Diramu'
+                              : 'Pesanan Diterima'),
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: isReady
-                            ? WarmPalette.tertiary
+                            ? p.tertiary
                             : (isPreparing
-                                  ? WarmPalette.primary
-                                  : WarmPalette.secondary),
+                                  ? primaryColor
+                                  : p.secondary),
                       ),
                     ),
                   ],
@@ -309,139 +353,7 @@ class _CustomerOrderTrackingScreenState
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
         children: [
           // Hero Brewing Banner
-          Container(
-            height: 180,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  WarmPalette.primary,
-                  Color(0xFF381F12),
-                ],
-              ),
-            ),
-            child: Stack(
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withValues(alpha: 0.75),
-                      ],
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: 16,
-                  right: 16,
-                  bottom: 14,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: WarmPalette.canvas.withValues(alpha: 0.95),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.15),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: const BoxDecoration(
-                                  color: WarmPalette.primary,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.coffee_rounded,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              const Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Estimasi Siap Minum',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: WarmPalette.textSecondary,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    Text(
-                                      '12 – 15 Menit',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w800,
-                                        color: WarmPalette.textPrimary,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            const Text(
-                              'Target Jam',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: WarmPalette.textSecondary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Builder(
-                              builder: (context) {
-                                final target = DateTime.now().add(const Duration(minutes: 15));
-                                final hh = target.hour.toString().padLeft(2, '0');
-                                final mm = target.minute.toString().padLeft(2, '0');
-                                return Text(
-                                  '$hh:$mm',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: WarmPalette.primary,
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          const CustomerOrderEstimateBanner(),
           const SizedBox(height: 12),
 
           // Station & Origin Tags
@@ -450,20 +362,20 @@ class _CustomerOrderTrackingScreenState
               Icon(
                 Icons.storefront_outlined,
                 size: 16,
-                color: WarmPalette.primary,
+                color: primaryColor,
               ),
               const SizedBox(width: 6),
-              const Text(
+              Text(
                 'Stasiun Pemroses: ',
-                style: TextStyle(fontSize: 12, color: WarmPalette.textSecondary),
+                style: TextStyle(fontSize: 12, color: p.textSecondary),
               ),
               Flexible(
                 child: Text(
                   widget.items.isNotEmpty ? widget.items.first.product.category : 'Kitchen Station',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: WarmPalette.textPrimary,
+                    color: p.textPrimary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -474,13 +386,13 @@ class _CustomerOrderTrackingScreenState
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: WarmPalette.tertiary.withValues(alpha: 0.12),
+                    color: p.tertiary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     widget.items.first.product.origin!,
-                    style: const TextStyle(
-                      color: WarmPalette.tertiary,
+                    style: TextStyle(
+                      color: p.tertiary,
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                     ),
@@ -491,84 +403,9 @@ class _CustomerOrderTrackingScreenState
           const SizedBox(height: 16),
 
           // Table Card
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: WarmPalette.line),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: WarmPalette.surfaceMuted,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.table_restaurant_rounded,
-                    color: WarmPalette.primary,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            widget.tableNumber.isNotEmpty ? widget.tableNumber : 'Meja Kasir',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 15,
-                              color: WarmPalette.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: WarmPalette.tertiary.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Text(
-                              'Dine In',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: WarmPalette.tertiary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        SessionStorage.instance.getLocationName() ?? 'Area Restoran / Cafe',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: WarmPalette.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                TextButton(
-                  onPressed: _requestTableChange,
-                  child: const Text(
-                    'Pindah Meja?',
-                    style: TextStyle(
-                      color: WarmPalette.primary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          CustomerOrderTableCard(
+            tableNumber: widget.tableNumber,
+            onRequestTableChange: _requestTableChange,
           ),
           const SizedBox(height: 20),
 
@@ -576,27 +413,27 @@ class _CustomerOrderTrackingScreenState
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Tahapan Seduh Pesanan',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w800,
-                  color: WarmPalette.textPrimary,
+                  color: p.textPrimary,
                 ),
               ),
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.sync_rounded,
                     size: 14,
-                    color: WarmPalette.textSecondary,
+                    color: p.textSecondary,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     'Pembaruan live Kitchen API',
                     style: TextStyle(
                       fontSize: 11,
-                      color: WarmPalette.textSecondary.withValues(alpha: 0.8),
+                      color: p.textSecondary.withValues(alpha: 0.8),
                     ),
                   ),
                 ],
@@ -638,170 +475,17 @@ class _CustomerOrderTrackingScreenState
           const SizedBox(height: 20),
 
           // Summary Accordion
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: WarmPalette.line),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: WarmPalette.surfaceMuted,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(
-                            Icons.receipt_long_rounded,
-                            size: 18,
-                            color: WarmPalette.primary,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Ringkasan Pesanan (${widget.items.length} Item)',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 14,
-                                color: WarmPalette.textPrimary,
-                              ),
-                            ),
-                            Text(
-                              'Total: Rp ${widget.totalAmount.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')} • QRIS Kasir',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: WarmPalette.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: WarmPalette.textSecondary,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                const Divider(color: WarmPalette.line),
-                const SizedBox(height: 10),
-                ...widget.items.map(
-                  (item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '${item.quantity}x ${item.product.name}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Text(
-                          'Rp ${item.totalPrice.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: WarmPalette.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: _downloadOrShareReceipt,
-                    icon: const Icon(Icons.download_rounded, size: 16),
-                    label: const Text(
-                      'Download Nota Digital / E-Receipt',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: WarmPalette.primary,
-                      side: const BorderSide(color: WarmPalette.line),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          CustomerOrderSummaryCard(
+            items: widget.items,
+            totalAmount: widget.totalAmount,
+            onDownloadOrShareReceipt: _downloadOrShareReceipt,
           ),
         ],
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: const Border(top: BorderSide(color: WarmPalette.line)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _requestBaristaAssistance,
-                icon: const Icon(Icons.support_agent_rounded, size: 18),
-                label: const Text(
-                  'Bantuan Barista',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: WarmPalette.primary,
-                  side: const BorderSide(color: WarmPalette.line),
-                  shape: const StadiumBorder(),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () =>
-                    Navigator.of(context).popUntil((route) => route.isFirst),
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: const Text(
-                  'Pesan Menu Lain',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: WarmPalette.primary,
-                  foregroundColor: Colors.white,
-                  shape: const StadiumBorder(),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  elevation: 0,
-                ),
-              ),
-            ),
-          ],
-        ),
+      bottomNavigationBar: CustomerOrderActionFooter(
+        onRequestBaristaAssistance: _requestBaristaAssistance,
+        onOrderAnother: () =>
+            Navigator.of(context).popUntil((route) => route.isFirst),
       ),
     );
   }

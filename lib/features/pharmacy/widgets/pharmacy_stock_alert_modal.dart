@@ -1,29 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../core/utils/currency_formatter.dart';
+import 'stock_alert/pharmacy_stock_alert_modal_card.dart';
 
-class PharmacyStockAlertItem {
-  final String name;
-  final String category;
-  final String batchNumber;
-  final String expiryDate;
-  final int daysToExpiry;
-  final int stock;
-  final String unit;
-  final num price;
-  final bool isHardDrug;
-
-  const PharmacyStockAlertItem({
-    required this.name,
-    required this.category,
-    required this.batchNumber,
-    required this.expiryDate,
-    required this.daysToExpiry,
-    required this.stock,
-    required this.unit,
-    required this.price,
-    this.isHardDrug = false,
-  });
-}
+export 'stock_alert/pharmacy_stock_alert_modal_card.dart';
 
 class PharmacyStockAlertModal extends StatefulWidget {
   final List<Map<String, dynamic>> catalogItems;
@@ -87,7 +65,6 @@ class _PharmacyStockAlertModalState extends State<PharmacyStockAlertModal> {
       if (parsedDate != null) {
         days = parsedDate.difference(DateTime.now()).inDays;
       } else if (ed != '-' && ed.contains('/') && ed.split('/').length == 2) {
-        // Handle format MM/YY e.g. 11/26
         final parts = ed.split('/');
         final m = int.tryParse(parts[0]) ?? 1;
         final y = (int.tryParse(parts[1]) ?? 26) + 2000;
@@ -154,10 +131,11 @@ class _PharmacyStockAlertModalState extends State<PharmacyStockAlertModal> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFEF3C7),
+                        color: const Color(0xFFFFF7ED),
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFFED7AA), width: 0.8),
                       ),
-                      child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFB45309), size: 24),
+                      child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFEA580C), size: 24),
                     ),
                     const SizedBox(width: 12),
                     const Column(
@@ -195,14 +173,14 @@ class _PharmacyStockAlertModalState extends State<PharmacyStockAlertModal> {
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFFEF3C7),
+                color: const Color(0xFFFFF7ED),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFFDE68A)),
+                border: Border.all(color: const Color(0xFFFED7AA)),
               ),
               child: const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.notification_important_rounded, color: Color(0xFFB45309), size: 20),
+                  Icon(Icons.notification_important_rounded, color: Color(0xFFEA580C), size: 20),
                   SizedBox(width: 10),
                   Expanded(
                     child: Column(
@@ -213,13 +191,13 @@ class _PharmacyStockAlertModalState extends State<PharmacyStockAlertModal> {
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 13,
-                            color: Color(0xFF92400E),
+                            color: Color(0xFFC2410C),
                           ),
                         ),
                         SizedBox(height: 2),
                         Text(
                           'Pastikan sediaan dengan tanggal kadaluarsa (ED) terdekat ditempatkan di rak depan dan didahulukan penjualannya.',
-                          style: TextStyle(fontSize: 11.5, color: Color(0xFF78350F), height: 1.3),
+                          style: TextStyle(fontSize: 11.5, color: Color(0xFF334155), height: 1.3),
                         ),
                       ],
                     ),
@@ -288,7 +266,7 @@ class _PharmacyStockAlertModalState extends State<PharmacyStockAlertModal> {
                     separatorBuilder: (_, idx) => const SizedBox(height: 10),
                     itemBuilder: (ctx, i) {
                       final it = filtered[i];
-                      return _buildStockCard(it, primaryColor);
+                      return PharmacyStockAlertModalCard(item: it, primaryColor: primaryColor);
                     },
                   ),
           ),
@@ -319,146 +297,6 @@ class _PharmacyStockAlertModalState extends State<PharmacyStockAlertModal> {
             color: active ? Colors.white : const Color(0xFF3D4A42),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildStockCard(PharmacyStockAlertItem item, Color primaryColor) {
-    final isCritical = item.stock <= 10;
-    final isNearExpiry = item.daysToExpiry <= 90;
-
-    return Container(
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isNearExpiry
-              ? const Color(0xFFFDE68A)
-              : (isCritical ? const Color(0xFFFFCDD2) : const Color(0xFFE2E8F0)),
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x060F172A),
-            blurRadius: 6,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  if (item.isHardDrug) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFDAD6),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        'Rx Keras',
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFFBA1A1A)),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                  ],
-                  Text(
-                    item.name,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                      color: Color(0xFF0F172A),
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: isCritical ? const Color(0xFFFFEBEE) : const Color(0xFFF2F3FF),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  'Stok: ${item.stock} ${item.unit}',
-                  style: TextStyle(
-                    fontFamily: 'JetBrains Mono',
-                    fontWeight: FontWeight.w800,
-                    fontSize: 11,
-                    color: isCritical ? Colors.redAccent : primaryColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            item.category,
-            style: const TextStyle(fontSize: 11.5, color: Color(0xFF6D7A72)),
-          ),
-          const SizedBox(height: 8),
-
-          // Batch & Expiry Strip
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEAEDFF),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      'Batch: ${item.batchNumber}',
-                      style: const TextStyle(
-                        fontFamily: 'JetBrains Mono',
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF0F172A),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: isNearExpiry ? const Color(0xFFFEF3C7) : const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(
-                        color: isNearExpiry ? const Color(0xFFFDE68A) : const Color(0xFFE2E8F0),
-                      ),
-                    ),
-                    child: Text(
-                      'ED: ${item.expiryDate}',
-                      style: TextStyle(
-                        fontFamily: 'JetBrains Mono',
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w700,
-                        color: isNearExpiry ? const Color(0xFFB45309) : const Color(0xFF6D7A72),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              Text(
-                CurrencyFormatter.format(item.price),
-                style: TextStyle(
-                  fontFamily: 'JetBrains Mono',
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
-                  color: primaryColor,
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }

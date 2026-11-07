@@ -25,10 +25,10 @@ class TableMobileBottomBar extends StatelessWidget {
 
   Color _statusColor(TableStatus s) {
     return switch (s) {
-      TableStatus.available => WarmPalette.tertiary,
-      TableStatus.ordered => WarmPalette.primary,
-      TableStatus.occupied => WarmPalette.secondary,
-      TableStatus.reserved => const Color(0xFF6A4C93),
+      TableStatus.available => const Color(0xFF059669),
+      TableStatus.ordered => const Color(0xFF2563EB),
+      TableStatus.occupied => const Color(0xFFD97706),
+      TableStatus.reserved => const Color(0xFF7C3AED),
     };
   }
 
@@ -43,6 +43,8 @@ class TableMobileBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final color = _statusColor(table.status);
     final label = _statusLabel(table.status);
 
@@ -51,9 +53,9 @@ class TableMobileBottomBar extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: p.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: WarmPalette.line),
+          border: Border.all(color: p.line),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.08),
@@ -95,10 +97,10 @@ class TableMobileBottomBar extends StatelessWidget {
                             Flexible(
                               child: Text(
                                 sanitizeDisplayName(table.name),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.w800,
                                   fontSize: 14,
-                                  color: WarmPalette.textPrimary,
+                                  color: p.textPrimary,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -133,8 +135,8 @@ class TableMobileBottomBar extends StatelessWidget {
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: table.status != TableStatus.available
-                                ? WarmPalette.primary
-                                : WarmPalette.tertiary,
+                                ? primaryColor
+                                : const Color(0xFF059669),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -147,7 +149,7 @@ class TableMobileBottomBar extends StatelessWidget {
                     FilledButton(
                       onPressed: onPayment,
                       style: FilledButton.styleFrom(
-                        backgroundColor: WarmPalette.primary,
+                        backgroundColor: const Color(0xFF059669),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         visualDensity: VisualDensity.compact,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -159,7 +161,7 @@ class TableMobileBottomBar extends StatelessWidget {
                     FilledButton(
                       onPressed: onOpenPos,
                       style: FilledButton.styleFrom(
-                        backgroundColor: WarmPalette.tertiary,
+                        backgroundColor: primaryColor,
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         visualDensity: VisualDensity.compact,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -171,9 +173,9 @@ class TableMobileBottomBar extends StatelessWidget {
                   InkWell(
                     onTap: onClose,
                     borderRadius: BorderRadius.circular(12),
-                    child: const Padding(
-                      padding: EdgeInsets.all(4),
-                      child: Icon(Icons.close_rounded, size: 18, color: WarmPalette.textSecondary),
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(Icons.close_rounded, size: 18, color: p.textSecondary),
                     ),
                   ),
                 ],

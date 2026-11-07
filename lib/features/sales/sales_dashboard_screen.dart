@@ -6,7 +6,15 @@ import 'sales_service.dart';
 import 'widgets/sales_action_card.dart';
 import 'widgets/sales_visit_card.dart';
 import 'widgets/sales_attendance_card.dart';
+import 'widgets/sales_record_visit_dialog.dart';
+import 'widgets/sales_create_order_dialog.dart';
 import '../shared_pos/offline_sync_badge.dart';
+
+export 'widgets/sales_action_card.dart';
+export 'widgets/sales_visit_card.dart';
+export 'widgets/sales_attendance_card.dart';
+export 'widgets/sales_record_visit_dialog.dart';
+export 'widgets/sales_create_order_dialog.dart';
 
 class SalesDashboardScreen extends StatefulWidget {
   final VoidCallback onLogout;
@@ -123,7 +131,7 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
   void _showRecordVisitDialog([SalesVisit? visit]) {
     showDialog(
       context: context,
-      builder: (ctx) => _RecordVisitDialog(
+      builder: (ctx) => SalesRecordVisitDialog(
         visit: visit,
         onSave: (name, notes) async {
           setState(() => _isLoading = true);
@@ -165,7 +173,7 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
   void _showCreateOrderDialog() {
     showDialog(
       context: context,
-      builder: (ctx) => _CreateOrderDialog(
+      builder: (ctx) => SalesCreateOrderDialog(
         onSave: (cust, prod, qty) async {
           setState(() => _isLoading = true);
           try {
@@ -525,204 +533,4 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
   }
 }
 
-class _RecordVisitDialog extends StatefulWidget {
-  const _RecordVisitDialog({this.visit, required this.onSave});
-  final SalesVisit? visit;
-  final void Function(String name, String notes) onSave;
 
-  @override
-  State<_RecordVisitDialog> createState() => _RecordVisitDialogState();
-}
-
-class _RecordVisitDialogState extends State<_RecordVisitDialog> {
-  late final TextEditingController _nameController;
-  late final TextEditingController _notesController;
-
-  @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController(text: widget.visit?.customerName ?? '');
-    _notesController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: const Color(0xFF131722),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-        side: const BorderSide(color: Color(0xFF23293B)),
-      ),
-      title: const Text(
-        'Catat Kunjungan Apotek',
-        style: TextStyle(color: Colors.white, fontSize: 16),
-      ),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: _nameController,
-                style: const TextStyle(color: Colors.white, fontSize: 14),
-                decoration: const InputDecoration(
-                  labelText: 'Nama Apotek / Klinik',
-                  hintText: 'Contoh: Apotek Kimia Farma Kemang',
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _notesController,
-                maxLines: 3,
-                style: const TextStyle(color: Colors.white, fontSize: 13),
-                decoration: const InputDecoration(
-                  labelText: 'Catatan Kunjungan',
-                  hintText: 'Hasil diskusi, ketersediaan stok, pesanan...',
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          style: TextButton.styleFrom(foregroundColor: Colors.white54),
-          child: const Text('Batal'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            final name = _nameController.text.trim();
-            if (name.isNotEmpty) {
-              Navigator.pop(context);
-              widget.onSave(name, _notesController.text.trim());
-            }
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF3F51B5),
-            foregroundColor: Colors.white,
-          ),
-          child: const Text('Simpan'),
-        ),
-      ],
-    );
-  }
-}
-
-class _CreateOrderDialog extends StatefulWidget {
-  const _CreateOrderDialog({required this.onSave});
-  final void Function(String customer, String item, int qty) onSave;
-
-  @override
-  State<_CreateOrderDialog> createState() => _CreateOrderDialogState();
-}
-
-class _CreateOrderDialogState extends State<_CreateOrderDialog> {
-  late final TextEditingController _customerController;
-  late final TextEditingController _itemController;
-  late final TextEditingController _qtyController;
-
-  @override
-  void initState() {
-    super.initState();
-    _customerController = TextEditingController();
-    _itemController = TextEditingController();
-    _qtyController = TextEditingController(text: '10');
-  }
-
-  @override
-  void dispose() {
-    _customerController.dispose();
-    _itemController.dispose();
-    _qtyController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: const Color(0xFF131722),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-        side: const BorderSide(color: Color(0xFF23293B)),
-      ),
-      title: const Row(
-        children: [
-          Icon(Icons.add_shopping_cart_rounded, color: Color(0xFF3F51B5)),
-          SizedBox(width: 8),
-          Text(
-            'Taking Order (TO) PBF',
-            style: TextStyle(color: Colors.white, fontSize: 16),
-          ),
-        ],
-      ),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: _customerController,
-                style: const TextStyle(color: Colors.white, fontSize: 14),
-                decoration: const InputDecoration(
-                  labelText: 'Nama Apotek Pemesan',
-                  hintText: 'Contoh: Apotek Sehat Sentosa',
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _itemController,
-                style: const TextStyle(color: Colors.white, fontSize: 14),
-                decoration: const InputDecoration(
-                  labelText: 'Nama Produk Obat / SKU',
-                  hintText: 'Contoh: Paracetamol 500mg Box',
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _qtyController,
-                keyboardType: TextInputType.number,
-                style: const TextStyle(color: Colors.white, fontSize: 14),
-                decoration: const InputDecoration(
-                  labelText: 'Kuantitas (Box/Strip)',
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          style: TextButton.styleFrom(foregroundColor: Colors.white54),
-          child: const Text('Batal'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            final cust = _customerController.text.trim();
-            final prod = _itemController.text.trim();
-            final qty = int.tryParse(_qtyController.text.trim()) ?? 1;
-            if (cust.isNotEmpty && prod.isNotEmpty) {
-              Navigator.pop(context);
-              widget.onSave(cust, prod, qty);
-            }
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF3F51B5),
-            foregroundColor: Colors.white,
-          ),
-          child: const Text('Kirim Pesanan TO'),
-        ),
-      ],
-    );
-  }
-}

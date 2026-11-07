@@ -6,75 +6,77 @@ import '../../receipt_printer_service.dart';
 import '../../shift_service.dart';
 import 'shift_dialog_helpers.dart';
 
-/// Complete shift closure modal summary (Z-Report):
-/// Opening cash, cash in/out, cash sales, non-cash sales, expected vs actual cash, and difference.
+/// Modal dialog showing the finalized Z-Report summary when a shift is closed.
 Future<void> showShiftReportModal(
   BuildContext context,
   ShiftCloseSummary summary, {
   required VoidCallback onDone,
 }) async {
-  String dateFmt(DateTime dt) =>
-      '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  String dateFmt(DateTime d) {
+    return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')} ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+  }
 
   final isMobile = context.isMobile;
+  final p = context.palette;
+  final primaryColor = Theme.of(context).colorScheme.primary;
 
   await showDialog<void>(
     context: context,
     barrierDismissible: false,
     builder: (ctx) {
       return Dialog(
-        backgroundColor: WarmPalette.canvas,
+        backgroundColor: p.canvas,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: WarmPalette.line, width: 1.5),
+          side: BorderSide(color: p.line, width: 1.5),
         ),
         insetPadding: EdgeInsets.symmetric(
-          horizontal: isMobile ? 16 : 36,
-          vertical: 24,
+          horizontal: isMobile ? 14 : 36,
+          vertical: 20,
         ),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520, maxHeight: 720),
+          constraints: const BoxConstraints(maxWidth: 520, maxHeight: 800),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               // Header
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                  border: Border(bottom: BorderSide(color: WarmPalette.line)),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  border: Border(bottom: BorderSide(color: p.line)),
                 ),
                 child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: WarmPalette.tertiary.withValues(alpha: 0.15),
+                        color: p.tertiary.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.assessment_rounded, color: WarmPalette.tertiary, size: 24),
+                      child: Icon(Icons.assessment_rounded, color: p.tertiary, size: 24),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Laporan Tutup Shift (Z-Report)',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
-                              color: WarmPalette.textPrimary,
+                              color: p.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             'Kasir: ${summary.cashierName} • Shift #${summary.shiftId}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: WarmPalette.textSecondary,
+                              color: p.textSecondary,
                             ),
                           ),
                         ],
@@ -95,21 +97,21 @@ Future<void> showShiftReportModal(
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
-                          color: WarmPalette.surfaceMuted,
+                          color: p.surfaceMuted,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: WarmPalette.line),
+                          border: Border.all(color: p.line),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.schedule_rounded, size: 16, color: WarmPalette.textSecondary),
+                            Icon(Icons.schedule_rounded, size: 16, color: p.textSecondary),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 'Buka: ${dateFmt(summary.openedAt)}  •  Tutup: ${dateFmt(summary.closedAt)}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: WarmPalette.textSecondary,
+                                  color: p.textSecondary,
                                 ),
                               ),
                             ),
@@ -124,39 +126,41 @@ Future<void> showShiftReportModal(
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: WarmPalette.line),
+                          border: Border.all(color: p.line),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Row(
+                            Row(
                               children: [
-                                Icon(Icons.point_of_sale_rounded, size: 18, color: WarmPalette.primary),
-                                SizedBox(width: 8),
+                                Icon(Icons.point_of_sale_rounded, size: 18, color: primaryColor),
+                                const SizedBox(width: 8),
                                 Text(
                                   'Rekonsiliasi Kas Laci (Cash Drawer)',
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w800,
-                                    color: WarmPalette.textPrimary,
+                                    color: p.textPrimary,
                                   ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 14),
-                            buildSummaryRow('Modal Kas Awal', CurrencyFormatter.format(summary.startingCash)),
+                            buildSummaryRow('Modal Kas Awal', CurrencyFormatter.format(summary.startingCash), context: context),
                             const SizedBox(height: 8),
                             buildSummaryRow(
                               'Penjualan Tunai (+)',
                               CurrencyFormatter.format(summary.cashSales),
-                              textColor: WarmPalette.tertiary,
+                              textColor: p.tertiary,
+                              context: context,
                             ),
                             if (summary.cashIn > 0) ...[
                               const SizedBox(height: 8),
                               buildSummaryRow(
                                 'Kas Masuk (+)',
                                 CurrencyFormatter.format(summary.cashIn),
-                                textColor: WarmPalette.tertiary,
+                                textColor: p.tertiary,
+                                context: context,
                               ),
                             ],
                             if (summary.cashOut > 0) ...[
@@ -164,25 +168,28 @@ Future<void> showShiftReportModal(
                               buildSummaryRow(
                                 'Kas Keluar (-)',
                                 CurrencyFormatter.format(summary.cashOut),
-                                textColor: WarmPalette.danger,
+                                textColor: p.danger,
+                                context: context,
                               ),
                             ],
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 10),
-                              child: Divider(height: 1, color: WarmPalette.line),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              child: Divider(height: 1, color: p.line),
                             ),
                             buildSummaryRow(
                               'Kas Diharapkan di Laci',
                               CurrencyFormatter.format(summary.expectedCash),
                               isBold: true,
+                              context: context,
                             ),
                             const SizedBox(height: 8),
                             buildSummaryRow(
                               'Kas Fisik Aktual Dihitung',
                               CurrencyFormatter.format(summary.actualCash),
                               isBold: true,
-                              textColor: WarmPalette.primary,
+                              textColor: primaryColor,
                               valueFontSize: 15,
+                              context: context,
                             ),
                             const SizedBox(height: 12),
 
@@ -192,17 +199,17 @@ Future<void> showShiftReportModal(
                               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                               decoration: BoxDecoration(
                                 color: summary.difference == 0
-                                    ? WarmPalette.tertiary.withValues(alpha: 0.12)
+                                    ? p.tertiary.withValues(alpha: 0.12)
                                     : (summary.difference > 0
                                         ? Colors.blue.withValues(alpha: 0.12)
-                                        : WarmPalette.danger.withValues(alpha: 0.12)),
+                                        : p.danger.withValues(alpha: 0.12)),
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
                                   color: summary.difference == 0
-                                      ? WarmPalette.tertiary.withValues(alpha: 0.4)
+                                      ? p.tertiary.withValues(alpha: 0.4)
                                       : (summary.difference > 0
                                           ? Colors.blue.withValues(alpha: 0.4)
-                                          : WarmPalette.danger.withValues(alpha: 0.4)),
+                                          : p.danger.withValues(alpha: 0.4)),
                                 ),
                               ),
                               child: Row(
@@ -215,8 +222,8 @@ Future<void> showShiftReportModal(
                                             : Icons.arrow_downward_rounded),
                                     size: 18,
                                     color: summary.difference == 0
-                                        ? WarmPalette.tertiary
-                                        : (summary.difference > 0 ? Colors.blue.shade700 : WarmPalette.danger),
+                                        ? p.tertiary
+                                        : (summary.difference > 0 ? Colors.blue.shade700 : p.danger),
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
@@ -230,8 +237,8 @@ Future<void> showShiftReportModal(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w800,
                                         color: summary.difference == 0
-                                            ? WarmPalette.tertiary
-                                            : (summary.difference > 0 ? Colors.blue.shade800 : WarmPalette.danger),
+                                            ? p.tertiary
+                                            : (summary.difference > 0 ? Colors.blue.shade800 : p.danger),
                                       ),
                                     ),
                                   ),
@@ -249,7 +256,7 @@ Future<void> showShiftReportModal(
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: WarmPalette.line),
+                          border: Border.all(color: p.line),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -257,16 +264,16 @@ Future<void> showShiftReportModal(
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Row(
+                                Row(
                                   children: [
-                                    Icon(Icons.payments_outlined, size: 18, color: WarmPalette.secondary),
-                                    SizedBox(width: 8),
+                                    Icon(Icons.payments_outlined, size: 18, color: p.secondary),
+                                    const SizedBox(width: 8),
                                     Text(
                                       'Rincian Penjualan',
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w800,
-                                        color: WarmPalette.textPrimary,
+                                        color: p.textPrimary,
                                       ),
                                     ),
                                   ],
@@ -274,15 +281,15 @@ Future<void> showShiftReportModal(
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                   decoration: BoxDecoration(
-                                    color: WarmPalette.primary.withValues(alpha: 0.1),
+                                    color: primaryColor.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
                                     '${summary.totalTransactions} Transaksi',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
-                                      color: WarmPalette.primary,
+                                      color: primaryColor,
                                     ),
                                   ),
                                 ),
@@ -293,23 +300,24 @@ Future<void> showShiftReportModal(
                               'Total Penjualan Bersih',
                               CurrencyFormatter.format(summary.totalSales),
                               isBold: true,
-                              textColor: WarmPalette.tertiary,
+                              textColor: p.tertiary,
                               valueFontSize: 16,
+                              context: context,
                             ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 10),
-                              child: Divider(height: 1, color: WarmPalette.line),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              child: Divider(height: 1, color: p.line),
                             ),
-                            buildSummaryRow('• Pembayaran Tunai (Cash)', CurrencyFormatter.format(summary.cashSales)),
+                            buildSummaryRow('• Pembayaran Tunai (Cash)', CurrencyFormatter.format(summary.cashSales), context: context),
                             const SizedBox(height: 7),
-                            buildSummaryRow('• QRIS', CurrencyFormatter.format(summary.qrisSales)),
+                            buildSummaryRow('• QRIS', CurrencyFormatter.format(summary.qrisSales), context: context),
                             const SizedBox(height: 7),
-                            buildSummaryRow('• Transfer Bank', CurrencyFormatter.format(summary.transferSales)),
+                            buildSummaryRow('• Transfer Bank', CurrencyFormatter.format(summary.transferSales), context: context),
                             const SizedBox(height: 7),
-                            buildSummaryRow('• EDC / Kartu Debit/Kredit', CurrencyFormatter.format(summary.cardSales)),
+                            buildSummaryRow('• EDC / Kartu Debit/Kredit', CurrencyFormatter.format(summary.cardSales), context: context),
                             if (summary.otherSales > 0) ...[
                               const SizedBox(height: 7),
-                              buildSummaryRow('• Pembayaran Lainnya', CurrencyFormatter.format(summary.otherSales)),
+                              buildSummaryRow('• Pembayaran Lainnya', CurrencyFormatter.format(summary.otherSales), context: context),
                             ],
                           ],
                         ),
@@ -322,27 +330,27 @@ Future<void> showShiftReportModal(
                           width: double.infinity,
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: WarmPalette.surfaceMuted,
+                            color: p.surfaceMuted,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: WarmPalette.line),
+                            border: Border.all(color: p.line),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'Catatan Serah Terima Kasir:',
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
-                                  color: WarmPalette.textSecondary,
+                                  color: p.textSecondary,
                                 ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 summary.notes!.trim(),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
-                                  color: WarmPalette.textPrimary,
+                                  color: p.textPrimary,
                                 ),
                               ),
                             ],
@@ -357,10 +365,10 @@ Future<void> showShiftReportModal(
               // Bottom Actions
               Container(
                 padding: const EdgeInsets.all(20),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
-                  border: Border(top: BorderSide(color: WarmPalette.line)),
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+                  border: Border(top: BorderSide(color: p.line)),
                 ),
                 child: Column(
                   children: [
@@ -379,8 +387,8 @@ Future<void> showShiftReportModal(
                             icon: const Icon(Icons.print_outlined, size: 16),
                             label: const Text('Cetak Z-Report', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: WarmPalette.primary,
-                              side: const BorderSide(color: WarmPalette.line),
+                              foregroundColor: primaryColor,
+                              side: BorderSide(color: p.line),
                               shape: const StadiumBorder(),
                               padding: const EdgeInsets.symmetric(vertical: 12),
                             ),
@@ -395,8 +403,8 @@ Future<void> showShiftReportModal(
                             icon: const Icon(Icons.share_outlined, size: 16),
                             label: const Text('Bagikan Struk', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: WarmPalette.textSecondary,
-                              side: const BorderSide(color: WarmPalette.line),
+                              foregroundColor: p.textSecondary,
+                              side: BorderSide(color: p.line),
                               shape: const StadiumBorder(),
                               padding: const EdgeInsets.symmetric(vertical: 12),
                             ),
@@ -411,7 +419,7 @@ Future<void> showShiftReportModal(
                         onDone();
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: WarmPalette.primary,
+                        backgroundColor: primaryColor,
                         foregroundColor: Colors.white,
                         minimumSize: const Size.fromHeight(48),
                         shape: const StadiumBorder(),

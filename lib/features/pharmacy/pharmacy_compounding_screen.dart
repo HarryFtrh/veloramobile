@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
-import '../../core/storage/session_storage.dart';
 import '../../core/utils/audio_helper.dart';
 import '../shared_pos/receipt_printer_service.dart';
 import 'services/pharmacy_catalog_service.dart';
 import 'pharmacy_service.dart';
+import 'widgets/compounding/pharmacy_compounding_patient_card.dart';
+import 'widgets/compounding/pharmacy_compounding_ingredients_table.dart';
+import 'widgets/compounding/pharmacy_compounding_etiket_card.dart';
+
+export 'widgets/compounding/pharmacy_compounding_patient_card.dart';
+export 'widgets/compounding/pharmacy_compounding_ingredients_table.dart';
+export 'widgets/compounding/pharmacy_compounding_etiket_card.dart';
 
 /// Workstation Meja Racik & Etiket Farmasi (Google Stitch "Clinical Precision")
 class PharmacyCompoundingScreen extends StatefulWidget {
@@ -39,7 +45,6 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
   Future<void> _loadLiveIngredientsAndQueue() async {
     setState(() => _isLoading = true);
     try {
-      // Ambil antrean pasien live dari API (/v1/pharmacy/queue)
       final queue = await PharmacyService.instance.fetchPatientQueue();
       if (queue.isNotEmpty) {
         _patientOptions.clear();
@@ -52,7 +57,6 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
       }
 
       final List<Map<String, dynamic>> ingList = [];
-      // Jika pasien memiliki resep nyata dari antrean, muat resep tersebut
       final match = queue.where((q) => '${q.patientName} (${q.queueNumber})' == _selectedPatient).firstOrNull ?? (queue.isNotEmpty ? queue.first : null);
       if (match != null && match.prescribedDrugs.isNotEmpty) {
         for (final d in match.prescribedDrugs) {
@@ -238,11 +242,43 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
     }
   }
 
-  void _finishCompounding() {
+  Future<void> _finishCompounding() async {
     AudioHelper.tapFeedback();
+    setState(() => _isLoading = true);
+    await PharmacyService.instance.completeCompounding(
+      patient: _selectedPatient,
+      recipeName: _recipeName,
+      packageCount: _packageCount,
+      dosageForm: _dosageForm,
+      signa: _signa,
+      labelType: _labelType,
+      ingredients: _ingredients,
+    );
+
+    // Teruskan racikan obat ke konteks kasir pasien aktif
+    final active = PharmacyService.instance.activePatient.value;
+    if (active != null) {
+      final updatedDrugs = [
+        ...active.prescribedDrugs,
+        '$_recipeName ($_packageCount Sediaan - $_signa)',
+      ];
+      PharmacyService.instance.setActivePatient(
+        PharmacyPatientData(
+          patient: active.patient,
+          doctor: active.doctor,
+          queueNumber: active.queueNumber,
+          medicalRecordNumber: active.medicalRecordNumber,
+          patientCategory: active.patientCategory,
+          allergies: active.allergies,
+          prescribedDrugs: updatedDrugs,
+        ),
+      );
+    }
+    if (!mounted) return;
+    setState(() => _isLoading = false);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('✓ Racikan "$_recipeName" selesai dan diserahkan ke Meja Penyerahan Resep Loket Farmasi.'),
+        content: Text('✓ Racikan "$_recipeName" untuk $_selectedPatient selesai dan diserahkan ke Meja Penyerahan Resep Loket Farmasi.'),
         backgroundColor: const Color(0xFF059669),
         duration: const Duration(seconds: 3),
       ),
@@ -322,306 +358,29 @@ class _PharmacyCompoundingScreenState extends State<PharmacyCompoundingScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Patient & Recipe Banner
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: borderColor),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text('Pasien Tujuan:', style: TextStyle(fontSize: 11, color: textMuted)),
-                                  Text(
-                                    _selectedPatient,
-                                    style: const TextStyle(
-                                      fontFamily: 'Plus Jakarta Sans',
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                      color: textPrimary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFE2E7FF),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  _dosageForm,
-                                  style: const TextStyle(
-                                    fontFamily: 'JetBrains Mono',
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: emeraldPrimary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Divider(height: 18, color: Color(0xFFF1F5F9)),
-
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text('Jumlah Sediaan Racik:', style: TextStyle(fontSize: 11, color: textMuted)),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '$_packageCount Bungkus (da in pulv no. XV)',
-                                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: textPrimary),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFEF3C7),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  _isDtd ? 'Metode: d.t.d (Dosis Tunggal)' : 'Metode: Non-dtd (Bagi Rata)',
-                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFB45309)),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Signa: $_signa',
-                            style: const TextStyle(
-                              fontFamily: 'JetBrains Mono',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF0D9488),
-                            ),
-                          ),
-                        ],
-                      ),
+                    CompoundingPatientRecipeCard(
+                      selectedPatient: _selectedPatient,
+                      dosageForm: _dosageForm,
+                      packageCount: _packageCount,
+                      isDtd: _isDtd,
+                      signa: _signa,
                     ),
                     const SizedBox(height: 16),
 
                     // Active Ingredients Table
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: borderColor),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'Komposisi Bahan & Kalkulasi Penimbangan',
-                                style: TextStyle(
-                                  fontFamily: 'Plus Jakarta Sans',
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                  color: textPrimary,
-                                ),
-                              ),
-                              InkWell(
-                                onTap: _addIngredientFromCatalog,
-                                borderRadius: BorderRadius.circular(6),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: emeraldPrimary.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: const Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.add_circle_outline_rounded, size: 14, color: emeraldPrimary),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        '+ Tambah Bahan',
-                                        style: TextStyle(fontSize: 11, color: emeraldPrimary, fontWeight: FontWeight.bold),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-
-                          if (_ingredients.isNotEmpty)
-                            ..._ingredients.map((ing) {
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF8FAFC),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: const Color(0xFFE2E8F0)),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.medication_rounded, size: 18, color: emeraldPrimary),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          ing['name'],
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary),
-                                        ),
-                                        Text(
-                                          'Dosis / bungkus: ${ing['dosePerPack']}',
-                                          style: const TextStyle(fontSize: 11, color: textMuted),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        ing['totalNeeded'],
-                                        style: const TextStyle(
-                                          fontFamily: 'JetBrains Mono',
-                                          fontWeight: FontWeight.w800,
-                                          fontSize: 12.5,
-                                          color: textPrimary,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Ambil dari stok ${ing['stockUnit']}',
-                                        style: const TextStyle(fontSize: 10, color: textMuted),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(width: 8),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete_outline, size: 18, color: Color(0xFFBA1A1A)),
-                                    tooltip: 'Hapus Bahan',
-                                    onPressed: () => setState(() => _ingredients.remove(ing)),
-                                  ),
-                                ],
-                              ),
-                            );
-                          })
-                        else
-                          Container(
-                            padding: const EdgeInsets.all(24),
-                            alignment: Alignment.center,
-                            child: Column(
-                              children: [
-                                Icon(Icons.medication_liquid_outlined, size: 36, color: Colors.grey.shade400),
-                                const SizedBox(height: 8),
-                                const Text(
-                                  'Belum ada bahan obat racikan.',
-                                  style: TextStyle(color: textMuted, fontSize: 12),
-                                ),
-                                const SizedBox(height: 10),
-                                ElevatedButton.icon(
-                                  onPressed: _addIngredientFromCatalog,
-                                  icon: const Icon(Icons.add, size: 16),
-                                  label: const Text('Pilih Bahan dari Formularium', style: TextStyle(fontSize: 12)),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: emeraldPrimary,
-                                    foregroundColor: Colors.white,
-                                    elevation: 0,
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                    CompoundingIngredientsTable(
+                      ingredients: _ingredients,
+                      onAddIngredient: _addIngredientFromCatalog,
+                      onRemoveIngredient: (ing) => setState(() => _ingredients.remove(ing)),
                     ),
                     const SizedBox(height: 16),
 
                     // Etiket Preview Card
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: _labelType == 'putih' ? Colors.white : const Color(0xFFEFF6FF),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: _labelType == 'putih' ? const Color(0xFF059669) : const Color(0xFF2563EB),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'ETIKET ${_labelType == 'putih' ? 'PUTIH (OBAT DALAM / ORAL)' : 'BIRU (OBAT LUAR)'}',
-                                style: TextStyle(
-                                  fontFamily: 'JetBrains Mono',
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 12,
-                                  color: _labelType == 'putih' ? const Color(0xFF059669) : const Color(0xFF2563EB),
-                                ),
-                              ),
-                              Row(
-                                children: [
-                                  ChoiceChip(
-                                    label: const Text('Putih (Oral)', style: TextStyle(fontSize: 11)),
-                                    selected: _labelType == 'putih',
-                                    onSelected: (val) => setState(() => _labelType = 'putih'),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  ChoiceChip(
-                                    label: const Text('Biru (Luar)', style: TextStyle(fontSize: 11)),
-                                    selected: _labelType == 'biru',
-                                    onSelected: (val) => setState(() => _labelType = 'biru'),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          const Divider(height: 14),
-                          Text(
-                            (SessionStorage.instance.getTenantName() ?? SessionStorage.instance.getLocationName() ?? 'APOTEK VELORA').toUpperCase(),
-                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                          ),
-                          const Text('SIP & Surat Izin Apotek Aktif Berizin Resmi', style: TextStyle(fontSize: 9.5, color: textMuted)),
-                          const SizedBox(height: 8),
-                          Text(
-                            'No. Resep: R/${DateTime.now().year}${DateTime.now().month.toString().padLeft(2, "0")}-${DateTime.now().second.toString().padLeft(3, "0")}  •  Tgl: ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
-                            style: const TextStyle(fontSize: 10.5, fontFamily: 'JetBrains Mono'),
-                          ),
-                          Text('Pasien: $_selectedPatient', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              _signa,
-                              style: const TextStyle(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0F172A)),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          const Text('Kocok Dahulu / Simpan di Tempat Sejuk & Kering Terlindung dari Cahaya', style: TextStyle(fontSize: 9.5, fontStyle: FontStyle.italic)),
-                        ],
-                      ),
+                    CompoundingEtiketPreviewCard(
+                      labelType: _labelType,
+                      selectedPatient: _selectedPatient,
+                      signa: _signa,
+                      onSelectLabelType: (type) => setState(() => _labelType = type),
                     ),
                     const SizedBox(height: 20),
 

@@ -1,0 +1,4 @@
+#include "Generated.xcconfig"
+FLUTTER_TARGET=lib/main_sales.dart
+APP_DISPLAY_NAME=Velora Sales
+PRODUCT_BUNDLE_IDENTIFIER=com.velora.sales

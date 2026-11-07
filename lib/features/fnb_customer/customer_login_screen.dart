@@ -108,6 +108,9 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
   }
 
   void _showHelpDialog() {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -117,10 +120,10 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: WarmPalette.primary.withValues(alpha: 0.12),
+                color: primaryColor.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.help_outline_rounded, color: WarmPalette.primary, size: 22),
+              child: Icon(Icons.help_outline_rounded, color: primaryColor, size: 22),
             ),
             const SizedBox(width: 12),
             const Expanded(
@@ -135,34 +138,34 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Cara Pemesanan Self-Order:',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: WarmPalette.textPrimary),
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: p.textPrimary),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               '1. Masuk menggunakan akun member atau pesan langsung sebagai tamu di meja.\n'
               '2. Pilih menu favorit dan sesuaikan topping / kemanisan.\n'
               '3. Bayar secara instan via QRIS atau bayar langsung di kasir.\n'
               '4. Lacak status pembuatan kopi Anda secara real-time.',
-              style: TextStyle(fontSize: 12, height: 1.5, color: WarmPalette.textSecondary),
+              style: TextStyle(fontSize: 12, height: 1.5, color: p.textSecondary),
             ),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: WarmPalette.canvas,
+                color: p.canvas,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: WarmPalette.line),
+                border: Border.all(color: p.line),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.support_agent_rounded, color: WarmPalette.secondary, size: 22),
-                  SizedBox(width: 10),
+                  Icon(Icons.support_agent_rounded, color: p.secondary, size: 22),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       'Butuh bantuan staf? Panggil barista di meja pemesanan.',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: WarmPalette.textPrimary),
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: p.textPrimary),
                     ),
                   ),
                 ],
@@ -174,7 +177,7 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(),
             style: FilledButton.styleFrom(
-              backgroundColor: WarmPalette.primary,
+              backgroundColor: primaryColor,
               shape: const StadiumBorder(),
             ),
             child: const Text('Mengerti', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -185,19 +188,22 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
   }
 
   void _showForgotPasswordDialog() {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Lupa Kata Sandi?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-        content: const Text(
+        content: Text(
           'Untuk alasan keamanan, silakan hubungi kasir atau barista di meja untuk mereset kata sandi akun Velora Member Anda, atau Anda dapat melanjutkan pesan sebagai tamu.',
-          style: TextStyle(fontSize: 13, height: 1.4, color: WarmPalette.textSecondary),
+          style: TextStyle(fontSize: 13, height: 1.4, color: p.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Tutup', style: TextStyle(color: WarmPalette.textSecondary)),
+            child: Text('Tutup', style: TextStyle(color: p.textSecondary)),
           ),
           FilledButton(
             onPressed: () {
@@ -205,7 +211,7 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
               _continueAsGuest();
             },
             style: FilledButton.styleFrom(
-              backgroundColor: WarmPalette.primary,
+              backgroundColor: primaryColor,
               shape: const StadiumBorder(),
             ),
             child: const Text('Lanjut Pesan Tamu', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -216,6 +222,8 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
   }
 
   void _showRegisterDialog() {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final nameCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
     final emailCtrl = TextEditingController();
@@ -231,9 +239,9 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
+                Text(
                   'Daftarkan diri Anda untuk mengumpulkan poin loyalitas dan promo eksklusif Velora.',
-                  style: TextStyle(fontSize: 12, color: WarmPalette.textSecondary),
+                  style: TextStyle(fontSize: 12, color: p.textSecondary),
                 ),
                 const SizedBox(height: 16),
                 TextField(
@@ -293,7 +301,7 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                           ScaffoldMessenger.of(dialogCtx).showSnackBar(
                             SnackBar(
                               content: Text('Selamat bergabung, $name! Silakan masuk dengan akun Anda.'),
-                              backgroundColor: WarmPalette.success,
+                              backgroundColor: p.tertiary,
                             ),
                           );
                           _emailCtrl.text = emailCtrl.text.trim().isNotEmpty ? emailCtrl.text.trim() : phone;
@@ -304,14 +312,14 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                           ScaffoldMessenger.of(dialogCtx).showSnackBar(
                             SnackBar(
                               content: Text('Gagal mendaftar: ${e.toString().replaceAll("Exception: ", "")}'),
-                              backgroundColor: WarmPalette.error,
+                              backgroundColor: p.danger,
                             ),
                           );
                         }
                       }
                     },
               style: FilledButton.styleFrom(
-                backgroundColor: WarmPalette.primary,
+                backgroundColor: primaryColor,
                 shape: const StadiumBorder(),
               ),
               child: isSubmitting
@@ -327,22 +335,24 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF24150D),
+      backgroundColor: p.textPrimary,
       body: Stack(
         children: [
-          // Background coffee atmosphere
+          // Dynamic atmosphere
           Positioned.fill(
             child: Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Color(0xFF381F12),
-                    Color(0xFF24150D),
-                    Color(0xFF160D07),
+                    primaryColor.withValues(alpha: 0.9),
+                    Color.alphaBlend(primaryColor.withValues(alpha: 0.7), Colors.black),
+                    Colors.black,
                   ],
                 ),
               ),
@@ -377,9 +387,9 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                             Container(
                               width: 8,
                               height: 8,
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: WarmPalette.secondary,
+                                color: p.secondary,
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -406,11 +416,11 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                   Container(
                     width: 72,
                     height: 72,
-                    decoration: const BoxDecoration(
-                      color: WarmPalette.canvas,
+                    decoration: BoxDecoration(
+                      color: p.canvas,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.coffee_rounded, size: 36, color: WarmPalette.primary),
+                    child: Icon(Icons.coffee_rounded, size: 36, color: primaryColor),
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -438,7 +448,7 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: WarmPalette.canvas,
+                      color: p.canvas,
                       borderRadius: BorderRadius.circular(28),
                       boxShadow: [
                         BoxShadow(
@@ -454,13 +464,13 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: WarmPalette.surfaceMuted,
+                            color: p.surfaceMuted,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Text(
+                          child: Text(
                             'PENGALAMAN RASA',
                             style: TextStyle(
-                              color: WarmPalette.primary,
+                              color: primaryColor,
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.5,
@@ -472,31 +482,31 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                           'Selamat Datang Kembali',
                           style: text.headlineSmall?.copyWith(
                             fontWeight: FontWeight.w800,
-                            color: WarmPalette.textPrimary,
+                            color: p.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Masuk untuk menikmati aroma kopi favoritmu',
                           style: text.bodyMedium?.copyWith(
-                            color: WarmPalette.textSecondary,
+                            color: p.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 20),
 
                         // Email
-                        const Text(
+                        Text(
                           'Email atau Nomor Telepon',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: WarmPalette.textPrimary),
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: p.textPrimary),
                         ),
                         const SizedBox(height: 6),
                         TextField(
                           controller: _emailCtrl,
                           decoration: InputDecoration(
                             hintText: 'nama@email.com',
-                            prefixIcon: const Icon(Icons.mail_outline_rounded, size: 20, color: WarmPalette.textSecondary),
+                            prefixIcon: Icon(Icons.mail_outline_rounded, size: 20, color: p.textSecondary),
                             filled: true,
-                            fillColor: WarmPalette.surfaceMuted,
+                            fillColor: p.surfaceMuted,
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
                           ),
                         ),
@@ -506,9 +516,9 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
+                            Text(
                               'Kata Sandi',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: WarmPalette.textPrimary),
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: p.textPrimary),
                             ),
                             TextButton(
                               onPressed: _showForgotPasswordDialog,
@@ -517,9 +527,9 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                                 minimumSize: Size.zero,
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
-                              child: const Text(
+                              child: Text(
                                 'Lupa kata sandi?',
-                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: WarmPalette.primary),
+                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: primaryColor),
                               ),
                             ),
                           ],
@@ -530,13 +540,13 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                           obscureText: _obscurePass,
                           decoration: InputDecoration(
                             hintText: 'Minimal 8 karakter',
-                            prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: WarmPalette.textSecondary),
+                            prefixIcon: Icon(Icons.lock_outline_rounded, size: 20, color: p.textSecondary),
                             suffixIcon: IconButton(
                               icon: Icon(_obscurePass ? Icons.visibility_outlined : Icons.visibility_off_outlined, size: 20),
                               onPressed: () => setState(() => _obscurePass = !_obscurePass),
                             ),
                             filled: true,
-                            fillColor: WarmPalette.surfaceMuted,
+                            fillColor: p.surfaceMuted,
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
                           ),
                         ),
@@ -548,12 +558,12 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                             Checkbox(
                               value: _rememberMe,
                               onChanged: (v) => setState(() => _rememberMe = v ?? false),
-                              activeColor: WarmPalette.primary,
+                              activeColor: primaryColor,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                             ),
-                            const Text(
+                            Text(
                               'Ingat saya di perangkat ini',
-                              style: TextStyle(fontSize: 13, color: WarmPalette.textSecondary),
+                              style: TextStyle(fontSize: 13, color: p.textSecondary),
                             ),
                           ],
                         ),
@@ -562,16 +572,16 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                             decoration: BoxDecoration(
-                              color: WarmPalette.danger.withValues(alpha: 0.12),
+                              color: p.danger.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: WarmPalette.danger.withValues(alpha: 0.3)),
+                              border: Border.all(color: p.danger.withValues(alpha: 0.3)),
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.error_outline_rounded, size: 18, color: WarmPalette.danger),
+                                Icon(Icons.error_outline_rounded, size: 18, color: p.danger),
                                 const SizedBox(width: 8),
                                 Expanded(
-                                  child: Text(_errorMessage!, style: const TextStyle(color: WarmPalette.danger, fontSize: 12, fontWeight: FontWeight.w600)),
+                                  child: Text(_errorMessage!, style: TextStyle(color: p.danger, fontSize: 12, fontWeight: FontWeight.w600)),
                                 ),
                               ],
                             ),
@@ -586,7 +596,7 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                           child: ElevatedButton(
                             onPressed: _isLoading ? null : _submit,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: WarmPalette.primary,
+                              backgroundColor: primaryColor,
                               foregroundColor: Colors.white,
                               shape: const StadiumBorder(),
                               elevation: 2,
@@ -612,15 +622,15 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                         // Divider
                         Row(
                           children: [
-                            const Expanded(child: Divider(color: WarmPalette.line)),
+                            Expanded(child: Divider(color: p.line)),
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 12),
                               child: Text(
                                 'ATAU MASUK DENGAN',
-                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: WarmPalette.textSecondary.withValues(alpha: 0.8)),
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: p.textSecondary.withValues(alpha: 0.8)),
                               ),
                             ),
-                            const Expanded(child: Divider(color: WarmPalette.line)),
+                            Expanded(child: Divider(color: p.line)),
                           ],
                         ),
                         const SizedBox(height: 16),
@@ -632,10 +642,10 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                               child: OutlinedButton.icon(
                                 onPressed: _isLoading ? null : _loginGoogle,
                                 icon: const Icon(Icons.g_mobiledata_rounded, size: 24, color: Colors.red),
-                                label: const Text('Google', style: TextStyle(color: WarmPalette.textPrimary, fontWeight: FontWeight.w600)),
+                                label: Text('Google', style: TextStyle(color: p.textPrimary, fontWeight: FontWeight.w600)),
                                 style: OutlinedButton.styleFrom(
                                   backgroundColor: Colors.white,
-                                  side: const BorderSide(color: WarmPalette.line),
+                                  side: BorderSide(color: p.line),
                                   shape: const StadiumBorder(),
                                   padding: const EdgeInsets.symmetric(vertical: 12),
                                 ),
@@ -645,11 +655,11 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                             Expanded(
                               child: OutlinedButton.icon(
                                 onPressed: _continueAsGuest,
-                                icon: const Icon(Icons.qr_code_scanner_rounded, size: 18, color: WarmPalette.primary),
-                                label: const Text('Tamu (Meja)', style: TextStyle(color: WarmPalette.textPrimary, fontWeight: FontWeight.w600)),
+                                icon: Icon(Icons.qr_code_scanner_rounded, size: 18, color: primaryColor),
+                                label: Text('Tamu (Meja)', style: TextStyle(color: p.textPrimary, fontWeight: FontWeight.w600)),
                                 style: OutlinedButton.styleFrom(
                                   backgroundColor: Colors.white,
-                                  side: const BorderSide(color: WarmPalette.line),
+                                  side: BorderSide(color: p.line),
                                   shape: const StadiumBorder(),
                                   padding: const EdgeInsets.symmetric(vertical: 12),
                                 ),
@@ -666,15 +676,15 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
+                      Text(
                         'Belum punya akun? ',
-                        style: TextStyle(color: WarmPalette.line, fontSize: 13),
+                        style: TextStyle(color: p.line, fontSize: 13),
                       ),
                       GestureDetector(
                         onTap: _showRegisterDialog,
-                        child: const Text(
+                        child: Text(
                           'Daftar gratis ↗',
-                          style: TextStyle(color: WarmPalette.secondary, fontSize: 13, fontWeight: FontWeight.w700),
+                          style: TextStyle(color: p.secondary, fontSize: 13, fontWeight: FontWeight.w700),
                         ),
                       ),
                     ],

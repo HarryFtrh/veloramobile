@@ -34,10 +34,10 @@ class TableDetailPane extends StatelessWidget {
 
   Color _statusColor(TableStatus s) {
     return switch (s) {
-      TableStatus.available => WarmPalette.tertiary,
-      TableStatus.ordered => WarmPalette.primary,
-      TableStatus.occupied => WarmPalette.secondary,
-      TableStatus.reserved => const Color(0xFF6A4C93),
+      TableStatus.available => const Color(0xFF059669),
+      TableStatus.ordered => const Color(0xFF2563EB),
+      TableStatus.occupied => const Color(0xFFD97706),
+      TableStatus.reserved => const Color(0xFF7C3AED),
     };
   }
 
@@ -50,14 +50,17 @@ class TableDetailPane extends StatelessWidget {
     };
   }
 
-  Widget _buildActiveOrderItem(String name, String sub, int price) {
+  Widget _buildActiveOrderItem(BuildContext context, String name, String sub, int price) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: WarmPalette.canvas,
+        color: p.surfaceMuted,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: WarmPalette.line),
+        border: Border.all(color: p.line),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -68,17 +71,17 @@ class TableDetailPane extends StatelessWidget {
               children: [
                 Text(
                   name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 12.5,
-                    color: WarmPalette.textPrimary,
+                    color: p.textPrimary,
                   ),
                 ),
                 Text(
                   sub,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10.5,
-                    color: WarmPalette.textSecondary,
+                    color: p.textSecondary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -89,10 +92,10 @@ class TableDetailPane extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             'Rp ${price.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.w800,
               fontSize: 12,
-              color: WarmPalette.primary,
+              color: primaryColor,
             ),
           ),
         ],
@@ -102,9 +105,16 @@ class TableDetailPane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final t = table;
     if (t == null) {
-      return const Center(child: Text('Pilih meja untuk melihat detail'));
+      return Center(
+        child: Text(
+          'Pilih meja untuk melihat detail',
+          style: TextStyle(color: p.textSecondary),
+        ),
+      );
     }
 
     final act = activeOrder;
@@ -126,10 +136,10 @@ class TableDetailPane extends StatelessWidget {
                     Flexible(
                       child: Text(
                         'Detail ${sanitizeDisplayName(t.name)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w900,
                           fontSize: 17,
-                          color: WarmPalette.textPrimary,
+                          color: p.textPrimary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -155,14 +165,14 @@ class TableDetailPane extends StatelessWidget {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.close_rounded, size: 20),
+                icon: Icon(Icons.close_rounded, size: 20, color: p.textSecondary),
                 onPressed: onClose,
               ),
             ],
           ),
           Text(
             'Kapasitas ${t.capacity} Kursi • ${t.status == TableStatus.available ? "Tersedia" : "Terpakai"}',
-            style: const TextStyle(fontSize: 11.5, color: WarmPalette.textSecondary),
+            style: TextStyle(fontSize: 11.5, color: p.textSecondary),
           ),
           const SizedBox(height: 12),
 
@@ -173,30 +183,35 @@ class TableDetailPane extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: WarmPalette.surfaceMuted,
+                    color: p.surfaceMuted,
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: p.line),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Jumlah Tamu',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
-                          color: WarmPalette.textSecondary,
+                          color: p.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         '${t.capacity} Pax',
-                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13.5,
+                          color: p.textPrimary,
+                        ),
                       ),
                       Text(
                         (t.order?.customerName?.trim().isNotEmpty == true)
                             ? t.order!.customerName!.trim()
                             : 'Pelanggan Umum',
-                        style: const TextStyle(fontSize: 9.5, color: WarmPalette.textSecondary),
+                        style: TextStyle(fontSize: 9.5, color: p.textSecondary),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -209,27 +224,28 @@ class TableDetailPane extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: WarmPalette.surfaceMuted,
+                    color: p.surfaceMuted,
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: p.line),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Total Tagihan',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
-                          color: WarmPalette.textSecondary,
+                          color: p.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         'Rp ${total.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 13.5,
-                          color: WarmPalette.primary,
+                          color: primaryColor,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -238,7 +254,7 @@ class TableDetailPane extends StatelessWidget {
                         '${items.isNotEmpty ? items.length : (t.order?.itemCount ?? 0)} item terdaftar',
                         style: const TextStyle(
                           fontSize: 9.5,
-                          color: WarmPalette.tertiary,
+                          color: Color(0xFF059669),
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -254,22 +270,26 @@ class TableDetailPane extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Pesanan Aktif di Meja',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                  color: p.textPrimary,
+                ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  color: WarmPalette.surfaceMuted,
+                  color: primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   '${items.isNotEmpty ? items.length : (t.order?.itemCount ?? 0)} Item',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700,
-                    color: WarmPalette.primary,
+                    color: primaryColor,
                   ),
                 ),
               ),
@@ -290,6 +310,7 @@ class TableDetailPane extends StatelessWidget {
                               ? it.modifierNames.join(' • ')
                               : (it.notes ?? 'Standar');
                           return _buildActiveOrderItem(
+                            context,
                             '${it.quantity}x ${it.name}',
                             sub,
                             (it.price * it.quantity).round(),
@@ -301,8 +322,8 @@ class TableDetailPane extends StatelessWidget {
                           t.status == TableStatus.available
                               ? 'Tidak ada pesanan aktif'
                               : 'Memuat atau pesanan belum memiliki rincian',
-                          style: const TextStyle(
-                            color: WarmPalette.textSecondary,
+                          style: TextStyle(
+                            color: p.textSecondary,
                             fontSize: 12,
                           ),
                         ),
@@ -325,7 +346,7 @@ class TableDetailPane extends StatelessWidget {
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: WarmPalette.primary,
+                backgroundColor: primaryColor,
                 foregroundColor: Colors.white,
                 shape: const StadiumBorder(),
                 elevation: 0,
@@ -346,8 +367,8 @@ class TableDetailPane extends StatelessWidget {
                       child: Text('Cetak Bill', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
                     ),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: WarmPalette.textPrimary,
-                      side: const BorderSide(color: WarmPalette.line),
+                      foregroundColor: p.textPrimary,
+                      side: BorderSide(color: p.line),
                       shape: const StadiumBorder(),
                     ),
                   ),
@@ -362,8 +383,8 @@ class TableDetailPane extends StatelessWidget {
                       child: Text('Pindah Meja', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
                     ),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: WarmPalette.textPrimary,
-                      side: const BorderSide(color: WarmPalette.line),
+                      foregroundColor: p.textPrimary,
+                      side: BorderSide(color: p.line),
                       shape: const StadiumBorder(),
                     ),
                   ),
@@ -382,8 +403,8 @@ class TableDetailPane extends StatelessWidget {
                       child: Text('Kosongkan', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
                     ),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: WarmPalette.danger,
-                      side: const BorderSide(color: WarmPalette.danger),
+                      foregroundColor: p.danger,
+                      side: BorderSide(color: p.danger.withValues(alpha: 0.5)),
                       shape: const StadiumBorder(),
                     ),
                   ),
@@ -399,7 +420,7 @@ class TableDetailPane extends StatelessWidget {
                       child: Text('Langsung Bayar', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800)),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: WarmPalette.secondary,
+                      backgroundColor: const Color(0xFF059669),
                       foregroundColor: Colors.white,
                       shape: const StadiumBorder(),
                       elevation: 0,

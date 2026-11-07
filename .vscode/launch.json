@@ -1,16 +1,22 @@
 {
   "version": "0.2.0",
   "configurations": [
-    
     {
-      "name": "Velora F&B (Debug)",
+      "name": "Velora All-in-One POS (Debug)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["--flavor", "default", "--android-skip-build-dependency-validation"]
+    },
+    {
+      "name": "Velora F&B POS (Debug)",
       "request": "launch",
       "type": "dart",
       "program": "lib/main_fnb.dart",
       "args": ["--flavor", "fnb", "--android-skip-build-dependency-validation"]
     },
     {
-      "name": "Velora F&B (Release - Super Cepat)",
+      "name": "Velora F&B POS (Release)",
       "request": "launch",
       "type": "dart",
       "flutterMode": "release",
@@ -25,7 +31,7 @@
       "args": ["--flavor", "pharmacy", "--android-skip-build-dependency-validation"]
     },
     {
-      "name": "Velora Pharmacy (Release - Super Cepat)",
+      "name": "Velora Pharmacy (Release)",
       "request": "launch",
       "type": "dart",
       "flutterMode": "release",
@@ -33,14 +39,44 @@
       "args": ["--flavor", "pharmacy", "--android-skip-build-dependency-validation"]
     },
     {
-      "name": "Velora F&B Customer (Debug)",
+      "name": "Velora Sales Field Force (Debug)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main_sales.dart",
+      "args": ["--flavor", "sales", "--android-skip-build-dependency-validation"]
+    },
+    {
+      "name": "Velora Sales Field Force (Release)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "release",
+      "program": "lib/main_sales.dart",
+      "args": ["--flavor", "sales", "--android-skip-build-dependency-validation"]
+    },
+    {
+      "name": "Velora Marketplace (Debug)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main_marketplace.dart",
+      "args": ["--flavor", "marketplace", "--android-skip-build-dependency-validation"]
+    },
+    {
+      "name": "Velora Marketplace (Release)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "release",
+      "program": "lib/main_marketplace.dart",
+      "args": ["--flavor", "marketplace", "--android-skip-build-dependency-validation"]
+    },
+    {
+      "name": "Velora Customer Self-Order (Debug)",
       "request": "launch",
       "type": "dart",
       "program": "lib/main_customer.dart",
       "args": ["--flavor", "customer", "--android-skip-build-dependency-validation"]
     },
     {
-      "name": "Velora F&B Customer (Release)",
+      "name": "Velora Customer Self-Order (Release)",
       "request": "launch",
       "type": "dart",
       "flutterMode": "release",

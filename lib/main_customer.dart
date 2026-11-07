@@ -81,9 +81,8 @@ class _CustomerSelfOrderAppState extends State<CustomerSelfOrderApp> {
       theme: AppTheme.build(AppFlavor.customer, Brightness.light),
       home: _isChecking
           ? const Scaffold(
-              backgroundColor: Color(0xFF24150D),
               body: Center(
-                child: CircularProgressIndicator(color: Color(0xFFD9822B)),
+                child: CircularProgressIndicator(),
               ),
             )
           : (_isLoggedIn

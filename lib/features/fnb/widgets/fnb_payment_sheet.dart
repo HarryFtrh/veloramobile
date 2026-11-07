@@ -88,7 +88,7 @@ class _FnbPaymentSheetState extends State<FnbPaymentSheet> {
                   child: Text('Pembayaran', style: text.titleLarge?.copyWith(fontWeight: FontWeight.w800, fontSize: isMobile ? 18 : 20)),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded, color: WarmPalette.textSecondary, size: 20),
+                  icon: Icon(Icons.close_rounded, color: p.textSecondary, size: 20),
                   onPressed: () => Navigator.pop(context),
                   tooltip: 'Tutup',
                 ),

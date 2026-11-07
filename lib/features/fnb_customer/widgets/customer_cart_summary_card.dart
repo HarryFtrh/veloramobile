@@ -31,25 +31,28 @@ class CustomerCartSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: WarmPalette.line),
+        border: Border.all(color: p.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(
                 Icons.receipt_outlined,
                 size: 18,
-                color: WarmPalette.primary,
+                color: primaryColor,
               ),
-              SizedBox(width: 8),
-              Text(
+              const SizedBox(width: 8),
+              const Text(
                 'Rincian Pembayaran',
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
@@ -103,6 +106,8 @@ class _SummaryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -110,14 +115,14 @@ class _SummaryRow extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(fontSize: 13, color: WarmPalette.textSecondary),
+            style: TextStyle(fontSize: 13, color: p.textSecondary),
           ),
           Text(
             value,
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: isDiscount ? WarmPalette.tertiary : WarmPalette.textPrimary,
+              color: isDiscount ? p.tertiary : p.textPrimary,
             ),
           ),
         ],

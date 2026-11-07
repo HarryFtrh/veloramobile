@@ -22,27 +22,31 @@ class TableFilterRibbon extends StatelessWidget {
   final int reservedCount;
 
   Widget _buildFilterTab(
+    BuildContext context,
     String key,
     String title,
     int count,
     IconData icon,
     Color? badgeColor,
   ) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final isSel = selectedFilter == key;
+
     return GestureDetector(
       onTap: () => onFilterSelected(key),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 12),
         decoration: BoxDecoration(
-          color: isSel ? WarmPalette.primary : Colors.white,
+          color: isSel ? primaryColor : p.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSel ? Colors.transparent : WarmPalette.line,
+            color: isSel ? Colors.transparent : p.line,
           ),
           boxShadow: isSel
               ? [
                   BoxShadow(
-                    color: WarmPalette.primary.withValues(alpha: 0.15),
+                    color: primaryColor.withValues(alpha: 0.2),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
@@ -55,7 +59,7 @@ class TableFilterRibbon extends StatelessWidget {
             Icon(
               icon,
               size: 15,
-              color: isSel ? Colors.white : (badgeColor ?? WarmPalette.textSecondary),
+              color: isSel ? Colors.white : (badgeColor ?? p.textSecondary),
             ),
             const SizedBox(width: 6),
             Text(
@@ -63,7 +67,7 @@ class TableFilterRibbon extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11.5,
                 fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
-                color: isSel ? Colors.white : WarmPalette.textPrimary,
+                color: isSel ? Colors.white : p.textPrimary,
               ),
             ),
           ],
@@ -74,12 +78,15 @@ class TableFilterRibbon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
       child: Row(
         children: [
           _buildFilterTab(
+            context,
             'all',
             'Semua',
             allCount,
@@ -88,35 +95,38 @@ class TableFilterRibbon extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           _buildFilterTab(
+            context,
             'available',
             'Kosong',
             availableCount,
             Icons.check_circle_outline_rounded,
-            WarmPalette.tertiary,
+            const Color(0xFF059669),
           ),
           const SizedBox(width: 8),
           _buildFilterTab(
+            context,
             'occupied',
             'Terisi',
             occupiedCount,
             Icons.restaurant_rounded,
-            WarmPalette.primary,
+            const Color(0xFF2563EB),
           ),
           const SizedBox(width: 8),
           _buildFilterTab(
+            context,
             'reserved',
             'Booking',
             reservedCount,
             Icons.bookmark_outline_rounded,
-            const Color(0xFF6A4C93),
+            const Color(0xFF7C3AED),
           ),
           const SizedBox(width: 10),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: p.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: WarmPalette.line),
+              border: Border.all(color: p.line),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -124,17 +134,17 @@ class TableFilterRibbon extends StatelessWidget {
                 const Icon(
                   Icons.pie_chart_rounded,
                   size: 13,
-                  color: WarmPalette.secondary,
+                  color: Color(0xFFD97706),
                 ),
                 const SizedBox(width: 5),
                 Text(
                   allCount == 0
                       ? '0 Meja'
                       : '${((occupiedCount / allCount) * 100).round()}% Terpakai',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: WarmPalette.textPrimary,
+                    color: p.textPrimary,
                   ),
                 ),
               ],

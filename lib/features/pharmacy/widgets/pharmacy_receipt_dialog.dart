@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../../core/storage/session_storage.dart';
-import '../../../core/utils/currency_formatter.dart';
 import '../../shared_pos/pos_checkout_service.dart';
 import '../../shared_pos/receipt_printer_service.dart';
+import 'receipt/pharmacy_receipt_financial_breakdown.dart';
+import 'receipt/pharmacy_receipt_item_list.dart';
+import 'receipt/pharmacy_receipt_patient_banner.dart';
+
+export 'receipt/pharmacy_receipt_financial_breakdown.dart';
+export 'receipt/pharmacy_receipt_item_list.dart';
+export 'receipt/pharmacy_receipt_patient_banner.dart';
 
 class PharmacyReceiptDialog extends StatelessWidget {
   final PosCheckoutResult result;
@@ -155,237 +161,25 @@ class PharmacyReceiptDialog extends StatelessWidget {
                   const SizedBox(height: 14),
 
                   // Patient Banner
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: borderColor),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE2E7FF),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(Icons.person_outline, size: 20, color: Color(0xFF0D9488)),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      patientName,
-                                      style: const TextStyle(
-                                        fontFamily: 'Plus Jakarta Sans',
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.bold,
-                                        color: textPrimary,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF0D9488).withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      medicalRecordNumber,
-                                      style: const TextStyle(
-                                        fontFamily: 'JetBrains Mono',
-                                        fontSize: 9.5,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF0D9488),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 1),
-                              Text(
-                                (doctorName.isNotEmpty && doctorName != '-' && doctorName != 'dr. -')
-                                    ? 'Dokter: $doctorName'
-                                    : 'Penjualan Bebas / Walk-in',
-                                style: const TextStyle(fontSize: 10.5, color: textMuted),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: emeraldPrimary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Text(
-                            'LUNAS',
-                            style: TextStyle(
-                              fontFamily: 'JetBrains Mono',
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: emeraldPrimary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                  PharmacyReceiptPatientBanner(
+                    patientName: patientName,
+                    medicalRecordNumber: medicalRecordNumber,
+                    doctorName: doctorName,
                   ),
                   const SizedBox(height: 12),
 
                   // Itemized Receipt List
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: borderColor),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFF8FAFC),
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-                            border: Border(bottom: BorderSide(color: borderColor)),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Row(
-                                children: [
-                                  Icon(Icons.receipt_long, size: 14, color: emeraldPrimary),
-                                  SizedBox(width: 6),
-                                  Text(
-                                    'Rincian Obat & Resep',
-                                    style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 11.5, fontWeight: FontWeight.bold),
-                                  ),
-                                ],
-                              ),
-                              Text(
-                                '${items.length} Item',
-                                style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 10.5, color: textMuted),
-                              ),
-                            ],
-                          ),
-                        ),
-                        ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          padding: const EdgeInsets.all(12),
-                          itemCount: items.length,
-                          separatorBuilder: (_, _) => const Divider(height: 12, color: borderColor),
-                          itemBuilder: (context, idx) {
-                            final item = items[idx];
-                            return Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        item.name,
-                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textPrimary),
-                                      ),
-                                      Text(
-                                        'Qty: ${item.quantity} • Batch: ${item.batchNumber ?? "-"}',
-                                        style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 10, color: textMuted),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Text(
-                                  CurrencyFormatter.format(item.price * item.quantity),
-                                  style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 12, fontWeight: FontWeight.bold, color: textPrimary),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                        if (tuslahFee > 0) ...[
-                          const Divider(height: 1, color: borderColor),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Jasa Resep & Embalase (Tuslah)',
-                                  style: TextStyle(fontSize: 11, color: textMuted),
-                                ),
-                                Text(
-                                  CurrencyFormatter.format(tuslahFee),
-                                  style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11.5, fontWeight: FontWeight.w600),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
+                  PharmacyReceiptItemList(
+                    items: items,
+                    tuslahFee: tuslahFee,
                   ),
                   const SizedBox(height: 12),
 
                   // Financial Breakdown
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: borderColor),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Subtotal Obat', style: TextStyle(fontSize: 11, color: textMuted)),
-                            Text(CurrencyFormatter.format(subtotal), style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11.5, fontWeight: FontWeight.w600)),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Metode Pembayaran', style: TextStyle(fontSize: 11, color: textMuted)),
-                            Text(paymentMethod.toUpperCase(), style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF0D9488))),
-                          ],
-                        ),
-                        const Divider(height: 14, color: borderColor),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'TOTAL SETTLEMENT',
-                              style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-                            ),
-                            Text(
-                              CurrencyFormatter.format(grandTotal),
-                              style: const TextStyle(
-                                fontFamily: 'Plus Jakarta Sans',
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: emeraldPrimary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                  PharmacyReceiptFinancialBreakdown(
+                    subtotal: subtotal,
+                    paymentMethod: paymentMethod,
+                    grandTotal: grandTotal,
                   ),
                 ],
               ),

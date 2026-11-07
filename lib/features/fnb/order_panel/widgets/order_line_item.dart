@@ -186,7 +186,7 @@ class OrderLineItem extends StatelessWidget {
                       line.note == null ? '+ Tambah catatan barista' : '“${line.note}”',
                       style: text.bodySmall?.copyWith(
                         fontSize: 11,
-                        color: line.note == null ? scheme.secondary : WarmPalette.secondary,
+                        color: line.note == null ? scheme.secondary : p.secondary,
                         fontStyle: line.note == null ? FontStyle.normal : FontStyle.italic,
                         fontWeight: line.note == null ? FontWeight.w500 : FontWeight.w700,
                       ),
@@ -199,13 +199,13 @@ class OrderLineItem extends StatelessWidget {
               if (line.note != null)
                 InkWell(
                   onTap: onEditNote,
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 4),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Text(
                       'Ubah',
                       style: TextStyle(
                         fontSize: 10,
-                        color: WarmPalette.textSecondary,
+                        color: p.textSecondary,
                         fontWeight: FontWeight.w700,
                       ),
                     ),

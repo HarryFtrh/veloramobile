@@ -1,0 +1,4 @@
+#include "Generated.xcconfig"
+FLUTTER_TARGET=lib/main_pharmacy.dart
+APP_DISPLAY_NAME=Velora Pharmacy
+PRODUCT_BUNDLE_IDENTIFIER=com.velora.pharmacy

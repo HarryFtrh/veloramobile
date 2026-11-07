@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/design/tokens.dart';
+import '../../../core/network/api_exception.dart';
 import '../auth_service.dart';
 
 /// Modal bottom sheet for registering a new business tenant and staff account.
@@ -156,6 +157,11 @@ Future<void> showRegisterTenantSheet(
                                   );
                                   if (ctx.mounted) Navigator.pop(ctx);
                                   onRegistered(user);
+                                } on ApiException catch (e) {
+                                  setSheetState(() {
+                                    busy = false;
+                                    err = e.message;
+                                  });
                                 } catch (e) {
                                   setSheetState(() {
                                     busy = false;

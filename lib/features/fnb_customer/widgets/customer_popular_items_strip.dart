@@ -21,6 +21,8 @@ class CustomerPopularItemsStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     if (products.length <= 2) return const SizedBox.shrink();
 
+    final palette = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final cardWidth = (MediaQuery.of(context).size.width * 0.68).clamp(200.0, 260.0);
 
     return Column(
@@ -31,12 +33,12 @@ class CustomerPopularItemsStrip extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'Menu Terpopuler',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
-                color: WarmPalette.textPrimary,
+                color: palette.textPrimary,
               ),
             ),
             TextButton(
@@ -59,15 +61,15 @@ class CustomerPopularItemsStrip extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             itemCount: products.length,
             itemBuilder: (ctx, i) {
-              final p = products[i];
+              final prod = products[i];
               final item = CustomerMenuItem(
-                id: p.id,
-                name: p.name,
-                category: p.category,
-                description: 'Stok: ${p.stock > 0 ? p.stock.toInt() : "Habis"} • SKU: ${p.sku}',
-                basePrice: p.price.toInt(),
+                id: prod.id,
+                name: prod.name,
+                category: prod.category,
+                description: 'Stok: ${prod.stock > 0 ? prod.stock.toInt() : "Habis"} • SKU: ${prod.sku}',
+                basePrice: prod.price.toInt(),
                 rating: 4.9,
-                imageUrl: p.imageUrl ?? '',
+                imageUrl: prod.imageUrl ?? '',
               );
 
               return GestureDetector(
@@ -79,7 +81,7 @@ class CustomerPopularItemsStrip extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: WarmPalette.line),
+                    border: Border.all(color: palette.line),
                   ),
                   child: Row(
                     children: [
@@ -97,13 +99,13 @@ class CustomerPopularItemsStrip extends StatelessWidget {
                                       cacheWidth: 160,
                                       cacheHeight: 160,
                                       errorBuilder: (_, _, _) => Container(
-                                        color: WarmPalette.surfaceMuted,
-                                        child: const Icon(Icons.coffee, color: WarmPalette.primary),
+                                        color: palette.surfaceMuted,
+                                        child: Icon(Icons.coffee, color: primaryColor),
                                       ),
                                     )
                                   : Container(
-                                      color: WarmPalette.surfaceMuted,
-                                      child: const Icon(Icons.coffee, color: WarmPalette.primary),
+                                      color: palette.surfaceMuted,
+                                      child: Icon(Icons.coffee, color: primaryColor),
                                     ),
                             ),
                             Positioned(
@@ -117,7 +119,7 @@ class CustomerPopularItemsStrip extends StatelessWidget {
                                 ),
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.star_rounded, size: 10, color: WarmPalette.secondary),
+                                    Icon(Icons.star_rounded, size: 10, color: palette.secondary),
                                     const SizedBox(width: 2),
                                     Text('${item.rating}', style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700)),
                                   ],
@@ -137,19 +139,19 @@ class CustomerPopularItemsStrip extends StatelessWidget {
                               item.name,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: WarmPalette.textPrimary),
+                              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: palette.textPrimary),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               item.description,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 11, color: WarmPalette.textSecondary),
+                              style: TextStyle(fontSize: 11, color: palette.textSecondary),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               'Rp ${item.basePrice.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: WarmPalette.primary),
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: primaryColor),
                             ),
                           ],
                         ),

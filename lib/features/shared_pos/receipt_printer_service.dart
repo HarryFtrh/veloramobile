@@ -10,7 +10,6 @@ import '../../core/network/api_client.dart';
 import '../../core/storage/session_storage.dart';
 import '../../core/utils/currency_formatter.dart';
 import 'pos_checkout_service.dart';
-import 'printer_settings_modal.dart';
 import 'shift_service.dart';
 
 class ReceiptData {
@@ -789,8 +788,13 @@ class ReceiptPrinterService {
     return discoveredIps;
   }
 
+  /// Handler callback untuk membuka dialog konfigurasi printer tanpa circular dependency ke widget UI
+  static void Function(BuildContext context)? onOpenSettings;
+
   /// Dialog pengaturan konfigurasi printer thermal (Bluetooth/Network & lebar kertas 58mm/80mm)
   void openSettings(BuildContext context) {
-    PrinterSettingsModal.show(context);
+    if (onOpenSettings != null) {
+      onOpenSettings!(context);
+    }
   }
 }

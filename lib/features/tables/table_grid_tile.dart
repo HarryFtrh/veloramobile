@@ -20,13 +20,13 @@ class TableGridTile extends StatelessWidget {
   Color _statusColor(TableStatus status) {
     switch (status) {
       case TableStatus.available:
-        return WarmPalette.tertiary;
+        return const Color(0xFF059669);
       case TableStatus.ordered:
-        return WarmPalette.primary;
+        return const Color(0xFF2563EB);
       case TableStatus.occupied:
-        return WarmPalette.secondary;
+        return const Color(0xFFD97706);
       case TableStatus.reserved:
-        return const Color(0xFF6A4C93);
+        return const Color(0xFF7C3AED);
     }
   }
 
@@ -45,6 +45,8 @@ class TableGridTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final t = table;
     final color = _statusColor(t.status);
     final isOccupied =
@@ -58,16 +60,16 @@ class TableGridTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: p.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isSelected ? WarmPalette.primary : WarmPalette.line,
+              color: isSelected ? primaryColor : p.line,
               width: isSelected ? 2 : 1,
             ),
             boxShadow: [
               BoxShadow(
                 color: isSelected
-                    ? WarmPalette.primary.withValues(alpha: 0.15)
+                    ? primaryColor.withValues(alpha: 0.15)
                     : Colors.black.withValues(alpha: 0.03),
                 blurRadius: isSelected ? 8 : 4,
                 offset: const Offset(0, 2),
@@ -78,7 +80,6 @@ class TableGridTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Row 1: Status Pill (Kiri) & Kapasitas Kursi (Kanan)
-              // Menghindari tabrakan dengan nama meja!
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -125,14 +126,14 @@ class TableGridTile extends StatelessWidget {
                       Icon(
                         Icons.person_outline_rounded,
                         size: 13,
-                        color: WarmPalette.textSecondary,
+                        color: p.textSecondary,
                       ),
                       const SizedBox(width: 3),
                       Text(
                         '${t.capacity} Kursi',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10.5,
-                          color: WarmPalette.textSecondary,
+                          color: p.textSecondary,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -142,14 +143,13 @@ class TableGridTile extends StatelessWidget {
               ),
               const SizedBox(height: 8),
 
-              // Row 2: Nama Meja mendapatkan 100% LEBAR KARTU PENUH!
-              // Tidak akan pernah terpotong atau tertutup tulisan status
+              // Row 2: Nama Meja
               Text(
                 sanitizeDisplayName(t.name),
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 15.5,
-                  color: WarmPalette.textPrimary,
+                  color: p.textPrimary,
                   letterSpacing: -0.2,
                 ),
                 maxLines: 1,
@@ -163,7 +163,7 @@ class TableGridTile extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                   decoration: BoxDecoration(
-                    color: WarmPalette.surfaceMuted,
+                    color: p.surfaceMuted,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Column(
@@ -177,9 +177,9 @@ class TableGridTile extends StatelessWidget {
                             t.order != null
                                 ? '${t.order!.itemCount} Item'
                                 : 'Pesanan Aktif',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 10.5,
-                              color: WarmPalette.textSecondary,
+                              color: p.textSecondary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -204,9 +204,9 @@ class TableGridTile extends StatelessWidget {
                         (t.order?.customerName?.trim().isNotEmpty == true)
                             ? t.order!.customerName!.trim()
                             : 'Dine In',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
-                          color: WarmPalette.textPrimary,
+                          color: p.textPrimary,
                           fontWeight: FontWeight.w600,
                         ),
                         maxLines: 1,
@@ -220,7 +220,7 @@ class TableGridTile extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF6A4C93).withValues(alpha: 0.08),
+                    color: const Color(0xFF7C3AED).withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Column(
@@ -232,7 +232,7 @@ class TableGridTile extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF6A4C93),
+                          color: Color(0xFF7C3AED),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -240,9 +240,9 @@ class TableGridTile extends StatelessWidget {
                       const SizedBox(height: 1),
                       Text(
                         '${t.reservation?.time ?? "-"} • ${t.reservation?.pax ?? t.capacity} Pax',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 9.5,
-                          color: WarmPalette.textSecondary,
+                          color: p.textSecondary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -255,24 +255,24 @@ class TableGridTile extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                   decoration: BoxDecoration(
-                    color: WarmPalette.tertiary.withValues(alpha: 0.08),
+                    color: const Color(0xFF059669).withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Row(
+                  child: const Row(
                     children: [
                       Icon(
                         Icons.check_circle_outline_rounded,
                         size: 13,
-                        color: WarmPalette.tertiary,
+                        color: Color(0xFF059669),
                       ),
-                      const SizedBox(width: 5),
-                      const Expanded(
+                      SizedBox(width: 5),
+                      Expanded(
                         child: Text(
                           'Siap Digunakan',
                           style: TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w700,
-                            color: WarmPalette.tertiary,
+                            color: Color(0xFF059669),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

@@ -33,14 +33,14 @@ class AuthCubit extends Cubit<AuthState> {
         final liveUser = await _authService.getProfile();
         if (liveUser == null) {
           // Token revoked or expired on server
-          await SessionStorage.instance.clearAll();
+          await SessionStorage.instance.clearUserSession(preserveOfflineQueue: true);
           emit(const Unauthenticated());
           return;
         }
 
         // Gerbang flavor: sesi pelanggan tidak boleh membuka app kasir/staf
         if (AppConfig.instance.flavor != AppFlavor.customer && liveUser.isCustomerAccount) {
-          await SessionStorage.instance.clearAll();
+          await SessionStorage.instance.clearUserSession(preserveOfflineQueue: true);
           emit(const Unauthenticated());
           return;
         }
@@ -99,7 +99,7 @@ class AuthCubit extends Cubit<AuthState> {
         );
 
         if (AppConfig.instance.flavor != AppFlavor.customer && cachedUser.isCustomerAccount) {
-          await SessionStorage.instance.clearAll();
+          await SessionStorage.instance.clearUserSession(preserveOfflineQueue: true);
           emit(const Unauthenticated());
           return;
         }
@@ -155,7 +155,7 @@ class AuthCubit extends Cubit<AuthState> {
       ReverbClient.instance.disconnect();
     } catch (_) {}
     await _authService.logout();
-    await SessionStorage.instance.clearAll();
+    await SessionStorage.instance.clearUserSession(preserveOfflineQueue: true);
     emit(const Unauthenticated());
   }
 }

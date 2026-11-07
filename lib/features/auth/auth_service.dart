@@ -3,10 +3,12 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import '../../core/config/app_config.dart';
+import '../../core/config/business_vertical.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/storage/session_storage.dart';
 import '../../core/utils/safe_json.dart';
+import '../shared_pos/product_catalog_service.dart';
 
 enum AppPermission {
   viewDashboard,
@@ -217,8 +219,73 @@ class AuthUser {
     return elevatedRegex.hasMatch(r);
   }
 
+  /// Apakah akun ini adalah dokter atau staf medis pemeriksa (klinis)
+  bool get isDoctor {
+    final r = role.toLowerCase().trim();
+    return r.contains('dok') ||
+        r.contains('doc') ||
+        r.contains('medis') ||
+        r.contains('spesialis') ||
+        r.contains('gp') ||
+        permissions.any((p) => p.toLowerCase().contains('doctor') || p.toLowerCase().contains('emr'));
+  }
+
+  /// Apakah akun ini adalah apoteker atau tenaga teknis kefarmasian (TTK)
+  bool get isPharmacist {
+    final r = role.toLowerCase().trim();
+    return r.contains('apt') ||
+        r.contains('apotek') ||
+        r.contains('pharma') ||
+        r.contains('farmasi') ||
+        r.contains('racik') ||
+        permissions.any((p) => p.toLowerCase().contains('compounding') || p.toLowerCase().contains('prescription'));
+  }
+
+  /// Apakah akun ini adalah staf gudang atau logistik obat
+  bool get isWarehouse {
+    final r = role.toLowerCase().trim();
+    return r.contains('gudang') ||
+        r.contains('logis') ||
+        r.contains('invent') ||
+        r.contains('wareh') ||
+        permissions.any((p) => p.toLowerCase().contains('opname') || p.toLowerCase().contains('pbf'));
+  }
+
+  /// Apakah akun ini adalah staf dapur / KDS / barista
+  bool get isKitchen {
+    final r = role.toLowerCase().trim();
+    return r.contains('kitchen') ||
+        r.contains('dapur') ||
+        r.contains('kds') ||
+        r.contains('chef') ||
+        r.contains('koki') ||
+        r.contains('barista');
+  }
+
+  /// Apakah akun ini adalah pramusaji / waiter / floor staff
+  bool get isWaiter {
+    final r = role.toLowerCase().trim();
+    return r.contains('waiter') ||
+        r.contains('pelayan') ||
+        r.contains('pramusaji') ||
+        r.contains('floor');
+  }
+
+  /// Menentukan vertikal bisnis terpadu secara aman tanpa duplikasi hardcode string
+  BusinessVertical get vertical => BusinessVertical.resolve(
+        businessType: businessType.isNotEmpty ? businessType : SessionStorage.instance.getBusinessType(),
+        role: role,
+        flavor: AppConfig.instance.flavor,
+      );
+
+  bool get isPharmacyBusiness => vertical == BusinessVertical.pharmacy;
+  bool get isFnbBusiness => vertical == BusinessVertical.fnb;
+  bool get isRetailBusiness => vertical == BusinessVertical.retail;
+  bool get isSalesAccount => vertical == BusinessVertical.sales;
+  bool get isMarketplaceAccount => vertical == BusinessVertical.marketplace;
+
   /// Apakah pengguna ini adalah kasir atau staf toko biasa
-  bool get isCashier => !isOwnerOrAdmin;
+  bool get isCashier => !isOwnerOrAdmin && !isDoctor && !isPharmacist && !isWarehouse && !isKitchen && !isWaiter;
 
   /// Apakah akun ini eksplisit bertipe pelanggan/member (bukan staf toko).
   /// Hanya role yang eksplisit dikirim backend yang dianggap pelanggan.
@@ -230,6 +297,9 @@ class AuthUser {
   /// Nama label role bahasa Indonesia yang rapi untuk UI
   String get roleDisplayName {
     if (isOwner) return 'Owner';
+    if (isDoctor) return 'Dokter Pemeriksa';
+    if (isPharmacist) return 'Apoteker Klinis';
+    if (isWarehouse) return 'Logistik & Gudang';
     final r = role.toLowerCase().trim();
     if (r == 'owner') return 'Owner';
     if (r == 'admin' || r == 'administrator') return 'Administrator';
@@ -691,6 +761,8 @@ class AuthService {
 
   Future<void> selectBranch(BranchLocation location) async {
     await SessionStorage.instance.saveLocation(id: location.id, name: location.name);
+    // Bersihkan cache katalog RAM cabang sebelumnya agar tidak tertukar
+    ProductCatalogService.instance.clearMemoryCache();
   }
 
   Future<void> logout() async {
@@ -699,7 +771,9 @@ class AuthService {
     } catch (e) {
       debugPrint('[AuthService] Logout API notification failed (session will still clear): $e');
     }
-    await SessionStorage.instance.clearAuthToken();
+    // Bersihkan sesi kasir secara tuntas sambil tetap mengamankan antrean transaksi offline
+    await SessionStorage.instance.clearUserSession(preserveOfflineQueue: true);
+    ProductCatalogService.instance.clearMemoryCache();
   }
 
   Never _extractAndThrowAuthError(DioException e) {

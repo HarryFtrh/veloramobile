@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import '../pharmacy_service.dart';
-import 'pharmacy_patient_dialog.dart';
 import '../../shared_pos/pos_checkout_service.dart';
+import 'review/pharmacy_prescription_review_checklist.dart';
+import 'review/pharmacy_prescription_review_patient_card.dart';
+
+export 'review/pharmacy_prescription_review_checklist.dart';
+export 'review/pharmacy_prescription_review_patient_card.dart';
 
 class PharmacyPrescriptionReviewModal extends StatefulWidget {
   final VoidCallback? onApprove;
@@ -63,6 +67,27 @@ class _PharmacyPrescriptionReviewModalState extends State<PharmacyPrescriptionRe
     'Tidak Ada Kontraindikasi / Alergi': true,
   };
 
+  List<ClinicPatientQueueItem> _pendingQueue = [];
+  ClinicPatientQueueItem? _selectedQueueItem;
+  bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPendingPrescriptions();
+  }
+
+  Future<void> _loadPendingPrescriptions() async {
+    final list = await PharmacyService.instance.fetchPatientQueue();
+    if (!mounted) return;
+    setState(() {
+      _pendingQueue = list;
+      if (_selectedQueueItem == null && list.isNotEmpty) {
+        _selectedQueueItem = list.first;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     const emeraldPrimary = Color(0xFF059669);
@@ -71,6 +96,30 @@ class _PharmacyPrescriptionReviewModalState extends State<PharmacyPrescriptionRe
     const textMuted = Color(0xFF6D7A72);
 
     final allPassed = _screenings.values.every((v) => v);
+    final activePatient = widget.patientData ?? PharmacyService.instance.activePatient.value;
+
+    final patientName = activePatient?.patient.isNotEmpty == true
+        ? activePatient!.patient
+        : (_selectedQueueItem?.patientName.isNotEmpty == true
+            ? _selectedQueueItem!.patientName
+            : 'Pasien Rawat Jalan');
+    final rmNumber = activePatient?.medicalRecordNumber.isNotEmpty == true
+        ? activePatient!.medicalRecordNumber
+        : (_selectedQueueItem?.medicalRecordNumber.isNotEmpty == true
+            ? _selectedQueueItem!.medicalRecordNumber
+            : '-');
+    final category = activePatient?.patientCategory.isNotEmpty == true
+        ? activePatient!.patientCategory
+        : (_selectedQueueItem?.insurance ?? 'Umum / Resep');
+    final doctorName = activePatient?.doctor.isNotEmpty == true
+        ? activePatient!.doctor
+        : (_selectedQueueItem?.doctorName ?? 'Dokter Pemeriksa');
+    final allergies = activePatient?.allergies ?? (_selectedQueueItem?.allergy ?? '');
+    final prescribedFromQueue = _selectedQueueItem?.prescribedDrugs ?? const <String>[];
+
+    final displayInitials = patientName.isNotEmpty
+        ? patientName.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join()
+        : 'PX';
 
     return Column(
       children: [
@@ -98,26 +147,26 @@ class _PharmacyPrescriptionReviewModalState extends State<PharmacyPrescriptionRe
                           width: 36,
                           height: 36,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF0D9488).withValues(alpha: 0.1),
+                            color: emeraldPrimary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(Icons.assignment_outlined, color: Color(0xFF0D9488), size: 20),
+                          child: const Icon(Icons.assignment_turned_in_outlined, color: emeraldPrimary, size: 20),
                         ),
                         const SizedBox(width: 10),
                         const Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Telaah Klinis Resep Dokter',
+                              'Telaah Resep & Verifikasi Apoteker',
                               style: TextStyle(
                                 fontFamily: 'Plus Jakarta Sans',
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
                                 color: textPrimary,
                               ),
                             ),
                             Text(
-                              'Skrining 7 Benar Farmasi & Validasi SIP',
+                              'Skrining Farmasetis, Klinis, & Administrasi Resep',
                               style: TextStyle(fontSize: 11, color: textMuted),
                             ),
                           ],
@@ -125,7 +174,7 @@ class _PharmacyPrescriptionReviewModalState extends State<PharmacyPrescriptionRe
                       ],
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close_rounded, color: textMuted),
+                      icon: const Icon(Icons.close_rounded, size: 20, color: textMuted),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
@@ -135,366 +184,223 @@ class _PharmacyPrescriptionReviewModalState extends State<PharmacyPrescriptionRe
           ),
         const Divider(height: 1, color: borderColor),
 
-        Builder(
-          builder: (context) {
-            final active = widget.patientData ?? PharmacyService.instance.activePatient.value;
-            final patientName = (active?.patient.isNotEmpty == true) ? active!.patient : 'Pelanggan Umum (Walk-in)';
-            final doctorName = (active?.doctor.isNotEmpty == true && active!.doctor != '-') ? active.doctor : '-';
-            final queueNum = (active?.queueNumber.isNotEmpty == true && active!.queueNumber != '-') ? active.queueNumber : '-';
-            final rmNumber = (active?.medicalRecordNumber.isNotEmpty == true && active!.medicalRecordNumber != '-')
-                ? active.medicalRecordNumber
-                : '-';
-            final category = (active?.patientCategory.isNotEmpty == true) ? active!.patientCategory : 'Umum';
-            final allergies = (active?.allergies.trim().isNotEmpty == true) ? active!.allergies.trim() : '';
-
-            final initials = patientName
-                .trim()
-                .split(' ')
-                .where((w) => w.isNotEmpty)
-                .map((w) => w[0])
-                .take(2)
-                .join()
-                .toUpperCase();
-            final displayInitials = initials.isNotEmpty ? initials : 'PX';
-
-            final items = widget.cartItems ?? [];
-
-            return Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  // Ticket Status Banner
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: borderColor),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+        // Scrollable Content
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Prescription Meta Header
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.receipt_long_rounded, color: emeraldPrimary, size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Lembar Resep #${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
+                            style: const TextStyle(
+                              fontFamily: 'JetBrains Mono',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                              color: textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD4F8E8),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
+                            Icon(Icons.circle, size: 6, color: Color(0xFF0D9488)),
+                            SizedBox(width: 4),
                             Text(
-                              'E-RESEP $queueNum',
-                              style: const TextStyle(
+                              'Dalam Telaah',
+                              style: TextStyle(
                                 fontFamily: 'JetBrains Mono',
-                                fontSize: 11,
+                                fontSize: 10,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF0D9488),
                               ),
                             ),
-                            Text(
-                              'Validasi Resep Klinis • $category',
-                              style: const TextStyle(fontSize: 11, color: textMuted),
-                            ),
-                          ],
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0D9488).withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.circle, size: 6, color: Color(0xFF0D9488)),
-                              SizedBox(width: 4),
-                              Text(
-                                'Dalam Telaah',
-                                style: TextStyle(
-                                  fontFamily: 'JetBrains Mono',
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF0D9488),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Patient & Physician Card
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: borderColor),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE2E7FF),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  displayInitials,
-                                  style: const TextStyle(
-                                    fontFamily: 'Plus Jakarta Sans',
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF059669),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    patientName,
-                                    style: const TextStyle(
-                                      fontFamily: 'Plus Jakarta Sans',
-                                      fontSize: 13.5,
-                                      fontWeight: FontWeight.bold,
-                                      color: textPrimary,
-                                    ),
-                                  ),
-                                  Text(
-                                    'No. Rekam Medis: $rmNumber • $category',
-                                    style: const TextStyle(fontSize: 11, color: textMuted),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Column(
-                            children: [
-                              const Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text('Layanan:', style: TextStyle(fontSize: 11, color: textMuted)),
-                                  Text('Dispensasi Obat Farmasi', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: textPrimary)),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text('Dokter Perujuk:', style: TextStyle(fontSize: 11, color: textMuted)),
-                                  Text(doctorName, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textPrimary)),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-
-                        // Allergy Safety Banner
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: allergies.isNotEmpty
-                                ? const Color(0xFFFFDAD6).withValues(alpha: 0.35)
-                                : const Color(0xFF059669).withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border(
-                              left: BorderSide(
-                                color: allergies.isNotEmpty ? const Color(0xFFBA1A1A) : const Color(0xFF059669),
-                                width: 3,
-                              ),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                allergies.isNotEmpty ? Icons.warning_amber_rounded : Icons.check_circle_outline_rounded,
-                                size: 18,
-                                color: allergies.isNotEmpty ? const Color(0xFFBA1A1A) : const Color(0xFF059669),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      allergies.isNotEmpty
-                                          ? 'Alergi Terdaftar: $allergies'
-                                          : 'Tidak Ada Riwayat Alergi (Aman)',
-                                      style: TextStyle(
-                                        fontSize: 11.5,
-                                        fontWeight: FontWeight.bold,
-                                        color: allergies.isNotEmpty ? const Color(0xFFBA1A1A) : const Color(0xFF059669),
-                                      ),
-                                    ),
-                                    Text(
-                                      allergies.isNotEmpty
-                                          ? 'Pemeriksaan keamanan: Verifikasi interaksi & kontraindikasi obat sebelum penyerahan.'
-                                          : 'Pemeriksaan keamanan: Pasien tidak memiliki riwayat alergi obat terdaftar.',
-                                      style: const TextStyle(fontSize: 10.5, color: textMuted),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Prescribed Medicines Section
-                  Text(
-                    'Daftar R/ Obat Pasien (${items.length} Item)',
-                    style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 13.5),
-                  ),
-                  const SizedBox(height: 8),
-
-                  if (items.isNotEmpty)
-                    ...items.asMap().entries.map((entry) {
-                      final idx = entry.key;
-                      final item = entry.value;
-                      final isRacikan = item.name.toLowerCase().contains('racik') ||
-                          item.name.toLowerCase().contains('pulveres') ||
-                          item.name.toLowerCase().contains('puyer');
-                      final batchNum = item.batchNumber?.isNotEmpty == true ? item.batchNumber! : '-';
-
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: _buildPrescriptionItem(
-                          rxNumber: 'Rx ${idx + 1}${isRacikan ? " RACIKAN" : ""}',
-                          title: item.name,
-                          qty: 'Jumlah: ${item.quantity} Sediaan',
-                          signa: 'S. Sesuai Resep Dokter',
-                          signaDesc: 'Gunakan sesuai instruksi etiket & aturan pakai DPJP.',
-                          batch: batchNum,
-                          isRacikan: isRacikan,
-                        ),
-                      );
-                    })
-                  else
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      margin: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: borderColor),
-                      ),
-                      child: const Center(
-                        child: Column(
-                          children: [
-                            Icon(Icons.medication_outlined, size: 36, color: textMuted),
-                            SizedBox(height: 8),
-                            Text(
-                              'Belum ada obat dalam keranjang resep',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'Pilih obat dari katalog POS atau muat antrean pasien e-resep dokter.',
-                              style: TextStyle(fontSize: 11, color: textMuted),
-                              textAlign: TextAlign.center,
-                            ),
                           ],
                         ),
                       ),
-                    ),
-                  const SizedBox(height: 6),
-
-              // Skrining 7 Benar Checklist
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: borderColor),
+                    ],
+                  ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Kajian Skrining 7 Benar Farmasi',
-                          style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 13),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: allPassed ? emeraldPrimary.withValues(alpha: 0.1) : const Color(0xFFFEF3C7),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            allPassed ? 'LENGKAP' : 'BELUM VALID',
+                const SizedBox(height: 12),
+
+                // Queue Patient Selector (when opened as Pharmacist Workstation Tab)
+                if (widget.patientData == null && _pendingQueue.isNotEmpty) ...[
+                  SizedBox(
+                    height: 36,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _pendingQueue.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 8),
+                      itemBuilder: (context, idx) {
+                        final q = _pendingQueue[idx];
+                        final isSelected = _selectedQueueItem?.queueNumber == q.queueNumber;
+                        return ChoiceChip(
+                          selected: isSelected,
+                          selectedColor: const Color(0xFFD4F8E8),
+                          label: Text(
+                            '${q.queueNumber} • ${q.patientName}',
                             style: TextStyle(
-                              fontFamily: 'JetBrains Mono',
-                              fontSize: 9.5,
+                              fontSize: 11.5,
                               fontWeight: FontWeight.bold,
-                              color: allPassed ? emeraldPrimary : const Color(0xFFB45309),
+                              color: isSelected ? emeraldPrimary : textPrimary,
                             ),
                           ),
-                        ),
-                      ],
+                          onSelected: (_) => setState(() => _selectedQueueItem = q),
+                        );
+                      },
                     ),
-                    const SizedBox(height: 10),
-                    ..._screenings.entries.map((entry) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
-                        child: InkWell(
-                          onTap: () {
-                            setState(() {
-                              _screenings[entry.key] = !entry.value;
-                            });
-                          },
-                          child: Row(
-                            children: [
-                              Icon(
-                                entry.value ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
-                                size: 18,
-                                color: entry.value ? emeraldPrimary : textMuted,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  entry.key,
-                                  style: TextStyle(
-                                    fontSize: 11.5,
-                                    fontWeight: entry.value ? FontWeight.w600 : FontWeight.normal,
-                                    color: entry.value ? textPrimary : textMuted,
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
+                // Patient & Physician Card
+                PrescriptionReviewPatientCard(
+                  patientName: patientName,
+                  rmNumber: rmNumber,
+                  category: category,
+                  doctorName: doctorName,
+                  allergies: allergies,
+                  displayInitials: displayInitials,
+                ),
+                const SizedBox(height: 14),
+
+                // Prescribed Items Review
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Rincian Obat yang Divalidasi:',
+                        style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 13.5, color: textPrimary),
+                      ),
+                      const SizedBox(height: 8),
+                      if (widget.cartItems != null && widget.cartItems!.isNotEmpty)
+                        ...widget.cartItems!.map((item) => Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.medication_rounded, size: 16, color: emeraldPrimary),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        item.name,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+                                      ),
+                                    ],
                                   ),
-                                ),
+                                  Text(
+                                    '${item.quantity} ${item.unit}',
+                                    style: const TextStyle(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.bold, fontSize: 12),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ))
+                      else if (prescribedFromQueue.isNotEmpty)
+                        ...prescribedFromQueue.map((drug) => Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.medication_rounded, size: 16, color: emeraldPrimary),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      drug,
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ))
+                      else
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 6),
+                          child: Text(
+                            'Resep e-Prescribing terhubung otomatis dengan katalog sediaan farmasi.',
+                            style: TextStyle(fontSize: 11.5, color: textMuted),
                           ),
                         ),
-                      );
-                    }),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        );
-      },
-    ),
+                const SizedBox(height: 14),
 
-        // Bottom CTA
+                // 7 Benar Screening Checklist
+                PrescriptionReviewChecklist(
+                  screenings: _screenings,
+                  onToggleItem: (key) {
+                    setState(() {
+                      _screenings[key] = !(_screenings[key] ?? false);
+                    });
+                  },
+                ),
+                const SizedBox(height: 14),
+
+                // Pharmacist Verification Stamp
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.verified_outlined, color: emeraldPrimary, size: 24),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Verifikasi Apoteker Penanggung Jawab (APJ)',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
+                            Text(
+                              'SIA & SIPA Aktif • Sesuai Standar Pelayanan Kefarmasian Kemenkes RI',
+                              style: TextStyle(fontSize: 10.5, color: textMuted),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Action Buttons
         Container(
           padding: const EdgeInsets.all(16),
           decoration: const BoxDecoration(
@@ -504,50 +410,78 @@ class _PharmacyPrescriptionReviewModalState extends State<PharmacyPrescriptionRe
           child: Row(
             children: [
               Expanded(
-                child: SizedBox(
-                  height: 46,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
+                child: OutlinedButton(
+                  onPressed: () {
+                    if (Navigator.canPop(context)) {
+                      Navigator.pop(context);
+                    } else {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Etiket aturan pakai (putih & biru) dikirim ke thermal printer.')),
+                        const SnackBar(
+                          content: Text('Permintaan konsultasi ulang resep telah dikirim ke Dokter Pemeriksa.'),
+                          backgroundColor: Color(0xFFBA1A1A),
+                        ),
                       );
-                    },
-                    icon: const Icon(Icons.print_outlined, size: 18),
-                    label: const Text('Cetak Etiket', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF0D9488),
-                      side: const BorderSide(color: Color(0xFF0D9488)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
+                    }
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFBA1A1A),
+                    side: const BorderSide(color: Color(0xFFBA1A1A)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
+                  child: const Text('Tolak Resep / Konsul Dokter', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
-                flex: 2,
-                child: SizedBox(
-                  height: 46,
-                  child: ElevatedButton.icon(
-                    onPressed: allPassed
-                        ? () {
+                child: ElevatedButton.icon(
+                  onPressed: (allPassed && !_isSubmitting)
+                      ? () async {
+                          setState(() => _isSubmitting = true);
+                          await PharmacyService.instance.verifyPrescription(
+                            patientName: patientName,
+                            medicalRecordNumber: rmNumber,
+                            doctorName: doctorName,
+                            screenings: _screenings,
+                          );
+                          PharmacyService.instance.setActivePatient(
+                            PharmacyPatientData(
+                              patient: patientName,
+                              doctor: doctorName,
+                              queueNumber: _selectedQueueItem?.queueNumber ?? '-',
+                              medicalRecordNumber: rmNumber,
+                              patientCategory: category,
+                              allergies: allergies,
+                              prescribedDrugs: prescribedFromQueue,
+                            ),
+                          );
+                          if (!context.mounted) return;
+                          setState(() => _isSubmitting = false);
+                          widget.onApprove?.call();
+                          if (Navigator.canPop(context)) {
                             Navigator.pop(context);
-                            widget.onApprove?.call();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Telaah resep tervalidasi! R/ obat siap diracik & diserahkan.'),
-                                backgroundColor: Color(0xFF059669),
-                              ),
-                            );
                           }
-                        : null,
-                    icon: const Icon(Icons.verified_rounded, size: 18),
-                    label: const Text('Validasi & Siapkan Obat', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: emeraldPrimary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      elevation: 0,
-                    ),
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('✓ Resep telah ditelaah dan diverifikasi valid oleh Apoteker.'),
+                              backgroundColor: emeraldPrimary,
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      : null,
+                  icon: const Icon(Icons.check_circle_rounded, size: 18),
+                  label: Text(
+                    _isSubmitting ? 'Memverifikasi...' : 'Setujui & Validasi Resep',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: emeraldPrimary,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.grey.shade300,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    elevation: 0,
                   ),
                 ),
               ),
@@ -557,119 +491,9 @@ class _PharmacyPrescriptionReviewModalState extends State<PharmacyPrescriptionRe
       ],
     );
   }
-
-  Widget _buildPrescriptionItem({
-    required String rxNumber,
-    required String title,
-    required String qty,
-    required String signa,
-    required String signaDesc,
-    required String batch,
-    required bool isRacikan,
-  }) {
-    const emeraldPrimary = Color(0xFF059669);
-    const borderColor = Color(0xFFE2E8F0);
-    const textPrimary = Color(0xFF0F172A);
-    const textMuted = Color(0xFF6D7A72);
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isRacikan ? emeraldPrimary.withValues(alpha: 0.4) : borderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: isRacikan ? emeraldPrimary : const Color(0xFF0F172A),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      rxNumber,
-                      style: const TextStyle(
-                        fontFamily: 'JetBrains Mono',
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                      color: textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-              Text(
-                qty,
-                style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: textMuted),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.schedule, size: 13, color: emeraldPrimary),
-                    const SizedBox(width: 4),
-                    Text(
-                      signa,
-                      style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11, fontWeight: FontWeight.bold, color: emeraldPrimary),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  signaDesc,
-                  style: const TextStyle(fontSize: 10.5, color: textMuted),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Batch: $batch',
-                style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 10, color: textMuted),
-              ),
-              const Text(
-                'FEFO Stok Tersedia',
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: emeraldPrimary),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 }
 
-/// Standalone Full Page Version for AppShell MoreScreen
+/// Standalone Full Page Version for AppShell & Workstation Tab
 class PharmacyPrescriptionReviewPage extends StatelessWidget {
   final VoidCallback? onApprove;
 
@@ -685,7 +509,7 @@ class PharmacyPrescriptionReviewPage extends StatelessWidget {
           style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 16),
         ),
         backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF0F172A),
+        foregroundColor: const Color(0xFF131B2E),
         elevation: 0,
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),
@@ -694,13 +518,7 @@ class PharmacyPrescriptionReviewPage extends StatelessWidget {
       ),
       body: SafeArea(
         child: PharmacyPrescriptionReviewModal(
-          onApprove: () {
-            if (onApprove != null) {
-              onApprove!();
-            } else {
-              Navigator.pop(context);
-            }
-          },
+          onApprove: onApprove,
           showDragHandle: false,
         ),
       ),

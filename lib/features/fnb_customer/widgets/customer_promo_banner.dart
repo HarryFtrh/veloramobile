@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/design/tokens.dart';
 import '../../fnb/billing.dart';
 
 /// Hero promo / welcome banner card in the patron customer self-order screen.
@@ -15,6 +16,9 @@ class CustomerPromoBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     final activePromos = billing?.activePromotions ?? [];
     final hasPromo = activePromos.isNotEmpty;
     final promo = hasPromo ? activePromos.first : null;
@@ -35,17 +39,17 @@ class CustomerPromoBanner extends StatelessWidget {
       height: 168,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
           colors: [
-            Color(0xFF2C1810),
-            Color(0xFF5B301A),
+            primaryColor,
+            Color.alphaBlend(primaryColor.withValues(alpha: 0.7), Colors.black),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF2C1810).withValues(alpha: 0.18),
+            color: primaryColor.withValues(alpha: 0.25),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -119,20 +123,20 @@ class CustomerPromoBanner extends StatelessWidget {
                   onPressed: onAction,
                   icon: Text(
                     bannerAction,
-                    style: const TextStyle(
-                      color: Color(0xFF2C1810),
+                    style: TextStyle(
+                      color: p.textPrimary,
                       fontWeight: FontWeight.w800,
                       fontSize: 12,
                     ),
                   ),
-                  label: const Icon(
+                  label: Icon(
                     Icons.arrow_forward_rounded,
                     size: 14,
-                    color: Color(0xFF2C1810),
+                    color: p.textPrimary,
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFF2C1810),
+                    foregroundColor: p.textPrimary,
                     elevation: 0,
                     shape: const StadiumBorder(),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),

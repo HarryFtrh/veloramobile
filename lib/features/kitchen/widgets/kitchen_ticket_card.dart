@@ -42,6 +42,8 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final order = widget.order;
     final mins = DateTime.now().difference(order.createdAt).inMinutes;
     final secs = (DateTime.now().difference(order.createdAt).inSeconds % 60)
@@ -55,10 +57,10 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: p.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isLate ? WarmPalette.danger : WarmPalette.line,
+          color: isLate ? p.danger : p.line,
           width: isLate ? 2 : 1,
         ),
         boxShadow: [
@@ -84,9 +86,7 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
                       style: TextStyle(
                         fontWeight: FontWeight.w900,
                         fontSize: 15,
-                        color: isLate
-                            ? WarmPalette.danger
-                            : WarmPalette.primary,
+                        color: isLate ? p.danger : primaryColor,
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -95,17 +95,17 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
                         padding:
                             const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                         decoration: BoxDecoration(
-                          color: WarmPalette.surfaceMuted,
+                          color: p.surfaceMuted,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           order.tableLabel,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: WarmPalette.textPrimary,
+                            color: p.textPrimary,
                           ),
                         ),
                       ),
@@ -118,12 +118,12 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: isLate
-                      ? WarmPalette.danger.withValues(alpha: 0.12)
-                      : WarmPalette.surfaceMuted,
+                      ? p.danger.withValues(alpha: 0.12)
+                      : p.surfaceMuted,
                   borderRadius: BorderRadius.circular(12),
                   border: isLate
                       ? Border.all(
-                          color: WarmPalette.danger.withValues(alpha: 0.4),
+                          color: p.danger.withValues(alpha: 0.4),
                         )
                       : null,
                 ),
@@ -132,9 +132,7 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
                     Icon(
                       Icons.timer_outlined,
                       size: 14,
-                      color: isLate
-                          ? WarmPalette.danger
-                          : WarmPalette.textSecondary,
+                      color: isLate ? p.danger : p.textSecondary,
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -142,9 +140,7 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
-                        color: isLate
-                            ? WarmPalette.danger
-                            : WarmPalette.textPrimary,
+                        color: isLate ? p.danger : p.textPrimary,
                       ),
                     ),
                   ],
@@ -157,7 +153,7 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: WarmPalette.danger,
+                color: p.danger,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: const Text(
@@ -171,7 +167,7 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
             ),
           ],
           const SizedBox(height: 10),
-          const Divider(height: 1, color: WarmPalette.line),
+          Divider(height: 1, color: p.line),
           const SizedBox(height: 10),
 
           // Items list
@@ -191,8 +187,8 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: item.done
-                            ? WarmPalette.tertiary
-                            : WarmPalette.primary,
+                            ? const Color(0xFF059669)
+                            : primaryColor,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -217,16 +213,16 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
                               decoration:
                                   item.done ? TextDecoration.lineThrough : null,
                               color: item.done
-                                  ? const Color(0xFFA09389)
-                                  : WarmPalette.textPrimary,
+                                  ? p.textTertiary
+                                  : p.textPrimary,
                             ),
                           ),
                           if (item.modifiers.isNotEmpty)
                             Text(
                               item.modifiers.join(', '),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
-                                color: WarmPalette.textSecondary,
+                                color: p.textSecondary,
                               ),
                             ),
                           if (item.note != null)
@@ -234,7 +230,7 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
                               'Note: ${item.note}',
                               style: const TextStyle(
                                 fontSize: 11,
-                                color: WarmPalette.secondary,
+                                color: Color(0xFFD97706),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -247,8 +243,8 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
                           : Icons.radio_button_unchecked_rounded,
                       size: 18,
                       color: item.done
-                          ? WarmPalette.tertiary
-                          : const Color(0xFFA09389),
+                          ? const Color(0xFF059669)
+                          : p.textTertiary,
                     ),
                   ],
                 ),
@@ -260,7 +256,7 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFFFDF0E3),
+                color: const Color(0xFFFEF3C7),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -268,7 +264,7 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
                   const Icon(
                     Icons.edit_note,
                     size: 16,
-                    color: WarmPalette.secondary,
+                    color: Color(0xFFB45309),
                   ),
                   const SizedBox(width: 6),
                   Expanded(
@@ -276,7 +272,7 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
                       order.notes!,
                       style: const TextStyle(
                         fontSize: 11,
-                        color: WarmPalette.secondary,
+                        color: Color(0xFFB45309),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -295,10 +291,10 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
               onPressed: () => context.read<KitchenCubit>().advance(order),
               style: ElevatedButton.styleFrom(
                 backgroundColor: order.stage == KitchenStage.ready
-                    ? WarmPalette.textPrimary
+                    ? p.textPrimary
                     : (order.stage == KitchenStage.preparing
-                        ? WarmPalette.secondary
-                        : WarmPalette.primary),
+                        ? const Color(0xFFD97706)
+                        : primaryColor),
                 foregroundColor: Colors.white,
                 shape: const StadiumBorder(),
                 elevation: 0,

@@ -1,34 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../core/utils/currency_formatter.dart';
-import 'pharmacy_patient_dialog.dart';
 import '../pharmacy_service.dart';
+import 'queue/pharmacy_queue_modal_card.dart';
 
-/// Model antrean pasien poli/klinik untuk kasir apotek
-class ClinicPatientQueueItem {
-  final String queueNumber;
-  final String patientName;
-  final String medicalRecordNumber;
-  final String doctorName;
-  final String department;
-  final String insurance;
-  final String? allergy;
-  final String status; // 'ready', 'pending', 'done'
-  final num estimatedTotal;
-  final List<String> prescribedDrugs;
-
-  const ClinicPatientQueueItem({
-    required this.queueNumber,
-    required this.patientName,
-    required this.medicalRecordNumber,
-    required this.doctorName,
-    required this.department,
-    required this.insurance,
-    this.allergy,
-    required this.status,
-    required this.estimatedTotal,
-    this.prescribedDrugs = const [],
-  });
-}
+export 'queue/pharmacy_queue_modal_card.dart';
 
 /// Modal lembar antrean & billing pasien klinik (sesuai desain Google Stitch Clinical Precision)
 class PharmacyQueueModal extends StatefulWidget {
@@ -64,7 +38,6 @@ class PharmacyQueueModal extends StatefulWidget {
 class _PharmacyQueueModalState extends State<PharmacyQueueModal> {
   String _selectedFilter = 'all';
   String _searchQuery = '';
-  bool _isLoading = false; // ignore: unused_field
   List<ClinicPatientQueueItem> _queueItems = [];
 
   @override
@@ -78,7 +51,6 @@ class _PharmacyQueueModalState extends State<PharmacyQueueModal> {
     if (mounted) {
       setState(() {
         _queueItems = items;
-        _isLoading = false;
       });
     }
   }
@@ -227,7 +199,14 @@ class _PharmacyQueueModalState extends State<PharmacyQueueModal> {
                     separatorBuilder: (_, idx) => const SizedBox(height: 12),
                     itemBuilder: (ctx, i) {
                       final item = filtered[i];
-                      return _buildQueueCard(item, primaryColor);
+                      return PharmacyQueueModalCard(
+                        item: item,
+                        primaryColor: primaryColor,
+                        onSelect: (patientData) {
+                          widget.onSelectPatient(patientData);
+                          Navigator.of(context).pop();
+                        },
+                      );
                     },
                   ),
           ),
@@ -258,187 +237,6 @@ class _PharmacyQueueModalState extends State<PharmacyQueueModal> {
             color: isSelected ? Colors.white : const Color(0xFF3D4A42),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildQueueCard(ClinicPatientQueueItem item, Color primaryColor) {
-    final isReady = item.status == 'ready';
-    final isDone = item.status == 'done';
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isReady ? primaryColor : const Color(0xFFE2E8F0),
-          width: isReady ? 1.5 : 1,
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x080F172A),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE2E7FF),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      item.queueNumber,
-                      style: const TextStyle(
-                        fontFamily: 'JetBrains Mono',
-                        fontWeight: FontWeight.w800,
-                        fontSize: 12,
-                        color: Color(0xFF059669),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    item.patientName,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14.5,
-                      color: Color(0xFF0F172A),
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: isReady
-                      ? const Color(0xFFD4F8E8)
-                      : (isDone ? const Color(0xFFF1F5F9) : const Color(0xFFFEF3C7)),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  isReady ? 'Siap Bayar' : (isDone ? 'Selesai' : 'Menunggu Resep'),
-                  style: TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w700,
-                    color: isReady
-                        ? const Color(0xFF059669)
-                        : (isDone ? const Color(0xFF64748B) : const Color(0xFFB45309)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-
-          // Dokter & Poli & RM
-          Row(
-            children: [
-              Text(
-                '${item.medicalRecordNumber} • ${item.doctorName}',
-                style: const TextStyle(fontSize: 11.5, color: Color(0xFF6D7A72)),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '(${item.department})',
-                style: const TextStyle(fontSize: 11.5, color: Color(0xFF6D7A72)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          // Badges: Asuransi & Alergi
-          Wrap(
-            spacing: 6,
-            runSpacing: 4,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF2F3FF),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  item.insurance,
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF0D9488)),
-                ),
-              ),
-              if (item.allergy != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEF3C7),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.warning_amber_rounded, color: Color(0xFFB45309), size: 12),
-                      const SizedBox(width: 3),
-                      Text(
-                        'Alergi: ${item.allergy}',
-                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFFB45309)),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-          const Divider(height: 18, color: Color(0xFFF0F2F5)),
-
-          // Bottom line: Estimasi Biaya & Tombol Pilih ke Kasir
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Estimasi Tagihan:', style: TextStyle(fontSize: 10, color: Color(0xFF6D7A72))),
-                  Text(
-                    CurrencyFormatter.format(item.estimatedTotal),
-                    style: const TextStyle(
-                      fontFamily: 'JetBrains Mono',
-                      fontWeight: FontWeight.w800,
-                      fontSize: 14,
-                      color: Color(0xFF059669),
-                    ),
-                  ),
-                ],
-              ),
-              ElevatedButton.icon(
-                onPressed: () {
-                  widget.onSelectPatient(
-                    PharmacyPatientData(
-                      patient: '${item.patientName} (${item.queueNumber})',
-                      doctor: item.doctorName,
-                    ),
-                  );
-                  Navigator.of(context).pop();
-                },
-                icon: const Icon(Icons.check_circle_outline_rounded, size: 16),
-                label: const Text('Muat ke Kasir', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }

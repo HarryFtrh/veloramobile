@@ -1,8 +1,9 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../core/network/api_client.dart';
 import '../../core/storage/session_storage.dart';
 import '../../core/utils/safe_json.dart';
-import 'sales_history_drawer.dart';
+import 'sale_record.dart';
 
 class ShiftStatus {
   final bool isOpen;
@@ -20,6 +21,8 @@ class ShiftStatus {
   final double cashIn;
   final double cashOut;
   final double expectedCash;
+
+  double get debitSales => cardSales;
 
   ShiftStatus({
     required this.isOpen,
@@ -120,8 +123,8 @@ class ShiftStatus {
         fallback: summaryMap.getDouble('petty_cash_out',
             fallback: active.getDouble('cash_out')));
 
-    // Augment with local sales from SalesHistoryDrawer if available
-    final localSales = SalesHistoryDrawer.activeShiftSales.where((s) => !s.isVoided).toList();
+    // Augment with local sales from ShiftSalesStorage if available
+    final localSales = ShiftSalesStorage.activeShiftSales.where((s) => !s.isVoided).toList();
     if (localSales.isNotEmpty) {
       final double localCash = localSales.where((s) => s.paymentMethod.toLowerCase() == 'cash').fold(0.0, (sum, s) => sum + s.total);
       final double localQris = localSales.where((s) => s.paymentMethod.toLowerCase() == 'qris').fold(0.0, (sum, s) => sum + s.total);
@@ -190,6 +193,8 @@ class ShiftCloseSummary {
   final double cashIn;
   final double cashOut;
   final String? notes;
+
+  double get debitSales => cardSales;
 
   ShiftCloseSummary({
     required this.shiftId,
@@ -262,7 +267,7 @@ class ShiftCloseSummary {
             fallback: data.getDouble('cash_out', fallback: currentShift.cashOut)));
 
     // Fallback to local recorded transactions if backend returns 0
-    final localSales = SalesHistoryDrawer.activeShiftSales.where((s) => !s.isVoided).toList();
+    final localSales = ShiftSalesStorage.activeShiftSales.where((s) => !s.isVoided).toList();
     if (localSales.isNotEmpty) {
       final double localCash = localSales.where((s) => s.paymentMethod.toLowerCase() == 'cash').fold(0.0, (sum, s) => sum + s.total);
       final double localQris = localSales.where((s) => s.paymentMethod.toLowerCase() == 'qris').fold(0.0, (sum, s) => sum + s.total);
@@ -336,6 +341,8 @@ class ShiftCloseSummary {
   }
 }
 
+typedef ShiftSummary = ShiftCloseSummary;
+
 class ShiftService extends ChangeNotifier {
   static final ShiftService instance = ShiftService._();
   ShiftService._();
@@ -348,13 +355,26 @@ class ShiftService extends ChangeNotifier {
 
   Future<ShiftStatus> getShiftStatus() async {
     final locationId = SessionStorage.instance.getLocationId();
-    final response = await ApiClient.instance.dio.get(
-      '/v1/pos/shift-status',
-      queryParameters: {
-        if (locationId != null && locationId.isNotEmpty)
-          'location_id': int.tryParse(locationId) ?? locationId,
-      },
-    );
+    final query = {
+      if (locationId != null && locationId.isNotEmpty)
+        'location_id': int.tryParse(locationId) ?? locationId,
+    };
+    Response response;
+    try {
+      response = await ApiClient.instance.dio.get(
+        '/v1/pos/shift-status',
+        queryParameters: query,
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        response = await ApiClient.instance.dio.get(
+          '/pos/shift-status',
+          queryParameters: query,
+        );
+      } else {
+        rethrow;
+      }
+    }
     final rawData = response.data;
     Map<String, dynamic> data = {};
     if (rawData is Map) {
@@ -370,16 +390,28 @@ class ShiftService extends ChangeNotifier {
 
   Future<void> openShift({required num startingCash, String? notes}) async {
     final locationId = SessionStorage.instance.getLocationId();
-    await ApiClient.instance.dio.post(
-      '/v1/pos/shift-open',
-      data: {
-        'opening_cash': startingCash,
-        'starting_cash': startingCash,
-        if (locationId != null && locationId.isNotEmpty) 'location_id': int.tryParse(locationId) ?? locationId,
-        'notes': notes ?? 'Shift dibuka via Flutter POS',
-      },
-    );
-    SalesHistoryDrawer.activeShiftSales.clear();
+    final payload = {
+      'opening_cash': startingCash,
+      'starting_cash': startingCash,
+      if (locationId != null && locationId.isNotEmpty) 'location_id': int.tryParse(locationId) ?? locationId,
+      'notes': notes ?? 'Shift dibuka via Flutter POS',
+    };
+    try {
+      await ApiClient.instance.dio.post(
+        '/v1/pos/shift-open',
+        data: payload,
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        await ApiClient.instance.dio.post(
+          '/pos/shift-open',
+          data: payload,
+        );
+      } else {
+        rethrow;
+      }
+    }
+    ShiftSalesStorage.activeShiftSales.clear();
     await getShiftStatus();
   }
 
@@ -390,17 +422,30 @@ class ShiftService extends ChangeNotifier {
   }) async {
     final locationId = SessionStorage.instance.getLocationId();
     final shiftIdVal = currentShift.shiftId;
-    final response = await ApiClient.instance.dio.post(
-      '/v1/pos/shift-close',
-      data: {
-        if (shiftIdVal != null && shiftIdVal.isNotEmpty) 'shift_id': int.tryParse(shiftIdVal) ?? shiftIdVal,
-        'closing_cash': actualCash,
-        'actual_cash': actualCash,
-        'cash_actual': actualCash,
-        if (locationId != null && locationId.isNotEmpty) 'location_id': int.tryParse(locationId) ?? locationId,
-        'notes': notes,
-      },
-    );
+    final payload = {
+      if (shiftIdVal != null && shiftIdVal.isNotEmpty) 'shift_id': int.tryParse(shiftIdVal) ?? shiftIdVal,
+      'closing_cash': actualCash,
+      'actual_cash': actualCash,
+      'cash_actual': actualCash,
+      if (locationId != null && locationId.isNotEmpty) 'location_id': int.tryParse(locationId) ?? locationId,
+      'notes': notes,
+    };
+    Response response;
+    try {
+      response = await ApiClient.instance.dio.post(
+        '/v1/pos/shift-close',
+        data: payload,
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        response = await ApiClient.instance.dio.post(
+          '/pos/shift-close',
+          data: payload,
+        );
+      } else {
+        rethrow;
+      }
+    }
     final rawData = response.data;
     Map<String, dynamic> data = {};
     if (rawData is Map) {
@@ -419,7 +464,7 @@ class ShiftService extends ChangeNotifier {
 
     _lastCloseSummary = summary;
     _currentStatus = ShiftStatus(isOpen: false);
-    SalesHistoryDrawer.activeShiftSales.clear();
+    ShiftSalesStorage.activeShiftSales.clear();
     notifyListeners();
 
     return summary;
@@ -433,18 +478,31 @@ class ShiftService extends ChangeNotifier {
   }) async {
     final locationId = SessionStorage.instance.getLocationId();
     final effectiveShiftId = shiftId ?? _currentStatus?.shiftId;
-    await ApiClient.instance.dio.post(
-      '/v1/pos/petty-cash',
-      data: {
-        'type': type,
-        'amount': amount,
-        'reason': reason,
-        if (effectiveShiftId != null && effectiveShiftId.isNotEmpty)
-          'shift_id': int.tryParse(effectiveShiftId) ?? effectiveShiftId,
-        if (locationId != null && locationId.isNotEmpty)
-          'location_id': int.tryParse(locationId) ?? locationId,
-      },
-    );
+    final payload = {
+      'type': type,
+      'amount': amount,
+      'reason': reason,
+      'notes': reason,
+      if (effectiveShiftId != null && effectiveShiftId.isNotEmpty)
+        'shift_id': int.tryParse(effectiveShiftId) ?? effectiveShiftId,
+      if (locationId != null && locationId.isNotEmpty)
+        'location_id': int.tryParse(locationId) ?? locationId,
+    };
+    try {
+      await ApiClient.instance.dio.post(
+        '/v1/pos/petty-cash',
+        data: payload,
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        await ApiClient.instance.dio.post(
+          '/pos/petty-cash',
+          data: payload,
+        );
+      } else {
+        rethrow;
+      }
+    }
     await getShiftStatus();
   }
 }

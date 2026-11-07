@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../../core/network/api_client.dart';
 import '../../core/storage/session_storage.dart';
 import '../../core/utils/safe_json.dart';
-import 'product_catalog_service.dart';
+import 'models/pos_catalog_models.dart';
 
 /// Layanan Katalog Khusus Bisnis RETAIL / MINIMARKET / GROSIR.
 /// Terisolasi penuh dari Pharmacy (Apotek) dan FnB (Cafe):
@@ -94,47 +94,30 @@ class RetailCatalogService {
   }) async {
     _ensureTenantScope();
     final scopeKey = _currentScopeKey();
-    final tenantId = SessionStorage.instance.getTenantId();
     final locId = SessionStorage.instance.getLocationId();
 
     final queryParams = <String, dynamic>{
       'limit': limit,
-      'per_page': limit,
-      if (tenantId != null && tenantId.isNotEmpty) 'tenant_id': tenantId,
       if (locId != null && locId.isNotEmpty) 'location_id': locId,
       if (search != null && search.isNotEmpty) 'search': search,
       if (categoryId != null && categoryId.isNotEmpty) 'category_id': categoryId,
       'since_version': ?sinceVersion,
     };
 
-    const candidateEndpoints = [
-      '/v1/pos/products-sync',
-      '/retail/pos/products',
-      '/retail/products',
-    ];
-
     Response<dynamic>? response;
     PosCatalogData? parsedCatalog;
-    String? successfulEndpoint;
 
-    for (final ep in candidateEndpoints) {
-      try {
-        final res = await ApiClient.instance.dio.get(ep, queryParameters: queryParams);
-        if (res.statusCode == 200 && res.data != null) {
-          final candidateData = _parseRetailCatalogData(res.data);
-          response ??= res;
-          parsedCatalog ??= candidateData;
-          successfulEndpoint ??= ep;
-          if (candidateData.products.isNotEmpty) {
-            response = res;
-            parsedCatalog = candidateData;
-            successfulEndpoint = ep;
-            break;
-          }
-        }
-      } catch (e) {
-        debugPrint('⚠️ [RETAIL CATALOG] Endpoint $ep gagal: $e');
+    try {
+      final res = await ApiClient.instance.dio.get(
+        '/v1/pos/products-sync',
+        queryParameters: queryParams,
+      );
+      if (res.statusCode == 200 && res.data != null) {
+        response = res;
+        parsedCatalog = _parseRetailCatalogData(res.data);
       }
+    } catch (e) {
+      debugPrint('⚠️ [RETAIL CATALOG] /v1/pos/products-sync gagal: $e');
     }
 
     if (response == null || parsedCatalog == null) {
@@ -165,7 +148,7 @@ class RetailCatalogService {
 
     final catalogData = parsedCatalog;
     debugPrint(
-      '🛒 [RETAIL CATALOG] Loaded ${catalogData.products.length} barang across ${catalogData.categories.length} kategori from $successfulEndpoint ($scopeKey)',
+      '🛒 [RETAIL CATALOG] Loaded ${catalogData.products.length} barang across ${catalogData.categories.length} kategori from /v1/pos/products-sync ($scopeKey)',
     );
     _rebuildIndex(catalogData.products);
     _cachedCatalog = catalogData;
@@ -177,7 +160,7 @@ class RetailCatalogService {
     return catalogData;
   }
 
-  /// Pencarian barang Retail ke backend
+  /// Pencarian barang Retail ke 1 endpoint resmi POS (`/v1/pos/products-sync?search=...`)
   Future<List<PosProduct>> searchProductsRemote(
     String query, {
     int limit = 50,
@@ -186,40 +169,29 @@ class RetailCatalogService {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return _cachedCatalog?.products ?? const [];
 
-    final tenantId = SessionStorage.instance.getTenantId();
     final locId = SessionStorage.instance.getLocationId();
-    final queryParams = <String, dynamic>{
-      'search': trimmed,
-      'q': trimmed,
-      'limit': limit,
-      'per_page': limit,
-      if (tenantId != null && tenantId.isNotEmpty) 'tenant_id': tenantId,
-      if (locId != null && locId.isNotEmpty) 'location_id': locId,
-    };
-
-    const candidateEndpoints = [
-      '/v1/pos/products-sync',
-      '/retail/pos/products',
-      '/retail/products',
-    ];
-
-    for (final ep in candidateEndpoints) {
-      try {
-        final res = await ApiClient.instance.dio.get(ep, queryParameters: queryParams);
-        if (res.statusCode == 200 && res.data != null) {
-          final parsed = _parseRetailCatalogData(res.data);
-          if (parsed.products.isNotEmpty) {
-            for (final p in parsed.products) {
-              if (p.id.isNotEmpty) _idMap[p.id] = p;
-              if (p.barcode.isNotEmpty) _barcodeMap[p.barcode.trim().toLowerCase()] = p;
-              if (p.sku.isNotEmpty) _skuMap[p.sku.trim().toLowerCase()] = p;
-            }
-            return parsed.products;
+    try {
+      final res = await ApiClient.instance.dio.get(
+        '/v1/pos/products-sync',
+        queryParameters: {
+          'search': trimmed,
+          'limit': limit,
+          if (locId != null && locId.isNotEmpty) 'location_id': locId,
+        },
+      );
+      if (res.statusCode == 200 && res.data != null) {
+        final parsed = _parseRetailCatalogData(res.data);
+        if (parsed.products.isNotEmpty) {
+          for (final p in parsed.products) {
+            if (p.id.isNotEmpty) _idMap[p.id] = p;
+            if (p.barcode.isNotEmpty) _barcodeMap[p.barcode.trim().toLowerCase()] = p;
+            if (p.sku.isNotEmpty) _skuMap[p.sku.trim().toLowerCase()] = p;
           }
+          return parsed.products;
         }
-      } catch (e) {
-        debugPrint('⚠️ [RETAIL SEARCH] $ep gagal: $e');
       }
+    } catch (e) {
+      debugPrint('⚠️ [RETAIL SEARCH] /v1/pos/products-sync?search gagal: $e');
     }
 
     return searchFast(trimmed);
@@ -319,7 +291,7 @@ class RetailCatalogService {
       stock: stockVal,
       sku: skuVal,
       barcode: barcodeVal,
-      imageUrl: ProductCatalogService.resolveImageUrl(img),
+      imageUrl: PosProduct.resolveImageUrl(img),
       tag: json.getString('shelf_location').isNotEmpty ? json.getString('shelf_location') : null,
       description: json.getString('description').isNotEmpty ? json.getString('description') : null,
       unit: finalUnits.first.name,

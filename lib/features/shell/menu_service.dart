@@ -14,11 +14,22 @@ import '../fnb/fnb_register_screen.dart';
 import '../fnb_customer/customer_home_screen.dart';
 import '../kitchen/kitchen_screen.dart';
 import '../marketplace/marketplace_screen.dart';
-import '../pharmacy/pharmacy.dart';
+import '../pharmacy/pharmacy_pos_screen.dart';
+import '../pharmacy/pharmacy_queue_screen.dart';
+import '../pharmacy/pharmacy_stock_alert_screen.dart';
+import '../pharmacy/pharmacy_shift_report_screen.dart';
+import '../pharmacy/pharmacy_compounding_screen.dart';
+import '../pharmacy/pharmacy_calling_display_screen.dart';
+import '../pharmacy/pharmacy_stock_opname_screen.dart';
+import '../pharmacy/pharmacy_doctor_emr_screen.dart';
+import '../pharmacy/pharmacy_executive_analytics_screen.dart';
+import '../pharmacy/widgets/pharmacy_medical_records_modal.dart';
+import '../pharmacy/widgets/pharmacy_pbf_order_modal.dart';
+import '../pharmacy/widgets/pharmacy_prescription_review_modal.dart';
 import '../sales/sales_dashboard_screen.dart';
 import '../settings/settings_screen.dart';
 import '../tables/tables_screen.dart';
-import 'more_screen.dart';
+import 'more_entry.dart';
 
 /// Model item menu dari response server-driven /api/my-menu
 class ServerMenuItem {
@@ -452,12 +463,23 @@ class MenuRegistry {
     ),
   };
 
+  static final Map<String, _RegisteredRoute> _titleMap = {
+    for (final entry in _routes.entries)
+      entry.value.defaultTitle.toLowerCase().trim(): entry.value,
+  };
+
   /// Mencocokkan ServerMenuItem dengan rute yang terdaftar
   static MoreEntry? resolve(ServerMenuItem item) {
     final cleanKey = item.key.toLowerCase().trim().replaceAll('-', '_');
+    // 1. Direct O(1) route map lookup
     _RegisteredRoute? route = _routes[cleanKey];
 
-    // Coba pencocokan parsial jika key mengandung nama modul
+    // 2. Direct O(1) title lookup
+    if (route == null && item.title.isNotEmpty) {
+      route = _titleMap[item.title.toLowerCase().trim()];
+    }
+
+    // 3. Fallback partial matching jika key atau judul berbeda variasi
     if (route == null) {
       for (final entry in _routes.entries) {
         if (cleanKey.contains(entry.key) || entry.key.contains(cleanKey)) {
@@ -467,7 +489,6 @@ class MenuRegistry {
       }
     }
 
-    // Coba pencocokan berdasarkan judul
     if (route == null) {
       final titleLower = item.title.toLowerCase();
       for (final entry in _routes.entries) {
@@ -753,9 +774,10 @@ class MenuService {
 
           // Map setiap ServerMenuItem ke MoreEntry via MenuRegistry
           final resolvedEntries = <MoreEntry>[];
+          final seenTitles = <String>{};
           for (final item in serverItems) {
             final entry = MenuRegistry.resolve(item);
-            if (entry != null && !resolvedEntries.any((e) => e.title == entry.title)) {
+            if (entry != null && seenTitles.add(entry.title)) {
               resolvedEntries.add(entry);
             }
           }
@@ -782,11 +804,12 @@ class MenuService {
         final decoded = jsonDecode(diskJson);
         if (decoded is List) {
           final restored = <MoreEntry>[];
+          final restoredSeen = <String>{};
           for (final it in decoded) {
             if (it is Map) {
               final item = ServerMenuItem.fromJson(Map<String, dynamic>.from(it));
               final entry = MenuRegistry.resolve(item);
-              if (entry != null && !restored.any((e) => e.title == entry.title)) {
+              if (entry != null && restoredSeen.add(entry.title)) {
                 restored.add(entry);
               }
             }

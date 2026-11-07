@@ -13,6 +13,9 @@ class CustomerProductPriceSummaryBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     final formattedPrice = totalPrice.toString().replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (m) => '${m[1]}.',
@@ -25,8 +28,8 @@ class CustomerProductPriceSummaryBar extends StatelessWidget {
         padding: EdgeInsets.fromLTRB(20, 14, 20, 14 + bottomInset),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: const Border(
-          top: BorderSide(color: WarmPalette.line),
+        border: Border(
+          top: BorderSide(color: p.line),
         ),
         boxShadow: [
           BoxShadow(
@@ -43,12 +46,12 @@ class CustomerProductPriceSummaryBar extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
+                Text(
                   'TOTAL PEMBAYARAN',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    color: WarmPalette.textSecondary,
+                    color: p.textSecondary,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -57,10 +60,10 @@ class CustomerProductPriceSummaryBar extends StatelessWidget {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Rp $formattedPrice',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
-                      color: WarmPalette.primary,
+                      color: primaryColor,
                     ),
                   ),
                 ),
@@ -88,7 +91,7 @@ class CustomerProductPriceSummaryBar extends StatelessWidget {
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: WarmPalette.primary,
+                  backgroundColor: primaryColor,
                   foregroundColor: Colors.white,
                   shape: const StadiumBorder(),
                   elevation: 0,

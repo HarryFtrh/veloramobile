@@ -4,7 +4,15 @@ import 'package:flutter/material.dart';
 import '../../../core/design/tokens.dart';
 import '../../fnb/modifiers.dart';
 import '../customer_models.dart';
+import 'customer_product_beverage_options.dart';
+import 'customer_product_hero_header.dart';
+import 'customer_product_modifier_group_card.dart';
 import 'customer_product_price_summary_bar.dart';
+
+export 'customer_product_beverage_options.dart';
+export 'customer_product_hero_header.dart';
+export 'customer_product_modifier_group_card.dart';
+export 'customer_product_price_summary_bar.dart';
 
 class CustomerProductDetailSheet extends StatefulWidget {
   const CustomerProductDetailSheet({
@@ -91,6 +99,27 @@ class _CustomerProductDetailSheetState
     return unit * _quantity;
   }
 
+  void _toggleOption(ModifierGroup group, ModifierOption opt) {
+    setState(() {
+      final isChecked = _selectedToppings.contains(opt.name);
+      if (isChecked) {
+        _selectedToppings.remove(opt.name);
+        _toppingsPrice -= opt.price.round();
+      } else {
+        if (group.isSingleChoice) {
+          for (final o in group.options) {
+            if (_selectedToppings.contains(o.name)) {
+              _selectedToppings.remove(o.name);
+              _toppingsPrice -= o.price.round();
+            }
+          }
+        }
+        _selectedToppings.add(opt.name);
+        _toppingsPrice += opt.price.round();
+      }
+    });
+  }
+
   void _submit() {
     final item = CustomerCartItem(
       product: widget.product,
@@ -103,56 +132,79 @@ class _CustomerProductDetailSheetState
       quantity: _quantity,
       notes: _notesCtrl.text.trim(),
     );
+
     widget.onAddToCart(item);
-    Navigator.of(context).pop();
+    Navigator.pop(context);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                '$_quantity× ${widget.product.name} dimasukkan ke keranjang',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final isBeverage = [
+      'coffee',
+      'kopi',
+      'tea',
+      'teh',
+      'beverage',
+      'drink',
+      'minuman',
+    ].any((k) => widget.product.category.toLowerCase().contains(k));
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.9,
+      initialChildSize: 0.88,
       minChildSize: 0.5,
       maxChildSize: 0.95,
-      builder: (ctx, scrollController) {
+      builder: (_, scrollController) {
         return Container(
           decoration: const BoxDecoration(
-            color: WarmPalette.canvas,
+            color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
-          clipBehavior: Clip.antiAlias,
           child: Column(
             children: [
-              // Top Bar with Drag Handle & Close
-              Container(
-                color: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
+              // Drag Handle & Favorite Button
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 12, 4),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back_rounded,
-                        color: WarmPalette.textPrimary,
-                      ),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                    Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: WarmPalette.line,
-                        borderRadius: BorderRadius.circular(2),
+                    const SizedBox(width: 32),
+                    Center(
+                      child: Container(
+                        width: 44,
+                        height: 4.5,
+                        decoration: BoxDecoration(
+                          color: p.line,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
                       ),
                     ),
                     IconButton(
                       icon: Icon(
                         _isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                        color: WarmPalette.primary,
+                        color: primaryColor,
                       ),
                       onPressed: () {
                         setState(() => _isFavorite = !_isFavorite);
@@ -178,207 +230,7 @@ class _CustomerProductDetailSheetState
                   controller: scrollController,
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                   children: [
-                    // Product Image Card
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: Stack(
-                        children: [
-                          AspectRatio(
-                            aspectRatio: 16 / 10,
-                            child: Image.network(
-                              widget.product.imageUrl,
-                              fit: BoxFit.cover,
-                              cacheWidth: 600,
-                              errorBuilder: (_, _, _) => Container(
-                                color: WarmPalette.surfaceMuted,
-                                child: const Icon(
-                                  Icons.coffee,
-                                  size: 64,
-                                  color: WarmPalette.primary,
-                                ),
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            left: 12,
-                            bottom: 12,
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.9),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: const Row(
-                                    children: [
-                                      Icon(
-                                        Icons.eco_outlined,
-                                        size: 14,
-                                        color: WarmPalette.tertiary,
-                                      ),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        'Single Origin Blend',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w600,
-                                          color: WarmPalette.tertiary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: WarmPalette.surfaceMuted
-                                        .withValues(alpha: 0.95),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    widget.product.category.isNotEmpty ? widget.product.category : 'Menu Spesial',
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: WarmPalette.primary,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-
-                    // Title & Price
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.product.name,
-                                style: text.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  color: WarmPalette.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Row(
-                                children: [
-                                  ...[
-                                    const Icon(
-                                      Icons.star_rounded,
-                                      size: 18,
-                                      color: WarmPalette.secondary,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '${widget.product.rating}',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 13,
-                                        color: WarmPalette.textPrimary,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    const Text(
-                                      '•',
-                                      style: TextStyle(
-                                        color: WarmPalette.textSecondary,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                  ],
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: WarmPalette.tertiary
-                                          .withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      widget.product.category.toUpperCase(),
-                                      style: const TextStyle(
-                                        color: WarmPalette.tertiary,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                  if (widget.product.badge != null) ...[
-                                    const SizedBox(width: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: WarmPalette.secondary
-                                            .withValues(alpha: 0.12),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        widget.product.badge!,
-                                        style: const TextStyle(
-                                          color: WarmPalette.secondary,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              'Rp ${widget.product.basePrice.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800,
-                                color: WarmPalette.primary,
-                              ),
-                            ),
-                            const Text(
-                              'Harga Dasar',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: WarmPalette.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      widget.product.description,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: WarmPalette.textSecondary,
-                        height: 1.4,
-                      ),
-                    ),
+                    CustomerProductHeroHeader(product: widget.product),
                     const SizedBox(height: 20),
 
                     // Modifier Groups / Topping & Size Options from Server
@@ -391,232 +243,20 @@ class _CustomerProductDetailSheetState
                       )
                     else if (_apiModifierGroups.isNotEmpty)
                       ..._apiModifierGroups.map((group) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  group.name,
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
-                                    color: WarmPalette.textPrimary,
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: WarmPalette.surfaceMuted,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    group.isRequired
-                                        ? 'Wajib (${group.maxSelect} maks)'
-                                        : 'Opsional (maks ${group.maxSelect})',
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: WarmPalette.primary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            ...group.options.map((opt) {
-                              final isChecked = _selectedToppings.contains(
-                                opt.name,
-                              );
-                              return InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    if (isChecked) {
-                                      _selectedToppings.remove(opt.name);
-                                      _toppingsPrice -= opt.price.round();
-                                    } else {
-                                      if (group.isSingleChoice) {
-                                        for (final o in group.options) {
-                                          if (_selectedToppings.contains(
-                                            o.name,
-                                          )) {
-                                            _selectedToppings.remove(o.name);
-                                            _toppingsPrice -= o.price.round();
-                                          }
-                                        }
-                                      }
-                                      _selectedToppings.add(opt.name);
-                                      _toppingsPrice += opt.price.round();
-                                    }
-                                  });
-                                },
-                                borderRadius: BorderRadius.circular(14),
-                                child: Container(
-                                  margin: const EdgeInsets.only(bottom: 8),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 10,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(
-                                      color: isChecked
-                                          ? WarmPalette.primary
-                                          : WarmPalette.line,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Checkbox(
-                                        value: isChecked,
-                                        activeColor: WarmPalette.primary,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                        ),
-                                        onChanged: (val) {
-                                          setState(() {
-                                            if (val == true) {
-                                              if (group.isSingleChoice) {
-                                                for (final o in group.options) {
-                                                  if (_selectedToppings
-                                                      .contains(o.name)) {
-                                                    _selectedToppings.remove(
-                                                      o.name,
-                                                    );
-                                                    _toppingsPrice -= o.price
-                                                        .round();
-                                                  }
-                                                }
-                                              }
-                                              _selectedToppings.add(opt.name);
-                                              _toppingsPrice += opt.price
-                                                  .round();
-                                            } else {
-                                              _selectedToppings.remove(
-                                                opt.name,
-                                              );
-                                              _toppingsPrice -= opt.price
-                                                  .round();
-                                            }
-                                          });
-                                        },
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          opt.name,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 13,
-                                            color: WarmPalette.textPrimary,
-                                          ),
-                                        ),
-                                      ),
-                                      Text(
-                                        opt.price > 0
-                                            ? '+Rp ${opt.price.round().toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}'
-                                            : 'Gratis',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 12,
-                                          color: opt.price > 0
-                                              ? WarmPalette.secondary
-                                              : WarmPalette.tertiary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }),
-                            const SizedBox(height: 16),
-                          ],
+                        return CustomerProductModifierGroupCard(
+                          group: group,
+                          selectedToppings: _selectedToppings,
+                          onToggleOption: (opt) => _toggleOption(group, opt),
                         );
                       }),
 
-                    if ([
-                      'coffee',
-                      'kopi',
-                      'tea',
-                      'teh',
-                      'beverage',
-                      'drink',
-                      'minuman',
-                    ].any(
-                      (k) => widget.product.category.toLowerCase().contains(k),
-                    )) ...[
-                      // Sweetness Level
-                      const Text(
-                        'Level Gula / Sweetness',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: WarmPalette.textPrimary,
-                        ),
+                    if (isBeverage)
+                      CustomerProductBeverageOptions(
+                        selectedSweetness: _selectedSweetness,
+                        selectedIce: _selectedIce,
+                        onSweetnessChanged: (val) => setState(() => _selectedSweetness = val),
+                        onIceChanged: (val) => setState(() => _selectedIce = val),
                       ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        children:
-                            [
-                              'Normal (100%)',
-                              'Less Sugar (50%)',
-                              'No Sugar (0%)',
-                            ].map((opt) {
-                              final isSel = _selectedSweetness == opt;
-                              return ChoiceChip(
-                                label: Text(opt),
-                                selected: isSel,
-                                onSelected: (_) =>
-                                    setState(() => _selectedSweetness = opt),
-                                selectedColor: WarmPalette.primary,
-                                backgroundColor: Colors.white,
-                                labelStyle: TextStyle(
-                                  color: isSel
-                                      ? Colors.white
-                                      : WarmPalette.textPrimary,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
-                                ),
-                                shape: const StadiumBorder(),
-                                side: BorderSide(
-                                  color: isSel
-                                      ? Colors.transparent
-                                      : WarmPalette.line,
-                                ),
-                              );
-                            }).toList(),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Ice Level
-                      const Text(
-                        'Level Es / Suhu',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: WarmPalette.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          _buildIceChip('Normal Ice', Icons.ac_unit_rounded),
-                          const SizedBox(width: 8),
-                          _buildIceChip('Less Ice', Icons.mode_fan_off_rounded),
-                          const SizedBox(width: 8),
-                          _buildIceChip('Warm / Hot', Icons.coffee_rounded),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                    ],
 
                     const SizedBox(height: 8),
 
@@ -624,7 +264,7 @@ class _CustomerProductDetailSheetState
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Column(
+                        Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
@@ -632,14 +272,14 @@ class _CustomerProductDetailSheetState
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
-                                color: WarmPalette.textPrimary,
+                                color: p.textPrimary,
                               ),
                             ),
                             Text(
-                              'Porsi minuman',
+                              'Porsi menu',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: WarmPalette.textSecondary,
+                                color: p.textSecondary,
                               ),
                             ),
                           ],
@@ -650,7 +290,7 @@ class _CustomerProductDetailSheetState
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: WarmPalette.surfaceMuted,
+                            color: p.surfaceMuted,
                             borderRadius: BorderRadius.circular(30),
                           ),
                           child: Row(
@@ -686,21 +326,17 @@ class _CustomerProductDetailSheetState
                     ),
                     const SizedBox(height: 20),
 
-                    // Barista Note
-                    const Row(
+                    // Notes
+                    Row(
                       children: [
-                        Icon(
-                          Icons.edit_note_rounded,
-                          size: 20,
-                          color: WarmPalette.primary,
-                        ),
-                        SizedBox(width: 6),
+                        Icon(Icons.edit_note, size: 20, color: primaryColor),
+                        const SizedBox(width: 6),
                         Text(
-                          'Catatan untuk Barista',
+                          'Catatan Khusus',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: WarmPalette.textPrimary,
+                            color: p.textPrimary,
                           ),
                         ),
                       ],
@@ -714,14 +350,14 @@ class _CustomerProductDetailSheetState
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(
-                            color: WarmPalette.line,
+                          borderSide: BorderSide(
+                            color: p.line,
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(
-                            color: WarmPalette.line,
+                          borderSide: BorderSide(
+                            color: p.line,
                           ),
                         ),
                       ),
@@ -739,44 +375,6 @@ class _CustomerProductDetailSheetState
           ),
         );
       },
-    );
-  }
-
-  Widget _buildIceChip(String label, IconData icon) {
-    final isSel = _selectedIce == label;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _selectedIce = label),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isSel ? WarmPalette.primary : Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isSel ? Colors.transparent : WarmPalette.line,
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 18,
-                color: isSel ? Colors.white : WarmPalette.textSecondary,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: isSel ? Colors.white : WarmPalette.textPrimary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

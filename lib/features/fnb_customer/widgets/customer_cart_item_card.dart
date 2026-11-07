@@ -16,13 +16,16 @@ class CustomerCartItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: WarmPalette.line),
+        border: Border.all(color: p.line),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -41,10 +44,10 @@ class CustomerCartItemCard extends StatelessWidget {
                   errorBuilder: (_, _, _) => Container(
                     width: 72,
                     height: 72,
-                    color: WarmPalette.surfaceMuted,
-                    child: const Icon(
+                    color: p.surfaceMuted,
+                    child: Icon(
                       Icons.coffee,
-                      color: WarmPalette.primary,
+                      color: primaryColor,
                     ),
                   ),
                 ),
@@ -57,7 +60,7 @@ class CustomerCartItemCard extends StatelessWidget {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: WarmPalette.primary.withValues(alpha: 0.85),
+                      color: primaryColor.withValues(alpha: 0.85),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -92,10 +95,10 @@ class CustomerCartItemCard extends StatelessWidget {
                     ),
                     GestureDetector(
                       onTap: onRemove,
-                      child: const Icon(
+                      child: Icon(
                         Icons.close,
                         size: 18,
-                        color: WarmPalette.textSecondary,
+                        color: p.textSecondary,
                       ),
                     ),
                   ],
@@ -103,9 +106,9 @@ class CustomerCartItemCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   '${item.size} • ${item.sweetness} ${item.toppings.isNotEmpty ? "• ${item.toppings.join(", ")}" : ""}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: WarmPalette.textSecondary,
+                    color: p.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -115,9 +118,9 @@ class CustomerCartItemCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         'Rp ${item.totalPrice.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w800,
-                          color: WarmPalette.textPrimary,
+                          color: p.textPrimary,
                           fontSize: 14,
                         ),
                         maxLines: 1,
@@ -128,7 +131,7 @@ class CustomerCartItemCard extends StatelessWidget {
                     Container(
                       height: 32,
                       decoration: BoxDecoration(
-                        color: WarmPalette.surfaceMuted,
+                        color: p.surfaceMuted,
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Row(

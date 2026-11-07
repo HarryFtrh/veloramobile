@@ -71,12 +71,26 @@ class MarketplaceService {
       if (search != null && search.isNotEmpty) 'search': search,
     };
 
-    final response = await ApiClient.instance.dio.get(
+    final endpoints = [
       '/v1/mobile/customer/catalog',
-      queryParameters: queryParams,
-    );
+      '/v1/marketplace/catalog',
+      '/mobile/customer/catalog',
+    ];
 
-    final rawData = response.data;
+    dynamic rawData;
+    for (final ep in endpoints) {
+      try {
+        final response = await ApiClient.instance.dio.get(
+          ep,
+          queryParameters: queryParams,
+        );
+        if (response.statusCode == 200 && response.data != null) {
+          rawData = response.data;
+          break;
+        }
+      } catch (_) {}
+    }
+
     List items = [];
     if (rawData is Map) {
       final inner = rawData['data'];
@@ -93,8 +107,23 @@ class MarketplaceService {
   }
 
   Future<List<MarketplaceOrderHistoryItem>> getOrderHistory() async {
-    final response = await ApiClient.instance.dio.get('/v1/mobile/customer/order-history');
-    final rawData = response.data;
+    final endpoints = [
+      '/v1/mobile/customer/order-history',
+      '/v1/marketplace/order-history',
+      '/mobile/customer/order-history',
+    ];
+
+    dynamic rawData;
+    for (final ep in endpoints) {
+      try {
+        final response = await ApiClient.instance.dio.get(ep);
+        if (response.statusCode == 200 && response.data != null) {
+          rawData = response.data;
+          break;
+        }
+      } catch (_) {}
+    }
+
     List items = [];
     if (rawData is Map) {
       final inner = rawData['data'];
@@ -111,13 +140,23 @@ class MarketplaceService {
   }
 
   Future<num> getPointsBalance() async {
-    final response = await ApiClient.instance.dio.get('/v1/mobile/customer/points-balance');
-    final rawData = response.data;
-    if (rawData is Map) {
-      final inner = rawData['data'] ?? rawData;
-      if (inner is Map) {
-        return (inner['points_balance'] as num?) ?? (inner['points'] as num?) ?? 0;
-      }
+    final endpoints = [
+      '/v1/mobile/customer/points-balance',
+      '/v1/pos/customer/points-balance',
+      '/mobile/customer/points-balance',
+    ];
+
+    for (final ep in endpoints) {
+      try {
+        final response = await ApiClient.instance.dio.get(ep);
+        final rawData = response.data;
+        if (rawData is Map) {
+          final inner = rawData['data'] ?? rawData;
+          if (inner is Map) {
+            return (inner['points_balance'] as num?) ?? (inner['points'] as num?) ?? 0;
+          }
+        }
+      } catch (_) {}
     }
     return 0;
   }
@@ -127,19 +166,30 @@ class MarketplaceService {
     required List<Map<String, dynamic>> items,
     String? notes,
   }) async {
-    final response = await ApiClient.instance.dio.post(
+    final endpoints = [
       '/v1/mobile/customer/checkout',
-      data: {
-        'seller_id': sellerId,
-        'items': items,
-        'notes': notes,
-      },
-    );
+      '/v1/marketplace/checkout',
+      '/mobile/customer/checkout',
+    ];
 
-    final rawData = response.data;
-    if (rawData is Map) {
-      final inner = rawData['data'];
-      return inner is Map ? Map<String, dynamic>.from(inner) : Map<String, dynamic>.from(rawData);
+    final payload = {
+      'seller_id': sellerId,
+      'items': items,
+      'notes': notes,
+    };
+
+    for (final ep in endpoints) {
+      try {
+        final response = await ApiClient.instance.dio.post(
+          ep,
+          data: payload,
+        );
+        final rawData = response.data;
+        if (rawData is Map) {
+          final inner = rawData['data'];
+          return inner is Map ? Map<String, dynamic>.from(inner) : Map<String, dynamic>.from(rawData);
+        }
+      } catch (_) {}
     }
     return {};
   }

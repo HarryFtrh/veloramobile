@@ -135,7 +135,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
               '${cartItem.product.name} berhasil ditambahkan ke keranjang',
             ),
             behavior: SnackBarBehavior.floating,
-            backgroundColor: WarmPalette.primary,
+            backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
       },
@@ -173,33 +173,36 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return Scaffold(
-      backgroundColor: WarmPalette.canvas,
+      backgroundColor: p.canvas,
       appBar: AppBar(
-        backgroundColor: WarmPalette.canvas,
+        backgroundColor: p.canvas,
         elevation: 0,
         leading: Builder(
           builder: (ctx) => IconButton(
-            icon: const Icon(Icons.menu_rounded, color: WarmPalette.textPrimary),
+            icon: Icon(Icons.menu_rounded, color: p.textPrimary),
             onPressed: () => Scaffold.of(ctx).openDrawer(),
           ),
         ),
         title: Text(
           SessionStorage.instance.getTenantName() ?? 'Velora Kafe',
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Plus Jakarta Sans',
             fontWeight: FontWeight.w800,
             fontSize: 18,
-            color: WarmPalette.textPrimary,
+            color: p.textPrimary,
           ),
         ),
         centerTitle: true,
         actions: [
           if (widget.onSwitchToStaffPos != null)
             IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.point_of_sale_rounded,
-                color: WarmPalette.primary,
+                color: primaryColor,
               ),
               tooltip: 'Beralih ke Layar Kasir POS',
               onPressed: widget.onSwitchToStaffPos,
@@ -208,9 +211,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
             alignment: Alignment.center,
             children: [
               IconButton(
-                icon: const Icon(
+                icon: Icon(
                   Icons.shopping_bag_outlined,
-                  color: WarmPalette.textPrimary,
+                  color: p.textPrimary,
                 ),
                 onPressed: _openCart,
               ),
@@ -220,8 +223,8 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                   top: 8,
                   child: Container(
                     padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: WarmPalette.primary,
+                    decoration: BoxDecoration(
+                      color: primaryColor,
                       shape: BoxShape.circle,
                     ),
                     constraints: const BoxConstraints(
@@ -249,18 +252,18 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
         onLogout: widget.onLogout,
       ),
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: WarmPalette.primary),
+          ? Center(
+              child: CircularProgressIndicator(color: primaryColor),
             )
           : _error != null
               ? Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.cloud_off,
                         size: 48,
-                        color: WarmPalette.danger,
+                        color: p.danger,
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -271,7 +274,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                       ElevatedButton(
                         onPressed: _loadData,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: WarmPalette.primary,
+                          backgroundColor: primaryColor,
                           foregroundColor: Colors.white,
                         ),
                         child: const Text('Muat Ulang'),
@@ -296,7 +299,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: WarmPalette.line),
+                                border: Border.all(color: p.line),
                               ),
                               child: Row(
                                 children: [
@@ -310,11 +313,11 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const Text(
+                                        Text(
                                           'Lokasi Meja',
                                           style: TextStyle(
                                             fontSize: 10,
-                                            color: WarmPalette.textSecondary,
+                                            color: p.textSecondary,
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
@@ -322,19 +325,19 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                                           _selectedTable != null
                                               ? '${SessionStorage.instance.getLocationName() ?? "Senopati, Jkt"} • ${_selectedTable!.name}'
                                               : '${SessionStorage.instance.getLocationName() ?? "Senopati, Jkt"} • Meja 04',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.w700,
-                                            color: WarmPalette.textPrimary,
+                                            color: p.textPrimary,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  const Icon(
+                                  Icon(
                                     Icons.keyboard_arrow_down_rounded,
                                     size: 18,
-                                    color: WarmPalette.textSecondary,
+                                    color: p.textSecondary,
                                   ),
                                 ],
                               ),
@@ -348,15 +351,15 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
-                            border: Border.all(color: WarmPalette.line),
+                            border: Border.all(color: p.line),
                           ),
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
                               IconButton(
-                                icon: const Icon(
+                                icon: Icon(
                                   Icons.notifications_outlined,
-                                  color: WarmPalette.textPrimary,
+                                  color: p.textPrimary,
                                   size: 20,
                                 ),
                                 onPressed: _loadData,
@@ -387,32 +390,32 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                           child: Container(
                             height: 48,
                             decoration: BoxDecoration(
-                              color: WarmPalette.surfaceMuted,
+                              color: p.surfaceMuted,
                               borderRadius: BorderRadius.circular(24),
-                              border: Border.all(color: WarmPalette.line),
+                              border: Border.all(color: p.line),
                             ),
                             padding: const EdgeInsets.symmetric(horizontal: 14),
                             child: Row(
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.search_rounded,
                                   size: 20,
-                                  color: WarmPalette.textSecondary,
+                                  color: p.textSecondary,
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: TextField(
                                     onChanged: (q) => setState(() => _searchQuery = q),
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 14,
-                                      color: WarmPalette.textPrimary,
+                                      color: p.textPrimary,
                                       fontWeight: FontWeight.w500,
                                     ),
-                                    decoration: const InputDecoration(
+                                    decoration: InputDecoration(
                                       hintText: 'Cari kopi, pastry, atau brunch...',
                                       hintStyle: TextStyle(
                                         fontSize: 13,
-                                        color: WarmPalette.textSecondary,
+                                        color: p.textSecondary,
                                       ),
                                       border: InputBorder.none,
                                       isDense: true,
@@ -429,7 +432,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                           width: 48,
                           height: 48,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF2C1810),
+                            color: primaryColor,
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: IconButton(
@@ -474,12 +477,12 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           '· Rekomendasi Barista',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
-                            color: WarmPalette.textPrimary,
+                            color: p.textPrimary,
                           ),
                         ),
                         Container(
@@ -506,12 +509,12 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
 
                     // Grid of items
                     if (_visibleMenuItems.isEmpty)
-                      const Center(
+                      Center(
                         child: Padding(
-                          padding: EdgeInsets.all(40),
+                          padding: const EdgeInsets.all(40),
                           child: Text(
                             'Tidak ada produk pada kategori ini',
-                            style: TextStyle(color: WarmPalette.textSecondary),
+                            style: TextStyle(color: p.textSecondary),
                           ),
                         ),
                       )

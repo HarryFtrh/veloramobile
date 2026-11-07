@@ -164,7 +164,7 @@ class _FnbPaymentSplitScreenState extends State<FnbPaymentSplitScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.error!),
-                backgroundColor: WarmPalette.danger,
+                backgroundColor: context.palette.danger,
                 duration: const Duration(seconds: 4),
               ),
             );
@@ -277,15 +277,18 @@ class _FnbPaymentSplitScreenState extends State<FnbPaymentSplitScreen> {
             onNumpadBackspace: () => _cubit.onNumpadBackspace(),
           );
 
+          final p = context.palette;
+          final primaryColor = Theme.of(context).colorScheme.primary;
+
           return Scaffold(
-            backgroundColor: WarmPalette.canvas,
+            backgroundColor: p.canvas,
             appBar: AppBar(
-              backgroundColor: Colors.white,
+              backgroundColor: p.surface,
               elevation: 0,
               leading: IconButton(
-                icon: const Icon(
+                icon: Icon(
                   Icons.arrow_back_rounded,
-                  color: WarmPalette.textPrimary,
+                  color: p.textPrimary,
                 ),
                 onPressed: () => Navigator.of(context).pop(),
               ),
@@ -294,7 +297,7 @@ class _FnbPaymentSplitScreenState extends State<FnbPaymentSplitScreen> {
                   Container(
                     padding: const EdgeInsets.all(7),
                     decoration: BoxDecoration(
-                      color: WarmPalette.primary,
+                      color: primaryColor,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(
@@ -313,19 +316,19 @@ class _FnbPaymentSplitScreenState extends State<FnbPaymentSplitScreen> {
                           widget.orderId != null
                               ? 'Pesanan ${widget.orderId}'
                               : 'Pembayaran ${sanitizeDisplayName(displayName)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 15,
-                            color: WarmPalette.textPrimary,
+                            color: p.textPrimary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           '${sanitizeDisplayName(displayName)} • Kasir: ${widget.waiterName ?? SessionStorage.instance.getUserName() ?? "Kasir"}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
-                            color: WarmPalette.textSecondary,
+                            color: p.textSecondary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -344,27 +347,27 @@ class _FnbPaymentSplitScreenState extends State<FnbPaymentSplitScreen> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: WarmPalette.surfaceMuted,
+                          color: p.surfaceMuted,
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            const Text(
+                            Text(
                               'TOTAL TAGIHAN SAAT INI',
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
-                                color: WarmPalette.textSecondary,
+                                color: p.textSecondary,
                               ),
                             ),
                             Text(
                               'Rp ${totalBillAmount.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w800,
-                                color: WarmPalette.primary,
+                                color: primaryColor,
                               ),
                             ),
                           ],
@@ -374,8 +377,8 @@ class _FnbPaymentSplitScreenState extends State<FnbPaymentSplitScreen> {
                   : null,
             ),
             body: state.loading
-                ? const Center(
-                    child: CircularProgressIndicator(color: WarmPalette.primary),
+                ? Center(
+                    child: CircularProgressIndicator(color: primaryColor),
                   )
                 : isWide
                     ? Row(
@@ -388,8 +391,8 @@ class _FnbPaymentSplitScreenState extends State<FnbPaymentSplitScreen> {
                               child: leftPane,
                             ),
                           ),
-                          const VerticalDivider(
-                              width: 1, color: WarmPalette.line),
+                          VerticalDivider(
+                              width: 1, color: p.line),
                           Expanded(
                             flex: 6,
                             child: SingleChildScrollView(

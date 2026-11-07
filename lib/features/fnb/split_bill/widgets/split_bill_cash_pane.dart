@@ -20,7 +20,8 @@ class SplitBillCashPane extends StatelessWidget {
   final bool submitting;
   final VoidCallback onFinishPayment;
 
-  Widget _buildPriceRow(String label, String value, {bool isPositive = false}) {
+  Widget _buildPriceRow(BuildContext context, String label, String value, {bool isPositive = false}) {
+    final p = context.palette;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -28,9 +29,9 @@ class SplitBillCashPane extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: WarmPalette.textSecondary,
+              color: p.textSecondary,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -39,7 +40,7 @@ class SplitBillCashPane extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w800,
-              color: isPositive ? WarmPalette.tertiary : WarmPalette.textPrimary,
+              color: isPositive ? p.tertiary : p.textPrimary,
             ),
           ),
         ],
@@ -49,6 +50,9 @@ class SplitBillCashPane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return Column(
       children: [
         Container(
@@ -56,7 +60,7 @@ class SplitBillCashPane extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: WarmPalette.line),
+            border: Border.all(color: p.line),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,22 +70,22 @@ class SplitBillCashPane extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: WarmPalette.tertiary.withValues(alpha: 0.12),
+                      color: p.tertiary.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.calculate_outlined,
-                      color: WarmPalette.tertiary,
+                      color: p.tertiary,
                       size: 18,
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Text(
+                  Text(
                     'KALKULASI KASIR',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
-                      color: WarmPalette.textSecondary,
+                      color: p.textSecondary,
                     ),
                   ),
                 ],
@@ -92,8 +96,8 @@ class SplitBillCashPane extends StatelessWidget {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: isPaymentSufficient
-                      ? WarmPalette.tertiary.withValues(alpha: 0.1)
-                      : WarmPalette.danger.withValues(alpha: 0.1),
+                      ? p.tertiary.withValues(alpha: 0.1)
+                      : p.danger.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Column(
@@ -104,8 +108,8 @@ class SplitBillCashPane extends StatelessWidget {
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         color: isPaymentSufficient
-                            ? WarmPalette.tertiary
-                            : WarmPalette.danger,
+                            ? p.tertiary
+                            : p.danger,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -117,8 +121,8 @@ class SplitBillCashPane extends StatelessWidget {
                           fontSize: 24,
                           fontWeight: FontWeight.w900,
                           color: isPaymentSufficient
-                              ? WarmPalette.tertiary
-                              : WarmPalette.danger,
+                              ? p.tertiary
+                              : p.danger,
                         ),
                       ),
                     ),
@@ -132,8 +136,8 @@ class SplitBillCashPane extends StatelessWidget {
                               : Icons.warning_amber_rounded,
                           size: 14,
                           color: isPaymentSufficient
-                              ? WarmPalette.tertiary
-                              : WarmPalette.danger,
+                              ? p.tertiary
+                              : p.danger,
                         ),
                         const SizedBox(width: 4),
                         Text(
@@ -144,8 +148,8 @@ class SplitBillCashPane extends StatelessWidget {
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: isPaymentSufficient
-                              ? WarmPalette.tertiary
-                              : WarmPalette.danger,
+                              ? p.tertiary
+                              : p.danger,
                           ),
                         ),
                       ],
@@ -155,14 +159,17 @@ class SplitBillCashPane extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               _buildPriceRow(
+                context,
                 'Tagihan Bersih:',
                 'Rp ${selectedItemsTotal.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
               ),
               _buildPriceRow(
+                context,
                 'Uang Fisik Diterima:',
                 'Rp ${cashReceived.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
               ),
               _buildPriceRow(
+                context,
                 'Status Laci Kas:',
                 'Siap Otomatis Buka',
                 isPositive: true,
@@ -198,7 +205,7 @@ class SplitBillCashPane extends StatelessWidget {
               ),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: WarmPalette.primary,
+              backgroundColor: primaryColor,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),

@@ -159,6 +159,7 @@ class SessionStorage {
     } catch (e) {
       debugPrint('[SessionStorage] SecureStorage delete token error: $e');
     }
+    await _prefs?.remove(_tokenKey);
   }
 
   Future<void> saveLocation({required String id, required String name}) async {
@@ -420,6 +421,65 @@ class SessionStorage {
   Future<void> clearDraftCart(String namespace) async {
     _memCache.remove('velora_draft_cart_$namespace');
     await _prefs?.remove('velora_draft_cart_$namespace');
+  }
+
+  /// Membersihkan seluruh sesi kasir yang sedang aktif secara aman:
+  /// - Menghapus token otentikasi dari Android Keystore & SharedPreferences
+  /// - Menghapus data identitas kasir (ID, Nama, Email, Role, Permissions, PIN)
+  /// - Menghapus cache subscription & status kunci PIN
+  /// - [preserveOfflineQueue]: Tetap mempertahankan antrean transaksi offline yang belum tersinkronisasi ke server
+  Future<void> clearUserSession({bool preserveOfflineQueue = true}) async {
+    // 1. Ambil cadangan antrean offline jika harus dipertahankan
+    List<String>? preservedQueue;
+    if (preserveOfflineQueue) {
+      preservedQueue = getOfflineQueue();
+    }
+
+    // 2. Hapus token otentikasi dari kedua layer penyimpanan
+    await clearAuthToken();
+
+    // 3. Hapus PIN kasir dari Keystore
+    try {
+      await _secureStorage.delete(key: _userPinKey);
+    } catch (_) {}
+
+    // 4. Daftar key profil kasir yang wajib di-purge
+    final userKeys = [
+      _userIdKey,
+      _userNameKey,
+      _userEmailKey,
+      _userRoleKey,
+      _userPermissionsKey,
+      _userPinKey,
+      _businessTypeKey,
+      _subscriptionCacheKey,
+      'velora_pin_fail_count',
+      'velora_pin_locked_until',
+    ];
+
+    for (final k in userKeys) {
+      _memCache.remove(k);
+      await _prefs?.remove(k);
+    }
+
+    // 5. Bersihkan cache katalog & draft cart dari memori
+    _memCache.removeWhere((key, _) =>
+        key.startsWith('velora_catalog_cache_') ||
+        key.startsWith('velora_draft_cart_'));
+
+    // 6. Jika preserveOfflineQueue bernilai false, bersihkan juga antrean offline
+    if (!preserveOfflineQueue) {
+      await clearOfflineQueue();
+    } else if (preservedQueue != null && preservedQueue.isNotEmpty) {
+      // Pastikan antrean offline tetap aman tersimpan di Keystore
+      _memCache[_offlineSalesQueueKey] = preservedQueue;
+      try {
+        await _secureStorage.write(
+          key: _offlineSalesQueueEncKey,
+          value: jsonEncode(preservedQueue),
+        );
+      } catch (_) {}
+    }
   }
 
   Future<void> clearAll() async {

@@ -126,23 +126,23 @@ class OrderSummaryFooter extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: 6),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: WarmPalette.tertiary.withValues(alpha: 0.1),
+                color: const Color(0xFF059669).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: WarmPalette.tertiary.withValues(alpha: 0.3)),
+                border: Border.all(color: const Color(0xFF059669).withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.check_circle_outline, size: 14, color: WarmPalette.tertiary),
+                  const Icon(Icons.check_circle_outline, size: 14, color: Color(0xFF059669)),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       'Voucher ${ctrl.activeVoucherCode!} Diterapkan',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: WarmPalette.tertiary),
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF059669)),
                     ),
                   ),
                   InkWell(
                     onTap: ctrl.removeVoucher,
-                    child: const Text('Hapus', style: TextStyle(fontSize: 11, color: WarmPalette.danger, fontWeight: FontWeight.w700)),
+                    child: Text('Hapus', style: TextStyle(fontSize: 11, color: p.danger, fontWeight: FontWeight.w700)),
                   ),
                 ],
               ),
@@ -229,7 +229,7 @@ class OrderSummaryFooter extends StatelessWidget {
                 CurrencyFormatter.format(bill?.total ?? ctrl.subtotal),
                 style: text.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w900,
-                  color: WarmPalette.textPrimary,
+                  color: p.textPrimary,
                   fontSize: isMobile ? 18 : 22,
                 ),
               ),
@@ -258,8 +258,8 @@ class OrderSummaryFooter extends StatelessWidget {
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: WarmPalette.primary,
-                    side: const BorderSide(color: WarmPalette.line),
+                    foregroundColor: scheme.primary,
+                    side: BorderSide(color: p.line),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
                   ),
@@ -272,8 +272,8 @@ class OrderSummaryFooter extends StatelessWidget {
                   icon: const Icon(Icons.call_split_rounded, size: 15),
                   label: const Text('Split Bill', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: WarmPalette.textSecondary,
-                    side: const BorderSide(color: WarmPalette.line),
+                    foregroundColor: p.textSecondary,
+                    side: BorderSide(color: p.line),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 10),
                   ),
@@ -300,7 +300,7 @@ class OrderSummaryFooter extends StatelessWidget {
                     }
                   : null,
               style: FilledButton.styleFrom(
-                backgroundColor: WarmPalette.primary,
+                backgroundColor: scheme.primary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 padding: const EdgeInsets.symmetric(horizontal: 14),

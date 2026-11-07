@@ -61,8 +61,8 @@ abstract final class ClinicalPalette {
   static const Color textTertiary = Color(0xFF6D7A72);
   static const Color danger = Color(0xFFBA1A1A);
   static const Color error = danger;
-  static const Color warning = Color(0xFFB45309);
-  static const Color warningBg = Color(0xFFFEF3C7);
+  static const Color warning = Color(0xFFEA580C);
+  static const Color warningBg = Color(0xFFFFF7ED);
   static const Color success = Color(0xFF059669);
   static const Color info = Color(0xFF06B6D4);
 
@@ -146,7 +146,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     textSecondary: Color(0xFF3D4A42),
     textTertiary: Color(0xFF6D7A72),
     success: Color(0xFF059669),
-    warning: Color(0xFFB45309),
+    warning: Color(0xFFEA580C),
     danger: Color(0xFFBA1A1A),
     info: Color(0xFF06B6D4),
   );

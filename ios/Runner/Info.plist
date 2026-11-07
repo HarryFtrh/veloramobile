@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Velora Mobile</string>
+	<string>$(APP_DISPLAY_NAME)</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -54,5 +54,13 @@
 	<string>Velora membutuhkan akses Bluetooth untuk menghubungkan printer kasir dan perangkat POS.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>Velora membutuhkan akses Bluetooth untuk printer kasir.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Velora membutuhkan akses kamera untuk memindai barcode produk dan mengambil foto selfie absensi kehadiran.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Velora membutuhkan akses galeri foto untuk mengunggah bukti transaksi, dokumen obat, dan foto kunjungan.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Velora membutuhkan akses lokasi GPS untuk pencatatan absensi dan verifikasi lokasi kunjungan pelanggan.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Velora membutuhkan akses lokasi untuk pelacakan rute sales lapangan dan validasi kehadiran outlet.</string>
 </dict>
 </plist>

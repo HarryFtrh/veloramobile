@@ -17,25 +17,28 @@ class CustomerCartOrderTypeBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     final dineInLabel = 'Dine-In ($tableName)';
 
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: WarmPalette.surfaceMuted,
+        color: p.surfaceMuted,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Row(
         children: [
-          _buildTab(dineInLabel, Icons.restaurant_rounded),
-          _buildTab('Takeaway', Icons.shopping_bag_outlined),
-          _buildTab('Delivery', Icons.delivery_dining_outlined),
+          _buildTab(context, dineInLabel, Icons.restaurant_rounded),
+          _buildTab(context, 'Takeaway', Icons.shopping_bag_outlined),
+          _buildTab(context, 'Delivery', Icons.delivery_dining_outlined),
         ],
       ),
     );
   }
 
-  Widget _buildTab(String title, IconData icon) {
+  Widget _buildTab(BuildContext context, String title, IconData icon) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final isSel = currentType == title;
     return Expanded(
       child: GestureDetector(
@@ -43,7 +46,7 @@ class CustomerCartOrderTypeBar extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSel ? WarmPalette.primary : Colors.transparent,
+            color: isSel ? primaryColor : Colors.transparent,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
@@ -52,7 +55,7 @@ class CustomerCartOrderTypeBar extends StatelessWidget {
               Icon(
                 icon,
                 size: 15,
-                color: isSel ? Colors.white : WarmPalette.textSecondary,
+                color: isSel ? Colors.white : p.textSecondary,
               ),
               const SizedBox(width: 6),
               Flexible(
@@ -65,7 +68,7 @@ class CustomerCartOrderTypeBar extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: isSel ? FontWeight.w700 : FontWeight.w600,
-                      color: isSel ? Colors.white : WarmPalette.textSecondary,
+                      color: isSel ? Colors.white : p.textSecondary,
                     ),
                   ),
                 ),

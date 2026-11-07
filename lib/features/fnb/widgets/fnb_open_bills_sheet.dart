@@ -76,6 +76,7 @@ class _FnbOpenBillsSheetState extends State<FnbOpenBillsSheet>
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final text = Theme.of(context).textTheme;
     final isMobile = context.isMobile;
     final paddingHoriz = isMobile ? 12.0 : 16.0;
@@ -92,13 +93,13 @@ class _FnbOpenBillsSheetState extends State<FnbOpenBillsSheet>
               Container(
                 width: 32,
                 height: 32,
-                decoration: const BoxDecoration(
-                  color: WarmPalette.surfaceMuted,
+                decoration: BoxDecoration(
+                  color: primaryColor.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.receipt_long_rounded,
-                  color: WarmPalette.primary,
+                  color: primaryColor,
                   size: 18,
                 ),
               ),
@@ -111,7 +112,7 @@ class _FnbOpenBillsSheetState extends State<FnbOpenBillsSheet>
                       'Antrean Pesanan / Open Bills',
                       style: text.titleMedium?.copyWith(
                         fontWeight: FontWeight.w800,
-                        color: WarmPalette.textPrimary,
+                        color: p.textPrimary,
                         fontSize: isMobile ? 15 : 17,
                       ),
                       maxLines: 1,
@@ -132,7 +133,7 @@ class _FnbOpenBillsSheetState extends State<FnbOpenBillsSheet>
                 tooltip: 'Muat ulang',
               ),
               IconButton(
-                icon: const Icon(Icons.close_rounded, color: WarmPalette.textSecondary, size: 20),
+                icon: Icon(Icons.close_rounded, color: p.textSecondary, size: 20),
                 onPressed: () => Navigator.pop(context),
                 tooltip: 'Tutup',
               ),
@@ -142,8 +143,8 @@ class _FnbOpenBillsSheetState extends State<FnbOpenBillsSheet>
         const SizedBox(height: Gap.xs),
         TabBar(
           controller: _tabCtrl,
-          indicatorColor: WarmPalette.primary,
-          labelColor: WarmPalette.primary,
+          indicatorColor: primaryColor,
+          labelColor: primaryColor,
           unselectedLabelColor: p.textSecondary,
           labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
           tabs: [
@@ -153,8 +154,8 @@ class _FnbOpenBillsSheetState extends State<FnbOpenBillsSheet>
         ),
         Expanded(
           child: _loading
-              ? const Center(
-                  child: CircularProgressIndicator(color: WarmPalette.primary),
+              ? Center(
+                  child: CircularProgressIndicator(color: primaryColor),
                 )
               : _error != null
                   ? ErrorState(message: _error!, onRetry: _load)
@@ -187,6 +188,7 @@ class _FnbOpenBillsSheetState extends State<FnbOpenBillsSheet>
     }
 
     final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final isMobile = context.isMobile;
     final paddingHoriz = isMobile ? 12.0 : 16.0;
 
@@ -205,9 +207,9 @@ class _FnbOpenBillsSheetState extends State<FnbOpenBillsSheet>
                   );
 
         final stageColor = order.isHeld
-            ? WarmPalette.primary
+            ? primaryColor
             : switch (order.stage) {
-                KitchenStage.fresh => WarmPalette.secondary,
+                KitchenStage.fresh => p.secondary,
                 KitchenStage.preparing => const Color(0xFFD97706),
                 KitchenStage.ready => const Color(0xFF059669),
               };
@@ -229,10 +231,10 @@ class _FnbOpenBillsSheetState extends State<FnbOpenBillsSheet>
                   Flexible(
                     child: Text(
                       order.number,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 13,
-                        color: WarmPalette.textPrimary,
+                        color: p.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -285,10 +287,10 @@ class _FnbOpenBillsSheetState extends State<FnbOpenBillsSheet>
                       order.customerName?.isNotEmpty == true
                           ? order.customerName!
                           : 'Pelanggan Walk-In',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 12,
-                        color: WarmPalette.textPrimary,
+                        color: p.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -303,15 +305,15 @@ class _FnbOpenBillsSheetState extends State<FnbOpenBillsSheet>
                         vertical: 1,
                       ),
                       decoration: BoxDecoration(
-                        color: WarmPalette.surfaceMuted,
+                        color: p.surfaceMuted,
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         'Meja ${order.tableLabel}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          color: WarmPalette.primary,
+                          color: primaryColor,
                         ),
                       ),
                     ),
@@ -323,9 +325,9 @@ class _FnbOpenBillsSheetState extends State<FnbOpenBillsSheet>
                 width: double.infinity,
                 padding: const EdgeInsets.all(Gap.xs + 2),
                 decoration: BoxDecoration(
-                  color: WarmPalette.canvas,
+                  color: p.surfaceMuted,
                   borderRadius: Corner.small,
-                  border: Border.all(color: WarmPalette.line),
+                  border: Border.all(color: p.line),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -337,18 +339,18 @@ class _FnbOpenBillsSheetState extends State<FnbOpenBillsSheet>
                           children: [
                             Text(
                               '${item.quantity}x ',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 11,
-                                color: WarmPalette.primary,
+                                color: primaryColor,
                               ),
                             ),
                             Expanded(
                               child: Text(
                                 item.name,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
-                                  color: WarmPalette.textPrimary,
+                                  color: p.textPrimary,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -391,10 +393,10 @@ class _FnbOpenBillsSheetState extends State<FnbOpenBillsSheet>
                           totalEstimated > 0
                               ? CurrencyFormatter.format(totalEstimated)
                               : '${order.items.length} Item',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 14,
-                            color: WarmPalette.primary,
+                            color: primaryColor,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -404,9 +406,9 @@ class _FnbOpenBillsSheetState extends State<FnbOpenBillsSheet>
                   ),
                   IconButton(
                     tooltip: 'Batalkan Pesanan',
-                    icon: const Icon(Icons.delete_outline_rounded, color: WarmPalette.danger, size: 20),
+                    icon: Icon(Icons.delete_outline_rounded, color: p.danger, size: 20),
                     style: IconButton.styleFrom(
-                      side: const BorderSide(color: WarmPalette.line),
+                      side: BorderSide(color: p.line),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       minimumSize: const Size(38, 38),
                     ),
@@ -420,10 +422,10 @@ class _FnbOpenBillsSheetState extends State<FnbOpenBillsSheet>
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: WarmPalette.danger.withValues(alpha: 0.12),
+                                  color: p.danger.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: const Icon(Icons.delete_outline_rounded, color: WarmPalette.danger, size: 22),
+                                child: Icon(Icons.delete_outline_rounded, color: p.danger, size: 22),
                               ),
                               const SizedBox(width: 10),
                               const Expanded(
@@ -435,7 +437,7 @@ class _FnbOpenBillsSheetState extends State<FnbOpenBillsSheet>
                           actions: [
                             TextButton(onPressed: () => Navigator.pop(dCtx, false), child: const Text('Tidak')),
                             FilledButton(
-                              style: FilledButton.styleFrom(backgroundColor: WarmPalette.danger),
+                              style: FilledButton.styleFrom(backgroundColor: p.danger),
                               onPressed: () => Navigator.pop(dCtx, true),
                               child: const Text('Ya, Batalkan'),
                             ),

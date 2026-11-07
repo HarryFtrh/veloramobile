@@ -52,6 +52,15 @@ class CustomerCartItem {
   String get name => product.name;
   int get subtotal => totalPrice;
 
+  List<String> get selectedModifiers {
+    final list = <String>[];
+    if (size != 'Regular') list.add(size);
+    if (sweetness != 'Normal (100%)') list.add(sweetness);
+    if (iceLevel != 'Normal Ice') list.add(iceLevel);
+    list.addAll(toppings);
+    return list;
+  }
+
   CustomerCartItem copyWith({int? quantity, String? notes}) {
     return CustomerCartItem(
       product: product,

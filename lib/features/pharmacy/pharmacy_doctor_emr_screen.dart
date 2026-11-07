@@ -3,7 +3,11 @@ import '../../core/storage/session_storage.dart';
 import '../../core/utils/audio_helper.dart';
 import 'services/pharmacy_catalog_service.dart';
 import 'pharmacy_service.dart';
-import 'widgets/pharmacy_queue_modal.dart';
+import 'widgets/doctor/pharmacy_doctor_patient_vital_card.dart';
+import 'widgets/doctor/pharmacy_doctor_prescription_table.dart';
+
+export 'widgets/doctor/pharmacy_doctor_patient_vital_card.dart';
+export 'widgets/doctor/pharmacy_doctor_prescription_table.dart';
 
 /// Workstation Dokter: EMR Rekam Medis & e-Prescribing (Google Stitch "Clinical Precision")
 class PharmacyDoctorEmrScreen extends StatefulWidget {
@@ -22,16 +26,15 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
   String _patientName = 'Pilih Pasien';
   String _queueNumber = '-';
   String _medicalRecordNumber = '-';
-  String _bp = '-';
-  String _pulse = '-';
-  String _temp = '-';
+  final String _bp = '-';
+  final String _pulse = '-';
+  final String _temp = '-';
   String _allergies = 'Tidak ada riwayat alergi obat';
 
   final TextEditingController _anamnesisController = TextEditingController();
-  final TextEditingController _diagnosisController = TextEditingController(text: 'Pemeriksaan Klinis Rawat Jalan');
+  final TextEditingController _diagnosisController = TextEditingController();
 
   final List<Map<String, String>> _prescribedItems = [];
-
   List<ClinicPatientQueueItem> _liveQueue = [];
   bool _isLoading = false; // ignore: unused_field
 
@@ -109,36 +112,173 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
     super.dispose();
   }
 
-  Future<void> _sendElectronicPrescription() async {
+  Future<void> _addDrugDialog() async {
     AudioHelper.tapFeedback();
-    await PharmacyService.instance.sendElectronicPrescription(
+    try {
+      final catalog = await PharmacyCatalogService.instance.fetchCatalog();
+      if (!mounted) return;
+      if (catalog.products.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Katalog obat formularium kosong.')),
+        );
+        return;
+      }
+
+      showDialog(
+        context: context,
+        builder: (ctx) {
+          String searchQ = '';
+          return StatefulBuilder(
+            builder: (ctx, setDialogState) {
+              final filtered = catalog.products.where((p) => p.matchesQuery(searchQ)).toList();
+
+              return AlertDialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                title: const Row(
+                  children: [
+                    Icon(Icons.medication_rounded, color: Color(0xFF059669)),
+                    SizedBox(width: 8),
+                    Text('Pilih Obat untuk Pasien', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                content: SizedBox(
+                  width: double.maxFinite,
+                  height: 380,
+                  child: Column(
+                    children: [
+                      TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Cari obat...',
+                          prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        ),
+                        onChanged: (val) => setDialogState(() => searchQ = val.trim()),
+                      ),
+                      const SizedBox(height: 10),
+                      Expanded(
+                        child: filtered.isEmpty
+                            ? const Center(child: Text('Tidak ada obat ditemukan', style: TextStyle(color: Colors.grey)))
+                            : ListView.separated(
+                                itemCount: filtered.length,
+                                separatorBuilder: (_, idx) => const Divider(height: 1),
+                                itemBuilder: (ctx, idx) {
+                                  final p = filtered[idx];
+                                  return ListTile(
+                                    dense: true,
+                                    title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                    subtitle: Text('Kategori: ${p.category} • Sediaan: ${p.unit}'),
+                                    trailing: const Icon(Icons.add_circle_outline, color: Color(0xFF059669)),
+                                    onTap: () {
+                                      Navigator.pop(ctx);
+                                      _promptDrugSigna(p.name);
+                                    },
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Tutup')),
+                ],
+              );
+            },
+          );
+        },
+      );
+    } catch (_) {}
+  }
+
+  void _promptDrugSigna(String drugName) {
+    final signaCtrl = TextEditingController(text: '3 x Sehari 1 Tablet Sesudah Makan');
+    final doseCtrl = TextEditingController(text: '10 Sediaan');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Aturan Pakai untuk $drugName', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: doseCtrl,
+              decoration: InputDecoration(
+                labelText: 'Jumlah Sediaan / Dosis',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: signaCtrl,
+              decoration: InputDecoration(
+                labelText: 'Signa / Instruksi Aturan Pakai',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), foregroundColor: Colors.white),
+            onPressed: () {
+              setState(() {
+                _prescribedItems.add({
+                  'name': drugName,
+                  'dose': doseCtrl.text.trim(),
+                  'signa': signaCtrl.text.trim(),
+                });
+              });
+              Navigator.pop(ctx);
+            },
+            child: const Text('Simpan ke Resep'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _submitPrescription() async {
+    AudioHelper.tapFeedback();
+    if (_prescribedItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tambahkan minimal 1 obat pada lembar resep sebelum mengirim ke Instalasi Farmasi.'),
+          backgroundColor: Color(0xFFBA1A1A),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    final drugSummaryList = _prescribedItems
+        .map((e) => '${e['name']} (${e['dose']} - ${e['signa']})')
+        .toList();
+
+    final ok = await PharmacyService.instance.sendElectronicPrescription(
       patientName: _patientName,
       medicalRecordNumber: _medicalRecordNumber,
       doctorName: _doctorName,
       department: _department,
-      diagnosis: _diagnosisController.text.trim().isNotEmpty ? _diagnosisController.text.trim() : 'Pemeriksaan Klinis Rawat Jalan',
-      prescribedDrugs: _prescribedItems.map((e) => '${e['name']} (${e['dose']})').toList(),
+      diagnosis: _diagnosisController.text.trim(),
+      prescribedDrugs: drugSummaryList,
     );
 
-    if (mounted) {
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.send_rounded, color: Colors.white, size: 20),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  '✓ e-Resep untuk $_patientName ($_queueNumber) berhasil dikirim ke Antrean Loket Farmasi & Meja Racik.',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
+          content: Text('✓ Resep elektronik untuk $_patientName berhasil dikirim ke Instalasi Farmasi.'),
           backgroundColor: const Color(0xFF059669),
-          duration: const Duration(seconds: 4),
+          duration: const Duration(seconds: 3),
         ),
       );
+      await _fetchLivePatients();
     }
   }
 
@@ -151,477 +291,192 @@ class _PharmacyDoctorEmrScreenState extends State<PharmacyDoctorEmrScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFFAF8FF),
-      appBar: AppBar(
-        title: const Text(
-          'Workstation Dokter & e-Prescribing',
-          style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 16),
-        ),
-        backgroundColor: Colors.white,
-        foregroundColor: textPrimary,
-        elevation: 0,
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, color: borderColor),
-        ),
-      ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Doctor Header Banner
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: borderColor),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: emeraldPrimary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.medical_services_outlined, color: emeraldPrimary, size: 24),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _doctorName,
-                            style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 15, color: textPrimary),
-                          ),
-                          Text('SIP: $_sip  •  $_department', style: const TextStyle(fontSize: 11.5, color: textMuted)),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFD4F8E8),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text('Poli Aktif', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: emeraldPrimary)),
-                    ),
-                  ],
-                ),
+        child: Column(
+          children: [
+            // Clinical Header
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                border: Border(bottom: BorderSide(color: borderColor)),
               ),
-              const SizedBox(height: 14),
-
-              // Active Patient & Vital Signs Card
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: borderColor),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (_liveQueue.isNotEmpty) ...[
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Pilih Pasien dari Antrean Live (/v1/pharmacy/queue):',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: emeraldPrimary),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.refresh_rounded, size: 16, color: emeraldPrimary),
-                            tooltip: 'Segarkan Antrean Pasien',
-                            onPressed: _fetchLivePatients,
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: _liveQueue.map((q) {
-                            final isSelected = q.queueNumber == _queueNumber;
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 6),
-                              child: InkWell(
-                                onTap: () => _selectPatientFromQueue(q),
-                                borderRadius: BorderRadius.circular(8),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                  decoration: BoxDecoration(
-                                    color: isSelected ? emeraldPrimary : const Color(0xFFF1F5F9),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: isSelected ? emeraldPrimary : borderColor),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        q.queueNumber,
-                                        style: TextStyle(
-                                          fontFamily: 'JetBrains Mono',
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 10.5,
-                                          color: isSelected ? Colors.white : emeraldPrimary,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        q.patientName,
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                          color: isSelected ? Colors.white : textPrimary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                      const Divider(height: 16, color: Color(0xFFF1F5F9)),
-                    ],
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: emeraldPrimary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.medical_services_outlined, color: emeraldPrimary, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: emeraldPrimary.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                _queueNumber,
-                                style: const TextStyle(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.bold, color: emeraldPrimary),
+                            Text(
+                              'EMR & e-Prescribing Dokter',
+                              style: TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontWeight: FontWeight.w800,
+                                fontSize: 16,
+                                color: textPrimary,
                               ),
                             ),
-                            const SizedBox(width: 10),
+                            SizedBox(width: 8),
+                            CircleAvatar(radius: 4, backgroundColor: emeraldPrimary),
+                            SizedBox(width: 4),
                             Text(
-                              _patientName,
-                              style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 14.5),
+                              'Tele-Poli Terhubung',
+                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: emeraldPrimary),
                             ),
                           ],
                         ),
-                        Text('No. RM: $_medicalRecordNumber', style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11.5, color: textMuted)),
+                        Text(
+                          'Catatan Klinis Pasien, Anamnesis, & Resep Elektronik Farmasi',
+                          style: TextStyle(fontSize: 11.5, color: textMuted),
+                        ),
                       ],
                     ),
-                    const Divider(height: 16, color: Color(0xFFF1F5F9)),
+                  ),
+                ],
+              ),
+            ),
 
-                    // Vital signs
-                    Row(
-                      children: [
-                        Expanded(child: _buildVitalPill('Tensi Darah', _bp, Icons.favorite_border_rounded)),
-                        const SizedBox(width: 8),
-                        Expanded(child: _buildVitalPill('Nadi', _pulse, Icons.monitor_heart_outlined)),
-                        const SizedBox(width: 8),
-                        Expanded(child: _buildVitalPill('Suhu', _temp, Icons.thermostat_rounded)),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
+            // Content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Doctor Profile Card
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFEF3C7),
-                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: borderColor),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.warning_amber_rounded, color: Color(0xFFB45309), size: 16),
-                          const SizedBox(width: 6),
+                          const CircleAvatar(
+                            radius: 20,
+                            backgroundColor: Color(0xFFF1F5F9),
+                            child: Icon(Icons.person_outline_rounded, color: emeraldPrimary),
+                          ),
+                          const SizedBox(width: 10),
                           Expanded(
-                            child: Text(
-                              'Peringatan Dokter: $_allergies',
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFB45309)),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _doctorName,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: textPrimary),
+                                ),
+                                Text('SIP: $_sip  •  $_department', style: const TextStyle(fontSize: 11.5, color: textMuted)),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFD4F8E8),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Text('Poli Aktif', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: emeraldPrimary)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Active Patient & Vital Signs Card
+                    DoctorPatientVitalCard(
+                      liveQueue: _liveQueue,
+                      queueNumber: _queueNumber,
+                      patientName: _patientName,
+                      medicalRecordNumber: _medicalRecordNumber,
+                      bp: _bp,
+                      pulse: _pulse,
+                      temp: _temp,
+                      allergies: _allergies,
+                      onSelectPatient: _selectPatientFromQueue,
+                      onRefreshQueue: _fetchLivePatients,
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Diagnosis & Anamnesis
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: borderColor),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Diagnosis & Catatan Medis (ICD-10)',
+                            style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 13.5, color: textPrimary),
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: _diagnosisController,
+                            decoration: InputDecoration(
+                              labelText: 'Diagnosis Primer / Asesmen',
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: _anamnesisController,
+                            maxLines: 2,
+                            decoration: InputDecoration(
+                              hintText: 'Ketik keluhan pasien, riwayat alergi obat, dan instruksi penunjang...',
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                              contentPadding: const EdgeInsets.all(12),
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
+                    const SizedBox(height: 14),
 
-              // Anamnesis & Diagnosis
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: borderColor),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Anamnesis & Keluhan Pasien', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary)),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: _anamnesisController,
-                      maxLines: 2,
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: const Color(0xFFF8FAFC),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: borderColor)),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: borderColor)),
-                      ),
-                      style: const TextStyle(fontSize: 12.5),
+                    // Prescribed Drugs Table
+                    DoctorPrescriptionTable(
+                      prescribedItems: _prescribedItems,
+                      onAddDrug: _addDrugDialog,
+                      onRemoveDrug: (item) => setState(() => _prescribedItems.remove(item)),
                     ),
-                    const SizedBox(height: 10),
-                    const Text('Diagnosis Klinis (ICD-10)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary)),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: _diagnosisController,
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: const Color(0xFFF8FAFC),
-                        hintText: 'Contoh: J00 - Nasofaringitis akut / Observasi Febris',
-                        hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: borderColor)),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: borderColor)),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF059669), width: 1.5)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      ),
-                      style: const TextStyle(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.bold, fontSize: 12.5, color: textPrimary),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
+                    const SizedBox(height: 20),
 
-              // e-Prescription List
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: borderColor),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('R/ Lembar Peresepan Digital (e-Resep)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
-                        InkWell(
-                          onTap: () async {
-                            final catalog = await PharmacyCatalogService.instance.fetchCatalog();
-                            if (!context.mounted) return;
-                            // ignore: use_build_context_synchronously
-                            showModalBottomSheet(
-                              // ignore: use_build_context_synchronously
-                              context: context,
-                              builder: (ctx) => Container(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text('Pilih Obat dari Formularium POS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                                    const SizedBox(height: 10),
-                                    Expanded(
-                                      child: ListView(
-                                        children: catalog.products.map((p) => ListTile(
-                                          leading: p.imageUrl != null && p.imageUrl!.isNotEmpty
-                                              ? ClipRRect(
-                                                  borderRadius: BorderRadius.circular(6),
-                                                  child: Image.network(
-                                                    p.imageUrl!,
-                                                    width: 34,
-                                                    height: 34,
-                                                    fit: BoxFit.cover,
-                                                    errorBuilder: (_, _, _) => const Icon(Icons.medication_rounded, color: emeraldPrimary),
-                                                  ),
-                                                )
-                                              : const Icon(Icons.medication_rounded, color: emeraldPrimary),
-                                          title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                                          subtitle: Text(p.description ?? p.category, style: const TextStyle(fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                          onTap: () {
-                                            setState(() {
-                                              _prescribedItems.add({
-                                                'name': p.name,
-                                                'dose': '10 Unit',
-                                                'signa': '3 x Sehari 1 Sesudah Makan',
-                                              });
-                                            });
-                                            Navigator.pop(ctx);
-                                          },
-                                        )).toList(),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                            child: Row(
-                              children: [
-                                Icon(Icons.add_circle_outline_rounded, size: 14, color: emeraldPrimary),
-                                SizedBox(width: 4),
-                                Text('+ Tambah Obat', style: TextStyle(fontSize: 11.5, color: emeraldPrimary, fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-
-                    if (_prescribedItems.isNotEmpty)
-                      ..._prescribedItems.map((item) {
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: borderColor),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.medication_liquid_outlined, color: emeraldPrimary, size: 20),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(item['name']!, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                                    Text(item['signa']!, style: const TextStyle(fontSize: 11, color: textMuted)),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(color: const Color(0xFFE2E8F0), borderRadius: BorderRadius.circular(4)),
-                                child: Text(item['dose']!, style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11, fontWeight: FontWeight.bold)),
-                              ),
-                            ],
-                          ),
-                        );
-                      })
-                    else
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        alignment: Alignment.center,
-                        child: const Text(
-                          'Belum ada obat yang diresepkan. Klik "+ Tambah Obat" untuk memilih dari formularium katalog.',
-                          style: TextStyle(color: textMuted, fontSize: 12),
-                          textAlign: TextAlign.center,
+                    // Action Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        onPressed: _submitPrescription,
+                        icon: const Icon(Icons.send_rounded, size: 18),
+                        label: const Text('Kirim e-Resep ke Loket Farmasi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: emeraldPrimary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          elevation: 0,
                         ),
                       ),
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 18),
-
-              // Send Action Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _sendElectronicPrescription,
-                  icon: const Icon(Icons.send_rounded, size: 18),
-                  label: const Text(
-                    'Kirim e-Resep ke Antrean Loket Farmasi',
-                    style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: emeraldPrimary,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _editVitalSign(String label) {
-    AudioHelper.tapFeedback();
-    final ctrl = TextEditingController(
-      text: label == 'Tensi Darah'
-          ? (_bp == '-' ? '' : _bp)
-          : (label == 'Nadi'
-              ? (_pulse == '-' ? '' : _pulse)
-              : (_temp == '-' ? '' : _temp)),
-    );
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Input $label Pasien', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: label == 'Tensi Darah' ? '120/80 mmHg' : (label == 'Nadi' ? '78 bpm' : '36.5 °C'),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF059669),
-              foregroundColor: Colors.white,
             ),
-            onPressed: () {
-              setState(() {
-                final val = ctrl.text.trim();
-                if (label == 'Tensi Darah') _bp = val.isNotEmpty ? val : '-';
-                if (label == 'Nadi') _pulse = val.isNotEmpty ? val : '-';
-                if (label == 'Suhu') _temp = val.isNotEmpty ? val : '-';
-              });
-              Navigator.pop(ctx);
-            },
-            child: const Text('Simpan'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildVitalPill(String label, String value, IconData icon) {
-    return InkWell(
-      onTap: () => _editVitalSign(label),
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF1F5F9),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, size: 12, color: const Color(0xFF64748B)),
-                const SizedBox(width: 4),
-                Text(label, style: const TextStyle(fontSize: 9.5, color: Color(0xFF64748B))),
-              ],
-            ),
-            const SizedBox(height: 2),
-            Text(value, style: const TextStyle(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.bold, fontSize: 11.5)),
           ],
         ),
       ),

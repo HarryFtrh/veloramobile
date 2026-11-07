@@ -13,18 +13,20 @@ Future<void> showAddTableDialog(
   final capacityCtrl = TextEditingController(text: '4');
   String position = 'indoor';
   bool busy = false;
+  final primaryColor = Theme.of(context).colorScheme.primary;
+  final p = context.palette;
 
   return showDialog<void>(
     context: context,
     builder: (dialogCtx) => StatefulBuilder(
       builder: (ctx, setDialogState) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: Colors.white,
-        title: const Row(
+        backgroundColor: p.surface,
+        title: Row(
           children: [
-            Icon(Icons.table_restaurant_rounded, color: WarmPalette.primary),
-            SizedBox(width: 8),
-            Text('Tambah Meja Baru', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+            Icon(Icons.table_restaurant_rounded, color: primaryColor),
+            const SizedBox(width: 8),
+            Text('Tambah Meja Baru', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: p.textPrimary)),
           ],
         ),
         content: Column(
@@ -103,7 +105,7 @@ Future<void> showAddTableDialog(
                     }
                   },
             style: ElevatedButton.styleFrom(
-              backgroundColor: WarmPalette.primary,
+              backgroundColor: primaryColor,
               foregroundColor: Colors.white,
               shape: const StadiumBorder(),
             ),

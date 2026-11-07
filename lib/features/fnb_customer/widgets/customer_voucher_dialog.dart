@@ -134,16 +134,18 @@ class _CustomerVoucherPromoDialogState
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final promos = widget.billing?.activePromotions ?? const [];
     final subtotal = widget.subtotal;
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      title: const Row(
+      title: Row(
         children: [
-          Icon(Icons.discount_outlined, color: WarmPalette.primary, size: 22),
-          SizedBox(width: 8),
-          Expanded(
+          Icon(Icons.discount_outlined, color: primaryColor, size: 22),
+          const SizedBox(width: 8),
+          const Expanded(
             child: Text(
               'Voucher & Promo Toko',
               style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
@@ -161,13 +163,13 @@ class _CustomerVoucherPromoDialogState
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: WarmPalette.danger.withValues(alpha: 0.1),
+                  color: p.danger.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   _errorMsg!,
-                  style: const TextStyle(
-                    color: WarmPalette.danger,
+                  style: TextStyle(
+                    color: p.danger,
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                   ),
@@ -187,12 +189,12 @@ class _CustomerVoucherPromoDialogState
             ),
             if (promos.isNotEmpty) ...[
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Promo Tersedia:',
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
-                  color: WarmPalette.textSecondary,
+                  color: p.textSecondary,
                 ),
               ),
               const SizedBox(height: 8),
@@ -207,13 +209,13 @@ class _CustomerVoucherPromoDialogState
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: eligible
-                            ? WarmPalette.surface
-                            : WarmPalette.surfaceMuted,
+                            ? p.surface
+                            : p.surfaceMuted,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: eligible
-                              ? WarmPalette.primary.withValues(alpha: 0.3)
-                              : WarmPalette.line,
+                              ? primaryColor.withValues(alpha: 0.3)
+                              : p.line,
                         ),
                       ),
                       child: Row(
@@ -228,8 +230,8 @@ class _CustomerVoucherPromoDialogState
                                     fontWeight: FontWeight.w700,
                                     fontSize: 12,
                                     color: eligible
-                                        ? WarmPalette.textPrimary
-                                        : WarmPalette.textSecondary,
+                                        ? p.textPrimary
+                                        : p.textSecondary,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -240,8 +242,8 @@ class _CustomerVoucherPromoDialogState
                                   style: TextStyle(
                                     fontSize: 10,
                                     color: eligible
-                                        ? WarmPalette.textSecondary
-                                        : WarmPalette.danger,
+                                        ? p.textSecondary
+                                        : p.danger,
                                   ),
                                 ),
                               ],
@@ -283,7 +285,7 @@ class _CustomerVoucherPromoDialogState
         ElevatedButton(
           onPressed: _isVerifying ? null : _submitCode,
           style: ElevatedButton.styleFrom(
-            backgroundColor: WarmPalette.primary,
+            backgroundColor: primaryColor,
             foregroundColor: Colors.white,
           ),
           child: _isVerifying

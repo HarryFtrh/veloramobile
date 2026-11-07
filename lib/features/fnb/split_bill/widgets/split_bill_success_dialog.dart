@@ -35,24 +35,27 @@ class SplitBillSuccessDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return AlertDialog(
-      backgroundColor: WarmPalette.canvas,
+      backgroundColor: p.canvas,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
-        side: const BorderSide(color: WarmPalette.line, width: 1.2),
+        side: BorderSide(color: p.line, width: 1.2),
       ),
       title: Row(
         children: [
           Icon(
             hasRemainingSplit ? Icons.call_split_rounded : Icons.check_circle_rounded,
-            color: hasRemainingSplit ? WarmPalette.secondary : WarmPalette.tertiary,
+            color: hasRemainingSplit ? p.secondary : p.tertiary,
             size: 26,
           ),
           const SizedBox(width: 8),
           Flexible(
             child: Text(
               hasRemainingSplit ? 'Split Bill Berhasil!' : 'Pembayaran Berhasil!',
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17, color: WarmPalette.textPrimary),
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17, color: p.textPrimary),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -66,19 +69,19 @@ class SplitBillSuccessDialog extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Nomor Struk: $invoiceNumber', style: const TextStyle(fontWeight: FontWeight.w600, color: WarmPalette.textPrimary)),
+              Text('Nomor Struk: $invoiceNumber', style: TextStyle(fontWeight: FontWeight.w600, color: p.textPrimary)),
               const SizedBox(height: 4),
-              Text('Metode: ${selectedMethod.toUpperCase()}', style: const TextStyle(color: WarmPalette.textSecondary)),
+              Text('Metode: ${selectedMethod.toUpperCase()}', style: TextStyle(color: p.textSecondary)),
               const SizedBox(height: 4),
               Text(
                 'Total Sesi Ini: Rp ${selectedItemsTotal.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
-                style: const TextStyle(fontWeight: FontWeight.w700, color: WarmPalette.primary),
+                style: TextStyle(fontWeight: FontWeight.w700, color: primaryColor),
               ),
               if (selectedMethod == 'cash') ...[
                 const SizedBox(height: 4),
                 Text(
                   'Kembalian: Rp ${changeAmount.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
-                  style: const TextStyle(fontWeight: FontWeight.w600, color: WarmPalette.tertiary),
+                  style: TextStyle(fontWeight: FontWeight.w600, color: p.tertiary),
                 ),
               ],
               const SizedBox(height: 12),
@@ -86,20 +89,20 @@ class SplitBillSuccessDialog extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: WarmPalette.secondary.withValues(alpha: 0.12),
+                    color: p.secondary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: WarmPalette.secondary.withValues(alpha: 0.3)),
+                    border: Border.all(color: p.secondary.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.info_outline_rounded, color: WarmPalette.secondary, size: 20),
+                      Icon(Icons.info_outline_rounded, color: p.secondary, size: 20),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           splitMode == 'item'
                               ? 'Masih ada $remainingItemsCount jenis item tagihan yang belum lunas.'
                               : 'Telah dibayar $paxToPay dari $paxCount orang (Sisa ${paxCount - paxToPay} orang belum bayar).',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: WarmPalette.secondary),
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: p.secondary),
                         ),
                       ),
                     ],
@@ -110,18 +113,18 @@ class SplitBillSuccessDialog extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: WarmPalette.surfaceMuted,
+                  color: p.surfaceMuted,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: WarmPalette.line),
+                  border: Border.all(color: p.line),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.receipt_long, size: 20, color: WarmPalette.primary),
-                    SizedBox(width: 10),
+                    Icon(Icons.receipt_long, size: 20, color: primaryColor),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         'Laci kasir otomatis dibuka & transaksi tersimpan rapi.',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: WarmPalette.textSecondary),
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: p.textSecondary),
                       ),
                     ),
                   ],
@@ -182,7 +185,7 @@ class SplitBillSuccessDialog extends StatelessWidget {
                 child: Text('Lanjut Bayar Sisa Item (Split Berikutnya)', style: TextStyle(fontWeight: FontWeight.w800)),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: WarmPalette.secondary,
+                backgroundColor: p.secondary,
                 foregroundColor: Colors.white,
                 shape: const StadiumBorder(),
               ),
@@ -195,7 +198,7 @@ class SplitBillSuccessDialog extends StatelessWidget {
                 Navigator.of(context).pop();
                 onDone();
               },
-              child: const Text('Keluar (Sisa Tagihan Nanti)', style: TextStyle(color: WarmPalette.textSecondary)),
+              child: Text('Keluar (Sisa Tagihan Nanti)', style: TextStyle(color: p.textSecondary)),
             ),
           ),
         ] else ...[
@@ -207,7 +210,7 @@ class SplitBillSuccessDialog extends StatelessWidget {
                 onDone();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: WarmPalette.primary,
+                backgroundColor: primaryColor,
                 foregroundColor: Colors.white,
                 shape: const StadiumBorder(),
               ),

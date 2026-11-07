@@ -163,6 +163,9 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
   @override
   Widget build(BuildContext context) {
     final isMobile = context.isMobile;
+    final p = context.palette;
+    final brandColor = Theme.of(context).colorScheme.primary;
+
     return Container(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.9,
@@ -173,10 +176,10 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
         top: 18,
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
-      decoration: const BoxDecoration(
-        color: WarmPalette.canvas,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border(top: BorderSide(color: WarmPalette.line, width: 1.5)),
+      decoration: BoxDecoration(
+        color: p.canvas,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        border: Border(top: BorderSide(color: p.line, width: 1.5)),
       ),
       child: SingleChildScrollView(
         physics: const ClampingScrollPhysics(),
@@ -189,22 +192,22 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: WarmPalette.primary.withValues(alpha: 0.12),
+                    color: brandColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.print_rounded, color: WarmPalette.primary, size: 20),
+                  child: Icon(Icons.print_rounded, color: brandColor, size: 20),
                 ),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Pengaturan Printer Struk',
-                    style: TextStyle(color: WarmPalette.textPrimary, fontSize: 16, fontWeight: FontWeight.w800),
+                    style: TextStyle(color: p.textPrimary, fontSize: 16, fontWeight: FontWeight.w800),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded, color: WarmPalette.textSecondary),
+                  icon: Icon(Icons.close_rounded, color: p.textSecondary),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -213,16 +216,16 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: WarmPalette.surfaceMuted,
+              color: p.surfaceMuted,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: WarmPalette.line),
+              border: Border.all(color: p.line),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.cloud_sync_rounded, size: 18, color: WarmPalette.primary),
+                    Icon(Icons.cloud_sync_rounded, size: 18, color: brandColor),
                     const SizedBox(width: 8),
                     Text(
                       _isLoadingCloud
@@ -230,7 +233,7 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
                           : (_cloudPrinters.isNotEmpty
                               ? '${_cloudPrinters.length} Printer Terdaftar di Cloud'
                               : 'Preferensi Printer Cloud Siap'),
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: WarmPalette.textPrimary),
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: p.textPrimary),
                     ),
                   ],
                 ),
@@ -238,7 +241,7 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
                   onPressed: _isLoadingCloud ? null : _loadCloudPrinters,
                   style: TextButton.styleFrom(
                     visualDensity: VisualDensity.compact,
-                    foregroundColor: WarmPalette.primary,
+                    foregroundColor: brandColor,
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                   ),
                   child: const Text('Tarik Preferensi', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
@@ -249,7 +252,7 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
           const SizedBox(height: 14),
 
           // 1. Lebar Kertas
-          const Text('Lebar Kertas Thermal:', style: TextStyle(color: WarmPalette.textSecondary, fontSize: 12, fontWeight: FontWeight.w700)),
+          Text('Lebar Kertas Thermal:', style: TextStyle(color: p.textSecondary, fontSize: 12, fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -257,12 +260,12 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
                 child: ChoiceChip(
                   label: const Center(child: Text('58 mm (Kasir Mini / Mobile)')),
                   selected: !_is80mm,
-                  selectedColor: WarmPalette.primary,
-                  backgroundColor: WarmPalette.surfaceMuted,
+                  selectedColor: brandColor,
+                  backgroundColor: p.surfaceMuted,
                   shape: const StadiumBorder(),
-                  side: BorderSide(color: !_is80mm ? WarmPalette.primary : WarmPalette.line),
+                  side: BorderSide(color: !_is80mm ? brandColor : p.line),
                   labelStyle: TextStyle(
-                    color: !_is80mm ? Colors.white : WarmPalette.textSecondary,
+                    color: !_is80mm ? Colors.white : p.textSecondary,
                     fontWeight: !_is80mm ? FontWeight.w800 : FontWeight.w600,
                     fontSize: 12,
                   ),
@@ -277,12 +280,12 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
                 child: ChoiceChip(
                   label: const Center(child: Text('80 mm (Resto / Desktop)')),
                   selected: _is80mm,
-                  selectedColor: WarmPalette.primary,
-                  backgroundColor: WarmPalette.surfaceMuted,
+                  selectedColor: brandColor,
+                  backgroundColor: p.surfaceMuted,
                   shape: const StadiumBorder(),
-                  side: BorderSide(color: _is80mm ? WarmPalette.primary : WarmPalette.line),
+                  side: BorderSide(color: _is80mm ? brandColor : p.line),
                   labelStyle: TextStyle(
-                    color: _is80mm ? Colors.white : WarmPalette.textSecondary,
+                    color: _is80mm ? Colors.white : p.textSecondary,
                     fontWeight: _is80mm ? FontWeight.w800 : FontWeight.w600,
                     fontSize: 12,
                   ),
@@ -297,21 +300,21 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
           const SizedBox(height: 16),
 
           // 2. Tipe Koneksi
-          const Text('Jalur Komunikasi Hardware:', style: TextStyle(color: WarmPalette.textSecondary, fontSize: 12, fontWeight: FontWeight.w700)),
+          Text('Jalur Komunikasi Hardware:', style: TextStyle(color: p.textSecondary, fontSize: 12, fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: WarmPalette.line),
+              border: Border.all(color: p.line),
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: _connectionType,
                 isExpanded: true,
                 dropdownColor: Colors.white,
-                style: const TextStyle(color: WarmPalette.textPrimary, fontSize: 14, fontWeight: FontWeight.w600),
+                style: TextStyle(color: p.textPrimary, fontSize: 14, fontWeight: FontWeight.w600),
                 items: _connectionTypes.map((type) {
                   return DropdownMenuItem<String>(
                     value: type,
@@ -331,23 +334,23 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
 
           // Cloud Printer Quick Selection
           if (_cloudPrinters.isNotEmpty) ...[
-            const Text(
+            Text(
               'Pilih Cepat Printer dari Cloud Outlet:',
-              style: TextStyle(color: WarmPalette.textSecondary, fontSize: 11, fontWeight: FontWeight.w700),
+              style: TextStyle(color: p.textSecondary, fontSize: 11, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 6),
             Wrap(
               spacing: 8,
               runSpacing: 6,
-              children: _cloudPrinters.map((p) {
-                final name = p['name']?.toString() ?? 'Printer';
-                final ip = p['ip']?.toString() ?? p['ip_address']?.toString() ?? '';
+              children: _cloudPrinters.map((pr) {
+                final name = pr['name']?.toString() ?? 'Printer';
+                final ip = pr['ip']?.toString() ?? pr['ip_address']?.toString() ?? '';
                 final isSelected = _addressController.text.trim() == ip && ip.isNotEmpty;
                 return ActionChip(
-                  avatar: const Icon(Icons.print, size: 14, color: WarmPalette.primary),
+                  avatar: Icon(Icons.print, size: 14, color: brandColor),
                   label: Text('$name ${ip.isNotEmpty ? "($ip)" : ""}', style: const TextStyle(fontSize: 11)),
-                  backgroundColor: isSelected ? WarmPalette.primary.withValues(alpha: 0.15) : Colors.white,
-                  side: BorderSide(color: isSelected ? WarmPalette.primary : WarmPalette.line),
+                  backgroundColor: isSelected ? brandColor.withValues(alpha: 0.15) : Colors.white,
+                  side: BorderSide(color: isSelected ? brandColor : p.line),
                   onPressed: () {
                     if (ip.isNotEmpty) {
                       setState(() {
@@ -367,11 +370,11 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
           if (_connectionType == 'Network IP (LAN)') ...[
             TextField(
               controller: _addressController,
-              style: const TextStyle(color: WarmPalette.textPrimary, fontSize: 13),
-              decoration: const InputDecoration(
+              style: TextStyle(color: p.textPrimary, fontSize: 13),
+              decoration: InputDecoration(
                 labelText: 'Alamat IP Printer Port 9100',
                 hintText: 'Contoh: 192.168.1.200',
-                prefixIcon: Icon(Icons.lan_rounded, color: WarmPalette.textSecondary),
+                prefixIcon: Icon(Icons.lan_rounded, color: p.textSecondary),
                 filled: true,
                 fillColor: Colors.white,
               ),
@@ -385,8 +388,8 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
                   : const Icon(Icons.radar_rounded, size: 18),
               label: Text(_isScanningPrinters ? 'Memindai Jaringan WiFi...' : 'Pindai Printer Otomatis di WiFi'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: WarmPalette.primary,
-                side: const BorderSide(color: WarmPalette.primary),
+                foregroundColor: brandColor,
+                side: BorderSide(color: brandColor),
                 minimumSize: const Size(double.infinity, 42),
               ),
             ),
@@ -394,19 +397,19 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
               const SizedBox(height: 12),
               Text(
                 'Printer Ditemukan (${_discoveredPrinters.length}):',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: WarmPalette.textSecondary),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: p.textSecondary),
               ),
               const SizedBox(height: 6),
               ..._discoveredPrinters.map((ip) => Card(
                 elevation: 0,
-                color: WarmPalette.surfaceMuted,
+                color: p.surfaceMuted,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
-                  side: BorderSide(color: _addressController.text == ip ? WarmPalette.primary : WarmPalette.line),
+                  side: BorderSide(color: _addressController.text == ip ? brandColor : p.line),
                 ),
                 child: ListTile(
                   dense: true,
-                  leading: const Icon(Icons.print_rounded, color: WarmPalette.primary, size: 20),
+                  leading: Icon(Icons.print_rounded, color: brandColor, size: 20),
                   title: Text('Thermal Printer ($ip)', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                   subtitle: const Text('Port 9100 ESC/POS Ready', style: TextStyle(fontSize: 11)),
                   trailing: TextButton(
@@ -430,33 +433,33 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: WarmPalette.surfaceMuted,
+                color: p.surfaceMuted,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: WarmPalette.line),
+                border: Border.all(color: p.line),
               ),
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: WarmPalette.primary.withValues(alpha: 0.12),
+                      color: brandColor.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.bluetooth_searching_rounded, color: WarmPalette.primary, size: 20),
+                    child: Icon(Icons.bluetooth_searching_rounded, color: brandColor, size: 20),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Cara Sambungkan Bluetooth Thermal:',
-                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: WarmPalette.textPrimary),
+                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: p.textPrimary),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
                           '1. Buka Bluetooth di HP Anda & lakukan Pindai (Scan).\n2. Pilih printer thermal Anda & ketik PIN 0000 atau 1234.\n3. Setelah status Terpasang (Paired), tekan tombol Cetak Struk Uji.',
-                          style: TextStyle(fontSize: 11, color: WarmPalette.textSecondary, height: 1.3),
+                          style: TextStyle(fontSize: 11, color: p.textSecondary, height: 1.3),
                         ),
                       ],
                     ),
@@ -474,8 +477,8 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
                 child: OutlinedButton.icon(
                   onPressed: _isTesting ? null : _testPrint,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: WarmPalette.primary,
-                    side: const BorderSide(color: WarmPalette.line),
+                    foregroundColor: brandColor,
+                    side: BorderSide(color: p.line),
                     padding: const EdgeInsets.symmetric(vertical: 13),
                     shape: const StadiumBorder(),
                   ),
@@ -488,7 +491,7 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
                 child: ElevatedButton.icon(
                   onPressed: _isTesting ? null : _testKickDrawer,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: WarmPalette.primary,
+                    backgroundColor: brandColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 13),
                     shape: const StadiumBorder(),

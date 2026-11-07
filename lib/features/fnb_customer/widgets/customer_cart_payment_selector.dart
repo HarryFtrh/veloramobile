@@ -38,10 +38,12 @@ class CustomerCartPaymentSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
+        Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
@@ -49,12 +51,12 @@ class CustomerCartPaymentSelector extends StatelessWidget {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w800,
-                color: WarmPalette.textPrimary,
+                color: p.textPrimary,
               ),
             ),
             Text(
               'Pilih Salah Satu',
-              style: TextStyle(fontSize: 11, color: WarmPalette.textSecondary),
+              style: TextStyle(fontSize: 11, color: p.textSecondary),
             ),
           ],
         ),
@@ -101,6 +103,9 @@ class _PaymentOptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -110,7 +115,7 @@ class _PaymentOptionTile extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? WarmPalette.primary : WarmPalette.line,
+            color: isSelected ? primaryColor : p.line,
             width: isSelected ? 1.6 : 1,
           ),
         ),
@@ -119,10 +124,10 @@ class _PaymentOptionTile extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: WarmPalette.surfaceMuted,
+                color: p.surfaceMuted,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, size: 18, color: WarmPalette.primary),
+              child: Icon(icon, size: 18, color: primaryColor),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -131,17 +136,17 @@ class _PaymentOptionTile extends StatelessWidget {
                 children: [
                   Text(
                     name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
-                      color: WarmPalette.textPrimary,
+                      color: p.textPrimary,
                     ),
                   ),
                   Text(
                     sub,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: WarmPalette.textSecondary,
+                      color: p.textSecondary,
                     ),
                   ),
                 ],
@@ -151,7 +156,7 @@ class _PaymentOptionTile extends StatelessWidget {
               isSelected
                   ? Icons.radio_button_checked_rounded
                   : Icons.radio_button_off_rounded,
-              color: isSelected ? WarmPalette.primary : WarmPalette.textSecondary,
+              color: isSelected ? primaryColor : p.textSecondary,
               size: 20,
             ),
           ],

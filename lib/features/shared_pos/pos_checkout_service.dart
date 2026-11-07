@@ -57,6 +57,8 @@ class PosCheckoutResult {
   final bool isOffline;
   final String? errorMessage;
   final String? qrData;
+  /// Nomor referensi RRN / Settlement Bank H+1 untuk audit & rekonsiliasi kasir
+  final String? settlementRef;
 
   PosCheckoutResult({
     required this.success,
@@ -67,6 +69,7 @@ class PosCheckoutResult {
     this.isOffline = false,
     this.errorMessage,
     this.qrData,
+    this.settlementRef,
   });
 }
 
@@ -97,6 +100,8 @@ class PosCheckoutService {
 
     final payload = {
       'client_tx_id': clientTxId,
+      'idempotency_key': clientTxId,
+      'settlement_channel': paymentMethod.toUpperCase(),
       'location_id': int.tryParse(locationId) ?? locationId,
       'payment_method': paymentMethod,
       'payment_details': [
@@ -174,6 +179,13 @@ class PosCheckoutService {
           order['invoice_url'] ??
           (data['qr_content'] ?? data['qris'] ?? data['qr_code']);
 
+      final settlementRef = (order['settlement_ref'] ??
+              order['rrn'] ??
+              order['reference_number'] ??
+              order['transaction_id'] ??
+              clientTxId)
+          .toString();
+
       return PosCheckoutResult(
         success: true,
         invoiceNumber: invoiceNum,
@@ -182,6 +194,7 @@ class PosCheckoutService {
         changeAmount: paidAmount >= totalAmount ? paidAmount - totalAmount : 0,
         isOffline: false,
         qrData: qrVal?.toString(),
+        settlementRef: settlementRef,
       );
     } on DioException catch (e) {
       // Offline fallback: save locally if internet drops!

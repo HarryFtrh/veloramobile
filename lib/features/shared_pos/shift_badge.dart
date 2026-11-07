@@ -74,6 +74,9 @@ class _CashierShiftBadgeState extends State<CashierShiftBadge> {
 
   void _showShiftActionsModal() {
     final isMobile = context.isMobile;
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -82,10 +85,10 @@ class _CashierShiftBadgeState extends State<CashierShiftBadge> {
           constraints: BoxConstraints(maxWidth: isMobile ? double.infinity : 560),
           child: Container(
               padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(
-                color: WarmPalette.canvas,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                border: Border(top: BorderSide(color: WarmPalette.line, width: 1.5)),
+              decoration: BoxDecoration(
+                color: p.canvas,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                border: Border(top: BorderSide(color: p.line, width: 1.5)),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -99,25 +102,25 @@ class _CashierShiftBadgeState extends State<CashierShiftBadge> {
                         children: [
                           Text(
                             'Shift Kasir: ${_status?.cashierName ?? 'Kasir'}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w800,
                               fontSize: 16,
-                              color: WarmPalette.textPrimary,
+                              color: p.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             'Modal Awal: ${CurrencyFormatter.format(_status?.startingCash ?? 0)}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: WarmPalette.tertiary,
+                              color: p.tertiary,
                             ),
                           ),
                         ],
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 20, color: WarmPalette.textSecondary),
+                        icon: Icon(Icons.close_rounded, size: 20, color: p.textSecondary),
                         onPressed: () => Navigator.pop(ctx),
                       ),
                     ],
@@ -126,8 +129,8 @@ class _CashierShiftBadgeState extends State<CashierShiftBadge> {
                   _buildShiftActionCard(
                     context: context,
                     icon: Icons.arrow_downward_rounded,
-                    iconColor: WarmPalette.tertiary,
-                    iconBg: WarmPalette.tertiary.withValues(alpha: 0.12),
+                    iconColor: p.tertiary,
+                    iconBg: p.tertiary.withValues(alpha: 0.12),
                     title: 'Kas Masuk (Petty Cash In)',
                     subtitle: 'Tambah modal koin atau uang kecil ke laci kasir',
                     onTap: () {
@@ -144,8 +147,8 @@ class _CashierShiftBadgeState extends State<CashierShiftBadge> {
                   _buildShiftActionCard(
                     context: context,
                     icon: Icons.arrow_upward_rounded,
-                    iconColor: WarmPalette.danger,
-                    iconBg: WarmPalette.danger.withValues(alpha: 0.12),
+                    iconColor: p.danger,
+                    iconBg: p.danger.withValues(alpha: 0.12),
                     title: 'Kas Keluar (Petty Cash Out)',
                     subtitle: 'Pengeluaran operasional darurat (es batu, galon, kurir)',
                     onTap: () {
@@ -188,9 +191,9 @@ class _CashierShiftBadgeState extends State<CashierShiftBadge> {
                   _buildShiftActionCard(
                     context: context,
                     icon: Icons.lock_clock_rounded,
-                    iconColor: WarmPalette.primary,
-                    iconBg: WarmPalette.primary.withValues(alpha: 0.12),
-                    borderColor: WarmPalette.primary.withValues(alpha: 0.3),
+                    iconColor: primaryColor,
+                    iconBg: primaryColor.withValues(alpha: 0.12),
+                    borderColor: primaryColor.withValues(alpha: 0.3),
                     title: 'Tutup Shift & Rekonsiliasi Kasir',
                     subtitle: 'Hitung uang fisik di laci kasir & cetak laporan Z-Report',
                     onTap: () {
@@ -224,11 +227,12 @@ class _CashierShiftBadgeState extends State<CashierShiftBadge> {
     required VoidCallback onTap,
     Color? borderColor,
   }) {
+    final p = context.palette;
     return Material(
       color: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: borderColor ?? WarmPalette.line, width: 1.2),
+        side: BorderSide(color: borderColor ?? p.line, width: 1.2),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -252,18 +256,18 @@ class _CashierShiftBadgeState extends State<CashierShiftBadge> {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: WarmPalette.textPrimary),
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: p.textPrimary),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: const TextStyle(fontSize: 11, color: WarmPalette.textSecondary),
+                      style: TextStyle(fontSize: 11, color: p.textSecondary),
                     ),
                   ],
                 ),
               ),
               const SizedBox(width: 8),
-              const Icon(Icons.chevron_right_rounded, color: WarmPalette.textSecondary, size: 20),
+              Icon(Icons.chevron_right_rounded, color: p.textSecondary, size: 20),
             ],
           ),
         ),
@@ -273,24 +277,26 @@ class _CashierShiftBadgeState extends State<CashierShiftBadge> {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     if (_isLoading) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: WarmPalette.surfaceMuted,
+          color: p.surfaceMuted,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: WarmPalette.line),
+          border: Border.all(color: p.line),
         ),
-        child: const SizedBox(
+        child: SizedBox(
           width: 14,
           height: 14,
-          child: CircularProgressIndicator(strokeWidth: 2, color: WarmPalette.primary),
+          child: CircularProgressIndicator(strokeWidth: 2, color: primaryColor),
         ),
       );
     }
 
     final isOpen = _status?.isOpen ?? false;
-
     final isMobile = context.isMobile;
 
     return InkWell(
@@ -299,10 +305,10 @@ class _CashierShiftBadgeState extends State<CashierShiftBadge> {
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 12, vertical: isMobile ? 5 : 7),
         decoration: BoxDecoration(
-          color: isOpen ? WarmPalette.surfaceMuted : WarmPalette.canvas,
+          color: isOpen ? p.surfaceMuted : p.canvas,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isOpen ? WarmPalette.tertiary.withValues(alpha: 0.4) : WarmPalette.secondary,
+            color: isOpen ? p.tertiary.withValues(alpha: 0.4) : p.secondary,
           ),
         ),
         child: Row(
@@ -313,7 +319,7 @@ class _CashierShiftBadgeState extends State<CashierShiftBadge> {
               height: 7,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isOpen ? WarmPalette.tertiary : WarmPalette.secondary,
+                color: isOpen ? p.tertiary : p.secondary,
               ),
             ),
             const SizedBox(width: 5),
@@ -325,14 +331,14 @@ class _CashierShiftBadgeState extends State<CashierShiftBadge> {
                 style: TextStyle(
                   fontSize: isMobile ? 11 : 12,
                   fontWeight: FontWeight.w700,
-                  color: isOpen ? WarmPalette.textPrimary : WarmPalette.primary,
+                  color: isOpen ? p.textPrimary : primaryColor,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
             const SizedBox(width: 2),
-            const Icon(Icons.keyboard_arrow_down_rounded, size: 14, color: WarmPalette.textSecondary),
+            Icon(Icons.keyboard_arrow_down_rounded, size: 14, color: p.textSecondary),
           ],
         ),
       ),

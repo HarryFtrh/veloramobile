@@ -6,10 +6,12 @@ import '../../../../core/design/tokens.dart';
 Widget buildSummaryRow(
   String label,
   String value, {
+  BuildContext? context,
   bool isBold = false,
   Color? textColor,
   double? valueFontSize,
 }) {
+  final p = context?.palette ?? AppPalette.clinical;
   return Row(
     mainAxisAlignment: MainAxisAlignment.spaceBetween,
     children: [
@@ -19,7 +21,7 @@ Widget buildSummaryRow(
           style: TextStyle(
             fontSize: 12,
             fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
-            color: isBold ? WarmPalette.textPrimary : WarmPalette.textSecondary,
+            color: isBold ? p.textPrimary : p.textSecondary,
           ),
           overflow: TextOverflow.ellipsis,
         ),
@@ -32,7 +34,7 @@ Widget buildSummaryRow(
           style: TextStyle(
             fontSize: valueFontSize ?? (isBold ? 14 : 12),
             fontWeight: isBold ? FontWeight.w800 : FontWeight.w700,
-            color: textColor ?? WarmPalette.textPrimary,
+            color: textColor ?? p.textPrimary,
           ),
         ),
       ),
@@ -40,17 +42,18 @@ Widget buildSummaryRow(
   );
 }
 
-Widget buildQuickCashChip(String label, VoidCallback onTap, {bool isDanger = false}) {
+Widget buildQuickCashChip(String label, VoidCallback onTap, {BuildContext? context, bool isDanger = false}) {
+  final p = context?.palette ?? AppPalette.clinical;
   return InkWell(
     onTap: onTap,
     borderRadius: BorderRadius.circular(8),
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: isDanger ? WarmPalette.danger.withValues(alpha: 0.1) : WarmPalette.surfaceMuted,
+        color: isDanger ? p.danger.withValues(alpha: 0.1) : p.surfaceMuted,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isDanger ? WarmPalette.danger.withValues(alpha: 0.3) : WarmPalette.line,
+          color: isDanger ? p.danger.withValues(alpha: 0.3) : p.line,
         ),
       ),
       child: Text(
@@ -58,7 +61,7 @@ Widget buildQuickCashChip(String label, VoidCallback onTap, {bool isDanger = fal
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w700,
-          color: isDanger ? WarmPalette.danger : WarmPalette.textPrimary,
+          color: isDanger ? p.danger : p.textPrimary,
         ),
       ),
     ),

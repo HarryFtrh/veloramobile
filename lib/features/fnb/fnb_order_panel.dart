@@ -70,6 +70,7 @@ class FnbOrderPanel extends StatelessWidget {
       listenable: ctrl,
       builder: (context, _) {
         final p = context.palette;
+        final primaryColor = Theme.of(context).colorScheme.primary;
         final text = Theme.of(context).textTheme;
         final canSubmit = ctrl.lines.isNotEmpty && !ctrl.busy;
         final dineInNeedsTable = ctrl.orderType == OrderType.dineIn && ctrl.table == null;
@@ -85,7 +86,7 @@ class FnbOrderPanel extends StatelessWidget {
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: WarmPalette.line,
+                    color: p.line,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -114,15 +115,15 @@ class FnbOrderPanel extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: WarmPalette.secondary.withValues(alpha: 0.15),
+                        color: p.secondary.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         '#${ctrl.activeOrderId}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
-                          color: WarmPalette.secondary,
+                          color: p.secondary,
                         ),
                       ),
                     ),
@@ -131,7 +132,7 @@ class FnbOrderPanel extends StatelessWidget {
                   if (onSplitBill != null && ctrl.lines.isNotEmpty)
                     IconButton(
                       tooltip: 'Split Bill',
-                      icon: const Icon(Icons.call_split_rounded, size: 19, color: WarmPalette.primary),
+                      icon: Icon(Icons.call_split_rounded, size: 19, color: primaryColor),
                       onPressed: onSplitBill,
                       visualDensity: VisualDensity.compact,
                       padding: EdgeInsets.zero,
@@ -144,9 +145,9 @@ class FnbOrderPanel extends StatelessWidget {
                         visualDensity: VisualDensity.compact,
                         padding: const EdgeInsets.symmetric(horizontal: 6),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Reset',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: WarmPalette.danger),
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: p.danger),
                       ),
                     ),
                   if (isModal)

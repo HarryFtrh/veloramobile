@@ -2,6 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/utils/audio_helper.dart';
 import 'pharmacy_service.dart';
+import 'widgets/calling/pharmacy_calling_hero_banner.dart';
+import 'widgets/calling/pharmacy_calling_station_card.dart';
+
+export 'widgets/calling/pharmacy_calling_hero_banner.dart';
+export 'widgets/calling/pharmacy_calling_station_card.dart';
 
 /// Display Layar Tablet Publik / TV Panggilan Loket Farmasi (Google Stitch "Clinical Precision")
 class PharmacyCallingDisplayScreen extends StatefulWidget {
@@ -21,7 +26,6 @@ class _PharmacyCallingDisplayScreenState extends State<PharmacyCallingDisplayScr
   String _currentCallingDestination = 'Loket 1 (Penyerahan Obat & Konseling)';
 
   List<Map<String, String>> _counterStations = [];
-  bool _isLoading = false; // ignore: unused_field
 
   @override
   void initState() {
@@ -96,18 +100,25 @@ class _PharmacyCallingDisplayScreenState extends State<PharmacyCallingDisplayScr
             },
           ];
         }
-        _isLoading = false;
       });
     }
   }
 
   void _recallTicket(Map<String, String> station) {
     AudioHelper.tapFeedback();
+    final token = station['token'] ?? '';
+    final patient = station['patient'] ?? '';
+    final dest = '${station['counter']} (${station['title']})';
     setState(() {
-      _currentCallingToken = station['token'] ?? '';
-      _currentCallingPatient = station['patient'] ?? '';
-      _currentCallingDestination = '${station['counter']} (${station['title']})';
+      _currentCallingToken = token;
+      _currentCallingPatient = patient;
+      _currentCallingDestination = dest;
     });
+    PharmacyService.instance.callQueueItem(
+      queueNumber: token,
+      patientName: patient,
+      destination: dest,
+    );
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -131,10 +142,6 @@ class _PharmacyCallingDisplayScreenState extends State<PharmacyCallingDisplayScr
   @override
   Widget build(BuildContext context) {
     const emeraldPrimary = Color(0xFF059669);
-    // ignore: unused_local_variable
-    const darkSurface = Color(0xFF0F172A);
-    // ignore: unused_local_variable
-    const borderColor = Color(0xFFE2E8F0);
 
     final timeStr =
         '${_now.hour.toString().padLeft(2, '0')}:${_now.minute.toString().padLeft(2, '0')}:${_now.second.toString().padLeft(2, '0')} WIB';
@@ -213,90 +220,10 @@ class _PharmacyCallingDisplayScreenState extends State<PharmacyCallingDisplayScr
             ),
 
             // Giant Calling Banner
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF059669), Color(0xFF004D34)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x33059669),
-                    blurRadius: 20,
-                    offset: Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 10,
-                        height: 10,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF85F8C4),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'PANGGILAN LOKET TERBARU',
-                        style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontWeight: FontWeight.w800,
-                          fontSize: 13,
-                          letterSpacing: 1.5,
-                          color: Color(0xFF85F8C4),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    _currentCallingToken,
-                    style: const TextStyle(
-                      fontFamily: 'JetBrains Mono',
-                      fontWeight: FontWeight.w900,
-                      fontSize: 54,
-                      color: Colors.white,
-                      letterSpacing: -1,
-                    ),
-                  ),
-                  Text(
-                    _currentCallingPatient,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.25),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'Silakan menuju: $_currentCallingDestination',
-                      style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                        color: Color(0xFF85F8C4),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            PharmacyCallingHeroBanner(
+              token: _currentCallingToken,
+              patient: _currentCallingPatient,
+              destination: _currentCallingDestination,
             ),
 
             // Active Counters Row
@@ -312,7 +239,11 @@ class _PharmacyCallingDisplayScreenState extends State<PharmacyCallingDisplayScr
                               return Expanded(
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 6),
-                                  child: _buildCounterCard(station, emeraldPrimary),
+                                  child: PharmacyCallingStationCard(
+                                    station: station,
+                                    primaryColor: emeraldPrimary,
+                                    onRecall: () => _recallTicket(station),
+                                  ),
                                 ),
                               );
                             }).toList(),
@@ -320,7 +251,11 @@ class _PharmacyCallingDisplayScreenState extends State<PharmacyCallingDisplayScr
                         : ListView.separated(
                             itemCount: _counterStations.length,
                             separatorBuilder: (_, idx) => const SizedBox(height: 12),
-                            itemBuilder: (context, index) => _buildCounterCard(_counterStations[index], emeraldPrimary),
+                            itemBuilder: (context, index) => PharmacyCallingStationCard(
+                              station: _counterStations[index],
+                              primaryColor: emeraldPrimary,
+                              onRecall: () => _recallTicket(_counterStations[index]),
+                            ),
                           );
                   },
                 ),
@@ -328,81 +263,6 @@ class _PharmacyCallingDisplayScreenState extends State<PharmacyCallingDisplayScr
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildCounterCard(Map<String, String> station, Color primary) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF283044)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: primary.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              station['counter'] ?? '',
-              style: TextStyle(
-                fontFamily: 'JetBrains Mono',
-                fontWeight: FontWeight.w800,
-                fontSize: 12,
-                color: primary,
-              ),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            station['title'] ?? '',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF94A3B8),
-            ),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            station['token'] ?? '',
-            style: const TextStyle(
-              fontFamily: 'JetBrains Mono',
-              fontWeight: FontWeight.w900,
-              fontSize: 34,
-              color: Colors.white,
-            ),
-          ),
-          Text(
-            station['patient'] ?? '',
-            style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontWeight: FontWeight.w700,
-              fontSize: 14,
-              color: Color(0xFFCBD5E1),
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 14),
-          OutlinedButton.icon(
-            onPressed: () => _recallTicket(station),
-            icon: const Icon(Icons.volume_up_rounded, size: 16),
-            label: const Text('Panggil Ulang', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: primary,
-              side: BorderSide(color: primary),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-          ),
-        ],
       ),
     );
   }

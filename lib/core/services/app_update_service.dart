@@ -3,24 +3,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/app_config.dart';
+import '../config/app_version_info.dart';
 import '../design/tokens.dart';
 import '../network/api_client.dart';
 
-/// Informasi versi aplikasi yang sedang berjalan
-class AppVersionInfo {
-  final String packageName;
-  final String versionName;
-  final int versionCode;
-
-  const AppVersionInfo({
-    required this.packageName,
-    required this.versionName,
-    required this.versionCode,
-  });
-
-  @override
-  String toString() => '$versionName ($versionCode)';
-}
+export '../config/app_version_info.dart';
 
 /// Status pembaruan dari server atau Play Store
 class AppUpdateCheckResult {
@@ -48,7 +35,6 @@ class AppUpdateService {
 
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
   static const MethodChannel _channel = MethodChannel('com.velora.mobile/app_update');
-  AppVersionInfo? _cachedVersion;
 
   /// Inisialisasi listener interceptor pembaruan API
   static void init() {
@@ -62,33 +48,7 @@ class AppUpdateService {
 
   /// Mengambil informasi versi lokal dari Android PackageManager
   Future<AppVersionInfo> getAppVersion() async {
-    if (_cachedVersion != null) return _cachedVersion!;
-
-    if (!kIsWeb && Platform.isAndroid) {
-      try {
-        final res = await _channel.invokeMapMethod<String, dynamic>('getAppVersion');
-        if (res != null) {
-          final info = AppVersionInfo(
-            packageName: res['packageName']?.toString() ?? 'com.velora.velora_mobile',
-            versionName: res['versionName']?.toString() ?? '1.0.0',
-            versionCode: (res['versionCode'] as num?)?.toInt() ?? 1,
-          );
-          _cachedVersion = info;
-          return info;
-        }
-      } catch (e) {
-        debugPrint('[AppUpdateService] Gagal membaca versi dari platform channel: $e');
-      }
-    }
-
-    // Fallback default
-    final fallback = AppVersionInfo(
-      packageName: 'com.velora.${AppConfig.instance.flavor.name}',
-      versionName: '1.0.0',
-      versionCode: 1,
-    );
-    _cachedVersion = fallback;
-    return fallback;
+    return AppVersionHelper.getAppVersion();
   }
 
   /// Membuka Google Play Store untuk aplikasi ini

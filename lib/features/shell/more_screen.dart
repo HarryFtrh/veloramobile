@@ -4,22 +4,9 @@ import '../../core/storage/session_storage.dart';
 import '../shared_pos/receipt_printer_service.dart';
 import '../shared_pos/shift_badge.dart';
 import 'menu_service.dart';
+import 'more_entry.dart';
 
-class MoreEntry {
-  const MoreEntry({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.builder,
-    this.category,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final WidgetBuilder builder;
-  final String? category;
-}
+export 'more_entry.dart';
 
 /// Menu Hub "Lainnya" untuk operasional kasir, profil outlet, dan fitur sekunder.
 /// Mendukung Server-Driven Menu via GET /api/my-menu dari backend Velora.

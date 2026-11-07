@@ -200,14 +200,14 @@ class _PromoAndVoucherSheetState extends State<PromoAndVoucherSheet> {
             const SizedBox(height: 16),
 
             if (_isLoadingPromos && promos.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
                 child: Center(
                   child: Column(
                     children: [
-                      CircularProgressIndicator(strokeWidth: 2),
-                      SizedBox(height: 10),
-                      Text('Menarik data diskon & promosi dari server...', style: TextStyle(fontSize: 12, color: WarmPalette.textSecondary)),
+                      const CircularProgressIndicator(strokeWidth: 2),
+                      const SizedBox(height: 10),
+                      Text('Menarik data diskon & promosi dari server...', style: TextStyle(fontSize: 12, color: p.textSecondary)),
                     ],
                   ),
                 ),
@@ -276,7 +276,7 @@ class _PromoAndVoucherSheetState extends State<PromoAndVoucherSheet> {
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: eligible ? WarmPalette.tertiary : p.line,
+                                        color: eligible ? p.tertiary : p.line,
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: Text(

@@ -2,16 +2,11 @@ import 'package:flutter/material.dart';
 import '../../core/design/components.dart';
 import '../../core/design/tokens.dart';
 import '../../core/network/api_exception.dart';
-import '../../core/utils/audio_helper.dart';
-import '../../core/utils/currency_formatter.dart';
 import '../../core/storage/session_storage.dart';
-import '../shared_pos/offline_sync_badge.dart';
 import '../shared_pos/pos_checkout_service.dart';
 import '../shared_pos/product_catalog_service.dart';
 import '../shared_pos/receipt_printer_service.dart';
 import '../shared_pos/shift_modal.dart';
-import '../shared_pos/shift_badge.dart';
-import '../shared_pos/shift_service.dart';
 import '../shared_pos/sales_history_drawer.dart';
 import '../tables/table_service.dart';
 import 'widgets/fnb_modifier_sheet.dart';
@@ -21,7 +16,16 @@ import 'widgets/fnb_payment_sheet.dart';
 import 'widgets/fnb_catalog_pane.dart';
 import 'fnb_order_panel.dart';
 import 'widgets/fnb_table_picker_sheet.dart';
+import 'widgets/register/fnb_hold_order_dialog.dart';
+import 'widgets/register/fnb_payment_success_dialog.dart';
+import 'widgets/register/fnb_register_header.dart';
+import 'widgets/register/fnb_shift_closed_view.dart';
 import 'fnb_register_controller.dart';
+
+export 'widgets/register/fnb_hold_order_dialog.dart';
+export 'widgets/register/fnb_payment_success_dialog.dart';
+export 'widgets/register/fnb_register_header.dart';
+export 'widgets/register/fnb_shift_closed_view.dart';
 
 class FnbRegisterScreen extends StatefulWidget {
   const FnbRegisterScreen({super.key, this.initialTable});
@@ -110,62 +114,9 @@ class _FnbRegisterScreenState extends State<FnbRegisterScreen> {
     String? name = _ctrl.customerName;
     if (name.isEmpty && _ctrl.table == null) {
       final defaultLabel = 'Walk-In #${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
-      final nameCtrl = TextEditingController(text: defaultLabel);
-      final confirm = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: context.palette.secondary.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(Icons.pause_circle_outline_rounded, color: context.palette.secondary, size: 22),
-              ),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Text('Simpan Antrean (Hold)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Beri nama atau penanda pelanggan untuk antrean ini:',
-                style: TextStyle(fontSize: 13, color: context.palette.textSecondary),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: nameCtrl,
-                autofocus: true,
-                decoration: InputDecoration(
-                  labelText: 'Nama Pelanggan / Penanda Antrean',
-                  filled: true,
-                  fillColor: context.palette.surfaceMuted,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: context.palette.line)),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Batal'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Simpan Antrean'),
-            ),
-          ],
-        ),
-      );
-      if (confirm != true) return;
-      name = nameCtrl.text.trim();
+      final enteredName = await FnbHoldOrderDialog.show(context, defaultLabel: defaultLabel);
+      if (enteredName == null) return;
+      name = enteredName;
     }
 
     try {
@@ -292,124 +243,11 @@ class _FnbRegisterScreenState extends State<FnbRegisterScreen> {
         qrData: out.invoice.isNotEmpty ? 'https://velora.co.id/verify/${out.invoice}' : null,
       );
 
-      await showDialog<void>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: context.palette.success.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(Icons.check_circle_rounded, color: context.palette.success, size: 24),
-              ),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Text('Pembayaran Berhasil', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (out.invoice.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: context.palette.surfaceMuted,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: context.palette.line),
-                  ),
-                  child: Text(
-                    'No. Faktur: #${out.invoice}',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.palette.textSecondary),
-                  ),
-                ),
-              if (out.change > 0) ...[
-                const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: context.palette.success.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: context.palette.success.withValues(alpha: 0.3)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'UANG KEMBALIAN',
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: context.palette.success),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        CurrencyFormatter.format(out.change),
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: context.palette.success),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              const SizedBox(height: Gap.md),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => ReceiptPrinterService.instance.shareReceipt(finalReceipt),
-                      icon: const Icon(Icons.share_rounded, size: 15),
-                      label: const Text('Bagi (WA)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: Gap.xs),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () async {
-                        await ReceiptPrinterService.instance.printReceipt(finalReceipt);
-                        if (ctx.mounted) {
-                          ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Struk dikirim ke printer')));
-                        }
-                      },
-                      icon: const Icon(Icons.print_outlined, size: 15),
-                      label: const Text('Cetak Struk', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: Gap.xs),
-                  IconButton.outlined(
-                    tooltip: 'Buka laci kasir',
-                    onPressed: () async {
-                      await ReceiptPrinterService.instance.openCashDrawer();
-                      if (ctx.mounted) {
-                        ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Sinyal laci kasir dikirim')));
-                      }
-                    },
-                    icon: const Icon(Icons.point_of_sale, size: 18),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          actions: [
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx),
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(double.infinity, 44),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text('Selesai / Transaksi Baru', style: TextStyle(fontWeight: FontWeight.w800)),
-            ),
-          ],
-        ),
+      await FnbPaymentSuccessDialog.show(
+        context,
+        invoiceNumber: out.invoice,
+        changeAmount: out.change,
+        finalReceipt: finalReceipt,
       );
     } catch (e) {
       _toast(ApiException.from(e).message);
@@ -511,134 +349,25 @@ class _FnbRegisterScreenState extends State<FnbRegisterScreen> {
           return Scaffold(
             resizeToAvoidBottomInset: false,
             backgroundColor: p.canvas,
-            appBar: wide ? null : AppBar(
-              titleSpacing: wide ? 16 : 8,
-              title: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(7),
-                    decoration: BoxDecoration(color: WarmPalette.primary, borderRadius: BorderRadius.circular(9)),
-                    child: const Icon(Icons.coffee_maker_rounded, color: Colors.white, size: 18),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                SessionStorage.instance.getTenantName() ?? SessionStorage.instance.getLocationName() ?? 'Kasir POS',
-                                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            if (wide && SessionStorage.instance.getLocationName() != null) ...[
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                decoration: BoxDecoration(
-                                  color: WarmPalette.primary.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  SessionStorage.instance.getLocationName() ?? '',
-                                  style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: WarmPalette.primary),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                'Kasir: ${SessionStorage.instance.getUserName() ?? "Kasir"}',
-                                style: const TextStyle(fontSize: 10, color: WarmPalette.textSecondary),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            const OfflineSyncBadge(showClock: false),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                CashierShiftBadge(
-                  onShiftChanged: () => _ctrl.refreshShift(),
-                ),
-                if (wideActions) ...[
-                  const SizedBox(width: 4),
-                  OutlinedButton.icon(
-                    onPressed: () async {
+            appBar: wide
+                ? null
+                : FnbRegisterHeader(
+                    ctrl: _ctrl,
+                    wide: wide,
+                    wideActions: wideActions,
+                    onOpenSplitBill: _openSplitBill,
+                    onOpenCashDrawer: () async {
                       await ReceiptPrinterService.instance.openCashDrawer();
                       if (context.mounted) _toast('Perintah buka laci kasir dikirim');
                     },
-                    icon: const Icon(Icons.lock_open_rounded, size: 15),
-                    label: const Text('Laci', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: WarmPalette.primary,
-                      side: const BorderSide(color: WarmPalette.line),
-                      shape: const StadiumBorder(),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      visualDensity: VisualDensity.compact,
-                    ),
                   ),
-                  IconButton(
-                    tooltip: 'Split Bill',
-                    icon: const Icon(Icons.call_split_rounded, size: 19),
-                    onPressed: _ctrl.lines.isEmpty ? null : _openSplitBill,
-                  ),
-                  IconButton(
-                    tooltip: 'Pengaturan Printer',
-                    icon: const Icon(Icons.print_outlined, size: 19),
-                    onPressed: () => ReceiptPrinterService.instance.openSettings(context),
-                  ),
-                  IconButton(
-                    tooltip: 'Muat ulang menu',
-                    icon: const Icon(Icons.refresh_rounded, size: 19),
-                    onPressed: _ctrl.load,
-                  ),
-                ] else ...[
-                  PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert_rounded),
-                    onSelected: (val) async {
-                      if (val == 'split') {
-                        _openSplitBill();
-                      } else if (val == 'drawer') {
-                        await ReceiptPrinterService.instance.openCashDrawer();
-                        if (context.mounted) _toast('Perintah buka laci kasir dikirim');
-                      } else if (val == 'printer') {
-                        ReceiptPrinterService.instance.openSettings(context);
-                      } else if (val == 'refresh') {
-                        _ctrl.load();
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(value: 'split', child: Text('Split Bill')),
-                      const PopupMenuItem(value: 'drawer', child: Text('Buka Laci Kasir')),
-                      const PopupMenuItem(value: 'printer', child: Text('Pengaturan Printer')),
-                      const PopupMenuItem(value: 'refresh', child: Text('Muat Ulang Menu')),
-                    ],
-                  ),
-                ],
-                const SizedBox(width: 8),
-              ],
-            ),
             body: Directionality(
               textDirection: TextDirection.ltr,
               child: _ctrl.shiftId == null
-                  ? _buildShiftClosedView(context, wide: wide)
+                  ? FnbShiftClosedView(
+                      onRefreshShift: () => _ctrl.refreshShift(),
+                      onOpenBills: _openBillsModal,
+                    )
                   : (wide
                       ? Row(
                           textDirection: TextDirection.ltr,
@@ -719,240 +448,6 @@ class _FnbRegisterScreenState extends State<FnbRegisterScreen> {
           );
         });
       },
-    );
-  }
-
-  Widget _buildShiftClosedView(BuildContext context, {required bool wide}) {
-    final p = context.palette;
-    final isMobile = context.isMobile;
-
-    return Center(
-      child: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(
-          horizontal: isMobile ? 20 : 36,
-          vertical: 28,
-        ),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                width: 84,
-                height: 84,
-                decoration: BoxDecoration(
-                  color: WarmPalette.primary.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: WarmPalette.primary.withValues(alpha: 0.25),
-                    width: 2,
-                  ),
-                ),
-                child: const Icon(
-                  Icons.lock_clock_rounded,
-                  size: 40,
-                  color: WarmPalette.primary,
-                ),
-              ),
-              const SizedBox(height: 18),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                decoration: BoxDecoration(
-                  color: WarmPalette.danger.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: WarmPalette.danger.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.lock_outline_rounded, size: 14, color: WarmPalette.danger),
-                    SizedBox(width: 6),
-                    Text(
-                      'STATUS: SHIFT KASIR DITUTUP',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: WarmPalette.danger,
-                        letterSpacing: 0.4,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-              const Text(
-                'Laci & Register Kasir Terkunci',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: WarmPalette.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Shift kasir saat ini sedang nonaktif. Buka shift kasir baru dengan modal kas awal untuk mulai menambahkan menu ke keranjang dan memproses transaksi penjualan.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  height: 1.45,
-                  color: WarmPalette.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 26),
-              ElevatedButton.icon(
-                onPressed: () async {
-                  AudioHelper.tapFeedback();
-                  await ShiftDialogs.showOpenShiftDialog(
-                    context,
-                    onOpened: (_) => _ctrl.refreshShift(),
-                  );
-                },
-                icon: const Icon(Icons.point_of_sale_rounded, size: 20),
-                label: const Text(
-                  'BUKA SHIFT KASIR BARU',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: 0.3),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: WarmPalette.primary,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size.fromHeight(52),
-                  shape: const StadiumBorder(),
-                  elevation: 1,
-                  shadowColor: WarmPalette.primary.withValues(alpha: 0.4),
-                ),
-              ),
-              if (ShiftService.instance.lastCloseSummary != null) ...[
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: () {
-                    AudioHelper.tapFeedback();
-                    ShiftDialogs.showShiftReportDialog(
-                      context,
-                      ShiftService.instance.lastCloseSummary!,
-                      onDone: () {},
-                    );
-                  },
-                  icon: const Icon(Icons.assessment_rounded, size: 18),
-                  label: const Text(
-                    'Lihat / Cetak Z-Report Terakhir',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: WarmPalette.primary,
-                    minimumSize: const Size.fromHeight(48),
-                    side: const BorderSide(color: WarmPalette.line),
-                    shape: const StadiumBorder(),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  const Expanded(child: Divider(color: WarmPalette.line)),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(
-                      'PILIHAN & PENGATURAN LAINNYA',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: p.textTertiary,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                  const Expanded(child: Divider(color: WarmPalette.line)),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildClosedQuickCard(
-                      icon: Icons.receipt_long_rounded,
-                      title: 'Riwayat & Antrean',
-                      subtitle: 'Cek transaksi sebelumnya',
-                      onTap: _openBillsModal,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildClosedQuickCard(
-                      icon: Icons.print_outlined,
-                      title: 'Printer Thermal',
-                      subtitle: 'Konfigurasi Bluetooth / IP',
-                      onTap: () => ReceiptPrinterService.instance.openSettings(context),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildClosedQuickCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: WarmPalette.line, width: 1.2),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          AudioHelper.tapFeedback();
-          onTap();
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: WarmPalette.surfaceMuted,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, size: 20, color: WarmPalette.primary),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w800,
-                  color: WarmPalette.textPrimary,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  fontSize: 10.5,
-                  color: WarmPalette.textSecondary,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

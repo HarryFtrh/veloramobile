@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../core/network/api_client.dart';
 import '../../core/utils/audio_helper.dart';
-import '../../core/utils/currency_formatter.dart';
 import 'pharmacy_service.dart';
-import 'widgets/pharmacy_patient_dialog.dart';
-import 'widgets/pharmacy_queue_modal.dart';
+import 'widgets/queue/pharmacy_queue_card.dart';
+import 'widgets/queue/pharmacy_queue_summary_strip.dart';
+import 'widgets/queue/pharmacy_queue_filters.dart';
+
+export 'widgets/queue/pharmacy_queue_card.dart';
+export 'widgets/queue/pharmacy_queue_summary_strip.dart';
+export 'widgets/queue/pharmacy_queue_filters.dart';
 
 /// Screen 2: Billing Klinik & Antrean Pasien (Google Stitch "Clinical Precision")
 class PharmacyQueueScreen extends StatefulWidget {
@@ -95,13 +99,11 @@ class _PharmacyQueueScreenState extends State<PharmacyQueueScreen> {
       medicalRecordNumber: item.medicalRecordNumber,
       patientCategory: item.insurance,
       allergies: item.allergy ?? '',
+      prescribedDrugs: item.prescribedDrugs,
     );
 
-    // Kirim data ke Kasir POS
     PharmacyService.instance.setActivePatient(patientData);
-
-    // Switch shell tab ke Kasir POS (tab index 0)
-    PharmacyService.instance.switchTab(0);
+    PharmacyService.instance.switchToPosTab();
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -142,6 +144,8 @@ class _PharmacyQueueScreenState extends State<PharmacyQueueScreen> {
       return true;
     }).toList();
 
+    final waitingCount = _queueItems.where((e) => e.status == 'ready' || e.status == 'pending').length;
+
     return Scaffold(
       backgroundColor: const Color(0xFFFAF8FF),
       body: SafeArea(
@@ -162,17 +166,17 @@ class _PharmacyQueueScreenState extends State<PharmacyQueueScreen> {
                       color: emeraldPrimary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.people_outline_rounded, color: emeraldPrimary, size: 22),
+                    child: const Icon(Icons.people_alt_outlined, color: emeraldPrimary, size: 22),
                   ),
                   const SizedBox(width: 12),
-                  Expanded(
+                  const Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Row(
+                        Row(
                           children: [
                             Text(
-                              'Antrean Poli & Billing Pasien',
+                              'Antrean Resep & Billing Klinik',
                               style: TextStyle(
                                 fontFamily: 'Plus Jakarta Sans',
                                 fontWeight: FontWeight.w800,
@@ -184,18 +188,14 @@ class _PharmacyQueueScreenState extends State<PharmacyQueueScreen> {
                             CircleAvatar(radius: 4, backgroundColor: emeraldPrimary),
                             SizedBox(width: 4),
                             Text(
-                              'Live Loket',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: emeraldPrimary,
-                              ),
+                              'Live Bridge SIMRS',
+                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: emeraldPrimary),
                             ),
                           ],
                         ),
                         Text(
-                          '${_queueItems.length} Antrean Terdaftar • Siap Dilayani di Kasir & Farmasi',
-                          style: const TextStyle(fontSize: 11.5, color: textMuted),
+                          'Integrasi Rekam Medis Poli, e-Resep, & Billing Pasien',
+                          style: TextStyle(fontSize: 11.5, color: textMuted),
                         ),
                       ],
                     ),
@@ -210,99 +210,28 @@ class _PharmacyQueueScreenState extends State<PharmacyQueueScreen> {
             ),
 
             // Search Bar & Poly Filters
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
-              color: Colors.white,
-              child: Column(
-                children: [
-                  TextField(
-                    controller: _searchController,
-                    onChanged: (val) => setState(() => _searchQuery = val.trim()),
-                    decoration: InputDecoration(
-                      hintText: 'Cari No. Antrean, RM, Nama Pasien, atau Dokter...',
-                      hintStyle: const TextStyle(fontSize: 12.5, color: textMuted),
-                      prefixIcon: const Icon(Icons.search_rounded, size: 20, color: textMuted),
-                      suffixIcon: _searchQuery.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear_rounded, size: 18),
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() => _searchQuery = '');
-                              },
-                            )
-                          : null,
-                      filled: true,
-                      fillColor: const Color(0xFFF8FAFC),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: borderColor),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: borderColor),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: emeraldPrimary, width: 1.5),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  // Poly Pills
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: _poliList.map((poli) {
-                        final isSel = _selectedPoli == poli;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 6),
-                          child: InkWell(
-                            onTap: () => setState(() => _selectedPoli = poli),
-                            borderRadius: BorderRadius.circular(16),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 150),
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: isSel ? emeraldPrimary : const Color(0xFFF1F5F9),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: isSel ? emeraldPrimary : borderColor,
-                                ),
-                              ),
-                              child: Text(
-                                poli,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: isSel ? FontWeight.bold : FontWeight.w600,
-                                  color: isSel ? Colors.white : const Color(0xFF475569),
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  // Status Pills
-                  Row(
-                    children: [
-                      _buildStatusTab('all', 'Semua (${_queueItems.length})', emeraldPrimary),
-                      const SizedBox(width: 6),
-                      _buildStatusTab('ready', 'Siap Bayar', emeraldPrimary),
-                      const SizedBox(width: 6),
-                      _buildStatusTab('pending', 'Menunggu Resep', emeraldPrimary),
-                      const SizedBox(width: 6),
-                      _buildStatusTab('done', 'Selesai', emeraldPrimary),
-                    ],
-                  ),
-                ],
-              ),
+            PharmacyQueueFilters(
+              searchController: _searchController,
+              searchQuery: _searchQuery,
+              poliList: _poliList,
+              selectedPoli: _selectedPoli,
+              selectedStatus: _selectedStatus,
+              totalCount: _queueItems.length,
+              emeraldPrimary: emeraldPrimary,
+              onSearchChanged: (val) => setState(() => _searchQuery = val.trim()),
+              onClearSearch: () {
+                _searchController.clear();
+                setState(() => _searchQuery = '');
+              },
+              onSelectPoli: (poli) => setState(() => _selectedPoli = poli),
+              onSelectStatus: (status) => setState(() => _selectedStatus = status),
             ),
 
-            // Live Queue Summary Ribbon (Stitch Screen 2 Precision)
-            _buildClinicSummaryStrip(emeraldPrimary),
+            // Live Queue Summary Ribbon
+            PharmacyQueueSummaryStrip(
+              waitingCount: waitingCount,
+              emeraldPrimary: emeraldPrimary,
+            ),
 
             // Queue List / Grid
             Expanded(
@@ -336,357 +265,33 @@ class _PharmacyQueueScreenState extends State<PharmacyQueueScreen> {
                                 mainAxisSpacing: 12,
                               ),
                               itemCount: filtered.length,
-                              itemBuilder: (context, index) => _buildQueueCard(filtered[index], emeraldPrimary),
+                              itemBuilder: (context, index) {
+                                final item = filtered[index];
+                                return PharmacyQueueCard(
+                                  item: item,
+                                  primary: emeraldPrimary,
+                                  onCall: () => _callPatient(item),
+                                  onLoadToCashier: () => _loadToCashier(item),
+                                );
+                              },
                             )
                           : ListView.separated(
                               padding: const EdgeInsets.all(14),
                               itemCount: filtered.length,
                               separatorBuilder: (_, idx) => const SizedBox(height: 10),
-                              itemBuilder: (context, index) => _buildQueueCard(filtered[index], emeraldPrimary),
+                              itemBuilder: (context, index) {
+                                final item = filtered[index];
+                                return PharmacyQueueCard(
+                                  item: item,
+                                  primary: emeraldPrimary,
+                                  onCall: () => _callPatient(item),
+                                  onLoadToCashier: () => _loadToCashier(item),
+                                );
+                              },
                             ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildClinicSummaryStrip(Color emeraldPrimary) {
-    final waitingCount = _queueItems.where((e) => e.status == 'ready' || e.status == 'pending').length;
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x08000000),
-            blurRadius: 4,
-            offset: Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: emeraldPrimary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(Icons.receipt_long_rounded, color: emeraldPrimary, size: 20),
-                  ),
-                  const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '$waitingCount Pasien Menunggu Tagihan',
-                        style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13.5,
-                          color: Color(0xFF0F172A),
-                        ),
-                      ),
-                      Text(
-                        waitingCount > 0
-                            ? 'Estimasi selesai poli: ~${waitingCount * 5} menit'
-                            : 'Semua antrean saat ini telah tertangani',
-                        style: const TextStyle(fontSize: 11, color: Color(0xFF6D7A72)),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF85F8C4).withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  DateTime.now().hour < 12
-                      ? 'Sesi Pagi'
-                      : (DateTime.now().hour < 17 ? 'Sesi Siang' : 'Sesi Malam'),
-                  style: const TextStyle(
-                    fontFamily: 'JetBrains Mono',
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF002114),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    AudioHelper.tapFeedback();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('📢 Pemanggilan antrean audio loket diaktifkan.'),
-                        backgroundColor: Color(0xFF059669),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.campaign_outlined, size: 16),
-                  label: const Text('Panggil Antrean', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: emeraldPrimary,
-                    side: BorderSide(color: emeraldPrimary.withValues(alpha: 0.4)),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    AudioHelper.tapFeedback();
-                    PharmacyService.instance.switchTab(0);
-                  },
-                  icon: const Icon(Icons.add_circle_outline_rounded, size: 16),
-                  label: const Text('Tagihan Baru', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: emeraldPrimary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    elevation: 0,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatusTab(String key, String label, Color primary) {
-    final isSel = _selectedStatus == key;
-    return InkWell(
-      onTap: () => setState(() => _selectedStatus = key),
-      borderRadius: BorderRadius.circular(6),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: isSel ? primary.withValues(alpha: 0.12) : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
-            color: isSel ? primary : const Color(0xFF64748B),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQueueCard(ClinicPatientQueueItem item, Color primary) {
-    final isReady = item.status == 'ready';
-    final isDone = item.status == 'done';
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isReady ? primary : const Color(0xFFE2E8F0),
-          width: isReady ? 1.4 : 1,
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x060F172A),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Row 1: Token & Patient Name & Status
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      item.queueNumber,
-                      style: TextStyle(
-                        fontFamily: 'JetBrains Mono',
-                        fontWeight: FontWeight.w800,
-                        fontSize: 12,
-                        color: primary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 180),
-                    child: Text(
-                      item.patientName,
-                      style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                        color: Color(0xFF0F172A),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: isReady
-                      ? const Color(0xFFD4F8E8)
-                      : (isDone ? const Color(0xFFF1F5F9) : const Color(0xFFFEF3C7)),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  isReady ? 'Siap Bayar' : (isDone ? 'Selesai' : 'Menunggu Resep'),
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: isReady
-                        ? const Color(0xFF059669)
-                        : (isDone ? const Color(0xFF64748B) : const Color(0xFFB45309)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-
-          // Row 2: Doctor & Poli & RM
-          Text(
-            '${item.medicalRecordNumber} • ${item.doctorName} • ${item.department}',
-            style: const TextStyle(fontSize: 11, color: Color(0xFF6D7A72)),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 6),
-
-          // Row 3: Insurance & Allergy Tag
-          Wrap(
-            spacing: 6,
-            runSpacing: 4,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  item.insurance,
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF0D9488)),
-                ),
-              ),
-              if (item.allergy != null && item.allergy!.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEF3C7),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.warning_amber_rounded, color: Color(0xFFB45309), size: 11),
-                      const SizedBox(width: 3),
-                      Text(
-                        'Alergi: ${item.allergy}',
-                        style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: Color(0xFFB45309)),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-
-          const Spacer(),
-          const Divider(height: 12, color: Color(0xFFF1F5F9)),
-
-          // Row 4: Estimasi & Actions
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Estimasi Tagihan:', style: TextStyle(fontSize: 9.5, color: Color(0xFF6D7A72))),
-                  Text(
-                    CurrencyFormatter.format(item.estimatedTotal),
-                    style: TextStyle(
-                      fontFamily: 'JetBrains Mono',
-                      fontWeight: FontWeight.w800,
-                      fontSize: 13.5,
-                      color: primary,
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: () => _callPatient(item),
-                    icon: const Icon(Icons.volume_up_rounded, size: 14),
-                    label: const Text('Panggil', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: primary,
-                      side: BorderSide(color: primary.withValues(alpha: 0.5)),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      minimumSize: const Size(0, 32),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  ElevatedButton.icon(
-                    onPressed: () => _loadToCashier(item),
-                    icon: const Icon(Icons.point_of_sale_rounded, size: 14),
-                    label: const Text('Ke Kasir', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      minimumSize: const Size(0, 32),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }

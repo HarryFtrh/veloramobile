@@ -2,8 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../core/design/tokens.dart';
 import '../../core/storage/session_storage.dart';
+import '../../core/design/tokens.dart';
 import '../fnb/fnb_payment_split_screen.dart';
 import '../shared_pos/pos_checkout_service.dart';
 import '../shared_pos/receipt_printer_service.dart';
@@ -108,36 +108,39 @@ class _TablesScreenState extends State<TablesScreen> {
   Future<void> _releaseTable(CafeTableInfo t) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Row(
-          children: [
-            const Icon(Icons.warning_amber_rounded, color: WarmPalette.danger),
-            const SizedBox(width: 8),
-            Text('Kosongkan ${t.name}?', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
-          ],
-        ),
-        content: const Text(
-          'Tagihan aktif pada meja ini akan diselesaikan dan status meja akan dikembalikan menjadi Meja Kosong.',
-          style: TextStyle(fontSize: 13),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Batal'),
+      builder: (ctx) {
+        final p = ctx.palette;
+        return AlertDialog(
+          backgroundColor: p.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: p.danger),
+              const SizedBox(width: 8),
+              Text('Kosongkan ${t.name}?', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: p.textPrimary)),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: WarmPalette.danger,
-              foregroundColor: Colors.white,
-              shape: const StadiumBorder(),
+          content: Text(
+            'Tagihan aktif pada meja ini akan diselesaikan dan status meja akan dikembalikan menjadi Meja Kosong.',
+            style: TextStyle(fontSize: 13, color: p.textSecondary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Batal'),
             ),
-            child: const Text('Kosongkan Meja'),
-          ),
-        ],
-      ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: p.danger,
+                foregroundColor: Colors.white,
+                shape: const StadiumBorder(),
+              ),
+              child: const Text('Kosongkan Meja'),
+            ),
+          ],
+        );
+      },
     );
 
     if (confirm != true) return;
@@ -225,6 +228,8 @@ class _TablesScreenState extends State<TablesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final canPop = ModalRoute.of(context)?.canPop ?? false;
 
     return BlocProvider.value(
@@ -242,10 +247,10 @@ class _TablesScreenState extends State<TablesScreen> {
               final isWide = constraints.maxWidth >= 640;
 
               return Scaffold(
-                backgroundColor: WarmPalette.canvas,
+                backgroundColor: p.canvas,
                 appBar: (!isWide || canPop)
                     ? AppBar(
-                        backgroundColor: Colors.white,
+                        backgroundColor: p.surface,
                         elevation: 0,
                         titleSpacing: 14,
                         title: Row(
@@ -253,7 +258,7 @@ class _TablesScreenState extends State<TablesScreen> {
                             Container(
                               padding: const EdgeInsets.all(7),
                               decoration: BoxDecoration(
-                                color: WarmPalette.primary,
+                                color: primaryColor,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: const Icon(
@@ -271,25 +276,25 @@ class _TablesScreenState extends State<TablesScreen> {
                                   Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Text(
+                                      Text(
                                         'Denah Meja',
                                         style: TextStyle(
                                           fontWeight: FontWeight.w800,
                                           fontSize: 16,
-                                          color: WarmPalette.textPrimary,
+                                          color: p.textPrimary,
                                         ),
                                       ),
                                       const SizedBox(width: 6),
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                                         decoration: BoxDecoration(
-                                          color: WarmPalette.tertiary.withValues(alpha: 0.12),
+                                          color: const Color(0xFF059669).withValues(alpha: 0.12),
                                           borderRadius: BorderRadius.circular(4),
                                         ),
                                         child: const Text(
                                           'LIVE',
                                           style: TextStyle(
-                                            color: WarmPalette.tertiary,
+                                            color: Color(0xFF059669),
                                             fontSize: 8.5,
                                             fontWeight: FontWeight.w800,
                                           ),
@@ -299,7 +304,7 @@ class _TablesScreenState extends State<TablesScreen> {
                                   ),
                                   Text(
                                     '${SessionStorage.instance.getLocationName() ?? "Outlet Utama"} • Status Terkini',
-                                    style: const TextStyle(fontSize: 11, color: WarmPalette.textSecondary),
+                                    style: TextStyle(fontSize: 11, color: p.textSecondary),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -311,28 +316,28 @@ class _TablesScreenState extends State<TablesScreen> {
                         actions: [
                           IconButton(
                             tooltip: 'Muat ulang',
-                            icon: const Icon(Icons.refresh_rounded, color: WarmPalette.textPrimary),
+                            icon: Icon(Icons.refresh_rounded, color: p.textPrimary),
                             onPressed: () => _cubit.loadTables(),
                           ),
                           IconButton(
                             tooltip: 'Tambah Meja',
-                            icon: const Icon(Icons.add_circle_outline_rounded, color: WarmPalette.primary),
+                            icon: Icon(Icons.add_circle_outline_rounded, color: primaryColor),
                             onPressed: _showAddTableDialog,
                           ),
                           PopupMenuButton<String>(
-                            icon: const Icon(Icons.more_vert_rounded, color: WarmPalette.textPrimary),
+                            icon: Icon(Icons.more_vert_rounded, color: p.textPrimary),
                             onSelected: (val) {
                               if (val == 'seed') _seedDefaultTables();
                               if (val == 'reservation') _toast('Formulir reservasi baru dibuka');
                             },
                             itemBuilder: (_) => [
-                              const PopupMenuItem(
+                              PopupMenuItem(
                                 value: 'seed',
                                 child: Row(
                                   children: [
-                                    Icon(Icons.auto_awesome_rounded, size: 18, color: WarmPalette.primary),
-                                    SizedBox(width: 8),
-                                    Text('Buat Meja Standar (01-08)'),
+                                    Icon(Icons.auto_awesome_rounded, size: 18, color: primaryColor),
+                                    const SizedBox(width: 8),
+                                    const Text('Buat Meja Standar (01-08)'),
                                   ],
                                 ),
                               ),
@@ -340,7 +345,7 @@ class _TablesScreenState extends State<TablesScreen> {
                                 value: 'reservation',
                                 child: Row(
                                   children: [
-                                    Icon(Icons.bookmark_add_outlined, size: 18, color: WarmPalette.tertiary),
+                                    Icon(Icons.bookmark_add_outlined, size: 18, color: Color(0xFF059669)),
                                     SizedBox(width: 8),
                                     Text('Buat Reservasi Baru'),
                                   ],
@@ -370,19 +375,19 @@ class _TablesScreenState extends State<TablesScreen> {
                               margin: const EdgeInsets.only(bottom: 12),
                               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                               decoration: BoxDecoration(
-                                color: WarmPalette.danger.withValues(alpha: 0.1),
+                                color: p.danger.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: WarmPalette.danger.withValues(alpha: 0.3)),
+                                border: Border.all(color: p.danger.withValues(alpha: 0.3)),
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.error_outline_rounded, color: WarmPalette.danger, size: 18),
+                                  Icon(Icons.error_outline_rounded, color: p.danger, size: 18),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
                                       state.error!,
-                                      style: const TextStyle(
-                                        color: WarmPalette.danger,
+                                      style: TextStyle(
+                                        color: p.danger,
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -406,19 +411,19 @@ class _TablesScreenState extends State<TablesScreen> {
                                     Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Text(
+                                        Text(
                                           'Manajemen Meja & Denah Ruangan',
                                           style: TextStyle(
                                             fontSize: 18,
                                             fontWeight: FontWeight.w800,
-                                            color: WarmPalette.textPrimary,
+                                            color: p.textPrimary,
                                           ),
                                         ),
                                         const SizedBox(width: 8),
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                           decoration: BoxDecoration(
-                                            color: WarmPalette.tertiary.withValues(alpha: 0.12),
+                                            color: const Color(0xFF059669).withValues(alpha: 0.12),
                                             borderRadius: BorderRadius.circular(4),
                                           ),
                                           child: const Text(
@@ -426,7 +431,7 @@ class _TablesScreenState extends State<TablesScreen> {
                                             style: TextStyle(
                                               fontSize: 9,
                                               fontWeight: FontWeight.w800,
-                                              color: WarmPalette.tertiary,
+                                              color: Color(0xFF059669),
                                             ),
                                           ),
                                         ),
@@ -435,7 +440,7 @@ class _TablesScreenState extends State<TablesScreen> {
                                     const SizedBox(height: 2),
                                     Text(
                                       '${SessionStorage.instance.getLocationName() ?? "Outlet"} • Live Table Occupancy & Orders',
-                                      style: const TextStyle(fontSize: 11, color: WarmPalette.textSecondary),
+                                      style: TextStyle(fontSize: 11, color: p.textSecondary),
                                     ),
                                   ],
                                 ),
@@ -446,8 +451,8 @@ class _TablesScreenState extends State<TablesScreen> {
                                       icon: const Icon(Icons.add_rounded, size: 16),
                                       label: const Text('Tambah Meja', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                                       style: OutlinedButton.styleFrom(
-                                        foregroundColor: WarmPalette.textPrimary,
-                                        side: const BorderSide(color: WarmPalette.line),
+                                        foregroundColor: p.textPrimary,
+                                        side: BorderSide(color: p.line),
                                         shape: const StadiumBorder(),
                                       ),
                                     ),
@@ -457,7 +462,7 @@ class _TablesScreenState extends State<TablesScreen> {
                                       icon: const Icon(Icons.bookmark_add_outlined, size: 16),
                                       label: const Text('Reservasi', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: WarmPalette.primary,
+                                        backgroundColor: primaryColor,
                                         foregroundColor: Colors.white,
                                         shape: const StadiumBorder(),
                                         elevation: 0,
@@ -486,38 +491,38 @@ class _TablesScreenState extends State<TablesScreen> {
                             Container(
                               padding: const EdgeInsets.all(32),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: p.surface,
                                 borderRadius: BorderRadius.circular(18),
-                                border: Border.all(color: WarmPalette.line),
+                                border: Border.all(color: p.line),
                               ),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Container(
                                     padding: const EdgeInsets.all(16),
-                                    decoration: const BoxDecoration(
-                                      color: WarmPalette.surfaceMuted,
+                                    decoration: BoxDecoration(
+                                      color: p.surfaceMuted,
                                       shape: BoxShape.circle,
                                     ),
-                                    child: const Icon(
+                                    child: Icon(
                                       Icons.table_restaurant_outlined,
                                       size: 40,
-                                      color: WarmPalette.primary,
+                                      color: primaryColor,
                                     ),
                                   ),
                                   const SizedBox(height: 14),
-                                  const Text(
+                                  Text(
                                     'Belum Ada Meja Terdaftar',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w800,
-                                      color: WarmPalette.textPrimary,
+                                      color: p.textPrimary,
                                     ),
                                   ),
                                   const SizedBox(height: 6),
-                                  const Text(
+                                  Text(
                                     'Kelola denah meja untuk pesanan makan di tempat (Dine-In). Anda dapat membuat meja otomatis atau menambahkannya manual.',
-                                    style: TextStyle(fontSize: 12, color: WarmPalette.textSecondary),
+                                    style: TextStyle(fontSize: 12, color: p.textSecondary),
                                     textAlign: TextAlign.center,
                                   ),
                                   const SizedBox(height: 18),
@@ -531,7 +536,7 @@ class _TablesScreenState extends State<TablesScreen> {
                                         icon: const Icon(Icons.auto_awesome_rounded, size: 16),
                                         label: const Text('Buat Meja Standar (01-08)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: WarmPalette.primary,
+                                          backgroundColor: primaryColor,
                                           foregroundColor: Colors.white,
                                           shape: const StadiumBorder(),
                                         ),
@@ -541,8 +546,8 @@ class _TablesScreenState extends State<TablesScreen> {
                                         icon: const Icon(Icons.add_rounded, size: 16),
                                         label: const Text('+ Tambah Meja Manual', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
                                         style: OutlinedButton.styleFrom(
-                                          foregroundColor: WarmPalette.textPrimary,
-                                          side: const BorderSide(color: WarmPalette.line),
+                                          foregroundColor: p.textPrimary,
+                                          side: BorderSide(color: p.line),
                                           shape: const StadiumBorder(),
                                         ),
                                       ),
@@ -555,18 +560,18 @@ class _TablesScreenState extends State<TablesScreen> {
                             Container(
                               padding: const EdgeInsets.all(32),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: p.surface,
                                 borderRadius: BorderRadius.circular(18),
-                                border: Border.all(color: WarmPalette.line),
+                                border: Border.all(color: p.line),
                               ),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.filter_list_off_rounded, size: 36, color: WarmPalette.textSecondary),
+                                  Icon(Icons.filter_list_off_rounded, size: 36, color: p.textSecondary),
                                   const SizedBox(height: 10),
-                                  const Text('Tidak Ada Meja', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                                  Text('Tidak Ada Meja', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: p.textPrimary)),
                                   const SizedBox(height: 4),
-                                  const Text('Tidak ada meja yang sesuai dengan filter yang dipilih.', style: TextStyle(fontSize: 12, color: WarmPalette.textSecondary)),
+                                  Text('Tidak ada meja yang sesuai dengan filter yang dipilih.', style: TextStyle(fontSize: 12, color: p.textSecondary)),
                                   const SizedBox(height: 12),
                                   TextButton(
                                     onPressed: () => _cubit.setFilter('all'),
@@ -602,11 +607,11 @@ class _TablesScreenState extends State<TablesScreen> {
 
                     // Right Side Panel: Detail Meja Aktif (Desktop/Tablet)
                     if (isWide) ...[
-                      const VerticalDivider(width: 1, color: WarmPalette.line),
+                      VerticalDivider(width: 1, color: p.line),
                       Expanded(
                         flex: 4,
                         child: Container(
-                          color: Colors.white,
+                          color: p.surface,
                           child: TableDetailPane(
                             table: selectedTable,
                             activeOrder: selectedActiveOrder,

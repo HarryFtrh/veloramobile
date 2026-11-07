@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/config/app_config.dart';
+import '../../core/config/business_vertical.dart';
 import '../../core/design/tokens.dart';
 import '../../core/storage/session_storage.dart';
 import '../shared_pos/offline_sync_badge.dart';
@@ -94,6 +94,10 @@ class _AppShellState extends State<AppShell> {
     final user = SessionStorage.instance.getUserName() ?? 'Kasir';
     final now = DateTime.now();
     final timeStr = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')} WIB';
+    final vertical = BusinessVertical.resolve(
+      businessType: SessionStorage.instance.getBusinessType(),
+      role: SessionStorage.instance.getUserRole(),
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -118,11 +122,14 @@ class _AppShellState extends State<AppShell> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
-                  AppConfig.instance.flavor == AppFlavor.pharmacy
-                      ? Icons.local_pharmacy_rounded
-                      : (AppConfig.instance.flavor == AppFlavor.sales
-                          ? Icons.inventory_2_rounded
-                          : Icons.coffee_maker_rounded),
+                  switch (vertical) {
+                    BusinessVertical.pharmacy => Icons.local_pharmacy_rounded,
+                    BusinessVertical.sales => Icons.inventory_2_rounded,
+                    BusinessVertical.fnb => Icons.coffee_maker_rounded,
+                    BusinessVertical.customer => Icons.shopping_bag_rounded,
+                    BusinessVertical.marketplace => Icons.store_mall_directory_rounded,
+                    BusinessVertical.retail => Icons.storefront_rounded,
+                  },
                   color: Colors.white,
                   size: 18,
                 ),
@@ -458,17 +465,10 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     final wide = MediaQuery.sizeOf(context).width >= _headerBreakpoint;
-    final bizType = (SessionStorage.instance.getBusinessType() ?? '').toLowerCase();
-    final role = (SessionStorage.instance.getUserRole() ?? '').toLowerCase();
-    final tenantName = (SessionStorage.instance.getTenantName() ?? '').toLowerCase();
-    final isPharmacy = AppConfig.instance.flavor == AppFlavor.pharmacy ||
-        bizType.contains('pharmacy') ||
-        bizType.contains('apotek') ||
-        bizType.contains('klinik') ||
-        role.contains('apoteker') ||
-        role.contains('pharmacy') ||
-        tenantName.contains('apotek') ||
-        tenantName.contains('pharmacy');
+    final isPharmacy = BusinessVertical.resolve(
+      businessType: SessionStorage.instance.getBusinessType(),
+      role: SessionStorage.instance.getUserRole(),
+    ) == BusinessVertical.pharmacy;
 
     final body = IndexedStack(
       index: _index,

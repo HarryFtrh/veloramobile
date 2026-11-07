@@ -4,6 +4,9 @@ import '../../../core/storage/session_storage.dart';
 import '../../shared_pos/shift_service.dart';
 import '../../shared_pos/shift_modal.dart';
 import '../pharmacy_service.dart';
+import 'shift/pharmacy_shift_modal_revenue_banner.dart';
+
+export 'shift/pharmacy_shift_modal_revenue_banner.dart';
 
 class PharmacyShiftReportModal extends StatefulWidget {
   final VoidCallback? onShiftClosed;
@@ -125,16 +128,16 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Laporan Shift & Kas Masuk',
+                            'Rekap Shift & Arus Kas POS',
                             style: TextStyle(
                               fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
                               color: textPrimary,
                             ),
                           ),
                           Text(
-                            '$branchName • POS #02',
+                            '$branchName • $cashierName',
                             style: const TextStyle(fontSize: 11, color: textMuted),
                           ),
                         ],
@@ -142,7 +145,7 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
                     ],
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, color: textMuted),
+                    icon: const Icon(Icons.close_rounded, size: 20, color: textMuted),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -152,264 +155,55 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
         ),
         const Divider(height: 1, color: borderColor),
 
-        // Scrollable Report Content
+        // Scrollable Body
         Expanded(
           child: _isLoading
               ? const Center(child: CircularProgressIndicator(color: emeraldPrimary))
               : ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    // Staff & Shift Metadata Ribbon
+                    // Status Shift Badge Ribbon
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: borderColor),
                       ),
                       child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF0D9488).withValues(alpha: 0.12),
-                              shape: BoxShape.circle,
-                              border: Border.all(color: const Color(0xFF0D9488).withValues(alpha: 0.3)),
-                            ),
-                            child: Center(
-                              child: Text(
-                                cashierName.length >= 2 ? cashierName.substring(0, 2).toUpperCase() : 'SR',
-                                style: const TextStyle(
-                                  fontFamily: 'Plus Jakarta Sans',
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF0D9488),
-                                  fontSize: 14,
+                          Row(
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: emeraldPrimary,
+                                  shape: BoxShape.circle,
                                 ),
                               ),
-                            ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Shift Sedang Aktif',
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: emeraldPrimary),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Text(
-                                      cashierName,
-                                      style: const TextStyle(
-                                        fontFamily: 'Plus Jakarta Sans',
-                                        fontSize: 13.5,
-                                        fontWeight: FontWeight.bold,
-                                        color: textPrimary,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF0D9488).withValues(alpha: 0.12),
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: const Text(
-                                        'KASIR UTAMA',
-                                        style: TextStyle(
-                                          fontFamily: 'JetBrains Mono',
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF0D9488),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  _shiftStatus?.openedAt != null
-                                      ? 'Shift ${_shiftStatus?.shiftId != null ? "#${_shiftStatus!.shiftId}" : ""} • Dibuka ${_shiftStatus!.openedAt!.hour.toString().padLeft(2, '0')}:${_shiftStatus!.openedAt!.minute.toString().padLeft(2, '0')} WIB'
-                                      : 'Shift Berjalan • Hari Ini',
-                                  style: const TextStyle(fontSize: 11, color: textMuted),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: emeraldPrimary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.circle, size: 6, color: emeraldPrimary),
-                                SizedBox(width: 4),
-                                Text(
-                                  'Shift Aktif',
-                                  style: TextStyle(
-                                    fontFamily: 'JetBrains Mono',
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: emeraldPrimary,
-                                  ),
-                                ),
-                              ],
-                            ),
+                          Text(
+                            _shiftStatus?.shiftId != null ? 'Shift #${_shiftStatus!.shiftId}' : 'Shift Kasir 1',
+                            style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11, fontWeight: FontWeight.bold, color: textPrimary),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 12),
 
-                    // Total Omzet Hero Card
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: borderColor),
-                        boxShadow: [
-                          BoxShadow(
-                            color: emeraldPrimary.withValues(alpha: 0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'TOTAL OMZET SHIFT INI',
-                                style: TextStyle(
-                                  fontFamily: 'JetBrains Mono',
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.5,
-                                  color: textMuted,
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: emeraldPrimary.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  '$_transactionCount Transaksi Sukses',
-                                  style: const TextStyle(
-                                    fontFamily: 'JetBrains Mono',
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: emeraldPrimary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            CurrencyFormatter.format(totalRevenue),
-                            style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 24,
-                              fontWeight: FontWeight.w800,
-                              color: emeraldPrimary,
-                            ),
-                          ),
-                          Text(
-                            'Rata-rata keranjang: ${CurrencyFormatter.format(avgTrx)} / trx',
-                            style: const TextStyle(fontSize: 11, color: textMuted),
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Revenue Split Bar (Farmasi vs Layanan)
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: const [
-                              Text('Breakdown Unit Penjualan', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: textPrimary)),
-                              Text('Farmasi 58.6% • Layanan 41.4%', style: TextStyle(fontSize: 10.5, color: textMuted)),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: Row(
-                              children: [
-                                Expanded(flex: 59, child: Container(height: 8, color: emeraldPrimary)),
-                                const SizedBox(width: 2),
-                                Expanded(flex: 41, child: Container(height: 8, color: tertiaryCyan)),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFF8FAFC),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: borderColor),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Row(
-                                        children: [
-                                          Icon(Icons.medication_rounded, size: 14, color: emeraldPrimary),
-                                          SizedBox(width: 4),
-                                          Text('Apotek / Farmasi', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: emeraldPrimary)),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 3),
-                                      Text(
-                                        CurrencyFormatter.format(totalRevenue * 0.586),
-                                        style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 12.5, fontWeight: FontWeight.bold),
-                                      ),
-                                      const Text('22 Struk Obat / Resep', style: TextStyle(fontSize: 9.5, color: textMuted)),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFF8FAFC),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: borderColor),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Row(
-                                        children: [
-                                          Icon(Icons.medical_services_rounded, size: 14, color: tertiaryCyan),
-                                          SizedBox(width: 4),
-                                          Text('Layanan & Dokter', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: tertiaryCyan)),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 3),
-                                      Text(
-                                        CurrencyFormatter.format(totalRevenue * 0.414),
-                                        style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 12.5, fontWeight: FontWeight.bold),
-                                      ),
-                                      const Text('12 Tindakan Medis', style: TextStyle(fontSize: 9.5, color: textMuted)),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                    // Total Omzet Penjualan Card
+                    ShiftModalRevenueBanner(
+                      totalRevenue: totalRevenue,
+                      transactionCount: _transactionCount,
+                      avgTrx: avgTrx,
                     ),
                     const SizedBox(height: 12),
 

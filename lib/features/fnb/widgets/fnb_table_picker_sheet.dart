@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import '../../../core/design/tokens.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/audio_helper.dart';
-import '../../../core/utils/currency_formatter.dart';
-import '../../../core/utils/safe_json.dart';
 import '../../tables/table_service.dart';
+import 'table/fnb_table_card.dart';
+import 'table/fnb_table_empty_state.dart';
+
+export 'table/fnb_table_card.dart';
+export 'table/fnb_table_empty_state.dart';
 
 /// Modal bottom sheet modern dan responsif untuk memilih meja di POS F&B.
 /// Mendukung pemuatan otomatis (auto-fetch), pencarian instan, filter status meja,
@@ -164,35 +167,10 @@ class _FnbTablePickerSheetState extends State<FnbTablePickerSheet> {
   int get _reservedCount =>
       _allTables.where((t) => t.status == TableStatus.reserved).length;
 
-  Color _statusColor(TableStatus status) {
-    switch (status) {
-      case TableStatus.available:
-        return const Color(0xFF10B981); // Emerald
-      case TableStatus.ordered:
-        return const Color(0xFFF59E0B); // Amber
-      case TableStatus.occupied:
-        return const Color(0xFFEA580C); // Deep Orange
-      case TableStatus.reserved:
-        return const Color(0xFF8B5CF6); // Purple
-    }
-  }
-
-  String _statusLabel(TableStatus status) {
-    switch (status) {
-      case TableStatus.available:
-        return 'Kosong';
-      case TableStatus.ordered:
-        return 'Pesanan Aktif';
-      case TableStatus.occupied:
-        return 'Terisi';
-      case TableStatus.reserved:
-        return 'Reservasi';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final text = Theme.of(context).textTheme;
     final isMobile = context.isMobile;
     final paddingHoriz = isMobile ? 16.0 : 20.0;
@@ -209,12 +187,12 @@ class _FnbTablePickerSheetState extends State<FnbTablePickerSheet> {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: WarmPalette.primary.withValues(alpha: 0.12),
+                  color: primaryColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.table_restaurant_rounded,
-                  color: WarmPalette.primary,
+                  color: primaryColor,
                   size: 24,
                 ),
               ),
@@ -229,7 +207,7 @@ class _FnbTablePickerSheetState extends State<FnbTablePickerSheet> {
                       style: text.titleLarge?.copyWith(
                         fontWeight: FontWeight.w900,
                         fontSize: isMobile ? 18 : 20,
-                        color: WarmPalette.textPrimary,
+                        color: p.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -353,8 +331,8 @@ class _FnbTablePickerSheetState extends State<FnbTablePickerSheet> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: WarmPalette.primary,
+                      borderSide: BorderSide(
+                        color: primaryColor,
                         width: 1.5,
                       ),
                     ),
@@ -433,13 +411,25 @@ class _FnbTablePickerSheetState extends State<FnbTablePickerSheet> {
         // Konten Grid Meja / Loading / Empty State
         Expanded(
           child: _isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(color: WarmPalette.primary),
+              ? Center(
+                  child: CircularProgressIndicator(color: primaryColor),
                 )
               : _errorMessage != null
                   ? _buildErrorState(p)
                   : filtered.isEmpty
-                      ? _buildEmptyState(p)
+                      ? FnbTableEmptyState(
+                          hasTablesInStore: _allTables.isNotEmpty,
+                          query: _query,
+                          isSeeding: _isSeeding,
+                          onClearFilter: () {
+                            setState(() {
+                              _searchCtrl.clear();
+                              _query = '';
+                              _selectedFilter = 'all';
+                            });
+                          },
+                          onSeedTables: _seedDefaultTables,
+                        )
                       : GridView.builder(
                           padding: EdgeInsets.fromLTRB(
                             paddingHoriz,
@@ -456,7 +446,12 @@ class _FnbTablePickerSheetState extends State<FnbTablePickerSheet> {
                           itemCount: filtered.length,
                           itemBuilder: (context, index) {
                             final table = filtered[index];
-                            return _buildTableCard(context, table, p);
+                            final isCurrent = widget.currentTable?.id == table.id;
+                            return FnbTableCard(
+                              table: table,
+                              isCurrent: isCurrent,
+                              onSelect: (selected) => Navigator.pop(context, selected),
+                            );
                           },
                         ),
         ),
@@ -466,7 +461,7 @@ class _FnbTablePickerSheetState extends State<FnbTablePickerSheet> {
 
   Widget _buildFilterChip(String key, String label, {Color? activeColor}) {
     final isSelected = _selectedFilter == key;
-    final themeColor = activeColor ?? WarmPalette.primary;
+    final themeColor = activeColor ?? Theme.of(context).colorScheme.primary;
 
     return InkWell(
       borderRadius: BorderRadius.circular(20),
@@ -494,307 +489,6 @@ class _FnbTablePickerSheetState extends State<FnbTablePickerSheet> {
             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
             color: isSelected ? themeColor : context.palette.textSecondary,
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTableCard(
-    BuildContext context,
-    CafeTableInfo table,
-    AppPalette p,
-  ) {
-    final statusColor = _statusColor(table.status);
-    final statusText = _statusLabel(table.status);
-    final isCurrent = widget.currentTable?.id == table.id;
-    final isAvailable = table.status == TableStatus.available;
-    final hasActiveOrder = table.order != null;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: () {
-          AudioHelper.tapFeedback();
-          Navigator.pop(context, table);
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: isCurrent
-                ? WarmPalette.primary.withValues(alpha: 0.05)
-                : (isAvailable ? p.surface : p.surfaceMuted),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: isCurrent
-                  ? WarmPalette.primary
-                  : (isAvailable
-                      ? statusColor.withValues(alpha: 0.35)
-                      : p.line),
-              width: isCurrent ? 2.2 : (isAvailable ? 1.4 : 1.0),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: isCurrent
-                    ? WarmPalette.primary.withValues(alpha: 0.15)
-                    : (isAvailable
-                        ? statusColor.withValues(alpha: 0.05)
-                        : Colors.black.withValues(alpha: 0.02)),
-                blurRadius: isCurrent ? 8 : 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Baris Atas: Nama Meja & Kapasitas
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      sanitizeDisplayName(table.name),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 15,
-                        color: WarmPalette.textPrimary,
-                        letterSpacing: -0.2,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: p.line.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.people_outline_rounded,
-                          size: 11,
-                          color: p.textSecondary,
-                        ),
-                        const SizedBox(width: 3),
-                        Text(
-                          '${table.capacity}',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: p.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 6),
-
-              // Status Badge
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 7,
-                  vertical: 3,
-                ),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: statusColor,
-                      ),
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      isCurrent ? 'Sedang Dipilih' : statusText,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: isCurrent ? WarmPalette.primary : statusColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const Spacer(),
-
-              // Bagian Bawah: Info Tagihan / Cue
-              if (hasActiveOrder) ...[
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        CurrencyFormatter.format(table.order!.total),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
-                          color: statusColor,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        '${table.order!.itemCount} item${table.order!.customerName != null ? ' • ${table.order!.customerName}' : ''}',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                          color: p.textSecondary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ] else if (table.reservation != null) ...[
-                Text(
-                  '${table.reservation!.time} • ${table.reservation!.customerName}',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: statusColor,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ] else ...[
-                Row(
-                  children: [
-                    Icon(
-                      Icons.touch_app_outlined,
-                      size: 13,
-                      color: p.textSecondary.withValues(alpha: 0.8),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Ketuk untuk pilih',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: p.textSecondary.withValues(alpha: 0.8),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(AppPalette p) {
-    final hasTablesInStore = _allTables.isNotEmpty;
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: p.surfaceMuted,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.table_restaurant_outlined,
-                size: 28,
-                color: p.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              hasTablesInStore
-                  ? 'Tidak ada meja yang cocok'
-                  : 'Belum Ada Meja di Cabang Ini',
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
-                color: WarmPalette.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              hasTablesInStore
-                  ? (_query.isNotEmpty
-                      ? 'Tidak ada meja yang cocok dengan "$_query"'
-                      : 'Coba ubah filter kategori meja di atas')
-                  : 'Outlet belum memiliki data meja makan. Buat meja standar sekarang dengan 1 klik.',
-              style: TextStyle(fontSize: 12, color: p.textSecondary),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            if (!hasTablesInStore) ...[
-              FilledButton.icon(
-                onPressed: _isSeeding ? null : _seedDefaultTables,
-                icon: _isSeeding
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.add_business_rounded, size: 18),
-                label: Text(
-                  _isSeeding ? 'Membuat Meja...' : '+ Buat 8 Meja Standar',
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-                style: FilledButton.styleFrom(
-                  backgroundColor: WarmPalette.primary,
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ] else if (_query.isNotEmpty || _selectedFilter != 'all') ...[
-              TextButton.icon(
-                onPressed: () {
-                  setState(() {
-                    _searchCtrl.clear();
-                    _query = '';
-                    _selectedFilter = 'all';
-                  });
-                },
-                icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: const Text('Reset Pencarian & Filter'),
-              ),
-            ],
-          ],
         ),
       ),
     );
@@ -829,7 +523,7 @@ class _FnbTablePickerSheetState extends State<FnbTablePickerSheet> {
               icon: const Icon(Icons.refresh_rounded, size: 16),
               label: const Text('Coba Lagi'),
               style: FilledButton.styleFrom(
-                backgroundColor: WarmPalette.primary,
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
             ),

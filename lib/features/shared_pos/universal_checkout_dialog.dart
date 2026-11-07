@@ -181,7 +181,7 @@ class _UniversalCheckoutDialogState extends State<UniversalCheckoutDialog> {
                 ),
               ],
             ),
-            backgroundColor: WarmPalette.tertiary,
+            backgroundColor: context.palette.success,
             duration: const Duration(seconds: 5),
           ),
         );
@@ -192,7 +192,7 @@ class _UniversalCheckoutDialogState extends State<UniversalCheckoutDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Gagal memproses pembayaran: $e'),
-            backgroundColor: Colors.redAccent,
+            backgroundColor: context.palette.danger,
           ),
         );
       }
@@ -202,22 +202,24 @@ class _UniversalCheckoutDialogState extends State<UniversalCheckoutDialog> {
   @override
   Widget build(BuildContext context) {
     final isMobile = context.isMobile;
+    final p = context.palette;
+
     return Container(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.9,
       ),
       padding: EdgeInsets.fromLTRB(isMobile ? 16 : 28, 16, isMobile ? 16 : 28, 24),
-      decoration: const BoxDecoration(
-        color: WarmPalette.canvas,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border(top: BorderSide(color: WarmPalette.line, width: 1.5)),
+      decoration: BoxDecoration(
+        color: p.canvas,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        border: Border(top: BorderSide(color: p.line, width: 1.5)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildDragHandle(),
+          _buildDragHandle(p),
           const SizedBox(height: 16),
-          _buildAmountSummary(),
+          _buildAmountSummary(p),
           const SizedBox(height: 18),
           CheckoutPaymentMethodSelector(
             selectedMethod: _selectedMethod,
@@ -237,27 +239,27 @@ class _UniversalCheckoutDialogState extends State<UniversalCheckoutDialog> {
     );
   }
 
-  Widget _buildDragHandle() {
+  Widget _buildDragHandle(AppPalette p) {
     return Container(
       width: 40,
       height: 4,
       decoration: BoxDecoration(
-        color: WarmPalette.line,
+        color: p.line,
         borderRadius: BorderRadius.circular(2),
       ),
     );
   }
 
-  Widget _buildAmountSummary() {
+  Widget _buildAmountSummary(AppPalette p) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Total Tagihan',
-              style: TextStyle(color: WarmPalette.textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
+              style: TextStyle(color: p.textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
             ),
             Text(
               CurrencyFormatter.format(widget.grandTotal),
@@ -273,9 +275,9 @@ class _UniversalCheckoutDialogState extends State<UniversalCheckoutDialog> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              const Text(
+              Text(
                 'Kembalian',
-                style: TextStyle(color: WarmPalette.textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
+                style: TextStyle(color: p.textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
               ),
               Text(
                 CurrencyFormatter.format(_changeAmount),

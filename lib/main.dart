@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/config/app_config.dart';
 import 'core/config/app_theme.dart';
+import 'core/config/business_vertical.dart';
 import 'core/storage/session_storage.dart';
 import 'core/network/api_client.dart';
 import 'core/utils/app_locale.dart';
@@ -10,17 +11,20 @@ import 'features/auth/auth_service.dart';
 import 'features/auth/cubit/auth_cubit.dart';
 import 'features/auth/cubit/auth_state.dart';
 import 'features/auth/login_screen.dart';
-import 'features/customers/customers_screen.dart';
 import 'features/dashboard/dashboard_screen.dart';
 import 'features/fnb/fnb_register_screen.dart';
 import 'features/tables/tables_screen.dart';
 import 'features/kitchen/kitchen_screen.dart';
-import 'features/settings/settings_screen.dart';
+import 'features/pharmacy/pharmacy.dart';
+import 'features/sales/sales_dashboard_screen.dart';
+import 'features/marketplace/marketplace_screen.dart';
 import 'features/shell/app_shell.dart';
 import 'features/shell/more_screen.dart';
-import 'features/fnb/fnb_payment_split_screen.dart';
+import 'features/shell/more_menu_factory.dart';
 import 'features/fnb_customer/customer_home_screen.dart';
 import 'features/shared_pos/offline_sync_manager.dart';
+import 'features/shared_pos/printer_settings_modal.dart';
+import 'features/shared_pos/receipt_printer_service.dart';
 import 'core/services/app_update_service.dart';
 import 'core/utils/fallback_localizations.dart';
 
@@ -39,6 +43,7 @@ void main() async {
     await SessionStorage.init();
     ApiClient.init();
     AppUpdateService.init();
+    ReceiptPrinterService.onOpenSettings = PrinterSettingsModal.show;
     OfflineSyncManager.instance.startAutoSync();
   } catch (e) {
     debugPrint('Bootstrap initialization error: $e');
@@ -87,82 +92,34 @@ class VeloraApp extends StatelessWidget {
           }
           if (state is Authenticated) {
             final user = state.user;
-            return AppShell(
-              key: ValueKey('${state.activeLocationName}_${user.role}_${user.permissions.length}'),
-              tabs: [
-                ShellTab(
-                  label: 'Kasir',
-                  icon: Icons.point_of_sale_outlined,
-                  selectedIcon: Icons.point_of_sale,
-                  builder: (_) => const FnbRegisterScreen(),
-                ),
-                if (user.can(AppPermission.manageTables))
-                  ShellTab(
-                    label: 'Meja',
-                    icon: Icons.table_restaurant_outlined,
-                    selectedIcon: Icons.table_restaurant,
-                    builder: (ctx) => TablesScreen(
-                      onOpenTable: (t) => Navigator.of(ctx).push(
-                        MaterialPageRoute<void>(builder: (_) => FnbRegisterScreen(initialTable: t)),
-                      ),
-                    ),
-                  ),
-                if (user.can(AppPermission.viewKitchen))
-                  ShellTab(
-                    label: 'Dapur',
-                    icon: Icons.soup_kitchen_outlined,
-                    selectedIcon: Icons.soup_kitchen,
-                    builder: (_) => const KitchenScreen(),
-                  ),
-                if (user.can(AppPermission.viewDashboard))
-                  ShellTab(
-                    label: 'Dashboard',
-                    icon: Icons.dashboard_outlined,
-                    selectedIcon: Icons.dashboard_rounded,
-                    builder: (_) => const DashboardScreen(),
-                  ),
-                ShellTab(
-                  label: 'Lainnya',
-                  icon: Icons.grid_view_outlined,
-                  selectedIcon: Icons.grid_view_rounded,
-                  builder: (_) => MoreScreen(
-                    onLogout: () => context.read<AuthCubit>().logout(),
-                    entries: [
-                      MoreEntry(
-                        icon: Icons.dashboard_rounded,
-                        title: 'Dashboard & Analitik Penjualan',
-                        subtitle: 'Ringkasan omzet harian, status pesanan, & tren',
-                        builder: (_) => const DashboardScreen(),
-                      ),
-                      MoreEntry(
-                        icon: Icons.coffee_rounded,
-                        title: 'Mode Pelanggan (Customer Self-Order)',
-                        subtitle: 'Layar eksplorasi menu, kustomisasi kopi, & live tracking',
-                        builder: (_) => const CustomerHomeScreen(),
-                      ),
-                      MoreEntry(
-                        icon: Icons.call_split_rounded,
-                        title: 'Kasir Split Bill & Pecahan Uang',
-                        subtitle: 'Pembayaran bagi tagihan, numpad, & kalkulator kembalian',
-                        builder: (_) => const FnbPaymentSplitScreen(),
-                      ),
-                      MoreEntry(
-                        icon: Icons.people_outline_rounded,
-                        title: 'Pelanggan & CRM',
-                        subtitle: 'Daftar pelanggan dan riwayat transaksi',
-                        builder: (_) => const CustomersScreen(),
-                      ),
-                      MoreEntry(
-                        icon: Icons.settings_outlined,
-                        title: 'Pengaturan & Cabang',
-                        subtitle: 'Pilih cabang aktif, printer kasir, dan sesi',
-                        builder: (_) => const SettingsScreen(),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            );
+            switch (user.vertical) {
+              case BusinessVertical.pharmacy:
+                return PharmacyAppShell(
+                  user: user,
+                  locationName: state.activeLocationName ?? 'Outlet Utama',
+                );
+
+              case BusinessVertical.customer:
+                return CustomerHomeScreen(
+                  onLogout: () => context.read<AuthCubit>().logout(),
+                );
+
+              case BusinessVertical.sales:
+                return SalesDashboardScreen(
+                  onLogout: () => context.read<AuthCubit>().logout(),
+                );
+
+              case BusinessVertical.marketplace:
+                return MarketplaceScreen(
+                  onLogout: () => context.read<AuthCubit>().logout(),
+                );
+
+              case BusinessVertical.fnb:
+                return _buildFnbAppShell(context, state, user);
+
+              case BusinessVertical.retail:
+                return _buildRetailAppShell(context, state, user);
+            }
           }
 
           return LoginScreen(
@@ -170,6 +127,101 @@ class VeloraApp extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildFnbAppShell(BuildContext context, Authenticated state, AuthUser user) {
+    final kasirTab = ShellTab(
+      label: 'Kasir',
+      icon: Icons.point_of_sale_outlined,
+      selectedIcon: Icons.point_of_sale,
+      builder: (_) => const FnbRegisterScreen(),
+    );
+    final mejaTab = ShellTab(
+      label: 'Meja',
+      icon: Icons.table_restaurant_outlined,
+      selectedIcon: Icons.table_restaurant,
+      builder: (ctx) => TablesScreen(
+        onOpenTable: (t) => Navigator.of(ctx).push(
+          MaterialPageRoute<void>(builder: (_) => FnbRegisterScreen(initialTable: t)),
+        ),
+      ),
+    );
+    final dapurTab = ShellTab(
+      label: 'Dapur',
+      icon: Icons.soup_kitchen_outlined,
+      selectedIcon: Icons.soup_kitchen,
+      builder: (_) => const KitchenScreen(),
+    );
+    final dashboardTab = ShellTab(
+      label: 'Dashboard',
+      icon: Icons.dashboard_outlined,
+      selectedIcon: Icons.dashboard_rounded,
+      builder: (_) => const DashboardScreen(),
+    );
+    final lainnyaTab = ShellTab(
+      label: 'Lainnya',
+      icon: Icons.grid_view_outlined,
+      selectedIcon: Icons.grid_view_rounded,
+      builder: (_) => MoreScreen(
+        onLogout: () => context.read<AuthCubit>().logout(),
+        entries: MoreMenuFactory.entriesFor(BusinessVertical.fnb),
+      ),
+    );
+
+    final List<ShellTab> tabs;
+    if (user.isKitchen) {
+      tabs = [dapurTab, mejaTab, kasirTab, lainnyaTab];
+    } else if (user.isWaiter) {
+      tabs = [mejaTab, kasirTab, dapurTab, lainnyaTab];
+    } else {
+      tabs = [
+        kasirTab,
+        if (user.can(AppPermission.manageTables)) mejaTab,
+        if (user.can(AppPermission.viewKitchen)) dapurTab,
+        if (user.can(AppPermission.viewDashboard)) dashboardTab,
+        lainnyaTab,
+      ];
+    }
+
+    return AppShell(
+      key: ValueKey('${state.activeLocationName}_${user.role}_fnb'),
+      tabs: tabs,
+    );
+  }
+
+  Widget _buildRetailAppShell(BuildContext context, Authenticated state, AuthUser user) {
+    final kasirTab = ShellTab(
+      label: 'Kasir',
+      icon: Icons.point_of_sale_outlined,
+      selectedIcon: Icons.point_of_sale,
+      builder: (_) => const FnbRegisterScreen(),
+    );
+    final dashboardTab = ShellTab(
+      label: 'Dashboard',
+      icon: Icons.dashboard_outlined,
+      selectedIcon: Icons.dashboard_rounded,
+      builder: (_) => const DashboardScreen(),
+    );
+    final lainnyaTab = ShellTab(
+      label: 'Lainnya',
+      icon: Icons.grid_view_outlined,
+      selectedIcon: Icons.grid_view_rounded,
+      builder: (_) => MoreScreen(
+        onLogout: () => context.read<AuthCubit>().logout(),
+        entries: MoreMenuFactory.entriesFor(BusinessVertical.retail),
+      ),
+    );
+
+    final tabs = [
+      kasirTab,
+      if (user.can(AppPermission.viewDashboard)) dashboardTab,
+      lainnyaTab,
+    ];
+
+    return AppShell(
+      key: ValueKey('${state.activeLocationName}_${user.role}_retail'),
+      tabs: tabs,
     );
   }
 }

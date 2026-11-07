@@ -18,12 +18,15 @@ class CustomerNavDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
           DrawerHeader(
-            decoration: const BoxDecoration(color: WarmPalette.primary),
+            decoration: BoxDecoration(color: primaryColor),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
@@ -38,18 +41,18 @@ class CustomerNavDrawer extends StatelessWidget {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const Text(
+                Text(
                   'Patron Customer Self-Order',
-                  style: TextStyle(color: WarmPalette.surfaceMuted, fontSize: 12),
+                  style: TextStyle(color: p.surfaceMuted, fontSize: 12),
                 ),
               ],
             ),
           ),
           if (onSwitchToStaffPos != null)
             ListTile(
-              leading: const Icon(
+              leading: Icon(
                 Icons.storefront_rounded,
-                color: WarmPalette.primary,
+                color: primaryColor,
               ),
               title: const Text(
                 'Buka Kasir POS & Operasional',
