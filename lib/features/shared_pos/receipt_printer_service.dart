@@ -933,33 +933,6 @@ class ReceiptPrinterService {
         }
       }
 
-      // Tarik preferensi struk khusus FnB (/cafe/setting/printers/receipt)
-      try {
-        final receiptRes = await ApiClient.instance.dio.get('/cafe/setting/printers/receipt', queryParameters: query);
-        final rBody = receiptRes.data is Map ? (receiptRes.data['data'] is Map ? receiptRes.data['data'] : receiptRes.data) : null;
-        if (rBody is Map) {
-          final showLogo = rBody['show_logo'];
-          if (showLogo is bool) {
-            await SessionStorage.instance.savePrinterShowLogo(showLogo);
-          }
-          final name = rBody['cafe_name']?.toString() ?? rBody['name']?.toString();
-          final addr = rBody['address']?.toString();
-          final phone = rBody['phone']?.toString();
-          final logo = rBody['logo']?.toString() ?? rBody['logo_url']?.toString();
-          if (name != null && name.isNotEmpty) {
-            await SessionStorage.instance.saveTenantProfile(
-              name: name,
-              address: addr,
-              phone: phone,
-              logo: logo,
-            );
-            if (logo != null && logo.isNotEmpty) {
-              await prepareRasterLogo(logoSource: logo);
-            }
-          }
-        }
-      } catch (_) {}
-
       if (raw is Map) {
         final inner = raw['data'];
         return inner is Map

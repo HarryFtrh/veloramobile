@@ -180,7 +180,7 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
       paidAmount: 50000,
       changeAmount: 6000,
       paymentMethod: 'CASH',
-      qrData: 'https://velora.co.id/verify-test',
+      qrData: null,
     );
 
     final success = await ReceiptPrinterService.instance.printReceipt(testData, is80mm: _is80mm);
