@@ -4,18 +4,25 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/config/app_config.dart';
 import '../../core/design/tokens.dart';
 import '../../core/services/app_update_service.dart';
+import '../../core/storage/session_storage.dart';
 import '../auth/auth_service.dart';
 import '../auth/cubit/auth_cubit.dart';
 import '../auth/cubit/auth_state.dart';
+import '../shared_pos/printer_settings_screen.dart';
+import '../subscription/subscription_model.dart';
+import '../subscription/subscription_screen.dart';
+import '../subscription/subscription_service.dart';
 import 'widgets/active_sessions_modal.dart';
+import 'widgets/branch_picker_sheet.dart';
 import 'widgets/settings_pin_dialog.dart';
 import 'widgets/settings_tile.dart';
 
 export 'widgets/active_sessions_modal.dart';
+export 'widgets/branch_picker_sheet.dart';
 export 'widgets/settings_pin_dialog.dart';
 export 'widgets/settings_tile.dart';
 
-/// Pengaturan Murni Akun Kasir: Profil, PIN Otorisasi 4-Digit, dan Sesi Login
+/// Pengaturan Akun, Keamanan Kasir, dan Konfigurasi Toko Velora
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -25,12 +32,14 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool? _hasPin;
+  TenantSubscription? _subscription;
   AppVersionInfo? _versionInfo;
 
   @override
   void initState() {
     super.initState();
     _loadPin();
+    _loadSubscription();
     _loadVersionInfo();
   }
 
@@ -44,6 +53,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) setState(() => _hasPin = has);
   }
 
+  Future<void> _loadSubscription() async {
+    try {
+      final sub = await SubscriptionService.instance.getSubscription();
+      if (mounted) setState(() => _subscription = sub);
+    } catch (_) {}
+  }
+
   void _toast(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -53,6 +69,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
+  }
+
+  Future<void> _pickBranch(AuthUser user) async {
+    final chosen = await BranchPickerSheet.show(context, user);
+    if (chosen == null || !mounted) return;
+    await context.read<AuthCubit>().selectBranch(user: user, location: chosen);
+    setState(() {});
   }
 
   Future<void> _editPin() async {
@@ -87,12 +110,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        title: Row(
           children: [
-            Icon(Icons.logout_rounded, color: Colors.red),
-            SizedBox(width: 10),
-            Text('Keluar Akun Kasir?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.logout_rounded, color: Colors.red, size: 20),
+            ),
+            const SizedBox(width: 12),
+            const Text('Keluar Akun?', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
           ],
         ),
         content: const Text(
@@ -110,8 +140,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              elevation: 0,
             ),
-            child: const Text('Keluar Akun', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text('Keluar Akun', style: TextStyle(fontWeight: FontWeight.w800)),
           ),
         ],
       ),
@@ -128,72 +159,85 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final primary = Theme.of(context).colorScheme.primary;
     final state = context.watch<AuthCubit>().state;
     final user = state is Authenticated ? state.user : null;
+    final branch = state is Authenticated ? state.activeLocationName : SessionStorage.instance.getLocationName();
     final canPop = ModalRoute.of(context)?.canPop ?? false;
 
     return Scaffold(
-      backgroundColor: p.canvas,
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: Text(
-          'Pengaturan Akun & Keamanan',
+        title: const Text(
+          'Pengaturan',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w800,
-            color: p.textPrimary,
+            color: Color(0xFF0F172A),
             letterSpacing: -0.3,
           ),
         ),
-        backgroundColor: p.canvas,
+        backgroundColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: const Color(0xFFE2E8F0), height: 1),
+        ),
         leading: canPop
             ? IconButton(
-                icon: Icon(Icons.arrow_back_rounded, color: p.textPrimary),
+                icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF0F172A)),
                 onPressed: () => Navigator.maybePop(context),
               )
             : null,
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 620),
+          constraints: const BoxConstraints(maxWidth: 680),
           child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
             children: [
-              // 1. Profil Pengguna Card
+              // 1. Profil Pengguna Card (Hero)
               if (user != null) ...[
                 Container(
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    color: p.surface,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: p.line),
-                    boxShadow: [
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+                    boxShadow: const [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.02),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
+                        color: Color(0x06000000),
+                        blurRadius: 14,
+                        offset: Offset(0, 3),
                       ),
                     ],
                   ),
                   child: Row(
                     children: [
                       Container(
-                        width: 52,
-                        height: 52,
+                        width: 56,
+                        height: 56,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [primary, primary.withValues(alpha: 0.75)],
+                            colors: [primary, primary.withValues(alpha: 0.8)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: primary.withValues(alpha: 0.25),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
                         child: Center(
                           child: Text(
                             user.name.isEmpty ? '?' : user.name[0].toUpperCase(),
-                            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+                            style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 14),
+                      const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -203,7 +247,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 Flexible(
                                   child: Text(
                                     user.name,
-                                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: p.textPrimary),
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFF0F172A),
+                                      letterSpacing: -0.2,
+                                    ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -212,27 +261,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                   decoration: BoxDecoration(
-                                    color: (user.isOwnerOrAdmin ? primary : p.secondary).withValues(alpha: 0.12),
+                                    color: primary.withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: primary.withValues(alpha: 0.2)),
                                   ),
                                   child: Text(
                                     user.roleDisplayName,
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w800,
-                                      color: user.isOwnerOrAdmin ? primary : p.secondary,
+                                      color: primary,
                                     ),
                                   ),
                                 ),
                               ],
                             ),
                             if (user.email.isNotEmpty) ...[
-                              const SizedBox(height: 2),
-                              Text(user.email, style: TextStyle(fontSize: 12, color: p.textSecondary)),
+                              const SizedBox(height: 3),
+                              Text(user.email, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
                             ],
                             if (user.tenantName.isNotEmpty) ...[
-                              const SizedBox(height: 1),
-                              Text(user.tenantName, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: p.textTertiary)),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${user.tenantName} • ${branch ?? "Outlet Utama"}',
+                                style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF94A3B8)),
+                              ),
                             ],
                           ],
                         ),
@@ -243,19 +296,79 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 22),
               ],
 
-              // 2. Section: Keamanan Kasir
+              // 2. Section: Operasional & Hardware
+              SettingsGroup(
+                title: 'Operasional Kasir',
+                headerIcon: Icons.storefront_rounded,
+                items: [
+                  if (user != null && branch != null)
+                    SettingsTile(
+                      icon: Icons.store_rounded,
+                      iconColor: const Color(0xFFD97706),
+                      iconBgColor: const Color(0xFFFEF3C7),
+                      title: 'Cabang Bertugas',
+                      subtitle: branch,
+                      trailing: user.can(AppPermission.changeBranch) && user.locations.length > 1
+                          ? Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'Ganti',
+                                style: TextStyle(color: primary, fontWeight: FontWeight.w800, fontSize: 11),
+                              ),
+                            )
+                          : Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.lock_outline_rounded, size: 12, color: Color(0xFF94A3B8)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    user.can(AppPermission.changeBranch) ? '1 Cabang' : 'Terkunci (${user.roleDisplayName})',
+                                    style: const TextStyle(color: Color(0xFF64748B), fontSize: 11, fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
+                            ),
+                      onTap: user.can(AppPermission.changeBranch) && user.locations.length > 1 ? () => _pickBranch(user) : null,
+                    ),
+                  SettingsTile(
+                    icon: Icons.print_rounded,
+                    iconColor: const Color(0xFF2563EB),
+                    iconBgColor: const Color(0xFFDBEAFE),
+                    title: 'Printer Struk & Hardware',
+                    subtitle: 'Pengaturan Bluetooth, LAN port 9100, & laci kas',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const PrinterSettingsScreen()),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // 3. Section: Keamanan & Akses
               SettingsGroup(
                 title: 'Keamanan & Akses Kasir',
+                headerIcon: Icons.security_rounded,
                 items: [
                   SettingsTile(
                     icon: Icons.pin_rounded,
                     iconColor: const Color(0xFF059669),
+                    iconBgColor: const Color(0xFFD1FAE5),
                     title: _hasPin == true ? 'Ubah PIN Cepat Kasir' : 'Atur PIN Cepat Kasir',
                     subtitle: 'Kunci layar POS & otorisasi kasir 4 digit',
                     trailing: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: (_hasPin == true ? const Color(0xFF059669) : Colors.amber.shade800).withValues(alpha: 0.12),
+                        color: (_hasPin == true ? const Color(0xFF059669) : const Color(0xFFD97706)).withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -263,7 +376,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
-                          color: _hasPin == true ? const Color(0xFF059669) : Colors.amber.shade800,
+                          color: _hasPin == true ? const Color(0xFF059669) : const Color(0xFFD97706),
                         ),
                       ),
                     ),
@@ -272,21 +385,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   SettingsTile(
                     icon: Icons.devices_rounded,
                     iconColor: const Color(0xFF7C3AED),
+                    iconBgColor: const Color(0xFFEDE9FE),
                     title: 'Sesi & Perangkat Aktif',
                     subtitle: 'Pantau terminal kasir yang sedang login',
                     onTap: () => _manageSessions(context),
                   ),
                 ],
               ),
-              const SizedBox(height: 22),
+              const SizedBox(height: 20),
 
-              // 3. Section: Aplikasi & Pembaruan
+              // 4. Section: Lisensi & Langganan Toko
               SettingsGroup(
-                title: 'Aplikasi & Informasi Rilis',
+                title: 'Lisensi & Langganan',
+                headerIcon: Icons.workspace_premium_rounded,
+                items: [
+                  SettingsTile(
+                    icon: Icons.workspace_premium_rounded,
+                    iconColor: const Color(0xFFD97706),
+                    iconBgColor: const Color(0xFFFEF3C7),
+                    title: _subscription?.planName ?? 'Paket Langganan',
+                    subtitle: _subscription != null
+                        ? 'Status: ${_subscription!.statusDisplayName}${_subscription!.daysRemaining != null ? " • Sisa ${_subscription!.daysRemaining} hari" : ""}'
+                        : 'Informasi lisensi cloud outlet',
+                    trailing: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF059669).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'AKTIF',
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF059669)),
+                      ),
+                    ),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // 5. Section: Sistem & Informasi Versi
+              SettingsGroup(
+                title: 'Sistem & Pembaruan',
+                headerIcon: Icons.info_outline_rounded,
                 items: [
                   SettingsTile(
                     icon: Icons.system_update_rounded,
                     iconColor: const Color(0xFF0284C7),
+                    iconBgColor: const Color(0xFFE0F2FE),
                     title: 'Versi Aplikasi',
                     subtitle: _versionInfo != null
                         ? '${AppConfig.instance.appName} v${_versionInfo!.versionName} (Build ${_versionInfo!.versionCode})'
@@ -313,20 +461,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 26),
 
-              // 4. Logout Action
-              OutlinedButton.icon(
-                onPressed: _confirmLogout,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red.shade700,
-                  side: BorderSide(color: Colors.red.withValues(alpha: 0.3)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  backgroundColor: p.surface,
+              // 6. Tombol Logout
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _confirmLogout,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red.shade700,
+                    side: BorderSide(color: Colors.red.withValues(alpha: 0.3)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    backgroundColor: Colors.white,
+                  ),
+                  icon: const Icon(Icons.logout_rounded, size: 20),
+                  label: const Text('Keluar dari Akun Kasir', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
                 ),
-                icon: const Icon(Icons.logout_rounded, size: 20),
-                label: const Text('Keluar dari Akun Kasir', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
               ),
               const SizedBox(height: 36),
             ],
