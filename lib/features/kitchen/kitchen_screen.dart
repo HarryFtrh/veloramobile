@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/design/tokens.dart';
 import '../../core/storage/session_storage.dart';
-import '../../core/utils/audio_helper.dart';
 import '../shared_pos/receipt_printer_service.dart';
 import 'kitchen_cubit.dart';
 import 'kitchen_service.dart';

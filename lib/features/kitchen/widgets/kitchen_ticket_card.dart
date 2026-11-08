@@ -48,7 +48,7 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
           SnackBar(
             content: Text(ok
                 ? '🖨️ Tiket dapur #${widget.order.number} berhasil dicetak'
-                : '⚠️ ${ReceiptPrinterService.instance.lastStatusMessage ?? "Gagal mencetak tiket dapur"}'),
+                : '⚠️ ${ReceiptPrinterService.instance.lastStatusMessage.isNotEmpty ? ReceiptPrinterService.instance.lastStatusMessage : "Gagal mencetak tiket dapur"}'),
             duration: const Duration(seconds: 2),
           ),
         );
