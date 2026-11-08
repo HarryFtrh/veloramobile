@@ -160,16 +160,20 @@ class _FnbCustomerPickerSheetState extends State<FnbCustomerPickerSheet> with Si
 
   void _applyManualCustomer() {
     AudioHelper.tapFeedback();
-    final name = _manualNameCtrl.text.trim();
-    if (name.isEmpty) {
-      _selectGeneralCustomer();
-      return;
-    }
-
+    var name = _manualNameCtrl.text.trim();
     double disc = 0;
     final discText = _manualDiscountCtrl.text.trim();
     if (discText.isNotEmpty) {
       disc = double.tryParse(discText) ?? 0;
+    }
+
+    if (name.isEmpty) {
+      if (disc > 0) {
+        name = 'Pelanggan (Diskon ${disc.toInt()}%)';
+      } else {
+        _selectGeneralCustomer();
+        return;
+      }
     }
 
     Navigator.pop(

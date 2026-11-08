@@ -161,7 +161,7 @@ class _UniversalCheckoutDialogState extends State<UniversalCheckoutDialog> {
         changeAmount: _changeAmount,
         paymentMethod: paymentMethod.toUpperCase(),
         storeLogo: SessionStorage.instance.getStoreLogo(),
-        showLogo: SessionStorage.instance.getShowLogo(),
+        showLogo: SessionStorage.instance.isPrinterShowLogo(),
         qrData: (result.qrData != null && !result.qrData!.toLowerCase().contains('velora')) ? result.qrData : null,
       );
 

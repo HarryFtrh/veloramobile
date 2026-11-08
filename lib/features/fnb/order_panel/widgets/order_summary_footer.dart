@@ -185,6 +185,13 @@ class OrderSummaryFooter extends StatelessWidget {
               label: 'Diskon Member (${ctrl.memberDiscountPercent.round()}%)',
               value: '-${CurrencyFormatter.format(ctrl.memberDiscountAmount)}',
             ),
+          if (ctrl.manualDiscountTotal > 0)
+            SummaryRow(
+              label: ctrl.manualDiscountPercent > 0
+                  ? 'Diskon Manual (${ctrl.manualDiscountPercent.round()}%)'
+                  : 'Diskon Manual (Kasir)',
+              value: '-${CurrencyFormatter.format(ctrl.manualDiscountTotal)}',
+            ),
           if (ctrl.promoDiscountAmount > 0)
             SummaryRow(
               label: ctrl.activePromotion != null

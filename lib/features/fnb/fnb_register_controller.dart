@@ -66,6 +66,26 @@ class RegisterController extends ChangeNotifier {
   double voucherDiscountAmount = 0;
   String? memberTier; // e.g. 'Gold Member'
   double memberDiscountPercent = 0; // e.g. 10.0 for 10%
+  double manualDiscountPercent = 0;
+  double manualDiscountAmount = 0;
+
+  void applyManualDiscount({double percent = 0.0, double amount = 0.0}) {
+    manualDiscountPercent = percent;
+    manualDiscountAmount = amount;
+    notifyListeners();
+  }
+
+  void removeManualDiscount() {
+    manualDiscountPercent = 0;
+    manualDiscountAmount = 0;
+    notifyListeners();
+  }
+
+  num get manualDiscountTotal {
+    if (manualDiscountAmount > 0) return manualDiscountAmount;
+    if (manualDiscountPercent > 0) return subtotal * (manualDiscountPercent / 100);
+    return 0;
+  }
 
   String? get activeOrderId => existingOrderId ?? table?.order?.id;
 
@@ -208,7 +228,7 @@ class RegisterController extends ChangeNotifier {
     return voucherDiscountAmount;
   }
 
-  num get totalDiscount => (memberDiscountAmount + promoDiscountAmount).clamp(0, subtotal);
+  num get totalDiscount => (memberDiscountAmount + promoDiscountAmount + manualDiscountTotal).clamp(0, subtotal);
 
   BillBreakdown? get bill => billing == null
       ? null
@@ -571,6 +591,8 @@ class RegisterController extends ChangeNotifier {
     voucherDiscountAmount = 0;
     memberTier = null;
     memberDiscountPercent = 0;
+    manualDiscountPercent = 0;
+    manualDiscountAmount = 0;
     orderType = OrderType.takeaway;
     notifyListeners();
   }

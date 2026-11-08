@@ -97,7 +97,7 @@ class _PromoAndVoucherSheetState extends State<PromoAndVoucherSheet> {
   void _applyCustomNominal() {
     final amt = double.tryParse(_customAmountCtrl.text.trim()) ?? 0.0;
     if (amt <= 0) return;
-    widget.ctrl.applyVoucher('MANUAL', amt);
+    widget.ctrl.applyManualDiscount(amount: amt);
     Navigator.pop(context);
   }
 
@@ -111,8 +111,7 @@ class _PromoAndVoucherSheetState extends State<PromoAndVoucherSheet> {
       });
       return;
     }
-    final amt = (widget.ctrl.subtotal * (pct / 100)).toDouble();
-    widget.ctrl.applyVoucher('MANUAL ${pct.round()}%', amt);
+    widget.ctrl.applyManualDiscount(percent: pct);
     Navigator.pop(context);
   }
 

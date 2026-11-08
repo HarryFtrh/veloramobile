@@ -28,6 +28,7 @@ class ReceiptData {
   final DateTime timestamp;
   final List<PosCartItem> items;
   final num subtotal;
+  final num discount;
   final num tax;
   final num grandTotal;
   final num paidAmount;
@@ -51,6 +52,7 @@ class ReceiptData {
     required this.timestamp,
     required this.items,
     num? subtotal,
+    num? discount,
     num? tax,
     num? grandTotal,
     num? total,
@@ -71,6 +73,7 @@ class ReceiptData {
                 ? '$tableName ($customerName)'
                 : (tableName ?? customerName)),
         subtotal = subtotal ?? grandTotal ?? total ?? 0,
+        discount = discount ?? 0,
         tax = tax ?? 0,
         grandTotal = grandTotal ?? total ?? 0,
         paidAmount = paidAmount ?? received ?? grandTotal ?? total ?? 0,
@@ -189,33 +192,52 @@ class ReceiptPrinterService {
       final frame = await codec.getNextFrame();
       final image = frame.image;
 
-      // 58mm ~ 384 dots max (gunakan ~256 dots lebar logo), 80mm ~ 576 dots max (gunakan ~384 dots)
-      final maxWidth = is80mm ? 384 : 256;
+      // Kertas 58mm memiliki total lebar fisik 384 dots (48 bytes).
+      // Kertas 80mm memiliki total lebar fisik 576 dots (72 bytes).
+      final int totalPaperDots = is80mm ? 576 : 384;
+      final int totalWidthBytes = totalPaperDots ~/ 8; // 48 bytes (58mm) atau 72 bytes (80mm)
+
+      // Ukuran logo yang proporsional, rapi, dan tidak terlalu besar:
+      // 58mm: maks lebar 180 dots, tinggi maks 110 dots
+      // 80mm: maks lebar 260 dots, tinggi maks 150 dots
+      final int maxLogoWidth = is80mm ? 260 : 180;
+      final int maxLogoHeight = is80mm ? 150 : 110;
+
       int targetWidth = image.width;
       int targetHeight = image.height;
 
-      if (targetWidth > maxWidth) {
-        targetHeight = (targetHeight * maxWidth) ~/ targetWidth;
-        targetWidth = maxWidth;
+      // Skala aspek proporsional
+      if (targetWidth > maxLogoWidth) {
+        targetHeight = (targetHeight * maxLogoWidth) ~/ targetWidth;
+        targetWidth = maxLogoWidth;
+      }
+      if (targetHeight > maxLogoHeight) {
+        targetWidth = (targetWidth * maxLogoHeight) ~/ targetHeight;
+        targetHeight = maxLogoHeight;
       }
 
-      // Pastikan lebar habis dibagi 8 byte
-      final widthBytes = (targetWidth + 7) ~/ 8;
-      final finalWidth = widthBytes * 8;
+      if (targetWidth <= 0 || targetHeight <= 0) return null;
+
+      // Posisikan logo tepat di tengah bidang kertas (Horizontal Center Offset)
+      final double leftOffset = ((totalPaperDots - targetWidth) / 2).floorToDouble();
 
       final recorder = PictureRecorder();
       final canvas = Canvas(recorder);
       final paintWhite = Paint()..color = const Color(0xFFFFFFFF);
-      canvas.drawRect(Rect.fromLTWH(0, 0, finalWidth.toDouble(), targetHeight.toDouble()), paintWhite);
+
+      // Seluruh bidang kertas selebar 384 dots (58mm) atau 576 dots (80mm) diwarnai putih
+      canvas.drawRect(Rect.fromLTWH(0, 0, totalPaperDots.toDouble(), targetHeight.toDouble()), paintWhite);
+
+      // Gambar logo digambar tepat di tengah (leftOffset)
       canvas.drawImageRect(
         image,
         Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
-        Rect.fromLTWH(0, 0, targetWidth.toDouble(), targetHeight.toDouble()),
+        Rect.fromLTWH(leftOffset, 0, targetWidth.toDouble(), targetHeight.toDouble()),
         Paint(),
       );
 
       final picture = recorder.endRecording();
-      final renderedImg = await picture.toImage(finalWidth, targetHeight);
+      final renderedImg = await picture.toImage(totalPaperDots, targetHeight);
       final byteData = await renderedImg.toByteData(format: ImageByteFormat.rawRgba);
       if (byteData == null) return null;
 
@@ -223,20 +245,20 @@ class ReceiptPrinterService {
       final result = <int>[];
 
       // ESC/POS Command: GS v 0 0 xL xH yL yH
-      final xL = widthBytes % 256;
-      final xH = widthBytes ~/ 256;
+      final xL = totalWidthBytes % 256;
+      final xH = totalWidthBytes ~/ 256;
       final yL = targetHeight % 256;
       final yH = targetHeight ~/ 256;
 
       result.addAll([0x1D, 0x76, 0x30, 0x00, xL, xH, yL, yH]);
 
       for (int y = 0; y < targetHeight; y++) {
-        for (int b = 0; b < widthBytes; b++) {
+        for (int b = 0; b < totalWidthBytes; b++) {
           int byteVal = 0;
           for (int bit = 0; bit < 8; bit++) {
             final x = b * 8 + bit;
-            if (x < finalWidth) {
-              final offset = (y * finalWidth + x) * 4;
+            if (x < totalPaperDots) {
+              final offset = (y * totalPaperDots + x) * 4;
               final r = rgba[offset];
               final g = rgba[offset + 1];
               final bl = rgba[offset + 2];
@@ -376,6 +398,9 @@ class ReceiptPrinterService {
 
     // 5. Totals
     writeTwoCols('Subtotal', CurrencyFormatter.format(data.subtotal));
+    if (data.discount > 0) {
+      writeTwoCols('Diskon Potongan', '-${CurrencyFormatter.format(data.discount)}');
+    }
     if (data.tax > 0) {
       writeTwoCols('Pajak (PB1/PPN)', CurrencyFormatter.format(data.tax));
     }
@@ -473,6 +498,9 @@ class ReceiptPrinterService {
     }
     sb.writeln('--------------------------------');
     sb.writeln('Subtotal  : ${CurrencyFormatter.format(data.subtotal)}');
+    if (data.discount > 0) {
+      sb.writeln('Diskon    : -${CurrencyFormatter.format(data.discount)}');
+    }
     if (data.tax > 0) {
       sb.writeln('Pajak     : ${CurrencyFormatter.format(data.tax)}');
     }
