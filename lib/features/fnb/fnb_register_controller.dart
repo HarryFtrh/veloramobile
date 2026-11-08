@@ -241,6 +241,13 @@ class RegisterController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void removePromotion() {
+    activePromotion = null;
+    activeVoucherCode = null;
+    voucherDiscountAmount = 0;
+    notifyListeners();
+  }
+
   Future<bool> applyVoucherCode(String code) async {
     final clean = code.trim().toUpperCase();
     if (clean.isEmpty) return false;

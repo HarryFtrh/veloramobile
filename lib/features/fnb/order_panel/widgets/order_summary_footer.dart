@@ -120,8 +120,46 @@ class OrderSummaryFooter extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Active Promotion (dari server API) banner
+          if (ctrl.activePromotion != null)
+            Container(
+              margin: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.storefront_rounded, size: 14, color: Color(0xFF10B981)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Promo: ${ctrl.activePromotion!.name} (-${CurrencyFormatter.format(ctrl.promoDiscountAmount)})',
+                      style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF047857)),
+                    ),
+                  ),
+                  InkWell(
+                    onTap: () => FnbDiscountSheet.show(context, ctrl),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      child: Text('Ubah', style: TextStyle(fontSize: 11, color: scheme.primary, fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  InkWell(
+                    onTap: ctrl.removePromotion,
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      child: Icon(Icons.close_rounded, size: 14, color: Color(0xFFDC2626)),
+                    ),
+                  ),
+                ],
+              ),
+            )
           // Active Manual Discount banner or button to apply discount
-          if (ctrl.manualDiscountTotal > 0)
+          else if (ctrl.manualDiscountTotal > 0)
             Container(
               margin: const EdgeInsets.only(bottom: 6),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -179,7 +217,7 @@ class OrderSummaryFooter extends StatelessWidget {
                       Icon(Icons.discount_outlined, size: 13, color: scheme.primary),
                       const SizedBox(width: 5),
                       Text(
-                        '+ Tambah Diskon',
+                        '+ Tambah Diskon / Promo',
                         style: TextStyle(fontSize: 11, color: scheme.primary, fontWeight: FontWeight.w700),
                       ),
                     ],
@@ -192,6 +230,11 @@ class OrderSummaryFooter extends StatelessWidget {
             SummaryRow(
               label: 'Diskon Member (${ctrl.memberDiscountPercent.round()}%)',
               value: '-${CurrencyFormatter.format(ctrl.memberDiscountAmount)}',
+            ),
+          if (ctrl.activePromotion != null && ctrl.promoDiscountAmount > 0)
+            SummaryRow(
+              label: 'Promo: ${ctrl.activePromotion!.name}',
+              value: '-${CurrencyFormatter.format(ctrl.promoDiscountAmount)}',
             ),
           if (ctrl.manualDiscountTotal > 0)
             SummaryRow(

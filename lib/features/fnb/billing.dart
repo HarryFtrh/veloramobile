@@ -399,8 +399,12 @@ class BillingSettings {
       '/v1/pos/discounts',
       '/v1/pos/promotions',
       '/v1/discounts',
+      '/v1/promotions',
       '/cafe/pos/discounts',
-      '/v1/pos/vouchers',
+      '/cafe/discounts',
+      '/cafe/promotions',
+      '/pos/discounts',
+      '/pos/promotions',
     ];
 
     for (final ep in endpoints) {
