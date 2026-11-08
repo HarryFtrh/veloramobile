@@ -92,6 +92,7 @@ class PosCheckoutService {
     String? shiftId,
     num? subtotal,
     num? taxAmount,
+    num? serviceChargeAmount,
     num? discountAmount,
     num? roundingAmount,
   }) async {
@@ -125,6 +126,9 @@ class PosCheckoutService {
       'subtotal': subtotal ?? totalAmount,
       'tax_total': ?taxAmount,
       'tax_amount': ?taxAmount,
+      'service_charge': ?serviceChargeAmount,
+      'service_charge_amount': ?serviceChargeAmount,
+      'service_amount': ?serviceChargeAmount,
       'discount_total': ?discountAmount,
       'discount_amount': ?discountAmount,
       'rounding_amount': ?roundingAmount,

@@ -29,7 +29,9 @@ class ReceiptData {
   final List<PosCartItem> items;
   final num subtotal;
   final num discount;
+  final num serviceCharge;
   final num tax;
+  final num rounding;
   final num grandTotal;
   final num paidAmount;
   final num changeAmount;
@@ -53,7 +55,9 @@ class ReceiptData {
     required this.items,
     num? subtotal,
     num? discount,
+    num? serviceCharge,
     num? tax,
+    num? rounding,
     num? grandTotal,
     num? total,
     num? paidAmount,
@@ -74,7 +78,9 @@ class ReceiptData {
                 : (tableName ?? customerName)),
         subtotal = subtotal ?? grandTotal ?? total ?? 0,
         discount = discount ?? 0,
+        serviceCharge = serviceCharge ?? 0,
         tax = tax ?? 0,
+        rounding = rounding ?? 0,
         grandTotal = grandTotal ?? total ?? 0,
         paidAmount = paidAmount ?? received ?? grandTotal ?? total ?? 0,
         changeAmount = changeAmount ?? change ?? 0,
@@ -401,8 +407,14 @@ class ReceiptPrinterService {
     if (data.discount > 0) {
       writeTwoCols('Diskon Potongan', '-${CurrencyFormatter.format(data.discount)}');
     }
+    if (data.serviceCharge > 0) {
+      writeTwoCols('Biaya Layanan', CurrencyFormatter.format(data.serviceCharge));
+    }
     if (data.tax > 0) {
       writeTwoCols('Pajak (PB1/PPN)', CurrencyFormatter.format(data.tax));
+    }
+    if (data.rounding != 0) {
+      writeTwoCols('Pembulatan', CurrencyFormatter.format(data.rounding));
     }
     writeDivider(char: '=');
     writeTwoCols(
@@ -501,8 +513,14 @@ class ReceiptPrinterService {
     if (data.discount > 0) {
       sb.writeln('Diskon    : -${CurrencyFormatter.format(data.discount)}');
     }
+    if (data.serviceCharge > 0) {
+      sb.writeln('Layanan   : ${CurrencyFormatter.format(data.serviceCharge)}');
+    }
     if (data.tax > 0) {
       sb.writeln('Pajak     : ${CurrencyFormatter.format(data.tax)}');
+    }
+    if (data.rounding != 0) {
+      sb.writeln('Pembulatan: ${CurrencyFormatter.format(data.rounding)}');
     }
     sb.writeln('TOTAL     : ${CurrencyFormatter.format(data.grandTotal)}');
     sb.writeln(

@@ -138,17 +138,46 @@ class BillingSettings {
             extract(decoded);
           } catch (_) {}
         }
+      } else if (node is List) {
+        for (final item in node) {
+          if (item is Map) {
+            // Tangani array key-value pair dari backend preferences: [{"key": "tax_rate", "value": "10"}]
+            final k = item['key'] ?? item['name'] ?? item['setting_key'] ?? item['code'];
+            final v = item['value'] ?? item['setting_value'] ?? item['val'];
+            if (k != null && v != null) {
+              result[k.toString()] = v;
+            } else {
+              extract(item);
+            }
+          }
+        }
       } else if (node is Map) {
         for (final entry in node.entries) {
           final k = entry.key.toString();
           final v = entry.value;
-          if (['data', 'tenant', 'settings', 'preferences', 'pos_config', 'config', 'billing', 'pos', 'user'].contains(k.toLowerCase())) {
-            extract(v);
+
+          // Simpan nilai skalar atau list langsung
+          if (v is! Map) {
+            result[k] = v;
           }
-          if (v is! Map && v is! List) {
-            result[k] = v;
-          } else if (v is List) {
-            result[k] = v;
+
+          // Jika objek merupakan map pengaturan khusus (misal tax: { rate: 10, enabled: true })
+          if (v is Map) {
+            final lowerK = k.toLowerCase();
+            if (lowerK == 'tax' || lowerK == 'pb1') {
+              if (v.containsKey('rate')) result['tax_rate'] = v['rate'];
+              if (v.containsKey('enabled')) result['tax_enabled'] = v['enabled'];
+              if (v.containsKey('inclusive')) result['tax_inclusive'] = v['inclusive'];
+              if (v.containsKey('name')) result['tax_name'] = v['name'];
+            } else if (lowerK == 'service' || lowerK == 'service_charge') {
+              if (v.containsKey('rate')) result['service_charge_rate'] = v['rate'];
+              if (v.containsKey('enabled')) result['service_charge_enabled'] = v['enabled'];
+            } else if (lowerK == 'rounding') {
+              if (v.containsKey('step')) result['rounding_step'] = v['step'];
+              if (v.containsKey('type')) result['rounding_type'] = v['type'];
+              if (v.containsKey('enabled')) result['rounding_enabled'] = v['enabled'];
+            }
+            extract(v);
           }
         }
       }
@@ -161,62 +190,207 @@ class BillingSettings {
   factory BillingSettings.fromJson(Map<String, dynamic> rawJson) {
     final json = _unpackJson(rawJson);
 
-    // 1. Ekstraksi Pajak / PB1
+    // 1. Ekstraksi Pajak / PB1 Rate (Mendukung semua format snake_case & camelCase)
     final rawTaxRate = json.getDouble(
       'pb1_rate',
       fallback: json.getDouble(
-        'tax_rate',
+        'pb1Rate',
         fallback: json.getDouble(
-          'tax_percentage',
+          'tax_rate',
           fallback: json.getDouble(
-            'tax_percent',
-            fallback: json.getDouble('pb1_percentage', fallback: json.getDouble('tax_val')),
+            'taxRate',
+            fallback: json.getDouble(
+              'pb1_percent',
+              fallback: json.getDouble(
+                'pb1Percent',
+                fallback: json.getDouble(
+                  'tax_percentage',
+                  fallback: json.getDouble(
+                    'taxPercentage',
+                    fallback: json.getDouble(
+                      'tax_percent',
+                      fallback: json.getDouble(
+                        'taxPercent',
+                        fallback: json.getDouble(
+                          'restaurant_tax',
+                          fallback: json.getDouble(
+                            'restaurantTax',
+                            fallback: json.getDouble(
+                              'restaurant_tax_rate',
+                              fallback: json.getDouble(
+                                'restaurantTaxRate',
+                                fallback: json.getDouble(
+                                  'pb1_percentage',
+                                  fallback: json.getDouble(
+                                    'tax_val',
+                                    fallback: json.getDouble(
+                                      'pajak_rate',
+                                      fallback: json.getDouble(
+                                        'pajak_persen',
+                                        fallback: json.getDouble(
+                                          'pb1',
+                                          fallback: json.getDouble('tax'),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       ),
     );
     final double pb1Rate = (rawTaxRate > 0 && rawTaxRate <= 1) ? (rawTaxRate * 100) : rawTaxRate;
-    final bool pb1Explicit = json.containsKey('pb1_enabled')
-        ? json.getBool('pb1_enabled')
-        : (json.containsKey('enable_pb1')
-            ? json.getBool('enable_pb1')
-            : (json.containsKey('tax_enabled')
-                ? json.getBool('tax_enabled')
-                : (json.containsKey('enable_tax')
-                    ? json.getBool('enable_tax')
-                    : (json.containsKey('show_tax') ? json.getBool('show_tax') : (pb1Rate > 0)))));
-    final bool pb1Enabled = pb1Explicit && pb1Rate > 0;
-    final bool pb1Inclusive = json.getBool('pb1_inclusive', fallback: json.getBool('tax_inclusive', fallback: false));
 
-    // 2. Ekstraksi Biaya Layanan / Service Charge
+    // Evaluasi Flag Aktif PB1
+    bool? explicitPb1Enabled;
+    for (final key in [
+      'pb1_enabled', 'pb1Enabled', 'enable_pb1', 'enablePb1', 'is_pb1',
+      'tax_enabled', 'taxEnabled', 'enable_tax', 'enableTax', 'is_tax',
+      'tax_active', 'taxActive', 'show_tax', 'showTax',
+      'restaurant_tax_enabled', 'restaurantTaxEnabled',
+      'pajak_aktif', 'pajakAktif'
+    ]) {
+      if (json.containsKey(key) && json[key] != null) {
+        final val = json[key];
+        if (val is bool) {
+          explicitPb1Enabled = val;
+          break;
+        } else if (val is num) {
+          explicitPb1Enabled = val == 1;
+          break;
+        } else if (val is String) {
+          final s = val.trim().toLowerCase();
+          if (s == 'true' || s == '1' || s == 'yes' || s == 'on') {
+            explicitPb1Enabled = true;
+            break;
+          } else if (s == 'false' || s == '0' || s == 'no' || s == 'off') {
+            explicitPb1Enabled = false;
+            break;
+          }
+        }
+      }
+    }
+    final bool pb1Enabled = (explicitPb1Enabled ?? (pb1Rate > 0)) && pb1Rate > 0;
+
+    final bool pb1Inclusive = json.getBool(
+      'pb1_inclusive',
+      fallback: json.getBool(
+        'pb1Inclusive',
+        fallback: json.getBool(
+          'tax_inclusive',
+          fallback: json.getBool('taxInclusive', fallback: false),
+        ),
+      ),
+    );
+
+    // 2. Ekstraksi Biaya Layanan / Service Charge (Mendukung snake_case & camelCase)
     final rawServiceRate = json.getDouble(
       'service_charge_rate',
       fallback: json.getDouble(
-        'service_rate',
+        'serviceChargeRate',
         fallback: json.getDouble(
-          'service_charge_percent',
+          'service_rate',
           fallback: json.getDouble(
-            'service_charge_percentage',
-            fallback: json.getDouble('service_percent', fallback: json.getDouble('service_charge')),
+            'serviceRate',
+            fallback: json.getDouble(
+              'service_charge_percent',
+              fallback: json.getDouble(
+                'serviceChargePercent',
+                fallback: json.getDouble(
+                  'service_charge_percentage',
+                  fallback: json.getDouble(
+                    'serviceChargePercentage',
+                    fallback: json.getDouble(
+                      'service_percent',
+                      fallback: json.getDouble(
+                        'servicePercent',
+                        fallback: json.getDouble(
+                          'service_fee_rate',
+                          fallback: json.getDouble(
+                            'serviceFeeRate',
+                            fallback: json.getDouble(
+                              'service_charge',
+                              fallback: json.getDouble(
+                                'serviceCharge',
+                                fallback: json.getDouble(
+                                  'service_fee',
+                                  fallback: json.getDouble(
+                                    'serviceFee',
+                                    fallback: json.getDouble(
+                                      'service',
+                                      fallback: json.getDouble('biaya_layanan'),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       ),
     );
     final double serviceRate = (rawServiceRate > 0 && rawServiceRate <= 1) ? (rawServiceRate * 100) : rawServiceRate;
-    final bool serviceExplicit = json.containsKey('service_charge_enabled')
-        ? json.getBool('service_charge_enabled')
-        : (json.containsKey('enable_service_charge')
-            ? json.getBool('enable_service_charge')
-            : (json.containsKey('service_enabled') ? json.getBool('service_enabled') : (serviceRate > 0)));
-    final bool serviceChargeEnabled = serviceExplicit && serviceRate > 0;
+
+    // Evaluasi Flag Aktif Service Charge
+    bool? explicitServiceEnabled;
+    for (final key in [
+      'service_charge_enabled', 'serviceChargeEnabled',
+      'enable_service_charge', 'enableServiceCharge', 'is_service_charge',
+      'service_enabled', 'serviceEnabled', 'enable_service', 'enableService',
+      'service_active', 'serviceActive', 'service_fee_enabled', 'serviceFeeEnabled',
+      'biaya_layanan_aktif', 'biayaLayananAktif'
+    ]) {
+      if (json.containsKey(key) && json[key] != null) {
+        final val = json[key];
+        if (val is bool) {
+          explicitServiceEnabled = val;
+          break;
+        } else if (val is num) {
+          explicitServiceEnabled = val == 1;
+          break;
+        } else if (val is String) {
+          final s = val.trim().toLowerCase();
+          if (s == 'true' || s == '1' || s == 'yes' || s == 'on') {
+            explicitServiceEnabled = true;
+            break;
+          } else if (s == 'false' || s == '0' || s == 'no' || s == 'off') {
+            explicitServiceEnabled = false;
+            break;
+          }
+        }
+      }
+    }
+    final bool serviceChargeEnabled = (explicitServiceEnabled ?? (serviceRate > 0)) && serviceRate > 0;
 
     // 3. Ekstraksi Pembulatan (Rounding) langsung dari API
     int step = 0;
     final rawStep = json['rounding_step'] ??
+        json['roundingStep'] ??
         json['rounding_type'] ??
+        json['roundingType'] ??
         json['rounding_amount_step'] ??
+        json['roundingAmountStep'] ??
         json['rounding_step_amount'] ??
-        json['rounding_value'];
+        json['roundingStepAmount'] ??
+        json['rounding_value'] ??
+        json['roundingValue'];
 
     if (rawStep != null) {
       if (rawStep is int) {
@@ -247,27 +421,35 @@ class BillingSettings {
     }
 
     // Ekstraksi flag aktif pembulatan langsung dari field API
-    bool isRoundingOn = false;
-    final rawEnabled = json['rounding_enabled'] ??
-        json['enable_rounding'] ??
-        json['is_rounding'] ??
-        json['rounding'] ??
-        json['round_total'];
-
-    if (rawEnabled != null) {
-      if (rawEnabled is bool) {
-        isRoundingOn = rawEnabled;
-      } else if (rawEnabled is num) {
-        isRoundingOn = rawEnabled == 1;
-      } else if (rawEnabled is String) {
-        final s = rawEnabled.trim().toLowerCase();
-        isRoundingOn = s == 'true' || s == '1' || s == 'yes' || s == 'on';
+    bool? explicitRoundingOn;
+    for (final key in [
+      'rounding_enabled', 'roundingEnabled',
+      'enable_rounding', 'enableRounding',
+      'is_rounding', 'isRounding',
+      'rounding', 'round_total', 'roundTotal'
+    ]) {
+      if (json.containsKey(key) && json[key] != null) {
+        final val = json[key];
+        if (val is bool) {
+          explicitRoundingOn = val;
+          break;
+        } else if (val is num) {
+          explicitRoundingOn = val == 1;
+          break;
+        } else if (val is String) {
+          final s = val.trim().toLowerCase();
+          if (s == 'true' || s == '1' || s == 'yes' || s == 'on') {
+            explicitRoundingOn = true;
+            break;
+          } else if (s == 'false' || s == '0' || s == 'no' || s == 'off') {
+            explicitRoundingOn = false;
+            break;
+          }
+        }
       }
-    } else {
-      // Jika di API tidak ada flag boolean eksplisit tapi ada nilai kelipatan dari backend (mis. 100/500/1000),
-      // maka pembulatan dianggap aktif mengikuti kelipatan tersebut.
-      isRoundingOn = step > 0;
     }
+
+    bool isRoundingOn = (explicitRoundingOn ?? (step > 0)) && step > 0;
 
     // Jika step tidak ditentukan di API atau <= 0, pembulatan dinonaktifkan
     if (step <= 0) {
@@ -583,45 +765,43 @@ class BillingSettings {
           'location_id': int.tryParse(locId) ?? locId,
       };
 
-      final endpoints = [
-        '/v1/pos/config',
-        '/preferences',
-        '/v1/preferences',
-        '/v1/pos/preferences',
-        '/cafe/pos/config',
-        '/cafe/preferences',
-        '/v1/pos/tuslah-config',
-        '/v1/me',
-        '/me',
-      ];
-
       Map<String, dynamic> mergedData = {};
-      String? successfulEndpoint;
+      final List<String> loadedEndpoints = [];
 
-      for (final ep in endpoints) {
-        try {
-          final res = await ApiClient.instance.dio.get(ep, queryParameters: qLoc);
-          final raw = res.data;
-          if (raw != null) {
-            final unpacked = _unpackJson(raw);
-            if (unpacked.isNotEmpty) {
-              mergedData.addAll(unpacked);
-              successfulEndpoint ??= ep;
-              if (unpacked.containsKey('pb1_rate') ||
-                  unpacked.containsKey('tax_rate') ||
-                  unpacked.containsKey('tax_percentage') ||
-                  unpacked.containsKey('service_charge_rate') ||
-                  unpacked.containsKey('service_rate') ||
-                  unpacked.containsKey('rounding_enabled') ||
-                  unpacked.containsKey('rounding_type')) {
-                successfulEndpoint = ep;
-                break;
+      Future<void> tryLoadFrom(List<String> paths) async {
+        for (final ep in paths) {
+          try {
+            final res = await ApiClient.instance.dio.get(ep, queryParameters: qLoc);
+            final raw = res.data;
+            if (raw != null) {
+              final unpacked = _unpackJson(raw);
+              if (unpacked.isNotEmpty) {
+                mergedData.addAll(unpacked);
+                loadedEndpoints.add(ep);
+                break; // Path dalam grup ini berhasil, lanjut grup berikutnya
               }
             }
+          } catch (_) {
+            // Lanjut ke variasi path alternatif dalam grup
           }
-        } catch (_) {
-          // Silent continue to fallback endpoint
         }
+      }
+
+      // Jalur 1: Injeksi Langsung di Inisialisasi POS (/v1/pos/config)
+      await tryLoadFrom(['/v1/pos/config', '/api/v1/pos/config', '/cafe/pos/config']);
+
+      // Jalur 2: Endpoint Khusus Preferensi Cafe / F&B (PB1 resto, service charge, timer dapur KDS)
+      await tryLoadFrom(['/v1/cafe/preferences', '/api/v1/cafe/preferences', '/cafe/preferences']);
+
+      // Jalur 2: Endpoint Khusus Preferensi POS Kanonik
+      await tryLoadFrom(['/v1/pos/preferences', '/api/v1/pos/preferences']);
+
+      // Jalur 2: Endpoint Khusus Preferensi Global / Universal
+      await tryLoadFrom(['/v1/preferences', '/api/v1/preferences', '/preferences']);
+
+      // Fallback profil tenant jika nama toko belum didapatkan
+      if (!mergedData.containsKey('store_name') && !mergedData.containsKey('cafe_name')) {
+        await tryLoadFrom(['/v1/me', '/me']);
       }
 
       final storeName = mergedData.getString(
@@ -647,7 +827,7 @@ class BillingSettings {
       }
 
       var settings = BillingSettings.fromJson(mergedData);
-      debugPrint('📊 [BillingSettings] Endpoint "$successfulEndpoint" -> PB1: ${settings.pb1Enabled} (${settings.pb1Rate}%, inclusive=${settings.pb1Inclusive}), Service: ${settings.serviceChargeEnabled} (${settings.serviceChargeRate}%), Rounding: ${settings.roundingEnabled} (step=${settings.roundingStep})');
+      debugPrint('📊 [BillingSettings] Endpoints [${loadedEndpoints.join(', ')}] -> PB1: ${settings.pb1Enabled} (${settings.pb1Rate}%, inclusive=${settings.pb1Inclusive}, name=${settings.taxName}), Service: ${settings.serviceChargeEnabled} (${settings.serviceChargeRate}%), Rounding: ${settings.roundingEnabled} (step=${settings.roundingStep})');
 
       // Tarik diskon & promosi terdedikasi dari API jika tersedia
       try {
