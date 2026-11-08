@@ -162,6 +162,15 @@ class FnbRegisterService {
       } on DioException catch (e) {
         if (e.response?.statusCode == 404) {
           res = await ApiClient.instance.dio.post('/cafe/pos/orders', data: payload);
+        } else if (e.type == DioExceptionType.connectionError ||
+                   e.type == DioExceptionType.connectionTimeout ||
+                   e.type == DioExceptionType.sendTimeout ||
+                   e.type == DioExceptionType.receiveTimeout ||
+                   e.type == DioExceptionType.unknown ||
+                   (e.response != null && e.response!.statusCode != null && e.response!.statusCode! >= 500)) {
+          // Offline fallback untuk pesanan dapur
+          final localId = 'OFFLINE-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+          return localId;
         } else {
           rethrow;
         }
@@ -260,7 +269,11 @@ class FnbRegisterService {
             res = await ApiClient.instance.dio.post('/cafe/pos/checkout', data: payload);
           }
         } else if (e.type == DioExceptionType.connectionError ||
-                   e.type == DioExceptionType.connectionTimeout) {
+                   e.type == DioExceptionType.connectionTimeout ||
+                   e.type == DioExceptionType.sendTimeout ||
+                   e.type == DioExceptionType.receiveTimeout ||
+                   e.type == DioExceptionType.unknown ||
+                   (e.response != null && e.response!.statusCode != null && e.response!.statusCode! >= 500)) {
           // Offline Guard: Simpan transaksi lokal v1 bila internet mati
           final offlineInvoice = 'OFFLINE-${DateTime.now().millisecondsSinceEpoch}';
           final offlineRecord = {
