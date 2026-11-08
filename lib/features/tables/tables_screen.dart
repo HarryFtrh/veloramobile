@@ -5,7 +5,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/storage/session_storage.dart';
 import '../../core/design/tokens.dart';
 import '../fnb/fnb_payment_split_screen.dart';
-import '../fnb/split_bill/cubit/payment_split_cubit.dart';
 import '../fnb/widgets/fnb_payment_sheet.dart';
 import '../shared_pos/pos_checkout_service.dart';
 import '../shared_pos/receipt_printer_service.dart';
@@ -92,7 +91,7 @@ class _TablesScreenState extends State<TablesScreen> {
     );
     cubit.selectMethod(choice.method);
     if (choice.method == 'cash') {
-      cubit.updateCashReceived(choice.paid.toInt());
+      cubit.setPreset(choice.paid.toInt());
     }
     final ok = await cubit.checkout(
       fallbackTotal: total,

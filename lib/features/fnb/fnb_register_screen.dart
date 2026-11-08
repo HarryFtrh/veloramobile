@@ -177,7 +177,7 @@ class _FnbRegisterScreenState extends State<FnbRegisterScreen> {
       }
     }
 
-    // ignore: use_build_context_synchronously
+    if (!mounted) return;
     final choice = await FnbPaymentSheet.show(
       context,
       bill.total,

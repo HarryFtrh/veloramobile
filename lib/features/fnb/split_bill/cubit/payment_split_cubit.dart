@@ -154,6 +154,8 @@ class PaymentSplitCubit extends Cubit<PaymentSplitState> {
     emit(state.copyWith(cashReceived: amount, numpadBuffer: amount.toString()));
   }
 
+  void updateCashReceived(int amount) => setPreset(amount);
+
   void toggleItemChecked(int index, bool val, int fallbackTotal) {
     if (index < 0 || index >= state.billItems.length) return;
     final updated = List<Map<String, dynamic>>.from(state.billItems);

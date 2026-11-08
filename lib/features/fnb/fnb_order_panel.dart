@@ -70,7 +70,6 @@ class FnbOrderPanel extends StatelessWidget {
       listenable: ctrl,
       builder: (context, _) {
         final p = context.palette;
-        final primaryColor = Theme.of(context).colorScheme.primary;
         final text = Theme.of(context).textTheme;
         final canSubmit = ctrl.lines.isNotEmpty && !ctrl.busy;
         final dineInNeedsTable = ctrl.orderType == OrderType.dineIn && ctrl.table == null;

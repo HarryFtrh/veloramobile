@@ -98,7 +98,7 @@ class _FnbPaymentSuccessDialogState extends State<FnbPaymentSuccessDialog> {
             content: Row(
               children: [
                 Icon(Icons.point_of_sale_rounded, color: Colors.white, size: 18),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text('Sinyal buka laci kasir (RJ11) terkirim'),
               ],
             ),
