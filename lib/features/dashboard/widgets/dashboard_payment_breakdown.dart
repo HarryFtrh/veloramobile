@@ -1,0 +1,203 @@
+import 'package:flutter/material.dart';
+
+import '../../../core/design/tokens.dart';
+import '../../../core/utils/currency_formatter.dart';
+import '../dashboard_service.dart';
+
+/// Rincian Penerimaan Kasir berdasarkan Metode Pembayaran
+class DashboardPaymentBreakdownCard extends StatelessWidget {
+  final DashboardSummary summary;
+
+  const DashboardPaymentBreakdownCard({super.key, required this.summary});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+
+    final cash = summary.cashTotal;
+    final qris = summary.qrisTotal;
+    final debit = summary.debitTotal;
+    final transfer = summary.transferTotal;
+    final other = summary.otherTotal;
+    final total = cash + qris + debit + transfer + other;
+
+    final effectiveTotal = total > 0 ? total : (summary.revenue > 0 ? summary.revenue : 1.0);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: p.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.account_balance_rounded, size: 18, color: p.textPrimary),
+              const SizedBox(width: 8),
+              Text(
+                'Metode Pembayaran Masuk',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: p.textPrimary,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                'Total: ${CurrencyFormatter.format(total > 0 ? total : summary.revenue)}',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: p.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Multi-Segment Proportion Bar
+          if (total > 0) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: SizedBox(
+                height: 8,
+                child: Row(
+                  children: [
+                    if (cash > 0)
+                      Expanded(
+                        flex: ((cash / effectiveTotal) * 100).round().clamp(1, 100),
+                        child: Container(color: const Color(0xFF10B981)),
+                      ),
+                    if (qris > 0)
+                      Expanded(
+                        flex: ((qris / effectiveTotal) * 100).round().clamp(1, 100),
+                        child: Container(color: const Color(0xFF6366F1)),
+                      ),
+                    if (debit > 0)
+                      Expanded(
+                        flex: ((debit / effectiveTotal) * 100).round().clamp(1, 100),
+                        child: Container(color: const Color(0xFFF59E0B)),
+                      ),
+                    if (transfer > 0)
+                      Expanded(
+                        flex: ((transfer / effectiveTotal) * 100).round().clamp(1, 100),
+                        child: Container(color: const Color(0xFF0EA5E9)),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+          ],
+
+          // 4 Channels Grid
+          Row(
+            children: [
+              Expanded(
+                child: _PaymentItem(
+                  label: 'Tunai',
+                  amount: cash,
+                  color: const Color(0xFF10B981),
+                  icon: Icons.money_rounded,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _PaymentItem(
+                  label: 'QRIS',
+                  amount: qris,
+                  color: const Color(0xFF6366F1),
+                  icon: Icons.qr_code_2_rounded,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _PaymentItem(
+                  label: 'Kartu/EDC',
+                  amount: debit,
+                  color: const Color(0xFFF59E0B),
+                  icon: Icons.credit_card_rounded,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _PaymentItem(
+                  label: 'Transfer',
+                  amount: transfer,
+                  color: const Color(0xFF0EA5E9),
+                  icon: Icons.account_balance_rounded,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PaymentItem extends StatelessWidget {
+  final String label;
+  final double amount;
+  final Color color;
+  final IconData icon;
+
+  const _PaymentItem({
+    required this.label,
+    required this.amount,
+    required this.color,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 12, color: color),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: p.textSecondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              CurrencyFormatter.format(amount),
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w900,
+                color: p.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
