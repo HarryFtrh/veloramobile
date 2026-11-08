@@ -197,6 +197,8 @@ class SessionStorage {
   String? getStorePhone() => _getString(_storePhoneKey);
   String? getStoreLogo() => _getString(_storeLogoKey);
 
+  bool getShowLogo() => isPrinterShowLogo();
+
   bool isPrinterShowLogo() {
     return _prefs?.getBool(_printerShowLogoKey) ??
         (_memCache[_printerShowLogoKey] as bool? ?? true);

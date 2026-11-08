@@ -12,6 +12,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/network/api_client.dart';
 import '../../core/storage/session_storage.dart';
 import '../../core/utils/currency_formatter.dart';
+import 'models/pos_catalog_models.dart';
 import 'pos_checkout_service.dart';
 import 'shift_service.dart';
 

@@ -90,7 +90,7 @@ class _TablesScreenState extends State<TablesScreen> {
         total: total,
         timestamp: DateTime.now(),
         storeLogo: SessionStorage.instance.getStoreLogo(),
-        showLogo: SessionStorage.instance.getShowLogo(),
+        showLogo: SessionStorage.instance.isPrinterShowLogo(),
         items: items.map((it) => PosCartItem(
           productId: it.productId,
           name: it.modifierNames.isNotEmpty ? '${it.name} (${it.modifierNames.join(", ")})' : it.name,

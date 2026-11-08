@@ -578,7 +578,7 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
                       ),
                       Switch.adaptive(
                         value: _showLogo,
-                        activeColor: brandColor,
+                        activeTrackColor: brandColor,
                         onChanged: (val) {
                           setState(() => _showLogo = val);
                           _saveConfig();
