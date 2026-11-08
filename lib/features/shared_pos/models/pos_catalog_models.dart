@@ -318,3 +318,7 @@ class PosCatalogData {
     required this.businessType,
   });
 }
+
+/// Alias typedef for PosProduct
+typedef PosCatalogItem = PosProduct;
+

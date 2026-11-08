@@ -135,7 +135,7 @@ class ReceiptPrinterService {
       }
       // 2. Remote / Storage URL dari backend (Gunakan clean Dio tanpa Authorization agar tidak ditolak AWS S3 / Cloudflare)
       else {
-        final primaryUrl = PosCatalogItem.resolveImageUrl(trimmed) ??
+        final primaryUrl = PosProduct.resolveImageUrl(trimmed) ??
             (trimmed.startsWith('http') ? trimmed : 'https://velora.co.id$trimmed');
         final cleanDio = Dio(
           BaseOptions(
@@ -153,7 +153,7 @@ class ReceiptPrinterService {
             rawBytes = Uint8List.fromList(res.data!);
           }
         } catch (_) {
-          final fallbackUrl = PosCatalogItem.resolveImageFallbackUrl(primaryUrl);
+          final fallbackUrl = PosProduct.resolveImageFallbackUrl(primaryUrl);
           if (fallbackUrl != null) {
             try {
               final res = await cleanDio.get<List<int>>(

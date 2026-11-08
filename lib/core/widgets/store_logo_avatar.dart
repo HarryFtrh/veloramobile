@@ -56,7 +56,7 @@ class StoreLogoAvatar extends StatelessWidget {
       }
 
       // 2. Remote / Storage URL logo
-      final resolvedUrl = PosCatalogItem.resolveImageUrl(trimmed) ??
+      final resolvedUrl = PosProduct.resolveImageUrl(trimmed) ??
           (trimmed.startsWith('http') ? trimmed : 'https://velora.co.id$trimmed');
 
       return ClipRRect(
@@ -71,7 +71,7 @@ class StoreLogoAvatar extends StatelessWidget {
             height: size,
             fit: BoxFit.contain,
             errorBuilder: (_, __, ___) {
-              final fallback = PosCatalogItem.resolveImageFallbackUrl(resolvedUrl);
+              final fallback = PosProduct.resolveImageFallbackUrl(resolvedUrl);
               if (fallback != null) {
                 return Image.network(
                   fallback,
