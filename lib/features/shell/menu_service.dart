@@ -536,7 +536,7 @@ class MenuRegistry {
       iconColor = const Color(0xFF2563EB);
       iconBg = const Color(0xFFDBEAFE);
       badge = 'CRM';
-      badgeColor = const Color(0xFFDBEAFE),
+      badgeColor = const Color(0xFFDBEAFE);
       badgeTextColor = const Color(0xFF1D4ED8);
     } else if (catLower.contains('perangkat') || catLower.contains('printer') || catLower.contains('hardware')) {
       iconColor = const Color(0xFF4338CA);

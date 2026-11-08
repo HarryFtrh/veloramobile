@@ -811,7 +811,12 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
             ],
 
             // Cloud printer quick selection chips
-            if (_cloudPrinters.isNotEmpty) ...[
+            if (_isLoadingCloud)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: LinearProgressIndicator(minHeight: 2),
+              )
+            else if (_cloudPrinters.isNotEmpty) ...[
               const SizedBox(height: 12),
               Text(
                 'Printer dari Cloud Outlet:',
