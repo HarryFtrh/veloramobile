@@ -210,15 +210,34 @@ class BillingSettings {
             : (json.containsKey('service_enabled') ? json.getBool('service_enabled') : (serviceRate > 0)));
     final bool serviceChargeEnabled = serviceExplicit && serviceRate > 0;
 
-    // 3. Ekstraksi Pembulatan (Rounding)
-    int step = json.getInt('rounding_step', fallback: json.getInt('rounding_type'));
-    if (step <= 0) {
-      final rVal = json['rounding_step'] ?? json['rounding_type'] ?? json['rounding_amount_step'];
-      if (rVal != null) {
-        step = int.tryParse(rVal.toString()) ?? 0;
+    // 3. Ekstraksi Pembulatan (Rounding) langsung dari API
+    int step = 0;
+    final rawStep = json['rounding_step'] ??
+        json['rounding_type'] ??
+        json['rounding_amount_step'] ??
+        json['rounding_step_amount'] ??
+        json['rounding_value'];
+
+    if (rawStep != null) {
+      if (rawStep is int) {
+        step = rawStep;
+      } else if (rawStep is num) {
+        step = rawStep.toInt();
+      } else if (rawStep is String) {
+        final s = rawStep.trim().toLowerCase();
+        if (s == 'hundreds' || s == 'ratusan') {
+          step = 100;
+        } else if (s == 'five_hundreds' || s == 'lima_ratusan') {
+          step = 500;
+        } else if (s == 'thousands' || s == 'ribuan') {
+          step = 1000;
+        } else {
+          step = int.tryParse(s) ?? 0;
+        }
       }
     }
-    // Mapping kode enum pembulatan jika yang dikirim backend adalah ID/kode 1, 2, 3
+
+    // Mapping jika backend mengirim ID kode enum (1 = 100, 2 = 500, 3 = 1000)
     if (step == 1) {
       step = 100;
     } else if (step == 2) {
@@ -226,24 +245,32 @@ class BillingSettings {
     } else if (step == 3) {
       step = 1000;
     }
-    if (step <= 0) step = 100;
 
-    final bool hasRoundingKey = json.containsKey('rounding_enabled') ||
-        json.containsKey('enable_rounding') ||
-        json.containsKey('is_rounding') ||
-        json.containsKey('receiptShowRounding');
-    final bool isRoundingOn = hasRoundingKey
-        ? json.getBool(
-            'rounding_enabled',
-            fallback: json.getBool(
-              'enable_rounding',
-              fallback: json.getBool(
-                'is_rounding',
-                fallback: json.getBool('receiptShowRounding', fallback: true),
-              ),
-            ),
-          )
-        : true; // Kasir POS default aktif (kelipatan 100)
+    // Ekstraksi flag aktif pembulatan langsung dari field API
+    bool isRoundingOn = false;
+    final rawEnabled = json['rounding_enabled'] ??
+        json['enable_rounding'] ??
+        json['is_rounding'] ??
+        json['rounding'] ??
+        json['round_total'];
+
+    if (rawEnabled != null) {
+      if (rawEnabled is bool) {
+        isRoundingOn = rawEnabled;
+      } else if (rawEnabled is num) {
+        isRoundingOn = rawEnabled == 1;
+      } else if (rawEnabled is String) {
+        final s = rawEnabled.trim().toLowerCase();
+        isRoundingOn = s == 'true' || s == '1' || s == 'yes' || s == 'on';
+      }
+    } else {
+      // Jika di API tidak ada flag boolean eksplisit tapi ada nilai kelipatan dari backend (mis. 100/500/1000),
+      // maka pembulatan dianggap aktif mengikuti kelipatan tersebut.
+      isRoundingOn = step > 0;
+    }
+
+    // Jika aktif tapi kelipatan tidak ditentukan di API, gunakan kelipatan standar 100
+    if (step <= 0) step = 100;
 
     // Ekstraksi promosi & diskon dari prefensi
     final rawPromos = json['promotions'] ??
