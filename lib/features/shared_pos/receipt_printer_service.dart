@@ -1,7 +1,9 @@
 // features/shared_pos/receipt_printer_service.dart
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,6 +19,8 @@ class ReceiptData {
   final String storeName;
   final String storeAddress;
   final String storePhone;
+  final String? storeLogo;
+  final bool showLogo;
   final String invoiceNumber;
   final String cashierName;
   final String? tableOrPatient;
@@ -35,6 +39,8 @@ class ReceiptData {
     required this.storeName,
     String? storeAddress,
     String? storePhone,
+    String? storeLogo,
+    bool? showLogo,
     String? invoiceNumber,
     String? orderNumber,
     required this.cashierName,
@@ -56,6 +62,8 @@ class ReceiptData {
     this.note,
   })  : storeAddress = storeAddress ?? SessionStorage.instance.getStoreAddress() ?? '',
         storePhone = storePhone ?? SessionStorage.instance.getStorePhone() ?? '',
+        storeLogo = storeLogo ?? SessionStorage.instance.getStoreLogo(),
+        showLogo = showLogo ?? SessionStorage.instance.isPrinterShowLogo(),
         invoiceNumber = invoiceNumber ?? orderNumber ?? '-',
         tableOrPatient = tableOrPatient ??
             (tableName != null && customerName != null
@@ -97,6 +105,141 @@ class ReceiptPrinterService {
     0x19,
     0xFA,
   ]; // ESC p 0 25 250 (RJ11 Pin 2)
+
+  // Cache biner raster logo hasil konversi dari API
+  static Uint8List? _cachedRasterLogo;
+  static String? _cachedLogoKey;
+
+  /// Mengunduh & mengonversi logo toko dari API (URL / base64) ke format biner raster ESC/POS
+  Future<Uint8List?> prepareRasterLogo({String? logoSource, bool is80mm = false}) async {
+    final src = logoSource ?? SessionStorage.instance.getStoreLogo();
+    if (src == null || src.trim().isEmpty) return null;
+
+    final key = '$src-$is80mm';
+    if (_cachedLogoKey == key && _cachedRasterLogo != null) {
+      return _cachedRasterLogo;
+    }
+
+    try {
+      Uint8List? rawBytes;
+      final trimmed = src.trim();
+
+      // 1. Base64 Image
+      if (trimmed.startsWith('data:image') || (!trimmed.startsWith('http') && !trimmed.startsWith('/') && trimmed.length > 100)) {
+        String b64 = trimmed;
+        if (b64.contains(',')) {
+          b64 = b64.split(',').last;
+        }
+        rawBytes = base64Decode(b64);
+      }
+      // 2. Remote URL (http / https)
+      else if (trimmed.startsWith('http')) {
+        final res = await ApiClient.instance.dio.get<List<int>>(
+          trimmed,
+          options: Options(responseType: ResponseType.bytes),
+        );
+        if (res.data != null) rawBytes = Uint8List.fromList(res.data!);
+      }
+      // 3. Relative URL dari backend
+      else if (trimmed.startsWith('/')) {
+        final res = await ApiClient.instance.dio.get<List<int>>(
+          trimmed,
+          options: Options(responseType: ResponseType.bytes),
+        );
+        if (res.data != null) rawBytes = Uint8List.fromList(res.data!);
+      }
+
+      if (rawBytes != null && rawBytes.isNotEmpty) {
+        final raster = await _convertImageToEscPosRaster(rawBytes, is80mm: is80mm);
+        if (raster != null) {
+          _cachedRasterLogo = raster;
+          _cachedLogoKey = key;
+          debugPrint('✅ [ESC/POS LOGO] Berhasil konversi logo toko API (${raster.length} bytes)');
+          return raster;
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ [ESC/POS LOGO] Gagal memuat logo toko dari API: $e');
+    }
+    return null;
+  }
+
+  static Future<Uint8List?> _convertImageToEscPosRaster(Uint8List imageBytes, {bool is80mm = false}) async {
+    try {
+      final codec = await instantiateImageCodec(imageBytes);
+      final frame = await codec.getNextFrame();
+      final image = frame.image;
+
+      // 58mm ~ 384 dots max (gunakan ~256 dots lebar logo), 80mm ~ 576 dots max (gunakan ~384 dots)
+      final maxWidth = is80mm ? 384 : 256;
+      int targetWidth = image.width;
+      int targetHeight = image.height;
+
+      if (targetWidth > maxWidth) {
+        targetHeight = (targetHeight * maxWidth) ~/ targetWidth;
+        targetWidth = maxWidth;
+      }
+
+      // Pastikan lebar habis dibagi 8 byte
+      final widthBytes = (targetWidth + 7) ~/ 8;
+      final finalWidth = widthBytes * 8;
+
+      final recorder = PictureRecorder();
+      final canvas = Canvas(recorder);
+      final paintWhite = Paint()..color = const Color(0xFFFFFFFF);
+      canvas.drawRect(Rect.fromLTWH(0, 0, finalWidth.toDouble(), targetHeight.toDouble()), paintWhite);
+      canvas.drawImageRect(
+        image,
+        Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
+        Rect.fromLTWH(0, 0, targetWidth.toDouble(), targetHeight.toDouble()),
+        Paint(),
+      );
+
+      final picture = recorder.endRecording();
+      final renderedImg = await picture.toImage(finalWidth, targetHeight);
+      final byteData = await renderedImg.toByteData(format: ImageByteFormat.rawRgba);
+      if (byteData == null) return null;
+
+      final rgba = byteData.buffer.asUint8List();
+      final result = <int>[];
+
+      // ESC/POS Command: GS v 0 0 xL xH yL yH
+      final xL = widthBytes % 256;
+      final xH = widthBytes ~/ 256;
+      final yL = targetHeight % 256;
+      final yH = targetHeight ~/ 256;
+
+      result.addAll([0x1D, 0x76, 0x30, 0x00, xL, xH, yL, yH]);
+
+      for (int y = 0; y < targetHeight; y++) {
+        for (int b = 0; b < widthBytes; b++) {
+          int byteVal = 0;
+          for (int bit = 0; bit < 8; bit++) {
+            final x = b * 8 + bit;
+            if (x < finalWidth) {
+              final offset = (y * finalWidth + x) * 4;
+              final r = rgba[offset];
+              final g = rgba[offset + 1];
+              final bl = rgba[offset + 2];
+              final a = rgba[offset + 3];
+
+              // Monochrome thresholding
+              final lum = 0.299 * r + 0.587 * g + 0.114 * bl;
+              if (a > 128 && lum < 165) {
+                byteVal |= (0x80 >> bit);
+              }
+            }
+          }
+          result.add(byteVal);
+        }
+      }
+
+      return Uint8List.fromList(result);
+    } catch (e) {
+      debugPrint('⚠️ [ESC/POS LOGO] Gagal rasterize image: $e');
+      return null;
+    }
+  }
 
   /// Generates pure ESC/POS byte stream for standard 58mm (32 chars) or 80mm (48 chars) thermal printers
   Uint8List generateEscPosBytes(ReceiptData data, {bool is80mm = false}) {
@@ -145,6 +288,13 @@ class ReceiptPrinterService {
     // 1. Initialize Printer & Kick Drawer
     bytes.addAll(cmdInit);
     bytes.addAll(cmdKickDrawer);
+
+    // 1b. Store Logo (Raster Bit Image GS v 0) from API if available & enabled
+    if (data.showLogo && _cachedRasterLogo != null) {
+      bytes.addAll(cmdAlignCenter);
+      bytes.addAll(_cachedRasterLogo!);
+      bytes.addAll(latin1.encode('\n'));
+    }
 
     // 2. Store Header
     writeLine(
@@ -406,6 +556,11 @@ class ReceiptPrinterService {
 
   /// Sends command to thermal printer or logs formatted receipt in debug mode
   Future<bool> printReceipt(ReceiptData data, {bool is80mm = false}) async {
+    // Siapkan logo dari API (jika ada dan diaktifkan)
+    if (data.showLogo && data.storeLogo != null && data.storeLogo!.isNotEmpty) {
+      await prepareRasterLogo(logoSource: data.storeLogo, is80mm: is80mm);
+    }
+
     final bytes = generateEscPosBytes(data, is80mm: is80mm);
     if (kDebugMode) {
       debugPrint(
@@ -739,6 +894,34 @@ class ReceiptPrinterService {
           raw = res.data;
         }
       }
+
+      // Tarik preferensi struk khusus FnB (/cafe/setting/printers/receipt)
+      try {
+        final receiptRes = await ApiClient.instance.dio.get('/cafe/setting/printers/receipt', queryParameters: query);
+        final rBody = receiptRes.data is Map ? (receiptRes.data['data'] is Map ? receiptRes.data['data'] : receiptRes.data) : null;
+        if (rBody is Map) {
+          final showLogo = rBody['show_logo'];
+          if (showLogo is bool) {
+            await SessionStorage.instance.savePrinterShowLogo(showLogo);
+          }
+          final name = rBody['cafe_name']?.toString() ?? rBody['name']?.toString();
+          final addr = rBody['address']?.toString();
+          final phone = rBody['phone']?.toString();
+          final logo = rBody['logo']?.toString() ?? rBody['logo_url']?.toString();
+          if (name != null && name.isNotEmpty) {
+            await SessionStorage.instance.saveTenantProfile(
+              name: name,
+              address: addr,
+              phone: phone,
+              logo: logo,
+            );
+            if (logo != null && logo.isNotEmpty) {
+              await prepareRasterLogo(logoSource: logo);
+            }
+          }
+        }
+      } catch (_) {}
+
       if (raw is Map) {
         final inner = raw['data'];
         return inner is Map

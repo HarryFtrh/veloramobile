@@ -26,6 +26,8 @@ class SessionStorage {
   static const _printerIs80mmKey = 'velora_printer_is_80mm';
   static const _printerConnectionTypeKey = 'velora_printer_conn_type';
   static const _printerAddressKey = 'velora_printer_address';
+  static const _printerShowLogoKey = 'velora_printer_show_logo';
+  static const _storeLogoKey = 'velora_store_logo';
   static const _offlineSalesQueueKey = 'velora_offline_sales_queue';
   static const _offlineSalesQueueEncKey = 'velora_offline_sales_queue_keystore_v1';
   static const _subscriptionCacheKey = 'velora_subscription_cache';
@@ -180,15 +182,30 @@ class SessionStorage {
     required String name,
     String? address,
     String? phone,
+    String? logo,
   }) async {
     await _setString(_tenantNameKey, name);
     if (address != null) await _setString(_storeAddressKey, address);
     if (phone != null) await _setString(_storePhoneKey, phone);
+    if (logo != null && logo.trim().isNotEmpty) {
+      await _setString(_storeLogoKey, logo.trim());
+    }
   }
 
   String? getTenantName() => _getString(_tenantNameKey);
   String? getStoreAddress() => _getString(_storeAddressKey);
   String? getStorePhone() => _getString(_storePhoneKey);
+  String? getStoreLogo() => _getString(_storeLogoKey);
+
+  bool isPrinterShowLogo() {
+    return _prefs?.getBool(_printerShowLogoKey) ??
+        (_memCache[_printerShowLogoKey] as bool? ?? true);
+  }
+
+  Future<void> savePrinterShowLogo(bool show) async {
+    _memCache[_printerShowLogoKey] = show;
+    await _prefs?.setBool(_printerShowLogoKey, show);
+  }
 
   Future<void> saveUserPin(String pin) async {
     final clean = _cleanString(pin);

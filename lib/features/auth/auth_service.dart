@@ -702,10 +702,27 @@ class AuthService {
     );
     await SessionStorage.instance.saveUserPermissions(user.permissions);
     final tenantMap = data.getMap('tenant');
+    final storeLogo = tenantMap.getString(
+      'logo',
+      fallback: tenantMap.getString(
+        'logo_url',
+        fallback: tenantMap.getString(
+          'store_logo',
+          fallback: data.getString(
+            'logo',
+            fallback: data.getString(
+              'logo_url',
+              fallback: userJson.getString('logo', fallback: userJson.getString('logo_url')),
+            ),
+          ),
+        ),
+      ),
+    );
     await SessionStorage.instance.saveTenantProfile(
       name: user.tenantName,
       address: tenantMap.getString('address'),
       phone: tenantMap.getString('phone'),
+      logo: storeLogo.isNotEmpty ? storeLogo : null,
     );
 
     final activeLocId = userJson.getString('location_id');

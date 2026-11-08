@@ -28,6 +28,7 @@ class PrinterSettingsModal extends StatefulWidget {
 
 class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
   late bool _is80mm;
+  late bool _showLogo;
   late String _connectionType;
   late TextEditingController _addressController;
   bool _isTesting = false;
@@ -73,6 +74,7 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
   void initState() {
     super.initState();
     _is80mm = SessionStorage.instance.isPrinter80mm();
+    _showLogo = SessionStorage.instance.isPrinterShowLogo();
     _connectionType = SessionStorage.instance.getPrinterConnectionType();
     _addressController = TextEditingController(
       text: SessionStorage.instance.getPrinterAddress() ?? '',
@@ -122,6 +124,7 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
       connectionType: _connectionType,
       printerAddress: _addressController.text.trim(),
     );
+    await SessionStorage.instance.savePrinterShowLogo(_showLogo);
   }
 
   Future<void> _scanPrinters() async {
@@ -162,6 +165,8 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
       storeName: SessionStorage.instance.getTenantName() ?? SessionStorage.instance.getLocationName() ?? 'VELORA POS',
       storeAddress: SessionStorage.instance.getStoreAddress() ?? (SessionStorage.instance.getLocationName() ?? 'Outlet Utama'),
       storePhone: SessionStorage.instance.getStorePhone() ?? '0812-3456-7890',
+      storeLogo: SessionStorage.instance.getStoreLogo(),
+      showLogo: _showLogo,
       invoiceNumber: 'TEST-PRINT-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}',
       cashierName: SessionStorage.instance.getUserName() ?? 'Kasir Aktif',
       timestamp: DateTime.now(),
@@ -520,6 +525,87 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 20),
+
+            // Section 3b: Logo Toko pada Struk (API Server)
+            Text(
+              'LOGO TOKO PADA STRUK',
+              style: TextStyle(
+                color: p.textSecondary,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.6,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: p.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: p.line),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Cetak Logo Toko (API)',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: p.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Cetak logo grafis outlet di bagian paling atas struk fisik',
+                              style: TextStyle(fontSize: 11, color: p.textSecondary),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch.adaptive(
+                        value: _showLogo,
+                        activeColor: brandColor,
+                        onChanged: (val) {
+                          setState(() => _showLogo = val);
+                          _saveConfig();
+                        },
+                      ),
+                    ],
+                  ),
+                  if (SessionStorage.instance.getStoreLogo() != null && SessionStorage.instance.getStoreLogo()!.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFECFDF5),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFA7F3D0)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF059669)),
+                          SizedBox(width: 6),
+                          Text(
+                            'Logo Toko dari API Cloud Terhubung',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF059669)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
             const SizedBox(height: 24),
 
