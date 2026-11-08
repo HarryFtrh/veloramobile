@@ -37,11 +37,13 @@ abstract final class BillCalculator {
         ? (net * (s.serviceChargeRate / 100)).round()
         : 0;
     final base = net + service;
-    final tax = s.pb1Enabled && !s.pb1Inclusive && s.pb1Rate > 0 && base > 0
-        ? (base * (s.pb1Rate / 100)).round()
+    final tax = s.pb1Enabled && s.pb1Rate > 0 && base > 0
+        ? (s.pb1Inclusive
+            ? (base - (base / (1 + s.pb1Rate / 100))).round()
+            : (base * (s.pb1Rate / 100)).round())
         : 0;
 
-    final raw = base + tax;
+    final raw = base + (s.pb1Inclusive ? 0 : tax);
     final total = s.roundsTotal && raw > 0 ? _round(s, raw) : raw.round();
     return BillBreakdown(
       subtotal: subtotal.round(),

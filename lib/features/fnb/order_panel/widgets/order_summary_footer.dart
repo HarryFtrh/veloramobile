@@ -244,11 +244,16 @@ class OrderSummaryFooter extends StatelessWidget {
               value: '-${CurrencyFormatter.format(ctrl.manualDiscountTotal)}',
             ),
           if (bill != null && bill.serviceCharge > 0)
-            SummaryRow(label: 'Biaya Layanan', value: CurrencyFormatter.format(bill.serviceCharge)),
+            SummaryRow(
+              label: ctrl.billing != null && ctrl.billing!.serviceChargeRate > 0
+                  ? 'Biaya Layanan (${ctrl.billing!.serviceChargeRate.round()}%)'
+                  : 'Biaya Layanan',
+              value: CurrencyFormatter.format(bill.serviceCharge),
+            ),
           if (bill != null && bill.tax > 0)
             SummaryRow(
               label: ctrl.billing != null && ctrl.billing!.pb1Rate > 0
-                  ? '${ctrl.billing!.taxName} (${(ctrl.billing!.pb1Rate > 1 ? ctrl.billing!.pb1Rate : ctrl.billing!.pb1Rate * 100).round()}%)'
+                  ? '${ctrl.billing!.taxName} (${(ctrl.billing!.pb1Rate > 1 ? ctrl.billing!.pb1Rate : ctrl.billing!.pb1Rate * 100).round()}%${ctrl.billing!.pb1Inclusive ? ' Termasuk' : ''})'
                   : (ctrl.billing?.taxName ?? 'Pajak Resto'),
               value: CurrencyFormatter.format(bill.tax),
               showInfo: true,

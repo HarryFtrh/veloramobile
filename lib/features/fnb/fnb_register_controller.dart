@@ -388,27 +388,13 @@ class RegisterController extends ChangeNotifier {
 
   Future<void> refreshDiscounts() async {
     try {
-      final extraPromos = await BillingSettings.fetchDiscountsFromApi();
-      if (extraPromos.isNotEmpty && billing != null) {
-        final merged = List<StorePromotion>.from(billing!.promotions);
-        final existingIds = merged.map((p) => p.id).toSet();
-        final existingCodes = merged.where((p) => p.code != null).map((p) => p.code!.toUpperCase()).toSet();
-        for (final ep in extraPromos) {
-          final codeUpper = ep.code?.toUpperCase();
-          final isDup = existingIds.contains(ep.id) || (codeUpper != null && existingCodes.contains(codeUpper));
-          if (!isDup) {
-            merged.add(ep);
-            existingIds.add(ep.id);
-            if (codeUpper != null) existingCodes.add(codeUpper);
-          }
-        }
-        billing = billing!.copyWith(promotions: merged);
-        _applyAutoPromotionsToCatalog();
-        autoApplyBestPromotion();
-        notifyListeners();
-      }
+      final latestBilling = await _service.billingSettings();
+      billing = latestBilling;
+      _applyAutoPromotionsToCatalog();
+      autoApplyBestPromotion();
+      notifyListeners();
     } catch (e) {
-      debugPrint('⚠️ [FnbRegisterController] Gagal refresh voucher dari API: $e');
+      debugPrint('⚠️ [FnbRegisterController] Gagal refresh billing settings dari API: $e');
     }
   }
 

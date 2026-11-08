@@ -98,7 +98,7 @@ class BillingSettings {
     };
   }
 
-  bool get roundsTotal => roundingEnabled && (roundingScope == 'both' || roundingScope == 'total_only');
+  bool get roundsTotal => roundingEnabled && roundingScope.toLowerCase().trim() != 'discount_only';
 
   /// Mencari promosi aktif berdasarkan kode voucher/promo (case-insensitive)
   StorePromotion? findPromotionByCode(String code) {
@@ -124,23 +124,93 @@ class BillingSettings {
   List<StorePromotion> get manualPromotions =>
       promotions.where((p) => p.isActive && !p.isAutomatic).toList();
 
-  factory BillingSettings.fromJson(Map<String, dynamic> rawJson) {
-    // Unpack nested map jika ada pembungkus settings, preferences, pos_config, dll
-    final Map<String, dynamic> json = Map<String, dynamic>.from(rawJson);
-    for (final key in ['settings', 'preferences', 'pos_config', 'config', 'billing']) {
-      final val = rawJson[key];
-      if (val is Map) {
-        json.addAll(Map<String, dynamic>.from(val));
-      } else if (val is String && (val.startsWith('{') || val.startsWith('['))) {
-        try {
-          final decoded = jsonDecode(val);
-          if (decoded is Map) {
-            json.addAll(Map<String, dynamic>.from(decoded));
+  static Map<String, dynamic> _unpackJson(dynamic raw) {
+    final Map<String, dynamic> result = {};
+
+    void extract(dynamic node) {
+      if (node == null) return;
+      if (node is String) {
+        final trimmed = node.trim();
+        if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+            (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+          try {
+            final decoded = jsonDecode(trimmed);
+            extract(decoded);
+          } catch (_) {}
+        }
+      } else if (node is Map) {
+        for (final entry in node.entries) {
+          final k = entry.key.toString();
+          final v = entry.value;
+          if (['data', 'tenant', 'settings', 'preferences', 'pos_config', 'config', 'billing', 'pos', 'user'].contains(k.toLowerCase())) {
+            extract(v);
           }
-        } catch (_) {}
+          if (v is! Map && v is! List) {
+            result[k] = v;
+          } else if (v is List) {
+            result[k] = v;
+          }
+        }
       }
     }
 
+    extract(raw);
+    return result;
+  }
+
+  factory BillingSettings.fromJson(Map<String, dynamic> rawJson) {
+    final json = _unpackJson(rawJson);
+
+    // 1. Ekstraksi Pajak / PB1
+    final rawTaxRate = json.getDouble(
+      'pb1_rate',
+      fallback: json.getDouble(
+        'tax_rate',
+        fallback: json.getDouble(
+          'tax_percentage',
+          fallback: json.getDouble(
+            'tax_percent',
+            fallback: json.getDouble('pb1_percentage', fallback: json.getDouble('tax_val')),
+          ),
+        ),
+      ),
+    );
+    final double pb1Rate = (rawTaxRate > 0 && rawTaxRate <= 1) ? (rawTaxRate * 100) : rawTaxRate;
+    final bool pb1Explicit = json.containsKey('pb1_enabled')
+        ? json.getBool('pb1_enabled')
+        : (json.containsKey('enable_pb1')
+            ? json.getBool('enable_pb1')
+            : (json.containsKey('tax_enabled')
+                ? json.getBool('tax_enabled')
+                : (json.containsKey('enable_tax')
+                    ? json.getBool('enable_tax')
+                    : (json.containsKey('show_tax') ? json.getBool('show_tax') : (pb1Rate > 0)))));
+    final bool pb1Enabled = pb1Explicit && pb1Rate > 0;
+    final bool pb1Inclusive = json.getBool('pb1_inclusive', fallback: json.getBool('tax_inclusive', fallback: false));
+
+    // 2. Ekstraksi Biaya Layanan / Service Charge
+    final rawServiceRate = json.getDouble(
+      'service_charge_rate',
+      fallback: json.getDouble(
+        'service_rate',
+        fallback: json.getDouble(
+          'service_charge_percent',
+          fallback: json.getDouble(
+            'service_charge_percentage',
+            fallback: json.getDouble('service_percent', fallback: json.getDouble('service_charge')),
+          ),
+        ),
+      ),
+    );
+    final double serviceRate = (rawServiceRate > 0 && rawServiceRate <= 1) ? (rawServiceRate * 100) : rawServiceRate;
+    final bool serviceExplicit = json.containsKey('service_charge_enabled')
+        ? json.getBool('service_charge_enabled')
+        : (json.containsKey('enable_service_charge')
+            ? json.getBool('enable_service_charge')
+            : (json.containsKey('service_enabled') ? json.getBool('service_enabled') : (serviceRate > 0)));
+    final bool serviceChargeEnabled = serviceExplicit && serviceRate > 0;
+
+    // 3. Ekstraksi Pembulatan (Rounding)
     int step = json.getInt('rounding_step', fallback: json.getInt('rounding_type'));
     if (step <= 0) {
       final rVal = json['rounding_step'] ?? json['rounding_type'] ?? json['rounding_amount_step'];
@@ -160,10 +230,20 @@ class BillingSettings {
 
     final bool hasRoundingKey = json.containsKey('rounding_enabled') ||
         json.containsKey('enable_rounding') ||
-        json.containsKey('is_rounding');
+        json.containsKey('is_rounding') ||
+        json.containsKey('receiptShowRounding');
     final bool isRoundingOn = hasRoundingKey
-        ? json.getBool('rounding_enabled', fallback: json.getBool('enable_rounding', fallback: json.getBool('is_rounding')))
-        : true;
+        ? json.getBool(
+            'rounding_enabled',
+            fallback: json.getBool(
+              'enable_rounding',
+              fallback: json.getBool(
+                'is_rounding',
+                fallback: json.getBool('receiptShowRounding', fallback: true),
+              ),
+            ),
+          )
+        : true; // Kasir POS default aktif (kelipatan 100)
 
     // Ekstraksi promosi & diskon dari prefensi
     final rawPromos = json['promotions'] ??
@@ -203,11 +283,11 @@ class BillingSettings {
     }
 
     return BillingSettings(
-      serviceChargeEnabled: json.getBool('service_charge_enabled', fallback: json.getBool('enable_service_charge')),
-      serviceChargeRate: json.getDouble('service_charge_rate', fallback: json.getDouble('service_rate')),
-      pb1Enabled: json.getBool('pb1_enabled', fallback: json.getBool('enable_pb1', fallback: json.getBool('tax_enabled'))),
-      pb1Rate: json.getDouble('pb1_rate', fallback: json.getDouble('tax_rate')),
-      pb1Inclusive: json.getBool('pb1_inclusive', fallback: json.getBool('tax_inclusive')),
+      serviceChargeEnabled: serviceChargeEnabled,
+      serviceChargeRate: serviceRate,
+      pb1Enabled: pb1Enabled,
+      pb1Rate: pb1Rate,
+      pb1Inclusive: pb1Inclusive,
       roundingEnabled: isRoundingOn,
       roundingStep: step,
       roundingScope: json.getString('rounding_scope', fallback: 'both'),
@@ -472,47 +552,61 @@ class BillingSettings {
         if (locId != null && locId.isNotEmpty)
           'location_id': int.tryParse(locId) ?? locId,
       };
-      dynamic body;
-      try {
-        final res = await ApiClient.instance.dio.get('/v1/pos/config', queryParameters: qLoc);
-        body = res.data;
-      } catch (_) {
+
+      final endpoints = [
+        '/v1/pos/config',
+        '/preferences',
+        '/v1/preferences',
+        '/v1/pos/preferences',
+        '/cafe/pos/config',
+        '/cafe/preferences',
+        '/v1/pos/tuslah-config',
+        '/v1/me',
+        '/me',
+      ];
+
+      Map<String, dynamic> mergedData = {};
+      String? successfulEndpoint;
+
+      for (final ep in endpoints) {
         try {
-          final res = await ApiClient.instance.dio.get('/v1/pos/preferences', queryParameters: qLoc);
-          body = res.data;
-        } catch (_) {
-          try {
-            final res = await ApiClient.instance.dio.get('/v1/preferences', queryParameters: qLoc);
-            body = res.data;
-          } catch (_) {
-            final res = await ApiClient.instance.dio.get('/preferences', queryParameters: qLoc);
-            body = res.data;
+          final res = await ApiClient.instance.dio.get(ep, queryParameters: qLoc);
+          final raw = res.data;
+          if (raw != null) {
+            final unpacked = _unpackJson(raw);
+            if (unpacked.isNotEmpty) {
+              mergedData.addAll(unpacked);
+              successfulEndpoint ??= ep;
+              if (unpacked.containsKey('pb1_rate') ||
+                  unpacked.containsKey('tax_rate') ||
+                  unpacked.containsKey('tax_percentage') ||
+                  unpacked.containsKey('service_charge_rate') ||
+                  unpacked.containsKey('service_rate') ||
+                  unpacked.containsKey('rounding_enabled') ||
+                  unpacked.containsKey('rounding_type')) {
+                successfulEndpoint = ep;
+                break;
+              }
+            }
           }
-        }
-      }
-      Map<String, dynamic> data = const {};
-      if (body is Map) {
-        final inner = body['data'];
-        if (inner is Map) {
-          data = Map<String, dynamic>.from(inner);
-        } else {
-          data = Map<String, dynamic>.from(body);
+        } catch (_) {
+          // Silent continue to fallback endpoint
         }
       }
 
-      final storeName = data.getString(
+      final storeName = mergedData.getString(
         'cafe_name',
-        fallback: data.getString(
+        fallback: mergedData.getString(
           'business_name',
-          fallback: data.getString(
+          fallback: mergedData.getString(
             'store_name',
-            fallback: data.getString('company_name', fallback: data.getString('name')),
+            fallback: mergedData.getString('company_name', fallback: mergedData.getString('name')),
           ),
         ),
       );
-      final storeAddress = data.getString('address', fallback: data.getString('store_address'));
-      final storePhone = data.getString('phone', fallback: data.getString('store_phone'));
-      final storeLogo = data.getString('logo', fallback: data.getString('logo_url', fallback: data.getString('store_logo', fallback: data.getString('image_url'))));
+      final storeAddress = mergedData.getString('address', fallback: mergedData.getString('store_address'));
+      final storePhone = mergedData.getString('phone', fallback: mergedData.getString('store_phone'));
+      final storeLogo = mergedData.getString('logo', fallback: mergedData.getString('logo_url', fallback: mergedData.getString('store_logo', fallback: mergedData.getString('image_url'))));
       if (storeName.isNotEmpty) {
         await SessionStorage.instance.saveTenantProfile(
           name: storeName,
@@ -522,7 +616,8 @@ class BillingSettings {
         );
       }
 
-      var settings = BillingSettings.fromJson(data);
+      var settings = BillingSettings.fromJson(mergedData);
+      debugPrint('📊 [BillingSettings] Endpoint "$successfulEndpoint" -> PB1: ${settings.pb1Enabled} (${settings.pb1Rate}%, inclusive=${settings.pb1Inclusive}), Service: ${settings.serviceChargeEnabled} (${settings.serviceChargeRate}%), Rounding: ${settings.roundingEnabled} (step=${settings.roundingStep})');
 
       // Tarik diskon & promosi terdedikasi dari API jika tersedia
       try {
@@ -548,7 +643,7 @@ class BillingSettings {
 
       return settings;
     } catch (e) {
-      // Fallback default jika offline atau belum diatur: PB1 nonaktif, pembulatan kelipatan 100
+      debugPrint('⚠️ [BillingSettings] Error fetch config: $e');
       var fallbackSettings = const BillingSettings(
         serviceChargeEnabled: false,
         serviceChargeRate: 0,
