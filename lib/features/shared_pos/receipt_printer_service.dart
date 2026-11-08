@@ -381,8 +381,10 @@ class ReceiptPrinterService {
     );
     writeDivider(char: '=');
 
-    // 6. Footer & QR
-    if (data.qrData != null && data.qrData!.isNotEmpty) {
+    // 6. Footer & QR (Hanya cetak jika ada kode QR nyata, bukan tautan velora)
+    if (data.qrData != null &&
+        data.qrData!.isNotEmpty &&
+        !data.qrData!.toLowerCase().contains('velora')) {
       writeDivider();
       final qrBytes = utf8.encode(data.qrData!);
       final len = qrBytes.length + 3;
@@ -414,7 +416,6 @@ class ReceiptPrinterService {
       'Barang yang sudah dibeli tidak dapat ditukar',
       align: cmdAlignCenter,
     );
-    writeLine('Powered by Velora POS Cloud', align: cmdAlignCenter);
     bytes.addAll(latin1.encode('\n\n\n'));
 
     // 7. Cut Paper
@@ -465,13 +466,17 @@ class ReceiptPrinterService {
       'Bayar (${data.paymentMethod.toUpperCase()}) : ${CurrencyFormatter.format(data.paidAmount)}',
     );
     sb.writeln('Kembali   : ${CurrencyFormatter.format(data.changeAmount)}');
-    if (data.qrData != null && data.qrData!.isNotEmpty) {
+    // Jangan sertakan URL/tautan web pada struk WhatsApp agar tidak memicu unfurl link preview
+    if (data.qrData != null &&
+        data.qrData!.isNotEmpty &&
+        !data.qrData!.toLowerCase().contains('velora') &&
+        !data.qrData!.startsWith('http://') &&
+        !data.qrData!.startsWith('https://')) {
       sb.writeln('--------------------------------');
-      sb.writeln('Tautan/Bukti: ${data.qrData}');
+      sb.writeln('Ref       : ${data.qrData}');
     }
     sb.writeln('================================');
     sb.writeln('Terima kasih atas kunjungan Anda!');
-    sb.writeln('Powered by Velora POS Cloud');
     return sb.toString();
   }
 
@@ -666,7 +671,6 @@ class ReceiptPrinterService {
     }
     sb.writeln('================================');
     sb.writeln('Dicetak pada: ${dateFmt(DateTime.now())}');
-    sb.writeln('Powered by Velora POS Cloud');
     return sb.toString();
   }
 
@@ -737,7 +741,6 @@ class ReceiptPrinterService {
       writeLine('Catatan: ${summary.notes!.trim()}', align: cmdAlignLeft);
     }
     writeDivider(char: '=');
-    writeLine('Powered by Velora POS Cloud', align: cmdAlignCenter);
     bytes.addAll(latin1.encode('\n\n\n'));
     bytes.addAll(cmdCutPaper);
 
@@ -809,7 +812,6 @@ class ReceiptPrinterService {
     sb.writeln('================================');
     sb.writeln('* CATATAN: Ini adalah audit X-Report.');
     sb.writeln('  Shift kasir MASIH AKTIF dan belum ditutup.');
-    sb.writeln('Powered by Velora POS Cloud');
     return sb.toString();
   }
 
@@ -877,7 +879,6 @@ class ReceiptPrinterService {
     writeDivider();
     writeLine('* SHIFT MASIH AKTIF (BELUM TUTUP)', align: cmdAlignCenter);
     writeDivider(char: '=');
-    writeLine('Powered by Velora POS Cloud', align: cmdAlignCenter);
     bytes.addAll(latin1.encode('\n\n\n'));
     bytes.addAll(cmdCutPaper);
 

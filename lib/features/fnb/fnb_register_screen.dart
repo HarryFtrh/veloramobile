@@ -240,7 +240,9 @@ class _FnbRegisterScreenState extends State<FnbRegisterScreen> {
         paidAmount: receiptData.paidAmount,
         changeAmount: out.change,
         paymentMethod: receiptData.paymentMethod,
-        qrData: out.invoice.isNotEmpty ? 'https://velora.co.id/verify/${out.invoice}' : null,
+        storeLogo: receiptData.storeLogo,
+        showLogo: receiptData.showLogo,
+        qrData: (out.qrData != null && !out.qrData!.contains('velora.co.id')) ? out.qrData : null,
       );
 
       await FnbPaymentSuccessDialog.show(

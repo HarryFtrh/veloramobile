@@ -368,6 +368,8 @@ class PaymentSplitCubit extends Cubit<PaymentSplitState> {
         change: state.calculateChangeAmount(fallbackTotal).toDouble(),
         paymentMethod: state.selectedMethod.toUpperCase(),
         timestamp: DateTime.now(),
+        storeLogo: SessionStorage.instance.getStoreLogo(),
+        showLogo: SessionStorage.instance.getShowLogo(),
         items: effectiveItems
             .map(
               (l) => PosCartItem(

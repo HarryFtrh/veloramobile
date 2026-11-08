@@ -159,7 +159,9 @@ class _UniversalCheckoutDialogState extends State<UniversalCheckoutDialog> {
         paidAmount: finalPaid,
         changeAmount: _changeAmount,
         paymentMethod: paymentMethod.toUpperCase(),
-        qrData: result.qrData,
+        storeLogo: SessionStorage.instance.getStoreLogo(),
+        showLogo: SessionStorage.instance.getShowLogo(),
+        qrData: (result.qrData != null && !result.qrData!.toLowerCase().contains('velora')) ? result.qrData : null,
       );
 
       await ReceiptPrinterService.instance.printReceipt(receiptData);

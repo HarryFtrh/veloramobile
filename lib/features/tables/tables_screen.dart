@@ -89,6 +89,8 @@ class _TablesScreenState extends State<TablesScreen> {
         cashierName: SessionStorage.instance.getUserName() ?? 'Kasir',
         total: total,
         timestamp: DateTime.now(),
+        storeLogo: SessionStorage.instance.getStoreLogo(),
+        showLogo: SessionStorage.instance.getShowLogo(),
         items: items.map((it) => PosCartItem(
           productId: it.productId,
           name: it.modifierNames.isNotEmpty ? '${it.name} (${it.modifierNames.join(", ")})' : it.name,
