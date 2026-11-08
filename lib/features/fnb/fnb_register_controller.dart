@@ -10,6 +10,7 @@ import 'billing.dart';
 import 'fnb_catalog_service.dart';
 import 'fnb_register_service.dart';
 import 'modifiers.dart';
+import 'register/fnb_pricing_manager.dart';
 
 export 'fnb_register_service.dart' show RegisterLine;
 
@@ -60,32 +61,41 @@ class RegisterController extends ChangeNotifier {
   String customerName = '';
   String? existingOrderId;
 
-  // Diskon Member / Promosi Toko / Voucher banner
-  StorePromotion? activePromotion;
-  String? activeVoucherCode;
-  double voucherDiscountAmount = 0;
-  String? memberTier; // e.g. 'Gold Member'
-  double memberDiscountPercent = 0; // e.g. 10.0 for 10%
-  double manualDiscountPercent = 0;
-  double manualDiscountAmount = 0;
+  final FnbPricingManager _pricing = FnbPricingManager();
+
+  // Diskon Member / Promosi Toko / Voucher banner (dikelola oleh FnbPricingManager)
+  StorePromotion? get activePromotion => _pricing.activePromotion;
+  set activePromotion(StorePromotion? val) => _pricing.activePromotion = val;
+
+  String? get activeVoucherCode => _pricing.activeVoucherCode;
+  set activeVoucherCode(String? val) => _pricing.activeVoucherCode = val;
+
+  double get voucherDiscountAmount => _pricing.voucherDiscountAmount;
+  set voucherDiscountAmount(double val) => _pricing.voucherDiscountAmount = val;
+
+  String? get memberTier => _pricing.memberTier;
+  set memberTier(String? val) => _pricing.memberTier = val;
+
+  double get memberDiscountPercent => _pricing.memberDiscountPercent;
+  set memberDiscountPercent(double val) => _pricing.memberDiscountPercent = val;
+
+  double get manualDiscountPercent => _pricing.manualDiscountPercent;
+  set manualDiscountPercent(double val) => _pricing.manualDiscountPercent = val;
+
+  double get manualDiscountAmount => _pricing.manualDiscountAmount;
+  set manualDiscountAmount(double val) => _pricing.manualDiscountAmount = val;
 
   void applyManualDiscount({double percent = 0.0, double amount = 0.0}) {
-    manualDiscountPercent = percent;
-    manualDiscountAmount = amount;
+    _pricing.applyManualDiscount(percent: percent, amount: amount);
     notifyListeners();
   }
 
   void removeManualDiscount() {
-    manualDiscountPercent = 0;
-    manualDiscountAmount = 0;
+    _pricing.removeManualDiscount();
     notifyListeners();
   }
 
-  num get manualDiscountTotal {
-    if (manualDiscountAmount > 0) return manualDiscountAmount;
-    if (manualDiscountPercent > 0) return subtotal * (manualDiscountPercent / 100);
-    return 0;
-  }
+  num get manualDiscountTotal => _pricing.calculateManualDiscount(subtotal);
 
   String? get activeOrderId => existingOrderId ?? table?.order?.id;
 
@@ -300,27 +310,13 @@ class RegisterController extends ChangeNotifier {
     if (subtotal <= 0) return;
 
     final locId = SessionStorage.instance.getLocationId();
-    final candidatePromos = (billing?.promotions ?? const []).where((p) {
-      if (!p.isActive) return false;
-      if (p.targetLocationIds.isNotEmpty && locId != null && locId.isNotEmpty) {
-        if (!p.targetLocationIds.contains(locId)) return false;
-      }
-      return p.isAutomatic || (p.code == null || p.code!.trim().isEmpty);
-    }).toList();
-
-    StorePromotion? bestPromo;
-    double maxDisc = 0;
-    for (final promo in candidatePromos) {
-      final d = promo.calculateDiscount(subtotal);
-      if (d > maxDisc) {
-        maxDisc = d;
-        bestPromo = promo;
-      }
-    }
-    if (bestPromo != null && maxDisc > 0) {
-      activePromotion = bestPromo;
-      activeVoucherCode = bestPromo.code ?? bestPromo.name;
-      voucherDiscountAmount = maxDisc;
+    final bestPromo = _pricing.findBestAutoPromotion(
+      promotions: billing?.promotions ?? const [],
+      subtotal: subtotal,
+      locationId: locId,
+    );
+    if (bestPromo != null) {
+      _pricing.applyPromotion(bestPromo, subtotal);
     }
   }
 
@@ -330,35 +326,22 @@ class RegisterController extends ChangeNotifier {
     notifyListeners();
   }
 
-  num get subtotal => lines.fold<num>(0, (sum, l) => sum + l.subtotal);
+  num get subtotal => _pricing.calculateSubtotal(lines);
   int get itemCount => lines.fold<int>(0, (sum, l) => sum + l.quantity);
 
-  num get memberDiscountAmount => memberDiscountPercent > 0 ? (subtotal * (memberDiscountPercent / 100)) : 0;
-  
-  num get promoDiscountAmount {
-    if (activePromotion != null) {
-      return activePromotion!.calculateDiscount(subtotal);
-    }
-    return voucherDiscountAmount;
-  }
+  num get memberDiscountAmount => _pricing.calculateMemberDiscount(subtotal);
+  num get promoDiscountAmount => _pricing.calculatePromoDiscount(subtotal);
+  num get totalDiscount => _pricing.calculateTotalDiscount(subtotal);
 
-  num get totalDiscount => (memberDiscountAmount + promoDiscountAmount + manualDiscountTotal).clamp(0, subtotal);
-
-  BillBreakdown? get bill => billing == null
-      ? null
-      : BillCalculator.calculate(billing!, subtotal: subtotal, discount: totalDiscount);
+  BillBreakdown? get bill => _pricing.calculateBill(billing, subtotal);
 
   void applyPromotion(StorePromotion promo) {
-    activePromotion = promo;
-    activeVoucherCode = promo.code ?? promo.name;
-    voucherDiscountAmount = promo.calculateDiscount(subtotal);
+    _pricing.applyPromotion(promo, subtotal);
     notifyListeners();
   }
 
   void removePromotion() {
-    activePromotion = null;
-    activeVoucherCode = null;
-    voucherDiscountAmount = 0;
+    _pricing.removePromotion();
     notifyListeners();
   }
 
@@ -704,13 +687,7 @@ class RegisterController extends ChangeNotifier {
     table = null;
     existingOrderId = null;
     customerName = '';
-    activePromotion = null;
-    activeVoucherCode = null;
-    voucherDiscountAmount = 0;
-    memberTier = null;
-    memberDiscountPercent = 0;
-    manualDiscountPercent = 0;
-    manualDiscountAmount = 0;
+    _pricing.reset();
     orderType = OrderType.takeaway;
     notifyListeners();
   }
