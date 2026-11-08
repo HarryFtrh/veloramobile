@@ -500,22 +500,32 @@ class MenuRegistry {
         cleanKey == 'pelanggan' ||
         cleanKey == 'crm' ||
         cleanKey == 'active_tables' ||
-        cleanKey == 'kitchen_display') {
+        cleanKey == 'kitchen_display' ||
+        cleanKey.contains('dashboard') ||
+        cleanKey.contains('analytic') ||
+        cleanKey.contains('customer') ||
+        cleanKey.contains('pelanggan')) {
       return null;
     }
 
-    if (titleLower == 'active tables' ||
-        titleLower == 'kitchen display' ||
-        titleLower == 'kitchen display (kds)' ||
-        titleLower == 'dashboards' ||
-        titleLower == 'analytics' ||
-        titleLower == 'crm & customers' ||
-        titleLower == 'pelanggan & crm' ||
+    if (titleLower.contains('dashboard') ||
+        titleLower.contains('analytic') ||
+        titleLower.contains('analitik') ||
+        titleLower.contains('omzet') ||
+        titleLower.contains('laporan') ||
+        titleLower.contains('ringkasan') ||
+        titleLower.contains('pelanggan') ||
+        titleLower.contains('customer') ||
+        titleLower.contains('crm') ||
+        titleLower.contains('member') ||
+        titleLower.contains('table') ||
+        titleLower.contains('meja') ||
+        titleLower.contains('kitchen') ||
+        titleLower.contains('dapur') ||
+        titleLower.contains('kds') ||
         titleLower == 'kasir' ||
-        titleLower == 'meja' ||
-        titleLower == 'dapur' ||
-        titleLower == 'dashboard' ||
-        titleLower == 'pelanggan') {
+        titleLower.contains('kasir register') ||
+        titleLower.contains('register f&b')) {
       return null;
     }
 

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../core/config/business_vertical.dart';
 import '../finance/expenses_screen.dart';
 import '../finance/return_screen.dart';
-import '../fnb/fnb_payment_split_screen.dart';
 import '../fnb_customer/customer_home_screen.dart';
 import '../settings/settings_screen.dart';
 import '../shared_pos/printer_settings_screen.dart';
@@ -16,7 +15,7 @@ class MoreMenuFactory {
     switch (vertical) {
       case BusinessVertical.fnb:
         return [
-          // 1. Operasional Tambahan Kasir
+          // 1. Operasional Tambahan
           const MoreEntry(
             category: 'Operasional Kasir',
             icon: Icons.coffee_rounded,
@@ -26,20 +25,8 @@ class MoreMenuFactory {
             badgeColor: Color(0xFFD1FAE5),
             badgeTextColor: Color(0xFF047857),
             title: 'Mode Pelanggan (Customer Self-Order)',
-            subtitle: 'Layar eksplorasi menu meja & live tracking pesanan',
+            subtitle: 'Layar eksplorasi menu meja & live tracking pesanan tamu',
             builder: _buildCustomerHome,
-          ),
-          const MoreEntry(
-            category: 'Operasional Kasir',
-            icon: Icons.call_split_rounded,
-            iconColor: Color(0xFF0D9488),
-            iconBg: Color(0xFFCCFBF1),
-            badge: 'Numpad POS',
-            badgeColor: Color(0xFFCCFBF1),
-            badgeTextColor: Color(0xFF0F766E),
-            title: 'Kasir Split Bill & Pecahan Uang',
-            subtitle: 'Pembayaran bagi tagihan, numpad, & kalkulator kembalian',
-            builder: _buildSplitBill,
           ),
           const MoreEntry(
             category: 'Operasional Kasir',
@@ -50,7 +37,7 @@ class MoreMenuFactory {
             badgeColor: Color(0xFFFEF3C7),
             badgeTextColor: Color(0xFFB45309),
             title: 'Pengeluaran Kasir (Petty Cash)',
-            subtitle: 'Pencatatan kas kecil & biaya operasional toko harian',
+            subtitle: 'Pencatatan kas kecil operasional harian (es, galon, dsb)',
             builder: _buildExpenses,
           ),
 
@@ -64,7 +51,7 @@ class MoreMenuFactory {
             badgeColor: Color(0xFFE0E7FF),
             badgeTextColor: Color(0xFF3730A3),
             title: 'Printer Struk & Hardware Kasir',
-            subtitle: 'Konfigurasi Bluetooth, LAN port 9100, & laci kas',
+            subtitle: 'Konfigurasi Bluetooth, LAN port 9100, kertas & laci kas',
             builder: _buildPrinter,
           ),
 
@@ -172,7 +159,6 @@ class MoreMenuFactory {
   }
 
   static Widget _buildCustomerHome(BuildContext _) => const CustomerHomeScreen();
-  static Widget _buildSplitBill(BuildContext _) => const FnbPaymentSplitScreen();
   static Widget _buildReturn(BuildContext _) => const ReturnScreen();
   static Widget _buildExpenses(BuildContext _) => const ExpensesScreen();
   static Widget _buildPrinter(BuildContext _) => const PrinterSettingsScreen();

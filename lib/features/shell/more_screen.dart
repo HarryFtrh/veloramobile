@@ -99,25 +99,65 @@ class _MoreScreenState extends State<MoreScreen> {
     if (ok == true) widget.onLogout?.call();
   }
 
-  /// Cek apakah modul ini sudah menjadi tab navigasi utama di shell
+  /// Cek apakah modul ini sudah menjadi tab navigasi utama di shell (Kasir, Meja, Dapur, Dashboard, Pelanggan)
+  /// sehingga 100% dipastikan TIDAK AKAN PERNAH muncul di menu "Lainnya".
   bool _isPrimaryTab(MoreEntry entry) {
     final t = entry.title.toLowerCase().trim();
-    return t == 'kasir' ||
-        t == 'meja' ||
-        t == 'dapur' ||
-        t == 'dashboard' ||
-        t == 'pelanggan' ||
-        t == 'dashboards' ||
-        t == 'analytics' ||
-        t == 'active tables' ||
-        t == 'manajemen meja' ||
-        t == 'kitchen display (kds)' ||
-        t == 'kitchen display' ||
-        t == 'kds' ||
-        t == 'crm & customers' ||
-        t == 'pelanggan & crm' ||
-        t.contains('analitik penjualan') ||
-        t.startsWith('kasir register');
+    final cat = (entry.category ?? '').toLowerCase().trim();
+
+    // 1. Dashboard, Analytics, Analitik, Laporan, Omzet
+    if (t.contains('dashboard') ||
+        t.contains('analytic') ||
+        t.contains('analitik') ||
+        t.contains('omzet') ||
+        t.contains('laporan') ||
+        t.contains('ringkasan') ||
+        cat.contains('analitik') ||
+        cat.contains('dashboard')) {
+      return true;
+    }
+
+    // 2. Pelanggan, Customer, CRM, Member, Buku Hutang/Kasbon Pelanggan
+    if (t.contains('pelanggan') ||
+        t.contains('customer') ||
+        t.contains('crm') ||
+        t.contains('member') ||
+        cat.contains('pelanggan') ||
+        cat.contains('crm')) {
+      return true;
+    }
+
+    // 3. Meja, Table, Dine-in, Reservasi
+    if (t.contains('meja') ||
+        t.contains('table') ||
+        t.contains('dine-in') ||
+        t.contains('dine in') ||
+        cat.contains('meja') ||
+        cat.contains('dine-in')) {
+      return true;
+    }
+
+    // 4. Dapur, Kitchen, KDS, Barista
+    if (t.contains('dapur') ||
+        t.contains('kitchen') ||
+        t.contains('kds') ||
+        t.contains('barista') ||
+        cat.contains('dapur') ||
+        cat.contains('kds')) {
+      return true;
+    }
+
+    // 5. Kasir utama / POS register
+    if (t == 'kasir' ||
+        t == 'pos' ||
+        t.contains('kasir register') ||
+        t.contains('register f&b') ||
+        t.contains('pos f&b') ||
+        t.contains('f&b pos')) {
+      return true;
+    }
+
+    return false;
   }
 
   @override
