@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/design/tokens.dart';
 import '../../core/storage/session_storage.dart';
 import '../shared_pos/receipt_printer_service.dart';
 import '../shared_pos/shift_badge.dart';
@@ -112,9 +111,34 @@ class _MoreScreenState extends State<MoreScreen> {
     final tenantName = SessionStorage.instance.getTenantName() ?? 'Velora POS';
     final locationName = SessionStorage.instance.getLocationName() ?? 'Outlet Utama';
 
-    final effectiveEntries = (_serverEntries != null && _serverEntries!.isNotEmpty)
-        ? _serverEntries!
-        : widget.entries;
+    // Merge server entries and factory entries safely without losing hardware, subscription, or settings!
+    final List<MoreEntry> effectiveEntries;
+    if (_serverEntries != null && _serverEntries!.isNotEmpty) {
+      final seenTitles = <String>{};
+      final merged = <MoreEntry>[];
+
+      for (final s in _serverEntries!) {
+        final t = s.title.toLowerCase().trim();
+        // Skip duplicate dashboard or analytics duplicates
+        if (seenTitles.contains(t) || (t == 'analytics' && seenTitles.contains('dashboards'))) {
+          continue;
+        }
+        seenTitles.add(t);
+        merged.add(s);
+      }
+
+      // Ensure vital baseline modules (Hardware, Subscription, Settings, Split Bill, Petty Cash) are always present
+      for (final base in widget.entries) {
+        final t = base.title.toLowerCase().trim();
+        if (!seenTitles.contains(t)) {
+          seenTitles.add(t);
+          merged.add(base);
+        }
+      }
+      effectiveEntries = merged;
+    } else {
+      effectiveEntries = widget.entries;
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -463,31 +487,33 @@ class _MoreScreenState extends State<MoreScreen> {
     );
   }
 
-  /// Responsive Tablet: 2 Balanced Columns
+  /// Responsive Tablet: 2 Balanced Columns without duplication
   Widget _buildTabletSplitLayout(List<MoreEntry> entries, Color brandPrimary) {
     final Map<String, List<MoreEntry>> grouped = _groupEntries(entries);
+    final allGroups = grouped.entries.toList();
 
-    // Split groups logically:
-    // Left: Operasional Kasir
-    // Right: Pelanggan & CRM, Perangkat Keras, Bisnis & Lisensi, Pengaturan & Akun
+    // Distribute groups across left and right cleanly
     final leftGroups = <MapEntry<String, List<MoreEntry>>>[];
     final rightGroups = <MapEntry<String, List<MoreEntry>>>[];
 
-    for (final entry in grouped.entries) {
-      final keyLower = entry.key.toLowerCase();
+    for (final group in allGroups) {
+      final keyLower = group.key.toLowerCase();
       if (keyLower.contains('operasional') || keyLower.contains('pos') || keyLower.contains('dapur') || keyLower.contains('meja')) {
-        leftGroups.add(entry);
+        leftGroups.add(group);
       } else {
-        rightGroups.add(entry);
+        rightGroups.add(group);
       }
     }
 
-    // Fallback if imbalanced
-    if (leftGroups.isEmpty) {
-      final all = grouped.entries.toList();
-      final mid = (all.length / 2).ceil();
-      leftGroups.addAll(all.sublist(0, mid));
-      rightGroups.addAll(all.sublist(mid));
+    // Safety balance if one side has 0 categories:
+    if (leftGroups.isEmpty && rightGroups.isNotEmpty) {
+      final mid = (rightGroups.length / 2).ceil();
+      leftGroups.addAll(rightGroups.sublist(0, mid));
+      rightGroups.removeRange(0, mid);
+    } else if (rightGroups.isEmpty && leftGroups.isNotEmpty) {
+      final mid = (leftGroups.length / 2).ceil();
+      rightGroups.addAll(leftGroups.sublist(mid));
+      leftGroups.removeRange(mid, leftGroups.length);
     }
 
     return Row(
@@ -539,7 +565,24 @@ class _MoreScreenState extends State<MoreScreen> {
   Map<String, List<MoreEntry>> _groupEntries(List<MoreEntry> entries) {
     final Map<String, List<MoreEntry>> grouped = {};
     for (final entry in entries) {
-      final cat = entry.category ?? 'Fitur & Menu Lainnya';
+      String cat = entry.category?.trim() ?? 'Operasional Kasir';
+      // Normalize generic or legacy categories into professional distinct sections
+      if (cat == 'Fitur & Menu Toko' || cat == 'Fitur & Pengaturan Toko' || cat == 'Fitur & Menu Lainnya') {
+        final t = entry.title.toLowerCase();
+        if (t.contains('dashboard') || t.contains('analytics') || t.contains('omzet') || t.contains('split') || t.contains('order') || t.contains('table') || t.contains('kitchen')) {
+          cat = 'Operasional Kasir';
+        } else if (t.contains('crm') || t.contains('customer') || t.contains('pelanggan') || t.contains('member')) {
+          cat = 'Pelanggan & CRM';
+        } else if (t.contains('printer') || t.contains('hardware')) {
+          cat = 'Perangkat Keras';
+        } else if (t.contains('subscription') || t.contains('paket') || t.contains('langganan') || t.contains('lisensi')) {
+          cat = 'Bisnis & Lisensi';
+        } else if (t.contains('setting') || t.contains('pengaturan') || t.contains('pin') || t.contains('akun') || t.contains('keamanan')) {
+          cat = 'Pengaturan & Akun';
+        } else {
+          cat = 'Operasional Kasir';
+        }
+      }
       grouped.putIfAbsent(cat, () => []).add(entry);
     }
     return grouped;

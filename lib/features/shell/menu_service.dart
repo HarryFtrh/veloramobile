@@ -513,13 +513,67 @@ class MenuRegistry {
     final IconData icon = _resolveIcon(item.iconName) ?? route.defaultIcon;
     final String title = item.title.isNotEmpty ? item.title : route.defaultTitle;
     final String subtitle = item.subtitle.isNotEmpty ? item.subtitle : route.defaultSubtitle;
-    final String category = item.category.isNotEmpty ? item.category : route.defaultCategory;
+    final String category = (item.category.isNotEmpty &&
+            item.category.trim() != 'Fitur & Menu Toko' &&
+            item.category.trim() != 'Fitur & Pengaturan Toko')
+        ? item.category.trim()
+        : route.defaultCategory;
+
+    Color? iconColor;
+    Color? iconBg;
+    String? badge;
+    Color? badgeColor;
+    Color? badgeTextColor;
+
+    final catLower = category.toLowerCase();
+    if (catLower.contains('operasional') || catLower.contains('pos') || catLower.contains('meja') || catLower.contains('dapur')) {
+      iconColor = const Color(0xFF059669);
+      iconBg = const Color(0xFFD1FAE5);
+      badge = 'Operasional';
+      badgeColor = const Color(0xFFD1FAE5);
+      badgeTextColor = const Color(0xFF047857);
+    } else if (catLower.contains('pelanggan') || catLower.contains('crm')) {
+      iconColor = const Color(0xFF2563EB);
+      iconBg = const Color(0xFFDBEAFE);
+      badge = 'CRM';
+      badgeColor = const Color(0xFFDBEAFE),
+      badgeTextColor = const Color(0xFF1D4ED8);
+    } else if (catLower.contains('perangkat') || catLower.contains('printer') || catLower.contains('hardware')) {
+      iconColor = const Color(0xFF4338CA);
+      iconBg = const Color(0xFFE0E7FF);
+      badge = 'Hardware';
+      badgeColor = const Color(0xFFE0E7FF);
+      badgeTextColor = const Color(0xFF3730A3);
+    } else if (catLower.contains('bisnis') || catLower.contains('lisensi') || catLower.contains('paket')) {
+      iconColor = const Color(0xFF7C3AED);
+      iconBg = const Color(0xFFEDE9FE);
+      badge = 'Lisensi';
+      badgeColor = const Color(0xFFEDE9FE);
+      badgeTextColor = const Color(0xFF6D28D9);
+    } else if (catLower.contains('pengaturan') || catLower.contains('akun') || catLower.contains('keamanan')) {
+      iconColor = const Color(0xFF334155);
+      iconBg = const Color(0xFFF1F5F9);
+      badge = 'Akun';
+      badgeColor = const Color(0xFFF1F5F9);
+      badgeTextColor = const Color(0xFF475569);
+    } else {
+      iconColor = const Color(0xFF0284C7);
+      iconBg = const Color(0xFFE0F2FE);
+      badge = 'Sistem';
+      badgeColor = const Color(0xFFE0F2FE);
+      badgeTextColor = const Color(0xFF0369A1);
+    }
 
     return MoreEntry(
       title: title,
       subtitle: subtitle,
       category: category,
       icon: icon,
+      iconColor: iconColor,
+      iconBg: iconBg,
+      badge: badge,
+      badgeColor: badgeColor,
+      badgeTextColor: badgeTextColor,
       builder: route.builder,
     );
   }
