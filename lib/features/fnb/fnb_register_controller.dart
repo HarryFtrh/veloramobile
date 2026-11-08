@@ -222,8 +222,12 @@ class RegisterController extends ChangeNotifier {
   }
 
   void _applyAutoPromotionsToCatalog() {
+    final locId = SessionStorage.instance.getLocationId();
     final candidatePromos = (billing?.promotions ?? const []).where((p) {
       if (!p.isActive) return false;
+      if (p.targetLocationIds.isNotEmpty && locId != null && locId.isNotEmpty) {
+        if (!p.targetLocationIds.contains(locId)) return false;
+      }
       // Promosi berlaku ke katalog jika isAutomatic == true atau tidak membutuhkan kode voucher khusus
       return p.isAutomatic || (p.code == null || p.code!.trim().isEmpty);
     }).toList();
@@ -295,8 +299,12 @@ class RegisterController extends ChangeNotifier {
     }
     if (subtotal <= 0) return;
 
+    final locId = SessionStorage.instance.getLocationId();
     final candidatePromos = (billing?.promotions ?? const []).where((p) {
       if (!p.isActive) return false;
+      if (p.targetLocationIds.isNotEmpty && locId != null && locId.isNotEmpty) {
+        if (!p.targetLocationIds.contains(locId)) return false;
+      }
       return p.isAutomatic || (p.code == null || p.code!.trim().isEmpty);
     }).toList();
 

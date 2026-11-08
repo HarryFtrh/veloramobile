@@ -29,6 +29,7 @@ class StorePromotion {
     this.endDate,
     this.applicableCategoryIds = const [],
     this.applicableMenuIds = const [],
+    this.targetLocationIds = const [],
   });
 
   final String id;
@@ -45,6 +46,7 @@ class StorePromotion {
   final DateTime? endDate;
   final List<String> applicableCategoryIds;
   final List<String> applicableMenuIds;
+  final List<String> targetLocationIds;
 
   /// Hitung potongan diskon riil terhadap nilai subtotal
   double calculateDiscount(num subtotal) {
@@ -74,11 +76,18 @@ class StorePromotion {
 
   factory StorePromotion.fromJson(Map<String, dynamic> json) {
     final rawType = json.getString('type', fallback: json.getString('discount_type')).toLowerCase();
-    final bool isFlat = json.getBool('is_flat');
+    final bool isFlat = json.getBool('is_flat') ||
+        rawType == 'discount_nominal' ||
+        rawType.contains('nominal') ||
+        rawType.contains('fixed') ||
+        rawType.contains('amount');
+
     PromotionType type;
-    if (isFlat || rawType.contains('fixed') || rawType.contains('nominal') || rawType.contains('amount')) {
+    if (isFlat) {
       type = PromotionType.fixedAmount;
-    } else if (rawType.contains('bogo') || rawType.contains('buy_x')) {
+    } else if (rawType == 'discount_percent' || rawType.contains('percent')) {
+      type = PromotionType.percentage;
+    } else if (rawType == 'buy_x_get_y' || rawType.contains('bogo') || rawType.contains('buy_x')) {
       type = PromotionType.bogo;
     } else if (rawType.contains('custom')) {
       type = PromotionType.custom;
@@ -86,8 +95,27 @@ class StorePromotion {
       type = PromotionType.percentage;
     }
 
-    final val = json.getDouble('discount_value', fallback: json.getDouble('value', fallback: json.getDouble('amount', fallback: json.getDouble('rate'))));
-    final rawMin = json.getDouble('min_order_amount', fallback: json.getDouble('min_purchase_amount', fallback: json.getDouble('min_order', fallback: json.getDouble('min_purchase'))));
+    final val = json.getDouble(
+      'discount_value',
+      fallback: json.getDouble(
+        'value',
+        fallback: json.getDouble(
+          'amount',
+          fallback: json.getDouble(
+            'discount_nominal',
+            fallback: json.getDouble('discount_percent', fallback: json.getDouble('rate')),
+          ),
+        ),
+      ),
+    );
+
+    final rawMin = json.getDouble(
+      'min_purchase',
+      fallback: json.getDouble(
+        'min_purchase_amount',
+        fallback: json.getDouble('min_order_amount', fallback: json.getDouble('min_order')),
+      ),
+    );
     final rawMax = json.getDouble('max_discount_amount', fallback: json.getDouble('max_discount', fallback: json.getDouble('max_amount')));
 
     DateTime? start;
@@ -114,6 +142,14 @@ class StorePromotion {
       }
     }
 
+    final locs = <String>[];
+    final rawLocs = json['target_location_ids'] ?? json['location_ids'] ?? json['target_locations'];
+    if (rawLocs is List) {
+      for (final l in rawLocs) {
+        if (l != null) locs.add(l.toString());
+      }
+    }
+
     final code = json.getString('code', fallback: json.getString('promo_code', fallback: json.getString('voucher_code')));
     final bool explicitAuto = json.containsKey('is_automatic')
         ? json.getBool('is_automatic')
@@ -137,6 +173,7 @@ class StorePromotion {
       endDate: end,
       applicableCategoryIds: cats,
       applicableMenuIds: menus,
+      targetLocationIds: locs,
     );
   }
 }
@@ -437,22 +474,52 @@ class BillingSettings {
     );
   }
 
-  /// Tarik data promosi dan diskon dari endpoint dedicated backend:
-  /// 1. `GET /v1/pos/discounts`
-  /// 2. `GET /v1/pos/promotions`
-  /// 3. `GET /v1/discounts`
-  /// 4. `GET /cafe/pos/discounts`
-  /// 5. `GET /v1/pos/vouchers`
+  /// Tarik data promosi dan diskon dari endpoint dedicated backend sesuai spesifikasi resmi:
+  /// - Cafe: `GET /api/v1/cafe/marketing/promos`
+  /// - Pharmacy: `GET /api/v1/pharmacy/promotions` (mendukung `all=true` / `per_page=all`)
+  /// - Retail: `GET /api/v1/retail/promotions`
   static Future<List<StorePromotion>> fetchDiscountsFromApi() async {
     final locId = SessionStorage.instance.getLocationId();
-    final qLoc = {
+    final qParams = {
+      'all': 'true',
+      'per_page': 'all',
+      'is_active': 'true',
       if (locId != null && locId.isNotEmpty)
         'location_id': int.tryParse(locId) ?? locId,
     };
 
-    final endpoints = [
+    final flavor = AppConfig.instance.flavor;
+    final List<String> endpoints = [];
+
+    if (flavor == AppFlavor.pharmacy) {
+      endpoints.addAll([
+        '/v1/pharmacy/promotions',
+        '/pharmacy/promotions',
+        '/v1/pos/promotions',
+      ]);
+    } else if (flavor == AppFlavor.retail || flavor == AppFlavor.sales) {
+      endpoints.addAll([
+        '/v1/retail/promotions',
+        '/retail/promotions',
+        '/v1/pos/promotions',
+      ]);
+    } else {
+      // Default FnB / Cafe
+      endpoints.addAll([
+        '/v1/cafe/marketing/promos',
+        '/cafe/marketing/promos',
+        '/v1/retail/promotions',
+        '/v1/pharmacy/promotions',
+      ]);
+    }
+
+    // Comprehensive fallbacks
+    endpoints.addAll([
+      '/v1/cafe/marketing/promos',
       '/cafe/marketing/promos',
+      '/v1/retail/promotions',
       '/retail/promotions',
+      '/v1/pharmacy/promotions',
       '/pharmacy/promotions',
       '/cafe/promotions',
       '/v1/pos/promotions',
@@ -463,11 +530,14 @@ class BillingSettings {
       '/cafe/discounts',
       '/pos/discounts',
       '/pos/promotions',
-    ];
+    ]);
+
+    final triedUrls = <String>{};
 
     for (final ep in endpoints) {
+      if (!triedUrls.add(ep)) continue;
       try {
-        final res = await ApiClient.instance.dio.get(ep, queryParameters: qLoc);
+        final res = await ApiClient.instance.dio.get(ep, queryParameters: qParams);
         final rawData = res.data;
         List? list;
         if (rawData is List) {
@@ -477,10 +547,10 @@ class BillingSettings {
           if (data is List) {
             list = data;
           } else if (data is Map) {
-            final sub = data['discounts'] ?? data['promotions'];
+            final sub = data['discounts'] ?? data['promotions'] ?? data['promos'] ?? data['data'];
             if (sub is List) list = sub;
           } else {
-            final sub = rawData['discounts'] ?? rawData['promotions'];
+            final sub = rawData['discounts'] ?? rawData['promotions'] ?? rawData['promos'];
             if (sub is List) list = sub;
           }
         }
@@ -490,7 +560,14 @@ class BillingSettings {
           for (final item in list) {
             if (item is Map) {
               try {
-                results.add(StorePromotion.fromJson(Map<String, dynamic>.from(item)));
+                final promo = StorePromotion.fromJson(Map<String, dynamic>.from(item));
+                // Filter target_location_ids jika spesifik cabang aktif
+                if (promo.targetLocationIds.isNotEmpty && locId != null && locId.isNotEmpty) {
+                  if (!promo.targetLocationIds.contains(locId)) {
+                    continue;
+                  }
+                }
+                results.add(promo);
               } catch (e) {
                 debugPrint('⚠️ [BillingSettings] Gagal parse promotion item: $e');
               }
