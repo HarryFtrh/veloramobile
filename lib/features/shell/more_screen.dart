@@ -7,8 +7,8 @@ import 'more_entry.dart';
 
 export 'more_entry.dart';
 
-/// Hub Menu "Lainnya" untuk operasional kasir, profil outlet, dan fitur sekunder.
-/// Mendukung layout responsif adaptif tablet (2 kolom bento) & mobile (vertikal bertingkat).
+/// Hub Menu "Lainnya" untuk modul sekunder kasir, hardware printer, lisensi, dan profil toko.
+/// Bebas dari duplikasi modul yang sudah menjadi tab navigasi utama (Kasir, Meja, Dapur, Dashboard, Pelanggan).
 class MoreScreen extends StatefulWidget {
   const MoreScreen({super.key, required this.entries, this.onLogout});
 
@@ -99,6 +99,27 @@ class _MoreScreenState extends State<MoreScreen> {
     if (ok == true) widget.onLogout?.call();
   }
 
+  /// Cek apakah modul ini sudah menjadi tab navigasi utama di shell
+  bool _isPrimaryTab(MoreEntry entry) {
+    final t = entry.title.toLowerCase().trim();
+    return t == 'kasir' ||
+        t == 'meja' ||
+        t == 'dapur' ||
+        t == 'dashboard' ||
+        t == 'pelanggan' ||
+        t == 'dashboards' ||
+        t == 'analytics' ||
+        t == 'active tables' ||
+        t == 'manajemen meja' ||
+        t == 'kitchen display (kds)' ||
+        t == 'kitchen display' ||
+        t == 'kds' ||
+        t == 'crm & customers' ||
+        t == 'pelanggan & crm' ||
+        t.contains('analitik penjualan') ||
+        t.startsWith('kasir register');
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
@@ -111,7 +132,7 @@ class _MoreScreenState extends State<MoreScreen> {
     final tenantName = SessionStorage.instance.getTenantName() ?? 'Velora POS';
     final locationName = SessionStorage.instance.getLocationName() ?? 'Outlet Utama';
 
-    // Merge server entries and factory entries safely without losing hardware, subscription, or settings!
+    // Filter agar fitur yang sudah jadi tab utama (Meja, Dapur, Dashboard, Pelanggan) TIDAK tampil dobel di menu Lainnya!
     final List<MoreEntry> effectiveEntries;
     if (_serverEntries != null && _serverEntries!.isNotEmpty) {
       final seenTitles = <String>{};
@@ -119,25 +140,24 @@ class _MoreScreenState extends State<MoreScreen> {
 
       for (final s in _serverEntries!) {
         final t = s.title.toLowerCase().trim();
-        // Skip duplicate dashboard or analytics duplicates
-        if (seenTitles.contains(t) || (t == 'analytics' && seenTitles.contains('dashboards'))) {
+        if (_isPrimaryTab(s) || seenTitles.contains(t)) {
           continue;
         }
         seenTitles.add(t);
         merged.add(s);
       }
 
-      // Ensure vital baseline modules (Hardware, Subscription, Settings, Split Bill, Petty Cash) are always present
+      // Pastikan modul pendukung dasar (Hardware Printer, Subscription, Settings, Split Bill, Petty Cash) tidak hilang
       for (final base in widget.entries) {
         final t = base.title.toLowerCase().trim();
-        if (!seenTitles.contains(t)) {
+        if (!_isPrimaryTab(base) && !seenTitles.contains(t)) {
           seenTitles.add(t);
           merged.add(base);
         }
       }
       effectiveEntries = merged;
     } else {
-      effectiveEntries = widget.entries;
+      effectiveEntries = widget.entries.where((e) => !_isPrimaryTab(e)).toList();
     }
 
     return Scaffold(
@@ -498,7 +518,7 @@ class _MoreScreenState extends State<MoreScreen> {
 
     for (final group in allGroups) {
       final keyLower = group.key.toLowerCase();
-      if (keyLower.contains('operasional') || keyLower.contains('pos') || keyLower.contains('dapur') || keyLower.contains('meja')) {
+      if (keyLower.contains('operasional') || keyLower.contains('pos')) {
         leftGroups.add(group);
       } else {
         rightGroups.add(group);
@@ -569,10 +589,8 @@ class _MoreScreenState extends State<MoreScreen> {
       // Normalize generic or legacy categories into professional distinct sections
       if (cat == 'Fitur & Menu Toko' || cat == 'Fitur & Pengaturan Toko' || cat == 'Fitur & Menu Lainnya') {
         final t = entry.title.toLowerCase();
-        if (t.contains('dashboard') || t.contains('analytics') || t.contains('omzet') || t.contains('split') || t.contains('order') || t.contains('table') || t.contains('kitchen')) {
+        if (t.contains('split') || t.contains('order') || t.contains('petty') || t.contains('kasir') || t.contains('retur') || t.contains('expens')) {
           cat = 'Operasional Kasir';
-        } else if (t.contains('crm') || t.contains('customer') || t.contains('pelanggan') || t.contains('member')) {
-          cat = 'Pelanggan & CRM';
         } else if (t.contains('printer') || t.contains('hardware')) {
           cat = 'Perangkat Keras';
         } else if (t.contains('subscription') || t.contains('paket') || t.contains('langganan') || t.contains('lisensi')) {
@@ -731,9 +749,6 @@ class _MoreScreenState extends State<MoreScreen> {
     if (lower.contains('operasional') || lower.contains('pos') || lower.contains('kasir')) {
       return Icons.point_of_sale_rounded;
     }
-    if (lower.contains('pelanggan') || lower.contains('crm')) {
-      return Icons.people_alt_rounded;
-    }
     if (lower.contains('perangkat') || lower.contains('hardware') || lower.contains('printer')) {
       return Icons.print_rounded;
     }
@@ -742,9 +757,6 @@ class _MoreScreenState extends State<MoreScreen> {
     }
     if (lower.contains('pengaturan') || lower.contains('akun') || lower.contains('keamanan')) {
       return Icons.tune_rounded;
-    }
-    if (lower.contains('keuangan') || lower.contains('analitik')) {
-      return Icons.analytics_rounded;
     }
     return Icons.grid_view_rounded;
   }

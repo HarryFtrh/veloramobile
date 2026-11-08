@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../core/config/business_vertical.dart';
-import '../customers/customers_screen.dart';
-import '../dashboard/dashboard_screen.dart';
 import '../finance/expenses_screen.dart';
 import '../finance/return_screen.dart';
 import '../fnb/fnb_payment_split_screen.dart';
@@ -12,13 +10,13 @@ import '../subscription/subscription_screen.dart';
 import 'more_entry.dart';
 
 /// Centralized Factory for MoreScreen menu entries per business vertical.
-/// Pecah menu secara terstruktur: Operasional, Hardware/Printer, Lisensi, dan Pengaturan Akun.
+/// Menyediakan modul sekunder & operasional pendukung (tanpa menduplikasi tab utama).
 class MoreMenuFactory {
   static List<MoreEntry> entriesFor(BusinessVertical vertical) {
     switch (vertical) {
       case BusinessVertical.fnb:
         return [
-          // Operasional Kasir & Penjualan
+          // 1. Operasional Tambahan Kasir
           const MoreEntry(
             category: 'Operasional Kasir',
             icon: Icons.coffee_rounded,
@@ -45,18 +43,6 @@ class MoreMenuFactory {
           ),
           const MoreEntry(
             category: 'Operasional Kasir',
-            icon: Icons.bar_chart_rounded,
-            iconColor: Color(0xFF0284C7),
-            iconBg: Color(0xFFE0F2FE),
-            badge: 'Omzet',
-            badgeColor: Color(0xFFE0F2FE),
-            badgeTextColor: Color(0xFF0369A1),
-            title: 'Dashboard & Analitik Penjualan',
-            subtitle: 'Ringkasan omzet harian, status pesanan, & tren',
-            builder: _buildDashboard,
-          ),
-          const MoreEntry(
-            category: 'Operasional Kasir',
             icon: Icons.payments_outlined,
             iconColor: Color(0xFFD97706),
             iconBg: Color(0xFFFEF3C7),
@@ -68,21 +54,7 @@ class MoreMenuFactory {
             builder: _buildExpenses,
           ),
 
-          // Pelanggan & CRM
-          const MoreEntry(
-            category: 'Pelanggan & CRM',
-            icon: Icons.people_outline_rounded,
-            iconColor: Color(0xFF2563EB),
-            iconBg: Color(0xFFDBEAFE),
-            badge: 'Member Toko',
-            badgeColor: Color(0xFFDBEAFE),
-            badgeTextColor: Color(0xFF1D4ED8),
-            title: 'Pelanggan & CRM',
-            subtitle: 'Daftar pelanggan, poin loyalitas, riwayat, & buku kasbon',
-            builder: _buildCustomers,
-          ),
-
-          // Perangkat Keras & Hardware
+          // 2. Perangkat Keras & Hardware
           const MoreEntry(
             category: 'Perangkat Keras',
             icon: Icons.print_rounded,
@@ -96,7 +68,7 @@ class MoreMenuFactory {
             builder: _buildPrinter,
           ),
 
-          // Bisnis & Lisensi
+          // 3. Bisnis & Lisensi
           const MoreEntry(
             category: 'Bisnis & Lisensi',
             icon: Icons.workspace_premium_rounded,
@@ -110,7 +82,7 @@ class MoreMenuFactory {
             builder: _buildSubscription,
           ),
 
-          // Pengaturan & Akun
+          // 4. Pengaturan & Akun
           const MoreEntry(
             category: 'Pengaturan & Akun',
             icon: Icons.settings_outlined,
@@ -128,19 +100,7 @@ class MoreMenuFactory {
       case BusinessVertical.retail:
       default:
         return [
-          // Operasional Toko
-          const MoreEntry(
-            category: 'Operasional Kasir',
-            icon: Icons.bar_chart_rounded,
-            iconColor: Color(0xFF0284C7),
-            iconBg: Color(0xFFE0F2FE),
-            badge: 'Omzet',
-            badgeColor: Color(0xFFE0F2FE),
-            badgeTextColor: Color(0xFF0369A1),
-            title: 'Dashboard & Analitik Penjualan',
-            subtitle: 'Ringkasan omzet harian, status penjualan, & tren',
-            builder: _buildDashboard,
-          ),
+          // 1. Operasional Tambahan Toko
           const MoreEntry(
             category: 'Operasional Kasir',
             icon: Icons.assignment_return_outlined,
@@ -166,21 +126,7 @@ class MoreMenuFactory {
             builder: _buildExpenses,
           ),
 
-          // Pelanggan & CRM
-          const MoreEntry(
-            category: 'Pelanggan & CRM',
-            icon: Icons.people_outline_rounded,
-            iconColor: Color(0xFF2563EB),
-            iconBg: Color(0xFFDBEAFE),
-            badge: 'Member Toko',
-            badgeColor: Color(0xFFDBEAFE),
-            badgeTextColor: Color(0xFF1D4ED8),
-            title: 'Pelanggan & CRM',
-            subtitle: 'Member, poin loyalitas, riwayat, dan buku kasbon',
-            builder: _buildCustomers,
-          ),
-
-          // Perangkat Keras
+          // 2. Perangkat Keras
           const MoreEntry(
             category: 'Perangkat Keras',
             icon: Icons.print_rounded,
@@ -194,7 +140,7 @@ class MoreMenuFactory {
             builder: _buildPrinter,
           ),
 
-          // Bisnis & Lisensi
+          // 3. Bisnis & Lisensi
           const MoreEntry(
             category: 'Bisnis & Lisensi',
             icon: Icons.workspace_premium_rounded,
@@ -208,7 +154,7 @@ class MoreMenuFactory {
             builder: _buildSubscription,
           ),
 
-          // Pengaturan & Akun
+          // 4. Pengaturan & Akun
           const MoreEntry(
             category: 'Pengaturan & Akun',
             icon: Icons.settings_outlined,
@@ -225,10 +171,8 @@ class MoreMenuFactory {
     }
   }
 
-  static Widget _buildDashboard(BuildContext _) => const DashboardScreen();
   static Widget _buildCustomerHome(BuildContext _) => const CustomerHomeScreen();
   static Widget _buildSplitBill(BuildContext _) => const FnbPaymentSplitScreen();
-  static Widget _buildCustomers(BuildContext _) => const CustomersScreen();
   static Widget _buildReturn(BuildContext _) => const ReturnScreen();
   static Widget _buildExpenses(BuildContext _) => const ExpensesScreen();
   static Widget _buildPrinter(BuildContext _) => const PrinterSettingsScreen();
