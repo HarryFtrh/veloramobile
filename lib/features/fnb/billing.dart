@@ -28,6 +28,7 @@ class StorePromotion {
     this.startDate,
     this.endDate,
     this.applicableCategoryIds = const [],
+    this.applicableMenuIds = const [],
   });
 
   final String id;
@@ -43,6 +44,7 @@ class StorePromotion {
   final DateTime? startDate;
   final DateTime? endDate;
   final List<String> applicableCategoryIds;
+  final List<String> applicableMenuIds;
 
   /// Hitung potongan diskon riil terhadap nilai subtotal
   double calculateDiscount(num subtotal) {
@@ -72,10 +74,11 @@ class StorePromotion {
 
   factory StorePromotion.fromJson(Map<String, dynamic> json) {
     final rawType = json.getString('type', fallback: json.getString('discount_type')).toLowerCase();
+    final bool isFlat = json.getBool('is_flat');
     PromotionType type;
-    if (rawType.contains('fixed') || rawType.contains('nominal') || rawType.contains('amount')) {
+    if (isFlat || rawType.contains('fixed') || rawType.contains('nominal') || rawType.contains('amount')) {
       type = PromotionType.fixedAmount;
-    } else if (rawType.contains('bogo')) {
+    } else if (rawType.contains('bogo') || rawType.contains('buy_x')) {
       type = PromotionType.bogo;
     } else if (rawType.contains('custom')) {
       type = PromotionType.custom;
@@ -83,8 +86,8 @@ class StorePromotion {
       type = PromotionType.percentage;
     }
 
-    final val = json.getDouble('value', fallback: json.getDouble('amount', fallback: json.getDouble('rate', fallback: json.getDouble('discount_value'))));
-    final rawMin = json.getDouble('min_order_amount', fallback: json.getDouble('min_order', fallback: json.getDouble('min_purchase')));
+    final val = json.getDouble('discount_value', fallback: json.getDouble('value', fallback: json.getDouble('amount', fallback: json.getDouble('rate'))));
+    final rawMin = json.getDouble('min_order_amount', fallback: json.getDouble('min_purchase_amount', fallback: json.getDouble('min_order', fallback: json.getDouble('min_purchase'))));
     final rawMax = json.getDouble('max_discount_amount', fallback: json.getDouble('max_discount', fallback: json.getDouble('max_amount')));
 
     DateTime? start;
@@ -103,7 +106,21 @@ class StorePromotion {
       }
     }
 
+    final menus = <String>[];
+    final rawMenus = json['applicable_menus'] ?? json['applicable_products'] ?? json['menu_ids'] ?? json['product_ids'];
+    if (rawMenus is List) {
+      for (final m in rawMenus) {
+        if (m != null) menus.add(m.toString());
+      }
+    }
+
     final code = json.getString('code', fallback: json.getString('promo_code', fallback: json.getString('voucher_code')));
+    final bool explicitAuto = json.containsKey('is_automatic')
+        ? json.getBool('is_automatic')
+        : (json.containsKey('auto_apply')
+            ? json.getBool('auto_apply')
+            : (json.containsKey('automatic') ? json.getBool('automatic') : false));
+    final bool isAuto = explicitAuto || code.isEmpty;
 
     return StorePromotion(
       id: json.getString('id', fallback: json.getString('_id', fallback: code.isNotEmpty ? code : 'promo_${DateTime.now().millisecondsSinceEpoch}')),
@@ -113,12 +130,13 @@ class StorePromotion {
       value: val,
       minOrderAmount: rawMin,
       maxDiscountAmount: rawMax,
-      isAutomatic: json.getBool('is_automatic', fallback: json.getBool('auto_apply', fallback: json.getBool('automatic'))),
+      isAutomatic: isAuto,
       isActive: json.getBool('is_active', fallback: json.getBool('active', fallback: json.getString('status') != 'inactive')),
       description: json.getString('description', fallback: json.getString('terms')),
       startDate: start,
       endDate: end,
       applicableCategoryIds: cats,
+      applicableMenuIds: menus,
     );
   }
 }
@@ -396,13 +414,16 @@ class BillingSettings {
     };
 
     final endpoints = [
-      '/v1/pos/discounts',
+      '/cafe/marketing/promos',
+      '/retail/promotions',
+      '/pharmacy/promotions',
+      '/cafe/promotions',
       '/v1/pos/promotions',
+      '/v1/pos/discounts',
       '/v1/discounts',
       '/v1/promotions',
       '/cafe/pos/discounts',
       '/cafe/discounts',
-      '/cafe/promotions',
       '/pos/discounts',
       '/pos/promotions',
     ];

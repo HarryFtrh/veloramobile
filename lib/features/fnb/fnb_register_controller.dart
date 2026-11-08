@@ -222,8 +222,13 @@ class RegisterController extends ChangeNotifier {
   }
 
   void _applyAutoPromotionsToCatalog() {
-    final autoPromos = billing?.autoPromotions ?? const [];
-    if (autoPromos.isEmpty) return;
+    final candidatePromos = (billing?.promotions ?? const []).where((p) {
+      if (!p.isActive) return false;
+      // Promosi berlaku ke katalog jika isAutomatic == true atau tidak membutuhkan kode voucher khusus
+      return p.isAutomatic || (p.code == null || p.code!.trim().isEmpty);
+    }).toList();
+
+    if (candidatePromos.isEmpty) return;
 
     final updated = <PosProduct>[];
     for (final p in products) {
@@ -232,9 +237,20 @@ class RegisterController extends ChangeNotifier {
         continue;
       }
       StorePromotion? matchedPromo;
-      for (final promo in autoPromos) {
+      for (final promo in candidatePromos) {
+        // Cek kecocokan menu spesifik / produk ID / SKU
+        if (promo.applicableMenuIds.isNotEmpty) {
+          if (promo.applicableMenuIds.contains(p.id) ||
+              promo.applicableMenuIds.contains(p.sku) ||
+              (p.barcode.isNotEmpty && promo.applicableMenuIds.contains(p.barcode))) {
+            matchedPromo = promo;
+            break;
+          }
+        }
+        // Cek kecocokan kategori ID / nama kategori
         if (promo.applicableCategoryIds.isNotEmpty) {
-          if (p.categoryId != null && promo.applicableCategoryIds.contains(p.categoryId)) {
+          if ((p.categoryId != null && promo.applicableCategoryIds.contains(p.categoryId)) ||
+              promo.applicableCategoryIds.contains(p.category)) {
             matchedPromo = promo;
             break;
           }
