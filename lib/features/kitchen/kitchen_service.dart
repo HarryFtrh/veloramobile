@@ -132,6 +132,7 @@ class KitchenOrder {
     required this.createdAt,
     required this.items,
     this.status,
+    this.kitchenStatus,
     this.customerName,
     this.notes,
     this.totalAmount,
@@ -146,6 +147,7 @@ class KitchenOrder {
   final DateTime createdAt;
   final List<KitchenItem> items;
   final String? status;
+  final String? kitchenStatus;
   final String? customerName;
   final String? notes;
   final num? totalAmount;
@@ -177,6 +179,7 @@ class KitchenOrder {
   KitchenOrder copyWith({
     List<KitchenItem>? items,
     String? status,
+    String? kitchenStatus,
     KitchenStage? stage,
     String? tableLabel,
     String? customerName,
@@ -189,6 +192,7 @@ class KitchenOrder {
         createdAt: createdAt,
         items: items ?? this.items,
         status: status ?? this.status,
+        kitchenStatus: kitchenStatus ?? this.kitchenStatus,
         customerName: customerName ?? this.customerName,
         notes: notes ?? this.notes,
         totalAmount: totalAmount,
@@ -197,7 +201,9 @@ class KitchenOrder {
       );
 
   factory KitchenOrder.fromJson(Map<String, dynamic> json) {
-    final status = json.getString('status', fallback: json.getString('order_status'));
+    final rawKitchenStatus = json.getString('kitchen_status', fallback: json.getString('kitchen_state'));
+    final rawOrderStatus = json.getString('status', fallback: json.getString('order_status'));
+    final effectiveStatus = rawKitchenStatus.isNotEmpty ? rawKitchenStatus : rawOrderStatus;
 
     String customer = json.getString('customer_name');
     if (customer.isEmpty && json['customer'] is Map) {
@@ -252,14 +258,28 @@ class KitchenOrder {
       });
     }
     if (parsedItems.isEmpty) {
+      parsedItems = json.getList<KitchenItem>('lines', (e) {
+        if (e is Map<String, dynamic>) return KitchenItem.fromJson(e);
+        if (e is Map) return KitchenItem.fromJson(Map<String, dynamic>.from(e));
+        throw const FormatException('Invalid item');
+      });
+    }
+    if (parsedItems.isEmpty) {
       parsedItems = json.getList<KitchenItem>('details', (e) {
         if (e is Map<String, dynamic>) return KitchenItem.fromJson(e);
         if (e is Map) return KitchenItem.fromJson(Map<String, dynamic>.from(e));
         throw const FormatException('Invalid item');
       });
     }
+    if (parsedItems.isEmpty) {
+      parsedItems = json.getList<KitchenItem>('order_details', (e) {
+        if (e is Map<String, dynamic>) return KitchenItem.fromJson(e);
+        if (e is Map) return KitchenItem.fromJson(Map<String, dynamic>.from(e));
+        throw const FormatException('Invalid item');
+      });
+    }
 
-    final lowerStatus = status.toLowerCase();
+    final lowerStatus = effectiveStatus.toLowerCase().trim();
     final stage = switch (lowerStatus) {
       'preparing' || 'in_progress' || 'cooking' || 'brewing' || 'process' || 'processing' => KitchenStage.preparing,
       'ready' || 'served' || 'done' => KitchenStage.ready,
@@ -273,7 +293,8 @@ class KitchenOrder {
       stage: stage,
       createdAt: DateTime.tryParse(json.getString('created_at'))?.toLocal() ?? DateTime.now(),
       items: parsedItems,
-      status: status.isEmpty ? null : status,
+      status: rawOrderStatus.isEmpty ? null : rawOrderStatus,
+      kitchenStatus: rawKitchenStatus.isEmpty ? null : rawKitchenStatus,
       customerName: customer.isEmpty ? null : sanitizeDisplayName(customer),
       notes: notes.isEmpty ? null : notes,
       totalAmount: json.getNum('total_amount', fallback: json.getNum('grand_total', fallback: json.getNum('total', fallback: 0))),
@@ -299,69 +320,99 @@ class KitchenService {
     _localHeldOrders.remove(orderId);
   }
 
+  /// Ekstraksi list order dari berbagai bentuk payload JSON backend
+  static List<dynamic> _extractOrdersList(dynamic raw) {
+    if (raw == null) return const [];
+    if (raw is List) return raw;
+    if (raw is Map) {
+      final inner = raw['data'];
+      if (inner is List) return inner;
+      if (inner is Map) {
+        if (inner['orders'] is List) return inner['orders'] as List;
+        if (inner['data'] is List) return inner['data'] as List;
+        if (inner['items'] is List) return inner['items'] as List;
+      }
+      if (raw['orders'] is List) return raw['orders'] as List;
+      if (raw['items'] is List) return raw['items'] as List;
+    }
+    return const [];
+  }
+
   Future<List<KitchenOrder>> load() async {
     try {
       final id = SessionStorage.instance.getLocationId();
       final locInt = int.tryParse(id ?? '');
-      final query = {
+      final locationQuery = {
         if (id != null && id.isNotEmpty) 'location_id': locInt ?? id,
-        'status': 'open,held,preparing,ready,in_progress,cooking',
       };
 
       dynamic raw;
-      final endpoints = [
-        '/v1/pos/orders',
+
+      // 1. Prioritas Utama: Endpoint KDS dapur Cafe resmi (persis seperti versi Web)
+      // /v1/cafe/kitchen/orders dan /cafe/kitchen/orders
+      final primaryKitchenEndpoints = [
         '/v1/cafe/kitchen/orders',
         '/cafe/kitchen/orders',
-        '/cafe/pos/orders',
       ];
 
-      for (final endpoint in endpoints) {
+      for (final endpoint in primaryKitchenEndpoints) {
+        // Coba dengan location_id
         try {
-          final res = await ApiClient.instance.dio.get(endpoint, queryParameters: query);
+          final res = await ApiClient.instance.dio.get(endpoint, queryParameters: locationQuery);
           if (res.statusCode == 200 && res.data != null) {
-            raw = res.data;
-            break;
-          }
-        } on DioException catch (e) {
-          if (e.response?.statusCode != 404 && e.response?.statusCode != 405) {
-            // Lanjutkan ke endpoint berikutnya
+            final list = _extractOrdersList(res.data);
+            if (list.isNotEmpty) {
+              raw = res.data;
+              debugPrint('🍳 [KDS LOAD] Berhasil memuat ${list.length} tiket dari $endpoint (dengan location_id)');
+              break;
+            }
           }
         } catch (_) {}
-      }
 
-      if (raw == null) {
-        // Fallback coba ambil tanpa filter status spesifik jika server strict
-        try {
-          final res = await ApiClient.instance.dio.get('/v1/pos/orders', queryParameters: {
-            if (id != null && id.isNotEmpty) 'location_id': locInt ?? id,
-          });
-          raw = res.data;
-        } catch (_) {}
-      }
-
-      List<dynamic> listData = const [];
-      if (raw is List) {
-        listData = raw;
-      } else if (raw is Map) {
-        final inner = raw['data'];
-        if (inner is List) {
-          listData = inner;
-        } else if (inner is Map) {
-          final orders = inner['orders'];
-          final data = inner['data'];
-          if (orders is List) {
-            listData = orders;
-          } else if (data is List) {
-            listData = data;
-          }
-        } else {
-          final rawOrders = raw['orders'];
-          if (rawOrders is List) {
-            listData = rawOrders;
-          }
+        // Jika kosong dengan location_id, coba tanpa location_id (persis seperti web KDS saat multi-outlet)
+        if (locationQuery.isNotEmpty) {
+          try {
+            final res = await ApiClient.instance.dio.get(endpoint);
+            if (res.statusCode == 200 && res.data != null) {
+              final list = _extractOrdersList(res.data);
+              if (list.isNotEmpty) {
+                raw = res.data;
+                debugPrint('🍳 [KDS LOAD] Berhasil memuat ${list.length} tiket dari $endpoint (tanpa location_id)');
+                break;
+              }
+            }
+          } catch (_) {}
         }
       }
+
+      // 2. Fallback: Endpoint order POS aktif (mencakup status paid, confirmed, open, held, dll.)
+      if (raw == null || _extractOrdersList(raw).isEmpty) {
+        final posEndpoints = [
+          '/v1/pos/orders',
+          '/cafe/pos/orders',
+        ];
+
+        final posQueryWithStatus = {
+          ...locationQuery,
+          'status': 'paid,confirmed,open,held,preparing,ready,in_progress,cooking,pending,process',
+        };
+
+        for (final endpoint in posEndpoints) {
+          try {
+            final res = await ApiClient.instance.dio.get(endpoint, queryParameters: posQueryWithStatus);
+            if (res.statusCode == 200 && res.data != null) {
+              final list = _extractOrdersList(res.data);
+              if (list.isNotEmpty) {
+                raw = res.data;
+                debugPrint('🍳 [KDS LOAD] Berhasil fallback memuat ${list.length} pesanan dari $endpoint');
+                break;
+              }
+            }
+          } catch (_) {}
+        }
+      }
+
+      final listData = _extractOrdersList(raw);
 
       final serverOrders = listData
           .map((e) {
@@ -372,9 +423,18 @@ class KitchenService {
           .whereType<KitchenOrder>()
           .where((o) => o.items.isNotEmpty)
           .where((o) {
+            final ks = (o.kitchenStatus ?? '').toLowerCase().trim();
             final s = (o.status ?? '').toLowerCase().trim();
-            // Abaikan pesanan yang sudah lunas/selesai/void dari daftar antrean aktif
-            return s != 'paid' && s != 'completed' && s != 'settled' && s != 'closed' && s != 'void' && s != 'cancelled';
+
+            // Saring HANYA pesanan yang benar-benar sudah diselesaikan/disajikan atau dibatalkan.
+            // Pesanan 'paid' (lunas di kasir) TETAP DITAMPILKAN agar koki/barista memasaknya!
+            if (ks == 'served' || ks == 'dismissed' || ks == 'cancelled' || ks == 'void') {
+              return false;
+            }
+            if (s == 'cancelled' || s == 'void' || s == 'refunded' || s == 'served' || s == 'dismissed') {
+              return false;
+            }
+            return true;
           })
           .toList();
 
