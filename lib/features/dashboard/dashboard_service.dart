@@ -5,6 +5,7 @@ import '../../core/network/api_client.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/storage/session_storage.dart';
 import '../../core/utils/safe_json.dart';
+import '../shared_pos/sale_record.dart';
 
 class BranchSales {
   const BranchSales({required this.name, required this.total});
@@ -21,6 +22,7 @@ class DashboardSummary {
     required this.revenue,
     required this.transactions,
     required this.rangeStart,
+    this.rangeEnd,
     this.growthPercent,
     this.averageDaily,
     this.netProfit,
@@ -28,11 +30,17 @@ class DashboardSummary {
     this.dailyTrend = const [],
     this.branches = const [],
     this.statusBreakdown = const {},
+    this.cashTotal = 0,
+    this.qrisTotal = 0,
+    this.debitTotal = 0,
+    this.transferTotal = 0,
+    this.otherTotal = 0,
   });
 
   final double revenue;
   final int transactions;
   final DateTime rangeStart;
+  final DateTime? rangeEnd;
   final double? growthPercent;
   final double? averageDaily;
   final double? netProfit;
@@ -44,6 +52,16 @@ class DashboardSummary {
 
   /// Jumlah pesanan per status (khusus F&B).
   final Map<String, int> statusBreakdown;
+
+  /// Breakdown metode pembayaran
+  final double cashTotal;
+  final double qrisTotal;
+  final double debitTotal;
+  final double transferTotal;
+  final double otherTotal;
+
+  double get calculatedAov => transactions > 0 ? (revenue / transactions) : 0.0;
+  double get paymentTotal => cashTotal + qrisTotal + debitTotal + transferTotal + otherTotal;
 }
 
 class DashboardService {
@@ -115,36 +133,139 @@ class DashboardService {
       );
     });
 
+    final cash = data.getDouble('cash_total',
+        fallback: overview.getDouble('cash_sales', fallback: 0.0));
+    final qris = data.getDouble('qris_total',
+        fallback: overview.getDouble('qris_sales', fallback: 0.0));
+    final debit = data.getDouble('debit_total',
+        fallback: overview.getDouble('debit_sales', fallback: 0.0));
+    final transfer = data.getDouble('transfer_total',
+        fallback: overview.getDouble('transfer_sales', fallback: 0.0));
+
     return DashboardSummary(
       revenue: overview.getDouble('total_sales'),
       transactions: overview.getInt('total_orders'),
       rangeStart: start,
+      rangeEnd: end,
       growthPercent: overview.getDouble('growth_percentage'),
       averageDaily: daily.getDouble('average_value'),
       netProfit: earnings.getDouble('net_profit'),
       expenses: earnings.getDouble('operational_expenses'),
       dailyTrend: trend,
       branches: branches,
+      cashTotal: cash,
+      qrisTotal: qris,
+      debitTotal: debit,
+      transferTotal: transfer,
     );
   }
 
   Future<DashboardSummary> _cafe(DateTime start, DateTime end) async {
-    final query = _query(end, end);
+    final query = _query(start, end);
     dynamic raw;
     try {
       final res = await ApiClient.instance.dio.get('/v1/pos/dashboard/overview', queryParameters: query);
       raw = res.data;
     } catch (_) {
-      final res = await ApiClient.instance.dio.get('/cafe/dashboard/overview', queryParameters: query);
-      raw = res.data;
+      try {
+        final res = await ApiClient.instance.dio.get('/cafe/dashboard/overview', queryParameters: query);
+        raw = res.data;
+      } catch (_) {
+        try {
+          final res = await ApiClient.instance.dio.get('/pos/dashboard/overview', queryParameters: query);
+          raw = res.data;
+        } catch (_) {}
+      }
     }
     final data = _unwrap(raw);
     final status = data.getMap('status_breakdown');
 
+    double rev = data.getDouble('today_revenue',
+        fallback: data.getDouble('total_sales',
+            fallback: data.getDouble('revenue',
+                fallback: data.getDouble('total_revenue', fallback: 0.0))));
+
+    int tx = data.getInt('today_transactions',
+        fallback: data.getInt('transaction_count',
+            fallback: data.getInt('total_orders',
+                fallback: data.getInt('total_transactions', fallback: 0))));
+
+    double cash = data.getDouble('cash_total',
+        fallback: data.getDouble('cash_sales',
+            fallback: data.getDouble('total_cash', fallback: 0.0)));
+
+    double qris = data.getDouble('qris_total',
+        fallback: data.getDouble('qris_sales',
+            fallback: data.getDouble('total_qris', fallback: 0.0)));
+
+    double debit = data.getDouble('debit_total',
+        fallback: data.getDouble('debit_sales',
+            fallback: data.getDouble('total_debit', fallback: 0.0)));
+
+    double transfer = data.getDouble('transfer_total',
+        fallback: data.getDouble('transfer_sales',
+            fallback: data.getDouble('total_transfer', fallback: 0.0)));
+
+    double other = data.getDouble('other_total',
+        fallback: data.getDouble('other_sales', fallback: 0.0));
+
+    // Augment with local sales from ShiftSalesStorage if active
+    final isToday = start.year == end.year && start.month == end.month && start.day == end.day;
+    if (isToday) {
+      final localSales = ShiftSalesStorage.activeShiftSales.where((s) => !s.isVoided).toList();
+      if (localSales.isNotEmpty) {
+        final double lCash = localSales.where((s) => s.paymentMethod.toLowerCase() == 'cash').fold(0.0, (sum, s) => sum + s.total);
+        final double lQris = localSales.where((s) => s.paymentMethod.toLowerCase() == 'qris').fold(0.0, (sum, s) => sum + s.total);
+        final double lTf = localSales.where((s) => s.paymentMethod.toLowerCase().contains('transfer')).fold(0.0, (sum, s) => sum + s.total);
+        final double lDebit = localSales.where((s) => s.paymentMethod.toLowerCase().contains('card') || s.paymentMethod.toLowerCase().contains('edc') || s.paymentMethod.toLowerCase().contains('debit')).fold(0.0, (sum, s) => sum + s.total);
+        final double lOther = localSales.where((s) => !['cash', 'qris'].contains(s.paymentMethod.toLowerCase()) && !s.paymentMethod.toLowerCase().contains('transfer') && !s.paymentMethod.toLowerCase().contains('card') && !s.paymentMethod.toLowerCase().contains('edc') && !s.paymentMethod.toLowerCase().contains('debit')).fold(0.0, (sum, s) => sum + s.total);
+
+        if (cash == 0 && lCash > 0) cash = lCash;
+        if (qris == 0 && lQris > 0) qris = lQris;
+        if (transfer == 0 && lTf > 0) transfer = lTf;
+        if (debit == 0 && lDebit > 0) debit = lDebit;
+        if (other == 0 && lOther > 0) other = lOther;
+
+        final double localTotal = localSales.fold(0.0, (sum, s) => sum + s.total);
+        if (rev == 0 && localTotal > 0) rev = localTotal;
+        if (tx == 0 && localSales.isNotEmpty) tx = localSales.length;
+      }
+    }
+
+    final rawTrend = data['trend'] ?? data['daily_trend'] ?? data['sales_trend'];
+    final trend = rawTrend is List
+        ? rawTrend.map((e) => e is num ? e.toDouble() : 0.0).toList()
+        : <double>[];
+
+    final branches = data.getList<BranchSales>('sales_by_branches', (item) {
+      final m = item is Map ? Map<String, dynamic>.from(item) : <String, dynamic>{};
+      return BranchSales(
+        name: m.getString('branch_name', fallback: '-'),
+        total: m.getDouble('total_sales'),
+      );
+    });
+
+    final growth = data.getDouble('growth_percentage', fallback: data.getDouble('growth'));
+    final avgDaily = data.getDouble('average_order_value', fallback: data.getDouble('average_daily'));
+    final profit = data.getDouble('net_profit', fallback: data.getDouble('profit'));
+    final exp = data.getDouble('operational_expenses', fallback: data.getDouble('expenses'));
+
     return DashboardSummary(
-      revenue: data.getDouble('today_revenue'),
-      transactions: data.getInt('today_transactions'),
-      rangeStart: end,
+      revenue: rev,
+      transactions: tx,
+      rangeStart: start,
+      rangeEnd: end,
+      growthPercent: growth,
+      averageDaily: avgDaily,
+      netProfit: profit,
+      expenses: exp,
+      dailyTrend: trend,
+      branches: branches,
+      cashTotal: cash,
+      qrisTotal: qris,
+      debitTotal: debit,
+      transferTotal: transfer,
+      otherTotal: other,
       statusBreakdown: {
         for (final e in status.entries)
           e.key: e.value is num ? (e.value as num).toInt() : 0,

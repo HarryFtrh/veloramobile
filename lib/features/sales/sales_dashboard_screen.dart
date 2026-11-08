@@ -288,21 +288,25 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
         backgroundColor: const Color(0xFF090A0F),
         surfaceTintColor: Colors.transparent,
         titleSpacing: 20,
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.bolt_rounded, color: accent, size: 23),
-            SizedBox(width: 9),
-            Text(
-              'VELORA',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.5,
+            const Icon(Icons.bolt_rounded, color: accent, size: 23),
+            const SizedBox(width: 9),
+            Flexible(
+              child: Text(
+                _tenantName.isNotEmpty ? _tenantName.toUpperCase() : 'POS',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            SizedBox(width: 7),
-            Text(
+            const SizedBox(width: 7),
+            const Text(
               'SALES',
               style: TextStyle(
                 color: accent,
