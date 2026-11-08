@@ -303,31 +303,38 @@ class OrderSummaryFooter extends StatelessWidget {
                 backgroundColor: scheme.primary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                padding: const EdgeInsets.symmetric(horizontal: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 10),
               ),
               child: Row(
                 children: [
                   const Icon(Icons.point_of_sale_rounded, size: 18),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Bayar Sekarang',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                  const SizedBox(width: 6),
+                  const Expanded(
+                    child: Text(
+                      'Bayar Sekarang',
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                  const Spacer(),
-                  Text(
-                    CurrencyFormatter.format(bill?.total ?? ctrl.subtotal),
-                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+                  const SizedBox(width: 6),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      CurrencyFormatter.format(bill?.total ?? ctrl.subtotal),
+                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+                    ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: const Text(
                       'F12',
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white),
+                      style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Colors.white),
                     ),
                   ),
                 ],
