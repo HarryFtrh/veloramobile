@@ -15,6 +15,7 @@ import '../../core/utils/currency_formatter.dart';
 import 'models/pos_catalog_models.dart';
 import 'pos_checkout_service.dart';
 import 'shift_service.dart';
+import '../kitchen/kitchen_service.dart';
 
 class ReceiptData {
   final String storeName;
@@ -967,6 +968,97 @@ class ReceiptPrinterService {
         subject: 'Rekap Kas Berjalan (X-Report) #${status.shiftId} - ${status.cashierName}',
       ),
     );
+  }
+
+  /// Mencetak tiket pesanan dapur / bar (Kitchen Order Ticket / KOT) ke printer thermal
+  Future<bool> printKitchenOrder(KitchenOrder order, {bool is80mm = false}) async {
+    final bytes = generateKitchenOrderEscPosBytes(order, is80mm: is80mm);
+    if (kDebugMode) {
+      debugPrint('=== [ESC/POS] DISPATCHING KITCHEN TICKET #${order.number} (${bytes.length} bytes) ===');
+    }
+    return await _sendToPrinter(bytes);
+  }
+
+  /// Menghasilkan format biner ESC/POS murni untuk tiket pesanan dapur (58mm / 80mm)
+  Uint8List generateKitchenOrderEscPosBytes(KitchenOrder order, {bool is80mm = false}) {
+    final int width = is80mm ? 48 : 32;
+    final List<int> bytes = [];
+
+    void writeText(
+      String text, {
+      List<int>? align,
+      bool bold = false,
+      bool doubleSize = false,
+    }) {
+      if (align != null) bytes.addAll(align);
+      if (bold) bytes.addAll(cmdBoldOn);
+      if (doubleSize) bytes.addAll(cmdDoubleSize);
+      bytes.addAll(latin1.encode(text));
+      if (doubleSize) bytes.addAll(cmdNormalSize);
+      if (bold) bytes.addAll(cmdBoldOff);
+    }
+
+    void writeLine(
+      String text, {
+      List<int>? align,
+      bool bold = false,
+      bool doubleSize = false,
+    }) {
+      writeText('$text\n', align: align, bold: bold, doubleSize: doubleSize);
+    }
+
+    void writeDivider({String char = '-'}) {
+      writeLine(char * width, align: cmdAlignCenter);
+    }
+
+    // 1. Initialize Printer
+    bytes.addAll(cmdInit);
+
+    // 2. Header
+    writeDivider(char: '=');
+    writeLine('TIKET PESANAN DAPUR', align: cmdAlignCenter, bold: true, doubleSize: true);
+    writeDivider(char: '=');
+
+    // 3. Info
+    final orderNum = order.number.isNotEmpty ? order.number : '#${order.id}';
+    writeLine('NO. ORDER  : $orderNum', bold: true);
+    writeLine('MEJA/TUJUAN: ${order.tableLabel}', bold: true);
+    if (order.customerName != null && order.customerName!.isNotEmpty) {
+      writeLine('PELANGGAN  : ${order.customerName!}');
+    }
+    final orderTypeLabel = order.isTakeaway
+        ? 'TAKEAWAY (BUNGKUS)'
+        : (order.isOnline ? 'ONLINE DELIVERY' : 'DINE IN (MAKAN DI TEMPAT)');
+    writeLine('TIPE ORDER : $orderTypeLabel');
+    final timeStr =
+        '${order.createdAt.hour.toString().padLeft(2, '0')}:${order.createdAt.minute.toString().padLeft(2, '0')}';
+    writeLine('WAKTU      : $timeStr');
+    writeDivider();
+
+    // 4. Items
+    writeLine('QTY  MENU', bold: true);
+    writeDivider();
+    for (final item in order.items) {
+      writeLine('${item.quantity}x  ${item.name.toUpperCase()}', bold: true);
+      for (final mod in item.modifiers) {
+        writeLine('     + $mod');
+      }
+      if (item.note != null && item.note!.isNotEmpty) {
+        writeLine('     [NOTE: ${item.note!}]', bold: true);
+      }
+      writeLine('');
+    }
+
+    // 5. Order Notes
+    if (order.notes != null && order.notes!.isNotEmpty) {
+      writeDivider();
+      writeLine('CATATAN PESANAN:', bold: true);
+      writeLine(order.notes!);
+    }
+
+    writeDivider(char: '=');
+    bytes.addAll(cmdFeedAndCut);
+    return Uint8List.fromList(bytes);
   }
 
   /// Trigger cash drawer pulse without printing receipt (ESC p 0 25 250)

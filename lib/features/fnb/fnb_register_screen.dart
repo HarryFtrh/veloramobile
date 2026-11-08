@@ -9,6 +9,7 @@ import '../shared_pos/receipt_printer_service.dart';
 import '../shared_pos/shift_modal.dart';
 import '../shared_pos/sales_history_drawer.dart';
 import '../tables/table_service.dart';
+import '../kitchen/kitchen_service.dart';
 import 'widgets/fnb_modifier_sheet.dart';
 import 'widgets/fnb_open_bills_sheet.dart';
 import 'fnb_payment_split_screen.dart';
@@ -93,8 +94,41 @@ class _FnbRegisterScreenState extends State<FnbRegisterScreen> {
 
   Future<void> _kitchen() async {
     try {
+      final orderLines = List<RegisterLine>.from(_ctrl.lines);
+      final currentTable = _ctrl.table;
+      final currentCustomer = _ctrl.customerName;
+      final currentOrderType = _ctrl.orderType;
+
       final orderId = await _ctrl.sendToKitchen();
       final displayId = orderId.isNotEmpty ? orderId : (_ctrl.existingOrderId ?? 'Berhasil');
+
+      // Cetak tiket dapur bila printer thermal terhubung
+      try {
+        final kOrder = KitchenOrder(
+          id: displayId,
+          number: '#$displayId',
+          tableLabel: currentTable?.name ?? (currentCustomer.isNotEmpty ? currentCustomer : 'Walk-In'),
+          stage: KitchenStage.fresh,
+          createdAt: DateTime.now(),
+          customerName: currentCustomer.isNotEmpty ? currentCustomer : null,
+          orderType: currentOrderType.name,
+          items: orderLines
+              .map((l) => KitchenItem(
+                    id: l.productId,
+                    name: l.name,
+                    station: 'Dapur',
+                    quantity: l.quantity,
+                    done: false,
+                    modifiers: l.options.map((o) => o.name).toList(),
+                    note: l.note,
+                    productId: l.productId,
+                    price: l.unitPrice,
+                  ))
+              .toList(),
+        );
+        ReceiptPrinterService.instance.printKitchenOrder(kOrder);
+      } catch (_) {}
+
       _ctrl.reset();
       _toast('Pesanan dikirim ke dapur (#$displayId)');
     } catch (e) {

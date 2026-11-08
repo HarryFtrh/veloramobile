@@ -8,6 +8,8 @@ import '../../core/storage/session_storage.dart';
 import '../../core/utils/audio_helper.dart';
 import 'kitchen_service.dart';
 
+const int kLateAfterMinutes = 7;
+
 sealed class KitchenState {
   const KitchenState();
 }
@@ -17,7 +19,13 @@ class KitchenLoading extends KitchenState {
 }
 
 class KitchenLoaded extends KitchenState {
-  const KitchenLoaded(this.orders, {this.station, this.actionError});
+  const KitchenLoaded(
+    this.orders, {
+    this.station,
+    this.actionError,
+    this.soundEnabled = true,
+  });
+
   final List<KitchenOrder> orders;
 
   /// Filter station (nama kategori). `null` = semua.
@@ -25,6 +33,9 @@ class KitchenLoaded extends KitchenState {
 
   /// Pesan galat dari aksi terakhir (mis. gagal menandai siap). Ditampilkan sekali.
   final String? actionError;
+
+  /// Status audio notifikasi KDS
+  final bool soundEnabled;
 
   List<String> get stations =>
       orders.expand((o) => o.items).map((i) => i.station).where((s) => s.isNotEmpty).toSet().toList()..sort();
@@ -38,11 +49,31 @@ class KitchenLoaded extends KitchenState {
     return filtered;
   }
 
-  KitchenLoaded copyWith({List<KitchenOrder>? orders, Object? station = _keep, String? actionError}) =>
+  int countByStage(KitchenStage stage) => byStage(stage).length;
+
+  int get delayedCount => orders.where((o) {
+        final mins = DateTime.now().difference(o.createdAt).inMinutes;
+        return o.stage != KitchenStage.ready && mins >= kLateAfterMinutes;
+      }).length;
+
+  double get avgWaitMinutes {
+    final active = orders.where((o) => o.stage != KitchenStage.ready).toList();
+    if (active.isEmpty) return 0.0;
+    final totalMins = active.map((o) => DateTime.now().difference(o.createdAt).inSeconds / 60.0).reduce((a, b) => a + b);
+    return totalMins / active.length;
+  }
+
+  KitchenLoaded copyWith({
+    List<KitchenOrder>? orders,
+    Object? station = _keep,
+    String? actionError,
+    bool? soundEnabled,
+  }) =>
       KitchenLoaded(
         orders ?? this.orders,
         station: identical(station, _keep) ? this.station : (station is String ? station : null),
         actionError: actionError,
+        soundEnabled: soundEnabled ?? this.soundEnabled,
       );
 }
 
@@ -58,7 +89,7 @@ class KitchenCubit extends Cubit<KitchenState> {
       : _service = service ?? KitchenService.instance,
         super(const KitchenLoading());
 
-  /// Interval penyegaran otomatis layar dapur.
+  /// Interval penyegaran otomatis layar dapur (6 detik).
   static const pollInterval = Duration(seconds: 6);
 
   final KitchenService _service;
@@ -99,16 +130,38 @@ class KitchenCubit extends Cubit<KitchenState> {
 
   void _onRealtimeOrderEvent(Map<String, dynamic> data) {
     debugPrint('🔔 [KDS REALTIME] Menerima sinyal pesanan dapur via Reverb: $data');
-    AudioHelper.successFeedback();
+    final current = state;
+    if (current is KitchenLoaded && current.soundEnabled) {
+      AudioHelper.successFeedback();
+    }
     refresh();
   }
 
+  void toggleSound() {
+    final current = state;
+    if (current is KitchenLoaded) {
+      final next = !current.soundEnabled;
+      if (next) AudioHelper.successFeedback();
+      emit(current.copyWith(soundEnabled: next));
+    }
+  }
+
   Future<void> refresh({bool silent = true}) async {
-    if (!silent) emit(const KitchenLoading());
+    if (!silent && state is! KitchenLoaded) emit(const KitchenLoading());
     try {
       final orders = await _service.load();
       final current = state;
-      emit(KitchenLoaded(orders, station: current is KitchenLoaded ? current.station : null));
+      if (current is KitchenLoaded) {
+        // Bunyikan audio jika ada tiket baru yang bertambah
+        final prevIds = current.orders.map((o) => o.id).toSet();
+        final hasNew = orders.any((o) => !prevIds.contains(o.id));
+        if (hasNew && current.soundEnabled) {
+          AudioHelper.successFeedback();
+        }
+        emit(current.copyWith(orders: orders));
+      } else {
+        emit(KitchenLoaded(orders));
+      }
     } catch (e) {
       // Polling yang gagal tidak boleh menimpa data yang sudah tampil.
       if (state is! KitchenLoaded) emit(KitchenFailed(ApiException.from(e).message));
@@ -120,38 +173,103 @@ class KitchenCubit extends Cubit<KitchenState> {
     if (current is KitchenLoaded) emit(current.copyWith(station: station));
   }
 
+  /// Memajukan status pesanan (Fresh -> Preparing -> Ready -> Dismiss/Served) dengan Optimistic Update
   Future<void> advance(KitchenOrder order) async {
-    await _run(() => switch (order.stage) {
-          KitchenStage.fresh => _service.start(order.id),
-          KitchenStage.preparing => _service.markReady(order.id),
-          KitchenStage.ready => _service.markServed(order.id),
-        });
+    final current = state;
+    if (current is! KitchenLoaded) return;
+
+    final originalOrders = List<KitchenOrder>.from(current.orders);
+
+    // Optimistic UI state
+    List<KitchenOrder> updated;
+    switch (order.stage) {
+      case KitchenStage.fresh:
+        updated = current.orders.map((o) => o.id == order.id ? o.copyWith(stage: KitchenStage.preparing, status: 'preparing') : o).toList();
+        break;
+      case KitchenStage.preparing:
+        updated = current.orders.map((o) => o.id == order.id ? o.copyWith(stage: KitchenStage.ready, status: 'ready') : o).toList();
+        break;
+      case KitchenStage.ready:
+        updated = current.orders.where((o) => o.id != order.id).toList();
+        break;
+    }
+    emit(current.copyWith(orders: updated));
+    AudioHelper.actionFeedback();
+
+    try {
+      switch (order.stage) {
+        case KitchenStage.fresh:
+          await _service.start(order.id);
+          break;
+        case KitchenStage.preparing:
+          await _service.markReady(order.id);
+          break;
+        case KitchenStage.ready:
+          await _service.markServed(order.id);
+          break;
+      }
+    } catch (e) {
+      emit(current.copyWith(orders: originalOrders, actionError: ApiException.from(e).message));
+    }
+  }
+
+  /// Mengembalikan status pesanan ke tahap sebelumnya (misal dari Ready kembali ke Preparing)
+  Future<void> revert(KitchenOrder order) async {
+    final current = state;
+    if (current is! KitchenLoaded) return;
+
+    final originalOrders = List<KitchenOrder>.from(current.orders);
+
+    List<KitchenOrder> updated;
+    if (order.stage == KitchenStage.ready) {
+      updated = current.orders.map((o) => o.id == order.id ? o.copyWith(stage: KitchenStage.preparing, status: 'preparing') : o).toList();
+    } else {
+      updated = current.orders.map((o) => o.id == order.id ? o.copyWith(stage: KitchenStage.fresh, status: 'open') : o).toList();
+    }
+    emit(current.copyWith(orders: updated));
+    AudioHelper.tapFeedback();
+
+    try {
+      await _service.revert(order);
+    } catch (e) {
+      emit(current.copyWith(orders: originalOrders, actionError: ApiException.from(e).message));
+    }
+  }
+
+  /// Membatalkan / Void tiket dapur
+  Future<void> cancelTicket(KitchenOrder order, {String? reason}) async {
+    final current = state;
+    if (current is! KitchenLoaded) return;
+
+    final originalOrders = List<KitchenOrder>.from(current.orders);
+    emit(current.copyWith(orders: current.orders.where((o) => o.id != order.id).toList()));
+    AudioHelper.actionFeedback();
+
+    try {
+      await _service.cancelOrder(order.id, reason: reason);
+    } catch (e) {
+      emit(current.copyWith(orders: originalOrders, actionError: ApiException.from(e).message));
+    }
   }
 
   Future<void> toggleItem(KitchenOrder order, KitchenItem item) async {
     final current = state;
     if (current is! KitchenLoaded) return;
-    // Optimistic update, dikembalikan bila server menolak.
-    final optimistic = current.orders
-        .map((o) => o.id != order.id
-            ? o
-            : o.copyWith(items: o.items.map((i) => i.id == item.id ? i.copyWith(done: !i.done) : i).toList()))
-        .toList();
+
+    final newDone = !item.done;
+    final optimistic = current.orders.map((o) {
+      if (o.id != order.id) return o;
+      final updatedItems = o.items.map((i) => i.id == item.id ? i.copyWith(done: newDone) : i).toList();
+      return o.copyWith(items: updatedItems);
+    }).toList();
+
     emit(current.copyWith(orders: optimistic));
+    AudioHelper.tapFeedback();
+
     try {
-      await _service.toggleItemDone(order.id, item.id);
+      await _service.toggleItemDone(order.id, item.id, isDone: newDone);
     } catch (e) {
       emit(current.copyWith(actionError: ApiException.from(e).message));
-    }
-  }
-
-  Future<void> _run(Future<void> Function() action) async {
-    try {
-      await action();
-      await refresh();
-    } catch (e) {
-      final current = state;
-      if (current is KitchenLoaded) emit(current.copyWith(actionError: ApiException.from(e).message));
     }
   }
 
