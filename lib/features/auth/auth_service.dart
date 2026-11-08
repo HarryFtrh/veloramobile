@@ -504,7 +504,8 @@ class AuthUser {
 extension UserAbility on AuthUser {
   /// Memeriksa hak akses ala CASL (mendukung API permissions + fallback role cerdas)
   bool can(AppPermission permission) {
-    if (permissions.contains('*') ||
+    if (isOwnerOrAdmin ||
+        permissions.contains('*') ||
         permissions.contains('all') ||
         permissions.contains('manage:all') ||
         permissions.contains('superadmin')) {
@@ -517,12 +518,7 @@ extension UserAbility on AuthUser {
       }
     }
 
-    // Jika API secara eksplisit memberikan array permissions tapi tidak ada yang cocok
-    if (permissions.isNotEmpty) {
-      return false;
-    }
-
-    // Smart fallback berbasis role jika array permissions kosong/belum dikirim backend
+    // Smart fallback berbasis role jika array permissions kosong atau belum ada slug spesifik yang cocok
     return permission.defaultFallback(this);
   }
 

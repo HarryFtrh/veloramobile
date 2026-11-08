@@ -12,6 +12,7 @@ import 'features/auth/cubit/auth_cubit.dart';
 import 'features/auth/cubit/auth_state.dart';
 import 'features/auth/login_screen.dart';
 import 'features/dashboard/dashboard_screen.dart';
+import 'features/customers/customers_screen.dart';
 import 'features/fnb/fnb_register_screen.dart';
 import 'features/tables/tables_screen.dart';
 import 'features/kitchen/kitchen_screen.dart';
@@ -159,6 +160,12 @@ class VeloraApp extends StatelessWidget {
       selectedIcon: Icons.dashboard_rounded,
       builder: (_) => const DashboardScreen(),
     );
+    final pelangganTab = ShellTab(
+      label: 'Pelanggan',
+      icon: Icons.people_outline_rounded,
+      selectedIcon: Icons.people_rounded,
+      builder: (_) => const CustomersScreen(),
+    );
     final lainnyaTab = ShellTab(
       label: 'Lainnya',
       icon: Icons.grid_view_outlined,
@@ -177,9 +184,10 @@ class VeloraApp extends StatelessWidget {
     } else {
       tabs = [
         kasirTab,
-        if (user.can(AppPermission.manageTables)) mejaTab,
-        if (user.can(AppPermission.viewKitchen)) dapurTab,
+        mejaTab,
+        dapurTab,
         if (user.can(AppPermission.viewDashboard)) dashboardTab,
+        pelangganTab,
         lainnyaTab,
       ];
     }
@@ -203,6 +211,12 @@ class VeloraApp extends StatelessWidget {
       selectedIcon: Icons.dashboard_rounded,
       builder: (_) => const DashboardScreen(),
     );
+    final pelangganTab = ShellTab(
+      label: 'Pelanggan',
+      icon: Icons.people_outline_rounded,
+      selectedIcon: Icons.people_rounded,
+      builder: (_) => const CustomersScreen(),
+    );
     final lainnyaTab = ShellTab(
       label: 'Lainnya',
       icon: Icons.grid_view_outlined,
@@ -216,6 +230,7 @@ class VeloraApp extends StatelessWidget {
     final tabs = [
       kasirTab,
       if (user.can(AppPermission.viewDashboard)) dashboardTab,
+      pelangganTab,
       lainnyaTab,
     ];
 
