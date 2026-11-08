@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import '../config/business_vertical.dart';
 import '../storage/session_storage.dart';
 import '../../features/shared_pos/models/pos_catalog_models.dart';
-import '../../features/shell/menu_service.dart';
 
 /// Reusable avatar widget that renders the store/tenant logo from API (URL or base64)
 /// with seamless fallback to business vertical icon when no logo is set.
@@ -48,7 +48,7 @@ class StoreLogoAvatar extends StatelessWidget {
                 width: size,
                 height: size,
                 fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => _buildFallback(effectiveBrand, radius),
+                errorBuilder: (_, _, _) => _buildFallback(effectiveBrand, radius),
               ),
             ),
           );
@@ -70,7 +70,7 @@ class StoreLogoAvatar extends StatelessWidget {
             width: size,
             height: size,
             fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) {
+            errorBuilder: (_, _, _) {
               final fallback = PosProduct.resolveImageFallbackUrl(resolvedUrl);
               if (fallback != null) {
                 return Image.network(
@@ -78,7 +78,7 @@ class StoreLogoAvatar extends StatelessWidget {
                   width: size,
                   height: size,
                   fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => _buildFallback(effectiveBrand, radius),
+                  errorBuilder: (_, _, _) => _buildFallback(effectiveBrand, radius),
                 );
               }
               return _buildFallback(effectiveBrand, radius);
