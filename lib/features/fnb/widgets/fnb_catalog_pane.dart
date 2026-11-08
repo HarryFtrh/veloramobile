@@ -52,79 +52,83 @@ class FnbCatalogPane extends StatelessWidget {
 
         // Product Grid or Empty State
         Expanded(
-          child: items.isEmpty
-              ? Center(
-                  child: SingleChildScrollView(
-                    physics: const ClampingScrollPhysics(),
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: p.surfaceMuted,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.coffee_rounded,
-                              size: 44,
-                              color: primaryColor,
-                            ),
-                          ),
-                          const SizedBox(height: Gap.md),
-                          Text(
-                            ctrl.search.isNotEmpty
-                                ? 'Menu "${ctrl.search}" tidak ditemukan'
-                                : 'Belum ada menu di kategori "${ctrl.category}"',
-                            style: text.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              color: p.textPrimary,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Data menu dimuat langsung dari server cabang aktif.',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: p.textSecondary,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: Gap.lg),
-                          OutlinedButton.icon(
-                            onPressed: ctrl.load,
-                            icon: const Icon(Icons.refresh_rounded, size: 16),
-                            label: const Text(
-                              'Muat Ulang dari Server',
-                              style: TextStyle(fontWeight: FontWeight.w700),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: primaryColor,
-                              side: BorderSide(color: primaryColor),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+          child: RefreshIndicator(
+            onRefresh: ctrl.load,
+            color: primaryColor,
+            child: items.isEmpty
+                ? Center(
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: p.surfaceMuted,
+                                shape: BoxShape.circle,
                               ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 10,
+                              child: Icon(
+                                Icons.coffee_rounded,
+                                size: 44,
+                                color: primaryColor,
                               ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: Gap.md),
+                            Text(
+                              ctrl.search.isNotEmpty
+                                  ? 'Menu "${ctrl.search}" tidak ditemukan'
+                                  : 'Belum ada menu di kategori "${ctrl.category}"',
+                              style: text.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: p.textPrimary,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Tarik ke bawah atau klik tombol untuk memuat ulang data terbaru.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: p.textSecondary,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: Gap.lg),
+                            OutlinedButton.icon(
+                              onPressed: ctrl.load,
+                              icon: const Icon(Icons.refresh_rounded, size: 16),
+                              label: const Text(
+                                'Muat Ulang dari Server',
+                                style: TextStyle(fontWeight: FontWeight.w700),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: primaryColor,
+                                side: BorderSide(color: primaryColor),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 10,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                )
-              : GridView.builder(
-                  padding: EdgeInsets.fromLTRB(
-                    isMobile ? 12 : Gap.lg,
-                    Gap.sm,
-                    isMobile ? 12 : Gap.lg,
-                    isMobile && ctrl.lines.isNotEmpty ? 84 : Gap.lg,
-                  ),
+                  )
+                : GridView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                    padding: EdgeInsets.fromLTRB(
+                      isMobile ? 12 : Gap.lg,
+                      Gap.sm,
+                      isMobile ? 12 : Gap.lg,
+                      isMobile && ctrl.lines.isNotEmpty ? 84 : Gap.lg,
+                    ),
                   gridDelegate: isMobile
                       ? const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
@@ -149,6 +153,7 @@ class FnbCatalogPane extends StatelessWidget {
                     );
                   },
                 ),
+          ),
         ),
 
         // Bottom status & PB1 tax info footer
