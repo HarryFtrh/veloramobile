@@ -10,7 +10,6 @@ import 'billing.dart';
 import 'fnb_catalog_service.dart';
 import 'fnb_register_service.dart';
 import 'modifiers.dart';
-import 'register/fnb_pricing_manager.dart';
 
 export 'fnb_register_service.dart' show RegisterLine;
 
