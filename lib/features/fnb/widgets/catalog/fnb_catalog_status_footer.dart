@@ -46,9 +46,10 @@ class FnbCatalogStatusFooter extends StatelessWidget {
             Builder(builder: (_) {
               final rate = ctrl.billing?.pb1Rate ?? 0;
               final pct = (rate > 1 ? rate : rate * 100).round();
+              final taxName = ctrl.billing?.taxName ?? 'Pajak Resto';
               return Flexible(
                 child: Text(
-                  'Pajak Resto $pct% Aktif (PB1)',
+                  '$taxName $pct% Aktif',
                   style: TextStyle(fontSize: 10, color: p.textSecondary),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

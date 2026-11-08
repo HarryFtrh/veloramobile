@@ -569,9 +569,9 @@ class SplitBillLeftPane extends StatelessWidget {
               ),
               _buildPriceRow(
                 context,
-                'PB1 Pajak Resto & Servis',
+                billingSettings != null ? '${billingSettings!.taxName} & Layanan' : 'Pajak & Layanan',
                 billingSettings == null
-                    ? 'Termasuk'
+                    ? '-'
                     : (billingSettings!.pb1Enabled
                           ? '${(billingSettings!.pb1Rate > 1 ? billingSettings!.pb1Rate : billingSettings!.pb1Rate * 100).round()}%'
                           : 'Non-aktif'),

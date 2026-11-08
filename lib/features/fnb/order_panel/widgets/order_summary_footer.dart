@@ -277,10 +277,17 @@ class OrderSummaryFooter extends StatelessWidget {
                       'Total Tagihan',
                       style: text.bodyMedium?.copyWith(color: p.textPrimary, fontWeight: FontWeight.w800, fontSize: 13),
                     ),
-                    Text(
-                      'Termasuk PB1 & Layanan',
-                      style: TextStyle(color: p.textSecondary, fontSize: 10),
-                    ),
+                    if (ctrl.billing != null && (ctrl.billing!.pb1Inclusive || (bill != null && (bill.tax > 0 || bill.serviceCharge > 0))))
+                      Text(
+                        ctrl.billing!.pb1Inclusive
+                            ? (ctrl.billing!.serviceChargeEnabled && ctrl.billing!.serviceChargeRate > 0
+                                ? 'Termasuk ${ctrl.billing!.taxName} & Layanan'
+                                : 'Termasuk ${ctrl.billing!.taxName}')
+                            : (ctrl.billing!.serviceChargeEnabled && ctrl.billing!.serviceChargeRate > 0
+                                ? '+ ${ctrl.billing!.taxName} & Layanan'
+                                : '+ ${ctrl.billing!.taxName}'),
+                        style: TextStyle(color: p.textSecondary, fontSize: 10),
+                      ),
                   ],
                 ),
               ),
