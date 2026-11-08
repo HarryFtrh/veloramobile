@@ -304,7 +304,7 @@ class BillingSettings {
         '/pharmacy/promotions',
         '/v1/pos/promotions',
       ]);
-    } else if (flavor == AppFlavor.retail || flavor == AppFlavor.sales) {
+    } else if (flavor == AppFlavor.sales) {
       endpoints.addAll([
         '/v1/retail/promotions',
         '/retail/promotions',

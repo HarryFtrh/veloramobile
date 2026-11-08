@@ -9,7 +9,7 @@ plugins {
 
 android {
     namespace = "com.velora.velora_mobile"
-    compileSdk = 36
+    compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
