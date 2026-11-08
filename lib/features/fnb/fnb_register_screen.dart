@@ -450,7 +450,8 @@ class _FnbRegisterScreenState extends State<FnbRegisterScreen> {
                                   },
                                   onPay: () async {
                                     Navigator.pop(sheetContext);
-                                    await _pay();
+                                    await Future.delayed(const Duration(milliseconds: 150));
+                                    if (mounted) await _pay();
                                   },
                                 ),
                               ),
