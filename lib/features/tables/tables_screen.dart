@@ -5,6 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/storage/session_storage.dart';
 import '../../core/design/tokens.dart';
 import '../fnb/fnb_payment_split_screen.dart';
+import '../fnb/split_bill/cubit/payment_split_cubit.dart';
+import '../fnb/widgets/fnb_payment_sheet.dart';
 import '../shared_pos/pos_checkout_service.dart';
 import '../shared_pos/receipt_printer_service.dart';
 import 'cubit/tables_cubit.dart';
@@ -55,26 +57,54 @@ class _TablesScreenState extends State<TablesScreen> {
       ),
     );
 
-  void _openPayment(CafeTableInfo table, ActiveTableOrder? activeOrder) {
+  Future<void> _openPayment(CafeTableInfo table, ActiveTableOrder? activeOrder) async {
     final total = activeOrder?.totalAmount.round() ?? table.order?.total.round() ?? 0;
     final orderId = activeOrder?.id ?? table.order?.id;
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => FnbPaymentSplitScreen(
-          totalAmount: total,
-          tableId: table.id,
-          tableName: table.name,
-          orderId: orderId,
-          activeOrder: activeOrder,
-          customerName: activeOrder?.customerName,
-          onPaymentComplete: () {
-            _toast('${table.name} pembayaran selesai');
-            _cubit.loadTables();
-            Navigator.of(context).pop();
-          },
+
+    final choice = await FnbPaymentSheet.show(context, total, allowSplit: true);
+    if (choice == null || !mounted) return;
+
+    if (choice.method == 'split') {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => FnbPaymentSplitScreen(
+            totalAmount: total,
+            tableId: table.id,
+            tableName: table.name,
+            orderId: orderId,
+            activeOrder: activeOrder,
+            customerName: activeOrder?.customerName,
+            onPaymentComplete: () {
+              _toast('${table.name} pembayaran selesai');
+              _cubit.loadTables();
+              Navigator.of(context).pop();
+            },
+          ),
         ),
-      ),
+      );
+      return;
+    }
+
+    // Direct Single Payment
+    final cubit = PaymentSplitCubit(
+      tableId: table.id,
+      totalAmount: total,
     );
+    cubit.selectMethod(choice.method);
+    if (choice.method == 'cash') {
+      cubit.updateCashReceived(choice.paid.toInt());
+    }
+    final ok = await cubit.checkout(
+      fallbackTotal: total,
+      orderId: orderId,
+      tableId: table.id,
+      customerName: activeOrder?.customerName,
+      tableName: table.name,
+    );
+    if (ok && mounted) {
+      _toast('${table.name} pembayaran lunas');
+      _cubit.loadTables();
+    }
   }
 
   Future<void> _printBill(CafeTableInfo t, ActiveTableOrder? act) async {

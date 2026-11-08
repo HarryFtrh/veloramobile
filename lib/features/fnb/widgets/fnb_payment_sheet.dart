@@ -9,10 +9,20 @@ class PaymentChoice {
 }
 
 class FnbPaymentSheet extends StatefulWidget {
-  const FnbPaymentSheet({super.key, required this.total});
-  final num total;
+  const FnbPaymentSheet({
+    super.key,
+    required this.total,
+    this.allowSplit = true,
+  });
 
-  static Future<PaymentChoice?> show(BuildContext context, num total) {
+  final num total;
+  final bool allowSplit;
+
+  static Future<PaymentChoice?> show(
+    BuildContext context,
+    num total, {
+    bool allowSplit = true,
+  }) {
     final isMobile = context.isMobile;
     return showModalBottomSheet<PaymentChoice>(
       context: context,
@@ -27,7 +37,7 @@ class FnbPaymentSheet extends StatefulWidget {
           maxWidth: isMobile ? double.infinity : 560,
           maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.90,
         ),
-        child: FnbPaymentSheet(total: total),
+        child: FnbPaymentSheet(total: total, allowSplit: allowSplit),
       ),
     );
   }
@@ -37,12 +47,14 @@ class FnbPaymentSheet extends StatefulWidget {
 }
 
 class _FnbPaymentSheetState extends State<FnbPaymentSheet> {
-  static const _methods = [
-    ('cash', 'Tunai', Icons.payments_outlined),
-    ('qris', 'QRIS', Icons.qr_code_2),
-    ('debit', 'Debit', Icons.credit_card),
-    ('transfer', 'Transfer', Icons.account_balance_outlined),
-  ];
+  List<(String, String, IconData)> get _methods => [
+        ('cash', 'Tunai', Icons.payments_outlined),
+        ('qris', 'QRIS', Icons.qr_code_2),
+        ('debit', 'Debit / EDC', Icons.credit_card),
+        ('transfer', 'Transfer', Icons.account_balance_outlined),
+        if (widget.allowSplit)
+          ('split', 'Split Bill', Icons.call_split_rounded),
+      ];
 
   String _method = 'cash';
   late num _paid = widget.total;
@@ -69,7 +81,9 @@ class _FnbPaymentSheetState extends State<FnbPaymentSheet> {
   Widget build(BuildContext context) {
     final p = context.palette;
     final text = Theme.of(context).textTheme;
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final isCash = _method == 'cash';
+    final isSplit = _method == 'split';
     final paid = isCash ? _paid : widget.total;
     final enough = paid >= widget.total;
     final isMobile = context.isMobile;
@@ -100,7 +114,7 @@ class _FnbPaymentSheetState extends State<FnbPaymentSheet> {
               CurrencyFormatter.format(widget.total),
               style: text.headlineMedium?.copyWith(
                 fontWeight: FontWeight.w800,
-                color: Theme.of(context).colorScheme.primary,
+                color: primaryColor,
                 fontSize: isMobile ? 22 : 26,
               ),
             ),
@@ -124,7 +138,77 @@ class _FnbPaymentSheetState extends State<FnbPaymentSheet> {
                   ),
               ],
             ),
-            if (isCash) ...[
+            if (isSplit) ...[
+              const SizedBox(height: Gap.md),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: primaryColor.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: primaryColor.withValues(alpha: 0.25)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: primaryColor.withValues(alpha: 0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.call_split_rounded, color: primaryColor, size: 20),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Pembayaran Terpisah (Split Bill)',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13.5,
+                                  color: p.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Patungan per orang atau pisah pembayaran per item tagihan.',
+                                style: TextStyle(fontSize: 11.5, color: p.textSecondary),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: p.surface,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: p.line),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline_rounded, size: 14, color: p.textSecondary),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Pilih ini untuk membagi tagihan meja atau pesanan patungan.',
+                              style: TextStyle(fontSize: 11, color: p.textSecondary, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ] else if (isCash) ...[
               const SizedBox(height: Gap.md),
               Wrap(
                 spacing: Gap.xs + 2,
@@ -173,10 +257,22 @@ class _FnbPaymentSheetState extends State<FnbPaymentSheet> {
             const SizedBox(height: Gap.md),
             SizedBox(
               width: double.infinity,
-              child: FilledButton(
-                onPressed: enough ? () => Navigator.pop(context, PaymentChoice(_method, paid)) : null,
-                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-                child: const Text('Konfirmasi pembayaran', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+              child: FilledButton.icon(
+                onPressed: (isSplit || enough) ? () => Navigator.pop(context, PaymentChoice(_method, paid)) : null,
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                  backgroundColor: primaryColor,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                icon: Icon(
+                  isSplit ? Icons.call_split_rounded : Icons.check_circle_outline_rounded,
+                  size: 18,
+                ),
+                label: Text(
+                  isSplit ? 'Lanjut ke Pisah Tagihan (Split Bill)' : 'Konfirmasi Pembayaran',
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                ),
               ),
             ),
           ],

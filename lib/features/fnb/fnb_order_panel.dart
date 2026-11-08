@@ -129,15 +129,6 @@ class FnbOrderPanel extends StatelessWidget {
                     ),
                   ],
                   const Spacer(),
-                  if (onSplitBill != null && ctrl.lines.isNotEmpty)
-                    IconButton(
-                      tooltip: 'Split Bill',
-                      icon: Icon(Icons.call_split_rounded, size: 19, color: primaryColor),
-                      onPressed: onSplitBill,
-                      visualDensity: VisualDensity.compact,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                    ),
                   if (ctrl.lines.isNotEmpty)
                     TextButton(
                       onPressed: ctrl.reset,

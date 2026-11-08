@@ -272,20 +272,6 @@ class OrderSummaryFooter extends StatelessWidget {
                   ),
                 ),
               ),
-              if (onSplitBill != null && ctrl.lines.length > 1) ...[
-                const SizedBox(width: Gap.xs + 2),
-                OutlinedButton.icon(
-                  onPressed: canSubmit && !ctrl.busy ? onSplitBill : null,
-                  icon: const Icon(Icons.call_split_rounded, size: 15),
-                  label: const Text('Split Bill', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: p.textSecondary,
-                    side: BorderSide(color: p.line),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 10),
-                  ),
-                ),
-              ],
             ],
           ),
           const SizedBox(height: 6),

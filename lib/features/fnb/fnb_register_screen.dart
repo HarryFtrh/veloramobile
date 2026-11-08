@@ -178,8 +178,17 @@ class _FnbRegisterScreenState extends State<FnbRegisterScreen> {
     }
 
     // ignore: use_build_context_synchronously
-    final choice = await FnbPaymentSheet.show(context, bill.total);
+    final choice = await FnbPaymentSheet.show(
+      context,
+      bill.total,
+      allowSplit: _ctrl.lines.length > 1,
+    );
     if (choice == null || !mounted) return;
+
+    if (choice.method == 'split') {
+      _openSplitBill();
+      return;
+    }
 
     try {
       final receiptItems = [
