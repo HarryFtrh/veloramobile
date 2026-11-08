@@ -6,6 +6,7 @@ import '../../core/network/api_exception.dart';
 import '../../core/network/reverb_client.dart';
 import '../../core/storage/session_storage.dart';
 import '../../core/utils/audio_helper.dart';
+import '../fnb/billing/models/billing_settings.dart';
 import 'kitchen_service.dart';
 
 const int kLateAfterMinutes = 7;
@@ -101,6 +102,15 @@ class KitchenCubit extends Cubit<KitchenState> {
     _timer?.cancel();
     _timer = Timer.periodic(pollInterval, (_) => refresh());
 
+    // Sinkronisasi status audio langsung dari API backend
+    BillingSettings.fetch().then((settings) {
+      AudioHelper.setSoundEnabled(settings.kitchenSoundEnabled);
+      final current = state;
+      if (current is KitchenLoaded) {
+        emit(current.copyWith(soundEnabled: settings.kitchenSoundEnabled));
+      }
+    }).catchError((_) {});
+
     // Berlangganan event realtime WebSocket ke Laravel Reverb
     final tenantId = SessionStorage.instance.getTenantId();
     final locationId = SessionStorage.instance.getLocationId();
@@ -131,8 +141,9 @@ class KitchenCubit extends Cubit<KitchenState> {
   void _onRealtimeOrderEvent(Map<String, dynamic> data) {
     debugPrint('🔔 [KDS REALTIME] Menerima sinyal pesanan dapur via Reverb: $data');
     final current = state;
-    if (current is KitchenLoaded && current.soundEnabled) {
-      AudioHelper.successFeedback();
+    final isSoundActive = (current is KitchenLoaded ? current.soundEnabled : true) && AudioHelper.soundEnabledFromApi;
+    if (isSoundActive) {
+      AudioHelper.orderChime();
     }
     refresh();
   }
@@ -141,7 +152,8 @@ class KitchenCubit extends Cubit<KitchenState> {
     final current = state;
     if (current is KitchenLoaded) {
       final next = !current.soundEnabled;
-      if (next) AudioHelper.successFeedback();
+      AudioHelper.setSoundEnabled(next);
+      if (next) AudioHelper.orderChime(force: true);
       emit(current.copyWith(soundEnabled: next));
     }
   }
@@ -151,16 +163,17 @@ class KitchenCubit extends Cubit<KitchenState> {
     try {
       final orders = await _service.load();
       final current = state;
+      final isSoundActive = (current is KitchenLoaded ? current.soundEnabled : true) && AudioHelper.soundEnabledFromApi;
       if (current is KitchenLoaded) {
-        // Bunyikan audio jika ada tiket baru yang bertambah
+        // Bunyikan audio jika ada tiket baru yang bertambah dan sound aktif di API
         final prevIds = current.orders.map((o) => o.id).toSet();
         final hasNew = orders.any((o) => !prevIds.contains(o.id));
-        if (hasNew && current.soundEnabled) {
-          AudioHelper.successFeedback();
+        if (hasNew && isSoundActive) {
+          AudioHelper.orderChime();
         }
         emit(current.copyWith(orders: orders));
       } else {
-        emit(KitchenLoaded(orders));
+        emit(KitchenLoaded(orders, soundEnabled: AudioHelper.soundEnabledFromApi));
       }
     } catch (e) {
       // Polling yang gagal tidak boleh menimpa data yang sudah tampil.

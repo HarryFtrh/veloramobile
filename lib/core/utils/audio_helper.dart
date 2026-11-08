@@ -1,6 +1,13 @@
 import 'package:flutter/services.dart';
 
 class AudioHelper {
+  /// Status aktif dari konfigurasi API / preferensi backend
+  static bool soundEnabledFromApi = true;
+
+  static void setSoundEnabled(bool enabled) {
+    soundEnabledFromApi = enabled;
+  }
+
   static void tapFeedback() {
     HapticFeedback.lightImpact();
   }
@@ -9,13 +16,24 @@ class AudioHelper {
     HapticFeedback.mediumImpact();
   }
 
-  static void successFeedback() {
+  static void successFeedback({bool force = false}) {
     HapticFeedback.heavyImpact();
-    SystemSound.play(SystemSoundType.click);
+    if (soundEnabledFromApi || force) {
+      SystemSound.play(SystemSoundType.click);
+    }
   }
 
-  static void errorFeedback() {
+  static void orderChime({bool force = false}) {
+    HapticFeedback.heavyImpact();
+    if (soundEnabledFromApi || force) {
+      SystemSound.play(SystemSoundType.alert);
+    }
+  }
+
+  static void errorFeedback({bool force = false}) {
     HapticFeedback.vibrate();
-    SystemSound.play(SystemSoundType.alert);
+    if (soundEnabledFromApi || force) {
+      SystemSound.play(SystemSoundType.alert);
+    }
   }
 }

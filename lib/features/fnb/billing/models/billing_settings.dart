@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/storage/session_storage.dart';
+import '../../../../core/utils/audio_helper.dart';
 import '../../../../core/utils/safe_json.dart';
 import 'store_promotion.dart';
 
@@ -29,6 +30,7 @@ class BillingSettings {
     this.enableTables = true,
     this.enableKitchen = true,
     this.enableOpenBills = true,
+    this.kitchenSoundEnabled = true,
     this.rawPreferences = const {},
     this.npwpd = '',
     this.taxDeviceId = '',
@@ -69,6 +71,7 @@ class BillingSettings {
   final bool enableTables;
   final bool enableKitchen;
   final bool enableOpenBills;
+  final bool kitchenSoundEnabled;
   final Map<String, dynamic> rawPreferences;
 
   /// Nomor Pokok Wajib Pajak Daerah (NPWPD) untuk kepatuhan Bapenda
@@ -514,6 +517,22 @@ class BillingSettings {
       enableTables: json.getBool('enable_tables', fallback: true),
       enableKitchen: json.getBool('enable_kitchen', fallback: true),
       enableOpenBills: json.getBool('enable_open_bills', fallback: true),
+      kitchenSoundEnabled: json.getBool(
+        'kitchen_sound_enabled',
+        fallback: json.getBool(
+          'kds_sound_enabled',
+          fallback: json.getBool(
+            'kitchen_sound',
+            fallback: json.getBool(
+              'kds_sound',
+              fallback: json.getBool(
+                'enable_kitchen_sound',
+                fallback: json.getBool('sound_enabled', fallback: true),
+              ),
+            ),
+          ),
+        ),
+      ),
       rawPreferences: json,
       npwpd: json.getString('npwpd', fallback: json.getString('tax_id')),
       taxDeviceId: json.getString('tax_device_id', fallback: json.getString('tapping_box_id')),
@@ -826,7 +845,8 @@ class BillingSettings {
       }
 
       var settings = BillingSettings.fromJson(mergedData);
-      debugPrint('📊 [BillingSettings] Endpoints [${loadedEndpoints.join(', ')}] -> PB1: ${settings.pb1Enabled} (${settings.pb1Rate}%, inclusive=${settings.pb1Inclusive}, name=${settings.taxName}), Service: ${settings.serviceChargeEnabled} (${settings.serviceChargeRate}%), Rounding: ${settings.roundingEnabled} (step=${settings.roundingStep})');
+      AudioHelper.soundEnabledFromApi = settings.kitchenSoundEnabled;
+      debugPrint('📊 [BillingSettings] Endpoints [${loadedEndpoints.join(', ')}] -> PB1: ${settings.pb1Enabled} (${settings.pb1Rate}%, inclusive=${settings.pb1Inclusive}, name=${settings.taxName}), Service: ${settings.serviceChargeEnabled} (${settings.serviceChargeRate}%), Rounding: ${settings.roundingEnabled} (step=${settings.roundingStep}), KitchenSound: ${settings.kitchenSoundEnabled}');
 
       // Tarik diskon & promosi terdedikasi dari API jika tersedia
       try {

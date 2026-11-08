@@ -1057,7 +1057,7 @@ class ReceiptPrinterService {
     }
 
     writeDivider(char: '=');
-    bytes.addAll(cmdFeedAndCut);
+    bytes.addAll(cmdCutPaper);
     return Uint8List.fromList(bytes);
   }
 
