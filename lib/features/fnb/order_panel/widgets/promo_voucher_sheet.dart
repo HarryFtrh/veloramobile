@@ -59,23 +59,22 @@ class _FnbDiscountSheetState extends State<FnbDiscountSheet> {
     super.initState();
     final ctrl = widget.ctrl;
 
-    // Inisialisasi diskon manual jika sedang aktif
+    // Default selalu buka Tab 0 (Promo Toko dari API)
+    _activeTabIndex = 0;
+
+    // Siapkan nilai diskon manual jika kasir beralih ke Tab 1
     if (ctrl.manualDiscountPercent > 0) {
-      _activeTabIndex = 1;
       _isPercent = true;
       _currentPercent = ctrl.manualDiscountPercent;
       _percentCtrl.text = _formatNumber(_currentPercent);
     } else if (ctrl.manualDiscountAmount > 0) {
-      _activeTabIndex = 1;
       _isPercent = false;
       _currentAmount = ctrl.manualDiscountAmount;
       _amountCtrl.text = _currentAmount.toStringAsFixed(0);
-    } else if (ctrl.activePromotion != null) {
-      _activeTabIndex = 0;
-    } else if ((ctrl.billing?.activePromotions.isEmpty ?? true)) {
-      // Jika promosi masih kosong, coba muat dari API server
-      _loadDiscounts();
     }
+
+    // Selalu sinkronkan promosi toko dari API backend
+    _loadDiscounts();
   }
 
   String _formatNumber(double val) {

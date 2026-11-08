@@ -287,6 +287,41 @@ class RegisterController extends ChangeNotifier {
     _recomputeVisibleProducts();
   }
 
+  void autoApplyBestPromotion() {
+    if (manualDiscountTotal > 0) return;
+    if (activePromotion != null) {
+      voucherDiscountAmount = activePromotion!.calculateDiscount(subtotal);
+      return;
+    }
+    if (subtotal <= 0) return;
+
+    final candidatePromos = (billing?.promotions ?? const []).where((p) {
+      if (!p.isActive) return false;
+      return p.isAutomatic || (p.code == null || p.code!.trim().isEmpty);
+    }).toList();
+
+    StorePromotion? bestPromo;
+    double maxDisc = 0;
+    for (final promo in candidatePromos) {
+      final d = promo.calculateDiscount(subtotal);
+      if (d > maxDisc) {
+        maxDisc = d;
+        bestPromo = promo;
+      }
+    }
+    if (bestPromo != null && maxDisc > 0) {
+      activePromotion = bestPromo;
+      activeVoucherCode = bestPromo.code ?? bestPromo.name;
+      voucherDiscountAmount = maxDisc;
+    }
+  }
+
+  void _syncCartChanges() {
+    autoApplyBestPromotion();
+    _persistDraft();
+    notifyListeners();
+  }
+
   num get subtotal => lines.fold<num>(0, (sum, l) => sum + l.subtotal);
   int get itemCount => lines.fold<int>(0, (sum, l) => sum + l.quantity);
 
@@ -371,6 +406,8 @@ class RegisterController extends ChangeNotifier {
           }
         }
         billing = billing!.copyWith(promotions: merged);
+        _applyAutoPromotionsToCatalog();
+        autoApplyBestPromotion();
         notifyListeners();
       }
     } catch (e) {
@@ -446,14 +483,12 @@ class RegisterController extends ChangeNotifier {
     } else {
       lines.add(candidate);
     }
-    _persistDraft();
-    notifyListeners();
+    _syncCartChanges();
   }
 
   void increment(RegisterLine l) {
     l.quantity++;
-    _persistDraft();
-    notifyListeners();
+    _syncCartChanges();
   }
 
   void decrement(RegisterLine l) {
@@ -462,20 +497,17 @@ class RegisterController extends ChangeNotifier {
     } else {
       l.quantity--;
     }
-    _persistDraft();
-    notifyListeners();
+    _syncCartChanges();
   }
 
   void remove(RegisterLine l) {
     lines.remove(l);
-    _persistDraft();
-    notifyListeners();
+    _syncCartChanges();
   }
 
   void setNote(RegisterLine l, String note) {
     l.note = note.trim().isEmpty ? null : note.trim();
-    _persistDraft();
-    notifyListeners();
+    _syncCartChanges();
   }
 
   void setOrderType(OrderType t) {

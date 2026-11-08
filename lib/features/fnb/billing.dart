@@ -280,8 +280,46 @@ class BillingSettings {
   List<StorePromotion> get manualPromotions =>
       promotions.where((p) => p.isActive && !p.isAutomatic).toList();
 
-  factory BillingSettings.fromJson(Map<String, dynamic> json) {
-    final step = json.getInt('rounding_type', fallback: json.getInt('rounding_step'));
+  factory BillingSettings.fromJson(Map<String, dynamic> rawJson) {
+    // Unpack nested map jika ada pembungkus settings, preferences, pos_config, dll
+    final Map<String, dynamic> json = Map<String, dynamic>.from(rawJson);
+    for (final key in ['settings', 'preferences', 'pos_config', 'config', 'billing']) {
+      final val = rawJson[key];
+      if (val is Map) {
+        json.addAll(Map<String, dynamic>.from(val));
+      } else if (val is String && (val.startsWith('{') || val.startsWith('['))) {
+        try {
+          final decoded = jsonDecode(val);
+          if (decoded is Map) {
+            json.addAll(Map<String, dynamic>.from(decoded));
+          }
+        } catch (_) {}
+      }
+    }
+
+    int step = json.getInt('rounding_step', fallback: json.getInt('rounding_type'));
+    if (step <= 0) {
+      final rVal = json['rounding_step'] ?? json['rounding_type'] ?? json['rounding_amount_step'];
+      if (rVal != null) {
+        step = int.tryParse(rVal.toString()) ?? 0;
+      }
+    }
+    // Mapping kode enum pembulatan jika yang dikirim backend adalah ID/kode 1, 2, 3
+    if (step == 1) {
+      step = 100;
+    } else if (step == 2) {
+      step = 500;
+    } else if (step == 3) {
+      step = 1000;
+    }
+    if (step <= 0) step = 100;
+
+    final bool hasRoundingKey = json.containsKey('rounding_enabled') ||
+        json.containsKey('enable_rounding') ||
+        json.containsKey('is_rounding');
+    final bool isRoundingOn = hasRoundingKey
+        ? json.getBool('rounding_enabled', fallback: json.getBool('enable_rounding', fallback: json.getBool('is_rounding')))
+        : true;
 
     // Ekstraksi promosi & diskon dari prefensi
     final rawPromos = json['promotions'] ??
@@ -326,11 +364,10 @@ class BillingSettings {
       pb1Enabled: json.getBool('pb1_enabled', fallback: json.getBool('enable_pb1', fallback: json.getBool('tax_enabled'))),
       pb1Rate: json.getDouble('pb1_rate', fallback: json.getDouble('tax_rate')),
       pb1Inclusive: json.getBool('pb1_inclusive', fallback: json.getBool('tax_inclusive')),
-      // Sama seperti web: pembulatan aktif kecuali dimatikan eksplisit.
-      roundingEnabled: json['rounding_enabled'] != false,
-      roundingStep: step > 0 ? step : 100,
+      roundingEnabled: isRoundingOn,
+      roundingStep: step,
       roundingScope: json.getString('rounding_scope', fallback: 'both'),
-      roundingDirection: json.getString('rounding_direction', fallback: 'floor'),
+      roundingDirection: json.getString('rounding_direction', fallback: json.getString('rounding_mode', fallback: 'floor')),
       taxName: json.getString('tax_name', fallback: 'PB1'),
       promotions: promos,
       memberTiers: tiers,
@@ -684,8 +721,8 @@ class BillBreakdown {
 /// aplikasi dan di kasir web selalu cocok.
 abstract final class BillCalculator {
   static num _round(BillingSettings s, num value) {
-    if (!s.roundingEnabled || s.roundingStep <= 1) return value.round();
-    final step = s.roundingStep;
+    if (!s.roundingEnabled) return value.round();
+    final step = s.roundingStep > 1 ? s.roundingStep : 100;
     switch (s.roundingDirection) {
       case 'ceil':
         return (value / step).ceil() * step;
