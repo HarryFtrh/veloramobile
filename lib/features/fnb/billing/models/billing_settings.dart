@@ -77,7 +77,7 @@ class BillingSettings {
   /// ID mesin tapping box / recorder pajak daerah Pemda
   final String taxDeviceId;
 
-  /// Helper untuk audit dan ekspor rekonsiliasi Pajak Restoran (PB1 10%) Bapenda
+  /// Helper untuk audit dan ekspor rekonsiliasi Pajak Restoran (PB1) Bapenda
   Map<String, dynamic> toBapendaAuditPayload({
     required String invoiceNumber,
     required num subtotal,
@@ -141,13 +141,11 @@ class BillingSettings {
       } else if (node is List) {
         for (final item in node) {
           if (item is Map) {
-            // Tangani array key-value pair dari backend preferences: [{"key": "tax_rate", "value": "10"}]
-            final k = item['key'] ?? item['name'] ?? item['setting_key'] ?? item['code'];
-            final v = item['value'] ?? item['setting_value'] ?? item['val'];
+            // Hanya tangani array key-value pair dari preferensi: [{"key": "tax_rate", "value": "10"}]
+            final k = item['key'] ?? item['setting_key'];
+            final v = item['value'] ?? item['setting_value'];
             if (k != null && v != null) {
               result[k.toString()] = v;
-            } else {
-              extract(item);
             }
           }
         }
@@ -280,7 +278,8 @@ class BillingSettings {
         }
       }
     }
-    final bool pb1Enabled = (explicitPb1Enabled ?? (pb1Rate > 0)) && pb1Rate > 0;
+    final bool pb1Enabled = (explicitPb1Enabled == true) && pb1Rate > 0;
+    final double effectivePb1Rate = pb1Enabled ? pb1Rate : 0.0;
 
     final bool pb1Inclusive = json.getBool(
       'pb1_inclusive',
@@ -377,7 +376,8 @@ class BillingSettings {
         }
       }
     }
-    final bool serviceChargeEnabled = (explicitServiceEnabled ?? (serviceRate > 0)) && serviceRate > 0;
+    final bool serviceChargeEnabled = (explicitServiceEnabled == true) && serviceRate > 0;
+    final double effectiveServiceRate = serviceChargeEnabled ? serviceRate : 0.0;
 
     // 3. Ekstraksi Pembulatan (Rounding) langsung dari API
     int step = 0;
@@ -449,13 +449,12 @@ class BillingSettings {
       }
     }
 
-    bool isRoundingOn = (explicitRoundingOn ?? (step > 0)) && step > 0;
-
-    // Jika step tidak ditentukan di API atau <= 0, pembulatan dinonaktifkan
+    bool isRoundingOn = (explicitRoundingOn == true) && step > 0;
     if (step <= 0) {
       isRoundingOn = false;
       step = 0;
     }
+    final int effectiveStep = isRoundingOn ? step : 0;
 
     // Ekstraksi promosi & diskon dari prefensi
     final rawPromos = json['promotions'] ??
@@ -496,12 +495,12 @@ class BillingSettings {
 
     return BillingSettings(
       serviceChargeEnabled: serviceChargeEnabled,
-      serviceChargeRate: serviceRate,
+      serviceChargeRate: effectiveServiceRate,
       pb1Enabled: pb1Enabled,
-      pb1Rate: pb1Rate,
+      pb1Rate: effectivePb1Rate,
       pb1Inclusive: pb1Inclusive,
       roundingEnabled: isRoundingOn,
-      roundingStep: step,
+      roundingStep: effectiveStep,
       roundingScope: json.getString('rounding_scope', fallback: 'both'),
       roundingDirection: json.getString('rounding_direction', fallback: json.getString('rounding_mode', fallback: 'floor')),
       taxName: json.getString('tax_name', fallback: 'PB1'),
