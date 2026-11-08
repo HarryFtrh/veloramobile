@@ -8,10 +8,6 @@ import '../../core/storage/session_storage.dart';
 import '../auth/auth_service.dart';
 import '../auth/cubit/auth_cubit.dart';
 import '../auth/cubit/auth_state.dart';
-import '../shared_pos/printer_settings_screen.dart';
-import '../subscription/subscription_model.dart';
-import '../subscription/subscription_screen.dart';
-import '../subscription/subscription_service.dart';
 import 'widgets/active_sessions_modal.dart';
 import 'widgets/branch_picker_sheet.dart';
 import 'widgets/settings_pin_dialog.dart';
@@ -32,14 +28,12 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool? _hasPin;
-  TenantSubscription? _subscription;
   AppVersionInfo? _versionInfo;
 
   @override
   void initState() {
     super.initState();
     _loadPin();
-    _loadSubscription();
     _loadVersionInfo();
   }
 
@@ -51,13 +45,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _loadPin() async {
     final has = await AuthService.instance.hasQuickPin();
     if (mounted) setState(() => _hasPin = has);
-  }
-
-  Future<void> _loadSubscription() async {
-    try {
-      final sub = await SubscriptionService.instance.getSubscription();
-      if (mounted) setState(() => _subscription = sub);
-    } catch (_) {}
   }
 
   void _toast(String message) {
@@ -155,7 +142,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final p = context.palette;
     final primary = Theme.of(context).colorScheme.primary;
     final state = context.watch<AuthCubit>().state;
     final user = state is Authenticated ? state.user : null;
@@ -166,7 +152,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: const Text(
-          'Pengaturan',
+          'Pengaturan Akun',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w800,
@@ -175,6 +161,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
         backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF0F172A),
+        iconTheme: const IconThemeData(color: Color(0xFF0F172A)),
         elevation: 0,
         scrolledUnderElevation: 0,
         bottom: PreferredSize(
@@ -296,12 +284,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 22),
               ],
 
-              // 2. Section: Operasional & Hardware
-              SettingsGroup(
-                title: 'Operasional Kasir',
-                headerIcon: Icons.storefront_rounded,
-                items: [
-                  if (user != null && branch != null)
+              // 2. Section: Cabang & Outlet
+              if (user != null && branch != null) ...[
+                SettingsGroup(
+                  title: 'Cabang & Outlet',
+                  headerIcon: Icons.storefront_rounded,
+                  items: [
                     SettingsTile(
                       icon: Icons.store_rounded,
                       iconColor: const Color(0xFFD97706),
@@ -340,21 +328,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                       onTap: user.can(AppPermission.changeBranch) && user.locations.length > 1 ? () => _pickBranch(user) : null,
                     ),
-                  SettingsTile(
-                    icon: Icons.print_rounded,
-                    iconColor: const Color(0xFF2563EB),
-                    iconBgColor: const Color(0xFFDBEAFE),
-                    title: 'Printer Struk & Hardware',
-                    subtitle: 'Pengaturan Bluetooth, LAN port 9100, & laci kas',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const PrinterSettingsScreen()),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
+                  ],
+                ),
+                const SizedBox(height: 20),
+              ],
 
-              // 3. Section: Keamanan & Akses
+              // 3. Section: Keamanan & Akses Kasir
               SettingsGroup(
                 title: 'Keamanan & Akses Kasir',
                 headerIcon: Icons.security_rounded,
@@ -394,39 +373,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 20),
 
-              // 4. Section: Lisensi & Langganan Toko
-              SettingsGroup(
-                title: 'Lisensi & Langganan',
-                headerIcon: Icons.workspace_premium_rounded,
-                items: [
-                  SettingsTile(
-                    icon: Icons.workspace_premium_rounded,
-                    iconColor: const Color(0xFFD97706),
-                    iconBgColor: const Color(0xFFFEF3C7),
-                    title: _subscription?.planName ?? 'Paket Langganan',
-                    subtitle: _subscription != null
-                        ? 'Status: ${_subscription!.statusDisplayName}${_subscription!.daysRemaining != null ? " • Sisa ${_subscription!.daysRemaining} hari" : ""}'
-                        : 'Informasi lisensi cloud outlet',
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF059669).withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Text(
-                        'AKTIF',
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF059669)),
-                      ),
-                    ),
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // 5. Section: Sistem & Informasi Versi
+              // 4. Section: Sistem & Informasi Versi
               SettingsGroup(
                 title: 'Sistem & Pembaruan',
                 headerIcon: Icons.info_outline_rounded,
@@ -463,7 +410,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 26),
 
-              // 6. Tombol Logout
+              // 5. Tombol Logout
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(

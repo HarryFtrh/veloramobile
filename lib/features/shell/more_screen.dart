@@ -8,8 +8,8 @@ import 'more_entry.dart';
 
 export 'more_entry.dart';
 
-/// Menu Hub "Lainnya" untuk operasional kasir, profil outlet, dan fitur sekunder.
-/// Mendukung Server-Driven Menu via GET /api/my-menu dari backend Velora.
+/// Hub Menu "Lainnya" untuk operasional kasir, profil outlet, dan fitur sekunder.
+/// Mendukung layout responsif adaptif tablet (2 kolom bento) & mobile (vertikal bertingkat).
 class MoreScreen extends StatefulWidget {
   const MoreScreen({super.key, required this.entries, this.onLogout});
 
@@ -54,39 +54,45 @@ class _MoreScreenState extends State<MoreScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Theme.of(ctx).colorScheme.error.withValues(alpha: 0.12),
+                color: const Color(0xFFDC2626).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(Icons.logout_rounded, color: Theme.of(ctx).colorScheme.error, size: 22),
+              child: const Icon(Icons.logout_rounded, color: Color(0xFFDC2626), size: 22),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             const Expanded(
-              child: Text('Keluar dari Akun?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+              child: Text(
+                'Keluar dari Akun Kasir?',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+              ),
             ),
           ],
         ),
         content: const Text(
-          'Anda perlu masuk kembali dengan akun toko untuk menggunakan aplikasi kasir ini.',
-          style: TextStyle(fontSize: 13),
+          'Pastikan seluruh pesanan dan transaksi telah tersimpan sebelum keluar dari aplikasi.',
+          style: TextStyle(fontSize: 13, color: Color(0xFF475569), height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Batal'),
+            child: const Text('Batal', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w700)),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(ctx).colorScheme.error,
+              backgroundColor: const Color(0xFFDC2626),
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              elevation: 0,
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Keluar'),
+            child: const Text('Keluar', style: TextStyle(fontWeight: FontWeight.w800)),
           ),
         ],
       ),
@@ -96,12 +102,13 @@ class _MoreScreenState extends State<MoreScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isWide = MediaQuery.sizeOf(context).width >= 600;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isTablet = screenWidth >= 720;
     final canPop = ModalRoute.of(context)?.canPop ?? false;
-    final p = context.palette;
     final brandPrimary = Theme.of(context).colorScheme.primary;
 
     final userName = SessionStorage.instance.getUserName() ?? 'Kasir Bertugas';
+    final roleName = SessionStorage.instance.getUserRole() ?? 'Staff';
     final tenantName = SessionStorage.instance.getTenantName() ?? 'Velora POS';
     final locationName = SessionStorage.instance.getLocationName() ?? 'Outlet Utama';
 
@@ -110,14 +117,17 @@ class _MoreScreenState extends State<MoreScreen> {
         : widget.entries;
 
     return Scaffold(
-      backgroundColor: p.canvas,
-      appBar: (!isWide || canPop)
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: (!isTablet || canPop)
           ? AppBar(
-              backgroundColor: p.surface,
+              backgroundColor: Colors.white,
               elevation: 0,
-              title: Text(
+              scrolledUnderElevation: 0,
+              foregroundColor: const Color(0xFF0F172A),
+              iconTheme: const IconThemeData(color: Color(0xFF0F172A)),
+              title: const Text(
                 'Menu & Lainnya',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17, color: p.textPrimary),
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: Color(0xFF0F172A), letterSpacing: -0.3),
               ),
               actions: [
                 IconButton(
@@ -125,12 +135,13 @@ class _MoreScreenState extends State<MoreScreen> {
                   tooltip: 'Sinkronkan Menu Server',
                   onPressed: () => _fetchServerMenu(force: true),
                 ),
+                const SizedBox(width: 8),
               ],
               bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(2),
+                preferredSize: const Size.fromHeight(1),
                 child: _isLoading
-                    ? LinearProgressIndicator(minHeight: 2, color: brandPrimary, backgroundColor: p.line)
-                    : Container(color: p.line, height: 1),
+                    ? LinearProgressIndicator(minHeight: 2, color: brandPrimary, backgroundColor: const Color(0xFFE2E8F0))
+                    : Container(color: const Color(0xFFE2E8F0), height: 1),
               ),
             )
           : null,
@@ -139,330 +150,559 @@ class _MoreScreenState extends State<MoreScreen> {
         color: brandPrimary,
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 680),
+            constraints: BoxConstraints(maxWidth: isTablet ? 1040 : 640),
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-            children: [
-              // 1. Profile / Store Card
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: p.line, width: 1.2),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x06000000),
-                      blurRadius: 8,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
+              padding: EdgeInsets.symmetric(
+                horizontal: isTablet ? 24 : 16,
+                vertical: isTablet ? 24 : 18,
+              ),
+              children: [
+                // 1. Profil & Outlet Hero Card
+                _buildProfileHero(
+                  userName: userName,
+                  roleName: roleName,
+                  tenantName: tenantName,
+                  locationName: locationName,
+                  brandPrimary: brandPrimary,
+                  isTablet: isTablet,
                 ),
-                child: Row(
+
+                const SizedBox(height: 20),
+
+                // 2. Operasional Register & Quick Hardware Strip
+                _buildQuickOperationalCard(brandPrimary),
+
+                const SizedBox(height: 24),
+
+                // 3. Categorized Sections (Responsive: 2-Column on Tablet, 1-Column on Mobile)
+                if (isTablet)
+                  _buildTabletSplitLayout(effectiveEntries, brandPrimary)
+                else
+                  _buildMobileVerticalLayout(effectiveEntries, brandPrimary),
+
+                const SizedBox(height: 28),
+
+                // 4. Tombol Logout Akun Kasir
+                if (widget.onLogout != null) ...[
+                  OutlinedButton.icon(
+                    onPressed: () => _confirmLogout(context),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFDC2626),
+                      side: const BorderSide(color: Color(0xFFFECACA), width: 1.2),
+                      backgroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 0,
+                    ),
+                    icon: const Icon(Icons.logout_rounded, size: 18),
+                    label: const Text(
+                      'Keluar dari Akun Kasir',
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                ],
+
+                // Versi Aplikasi
+                const Center(
+                  child: Text(
+                    'Velora POS • v2.0 Enterprise Cloud',
+                    style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8), fontWeight: FontWeight.w600),
+                  ),
+                ),
+                const SizedBox(height: 28),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Top Profile & Outlet Hero Card
+  Widget _buildProfileHero({
+    required String userName,
+    required String roleName,
+    required String tenantName,
+    required String locationName,
+    required Color brandPrimary,
+    required bool isTablet,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x06000000),
+            blurRadius: 12,
+            offset: Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [brandPrimary, brandPrimary.withValues(alpha: 0.85)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: brandPrimary.withValues(alpha: 0.25),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                userName.isNotEmpty ? userName[0].toUpperCase() : 'K',
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    CircleAvatar(
-                      radius: 24,
-                      backgroundColor: brandPrimary.withValues(alpha: 0.12),
+                    Flexible(
                       child: Text(
-                        userName.isNotEmpty ? userName[0].toUpperCase() : 'K',
+                        userName,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF0F172A),
+                          letterSpacing: -0.2,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: brandPrimary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: brandPrimary.withValues(alpha: 0.2)),
+                      ),
+                      child: Text(
+                        roleName.toUpperCase(),
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 10,
                           fontWeight: FontWeight.w800,
                           color: brandPrimary,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            userName,
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: p.textPrimary,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            '$tenantName • $locationName',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: p.textSecondary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: p.tertiary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: p.tertiary.withValues(alpha: 0.3)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.circle, size: 7, color: p.tertiary),
-                          const SizedBox(width: 4),
-                          Text(
-                            'ONLINE',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              color: p.tertiary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // 2. Section: Operasional Register & Kasir
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                child: Text(
-                  'OPERASIONAL KASIR',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.6,
-                    color: p.textTertiary,
+                const SizedBox(height: 3),
+                Text(
+                  '$tenantName • $locationName',
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w600,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              const SizedBox(height: 6),
-
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: p.line),
-                ),
-                child: Column(
-                  children: [
-                    // Row 1: Shift Kasir Status & Actions
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.lock_clock_outlined, size: 18, color: brandPrimary),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Shift Register',
-                              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: p.textPrimary),
-                            ),
-                          ],
-                        ),
-                        const CashierShiftBadge(),
-                      ],
-                    ),
-                    Divider(height: 20, color: p.line),
-                    // Row 2: Quick buttons: Buka laci & Printer
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () async {
-                              await ReceiptPrinterService.instance.openCashDrawer();
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Perintah buka laci kasir dikirim')),
-                                );
-                              }
-                            },
-                            icon: const Icon(Icons.point_of_sale_outlined, size: 16),
-                            label: const Text(
-                              'Buka Laci',
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: brandPrimary,
-                              side: BorderSide(color: p.line),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () => ReceiptPrinterService.instance.openSettings(context),
-                            icon: const Icon(Icons.print_outlined, size: 16),
-                            label: const Text(
-                              'Printer',
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: p.textPrimary,
-                              side: BorderSide(color: p.line),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // 3. Section(s): Categorized Features or Grouped Menu Cards
-              ...() {
-                final Map<String, List<MoreEntry>> groupedEntries = {};
-                for (final entry in effectiveEntries) {
-                  final cat = entry.category ?? 'Fitur & Pengaturan Toko';
-                  groupedEntries.putIfAbsent(cat, () => []).add(entry);
-                }
-
-                return groupedEntries.entries.map((group) {
-                  final groupEntries = group.value;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 18),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                          child: Text(
-                            group.key.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.6,
-                              color: p.textTertiary,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: p.line),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Color(0x04000000),
-                                blurRadius: 6,
-                                offset: Offset(0, 1),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            children: [
-                              for (var i = 0; i < groupEntries.length; i++) ...[
-                                Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    borderRadius: BorderRadius.vertical(
-                                      top: i == 0 ? const Radius.circular(16) : Radius.zero,
-                                      bottom: i == groupEntries.length - 1 ? const Radius.circular(16) : Radius.zero,
-                                    ),
-                                    onTap: () => Navigator.of(context).push(
-                                      MaterialPageRoute<void>(builder: groupEntries[i].builder),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-                                      child: Row(
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.all(8),
-                                            decoration: BoxDecoration(
-                                              color: brandPrimary.withValues(alpha: 0.1),
-                                              borderRadius: BorderRadius.circular(10),
-                                            ),
-                                            child: Icon(groupEntries[i].icon, color: brandPrimary, size: 20),
-                                          ),
-                                          const SizedBox(width: 14),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  groupEntries[i].title,
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.w700,
-                                                    fontSize: 13.5,
-                                                    color: p.textPrimary,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 2),
-                                                Text(
-                                                  groupEntries[i].subtitle,
-                                                  style: TextStyle(
-                                                    fontSize: 11.5,
-                                                    color: p.textSecondary,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          Icon(Icons.chevron_right_rounded, color: p.textTertiary, size: 20),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                if (i < groupEntries.length - 1)
-                                  Divider(height: 1, indent: 56, endIndent: 16, color: p.line),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList();
-              }(),
-
-              const SizedBox(height: 8),
-
-              // 4. Logout Button
-              if (widget.onLogout != null) ...[
-                OutlinedButton.icon(
-                  onPressed: () => _confirmLogout(context),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: p.danger,
-                    side: BorderSide(color: p.danger.withValues(alpha: 0.3)),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                  ),
-                  icon: const Icon(Icons.logout_rounded, size: 18),
-                  label: const Text('Keluar dari Akun', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-                ),
-                const SizedBox(height: 16),
               ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: const Color(0xFFECFDF5),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFA7F3D0)),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.circle, size: 7, color: Color(0xFF059669)),
+                SizedBox(width: 5),
+                Text(
+                  'ONLINE',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF059669),
+                    letterSpacing: 0.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-              // Version Tag
-              Center(
-                child: Text(
-                  'Velora POS • v1.0.0',
-                  style: TextStyle(fontSize: 11, color: p.textTertiary, fontWeight: FontWeight.w600),
+  /// Quick Shift & Cash Register Operation Card
+  Widget _buildQuickOperationalCard(Color brandPrimary) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x04000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(7),
+                    decoration: BoxDecoration(
+                      color: brandPrimary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(Icons.point_of_sale_rounded, size: 18, color: brandPrimary),
+                  ),
+                  const SizedBox(width: 10),
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Shift Kasir Register',
+                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: Color(0xFF0F172A)),
+                      ),
+                      Text(
+                        'Status pencatatan transaksi & uang laci kasir',
+                        style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const CashierShiftBadge(),
+            ],
+          ),
+          const SizedBox(height: 14),
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    await ReceiptPrinterService.instance.openCashDrawer();
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Perintah buka laci kasir berhasil dikirim'),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      );
+                    }
+                  },
+                  icon: Icon(Icons.lock_open_rounded, size: 17, color: brandPrimary),
+                  label: Text(
+                    'Buka Laci Kasir',
+                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: brandPrimary),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: brandPrimary.withValues(alpha: 0.25)),
+                    backgroundColor: brandPrimary.withValues(alpha: 0.04),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => ReceiptPrinterService.instance.openSettings(context),
+                  icon: const Icon(Icons.print_outlined, size: 17, color: Color(0xFF334155)),
+                  label: const Text(
+                    'Pengaturan Printer',
+                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: Color(0xFF334155)),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFFCBD5E1)),
+                    backgroundColor: const Color(0xFFF8FAFC),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Responsive Tablet: 2 Balanced Columns
+  Widget _buildTabletSplitLayout(List<MoreEntry> entries, Color brandPrimary) {
+    final Map<String, List<MoreEntry>> grouped = _groupEntries(entries);
+
+    // Split groups logically:
+    // Left: Operasional Kasir
+    // Right: Pelanggan & CRM, Perangkat Keras, Bisnis & Lisensi, Pengaturan & Akun
+    final leftGroups = <MapEntry<String, List<MoreEntry>>>[];
+    final rightGroups = <MapEntry<String, List<MoreEntry>>>[];
+
+    for (final entry in grouped.entries) {
+      final keyLower = entry.key.toLowerCase();
+      if (keyLower.contains('operasional') || keyLower.contains('pos') || keyLower.contains('dapur') || keyLower.contains('meja')) {
+        leftGroups.add(entry);
+      } else {
+        rightGroups.add(entry);
+      }
+    }
+
+    // Fallback if imbalanced
+    if (leftGroups.isEmpty) {
+      final all = grouped.entries.toList();
+      final mid = (all.length / 2).ceil();
+      leftGroups.addAll(all.sublist(0, mid));
+      rightGroups.addAll(all.sublist(mid));
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Left Column
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final group in leftGroups) ...[
+                _buildCategoryGroup(group.key, group.value, brandPrimary),
+                const SizedBox(height: 20),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(width: 20),
+        // Right Column
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final group in rightGroups) ...[
+                _buildCategoryGroup(group.key, group.value, brandPrimary),
+                const SizedBox(height: 20),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Responsive Mobile: Single Column Stacked
+  Widget _buildMobileVerticalLayout(List<MoreEntry> entries, Color brandPrimary) {
+    final Map<String, List<MoreEntry>> grouped = _groupEntries(entries);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final group in grouped.entries) ...[
+          _buildCategoryGroup(group.key, group.value, brandPrimary),
+          const SizedBox(height: 20),
+        ],
+      ],
+    );
+  }
+
+  Map<String, List<MoreEntry>> _groupEntries(List<MoreEntry> entries) {
+    final Map<String, List<MoreEntry>> grouped = {};
+    for (final entry in entries) {
+      final cat = entry.category ?? 'Fitur & Menu Lainnya';
+      grouped.putIfAbsent(cat, () => []).add(entry);
+    }
+    return grouped;
+  }
+
+  Widget _buildCategoryGroup(String categoryName, List<MoreEntry> groupEntries, Color brandPrimary) {
+    final headerIcon = _resolveCategoryIcon(categoryName);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Row(
+            children: [
+              Icon(headerIcon, size: 16, color: const Color(0xFF64748B)),
+              const SizedBox(width: 6),
+              Text(
+                categoryName.toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.8,
+                  color: Color(0xFF64748B),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x04000000),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Column(
+              children: [
+                for (var i = 0; i < groupEntries.length; i++) ...[
+                  _buildMenuItemTile(groupEntries[i], brandPrimary),
+                  if (i < groupEntries.length - 1)
+                    const Divider(height: 1, indent: 64, endIndent: 16, color: Color(0xFFF1F5F9)),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMenuItemTile(MoreEntry entry, Color brandPrimary) {
+    final iconColor = entry.iconColor ?? brandPrimary;
+    final iconBg = entry.iconBg ?? brandPrimary.withValues(alpha: 0.1);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: entry.builder),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: iconBg,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(entry.icon, color: iconColor, size: 21),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      entry.title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13.5,
+                        color: Color(0xFF0F172A),
+                        letterSpacing: -0.1,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      entry.subtitle,
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        color: Color(0xFF64748B),
+                        fontWeight: FontWeight.w500,
+                        height: 1.3,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              if (entry.badge != null) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                  decoration: BoxDecoration(
+                    color: entry.badgeColor ?? const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: (entry.badgeColor ?? const Color(0xFFE2E8F0)).withValues(alpha: 0.8),
+                    ),
+                  ),
+                  child: Text(
+                    entry.badge!,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: entry.badgeTextColor ?? const Color(0xFF475569),
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(width: 6),
+              const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8), size: 18),
             ],
           ),
         ),
       ),
-      ),
     );
+  }
+
+  IconData _resolveCategoryIcon(String category) {
+    final lower = category.toLowerCase();
+    if (lower.contains('operasional') || lower.contains('pos') || lower.contains('kasir')) {
+      return Icons.point_of_sale_rounded;
+    }
+    if (lower.contains('pelanggan') || lower.contains('crm')) {
+      return Icons.people_alt_rounded;
+    }
+    if (lower.contains('perangkat') || lower.contains('hardware') || lower.contains('printer')) {
+      return Icons.print_rounded;
+    }
+    if (lower.contains('bisnis') || lower.contains('lisensi') || lower.contains('paket')) {
+      return Icons.workspace_premium_rounded;
+    }
+    if (lower.contains('pengaturan') || lower.contains('akun') || lower.contains('keamanan')) {
+      return Icons.tune_rounded;
+    }
+    if (lower.contains('keuangan') || lower.contains('analitik')) {
+      return Icons.analytics_rounded;
+    }
+    return Icons.grid_view_rounded;
   }
 }

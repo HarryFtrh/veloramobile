@@ -18,16 +18,15 @@ class MoreMenuFactory {
     switch (vertical) {
       case BusinessVertical.fnb:
         return [
-          const MoreEntry(
-            category: 'Analitik & CRM',
-            icon: Icons.dashboard_rounded,
-            title: 'Dashboard & Analitik Penjualan',
-            subtitle: 'Ringkasan omzet harian, status pesanan, & tren',
-            builder: _buildDashboard,
-          ),
+          // Operasional Kasir & Penjualan
           const MoreEntry(
             category: 'Operasional Kasir',
             icon: Icons.coffee_rounded,
+            iconColor: Color(0xFF059669),
+            iconBg: Color(0xFFD1FAE5),
+            badge: 'Self-Order',
+            badgeColor: Color(0xFFD1FAE5),
+            badgeTextColor: Color(0xFF047857),
             title: 'Mode Pelanggan (Customer Self-Order)',
             subtitle: 'Layar eksplorasi menu meja & live tracking pesanan',
             builder: _buildCustomerHome,
@@ -35,34 +34,91 @@ class MoreMenuFactory {
           const MoreEntry(
             category: 'Operasional Kasir',
             icon: Icons.call_split_rounded,
+            iconColor: Color(0xFF0D9488),
+            iconBg: Color(0xFFCCFBF1),
+            badge: 'Numpad POS',
+            badgeColor: Color(0xFFCCFBF1),
+            badgeTextColor: Color(0xFF0F766E),
             title: 'Kasir Split Bill & Pecahan Uang',
             subtitle: 'Pembayaran bagi tagihan, numpad, & kalkulator kembalian',
             builder: _buildSplitBill,
           ),
           const MoreEntry(
-            category: 'Analitik & CRM',
+            category: 'Operasional Kasir',
+            icon: Icons.bar_chart_rounded,
+            iconColor: Color(0xFF0284C7),
+            iconBg: Color(0xFFE0F2FE),
+            badge: 'Omzet',
+            badgeColor: Color(0xFFE0F2FE),
+            badgeTextColor: Color(0xFF0369A1),
+            title: 'Dashboard & Analitik Penjualan',
+            subtitle: 'Ringkasan omzet harian, status pesanan, & tren',
+            builder: _buildDashboard,
+          ),
+          const MoreEntry(
+            category: 'Operasional Kasir',
+            icon: Icons.payments_outlined,
+            iconColor: Color(0xFFD97706),
+            iconBg: Color(0xFFFEF3C7),
+            badge: 'Petty Cash',
+            badgeColor: Color(0xFFFEF3C7),
+            badgeTextColor: Color(0xFFB45309),
+            title: 'Pengeluaran Kasir (Petty Cash)',
+            subtitle: 'Pencatatan kas kecil & biaya operasional toko harian',
+            builder: _buildExpenses,
+          ),
+
+          // Pelanggan & CRM
+          const MoreEntry(
+            category: 'Pelanggan & CRM',
             icon: Icons.people_outline_rounded,
+            iconColor: Color(0xFF2563EB),
+            iconBg: Color(0xFFDBEAFE),
+            badge: 'Member Toko',
+            badgeColor: Color(0xFFDBEAFE),
+            badgeTextColor: Color(0xFF1D4ED8),
             title: 'Pelanggan & CRM',
-            subtitle: 'Daftar pelanggan loyalitas dan riwayat pesanan',
+            subtitle: 'Daftar pelanggan, poin loyalitas, riwayat, & buku kasbon',
             builder: _buildCustomers,
           ),
+
+          // Perangkat Keras & Hardware
           const MoreEntry(
             category: 'Perangkat Keras',
             icon: Icons.print_rounded,
+            iconColor: Color(0xFF4338CA),
+            iconBg: Color(0xFFE0E7FF),
+            badge: 'Bluetooth / LAN',
+            badgeColor: Color(0xFFE0E7FF),
+            badgeTextColor: Color(0xFF3730A3),
             title: 'Printer Struk & Hardware Kasir',
             subtitle: 'Konfigurasi Bluetooth, LAN port 9100, & laci kas',
             builder: _buildPrinter,
           ),
+
+          // Bisnis & Lisensi
           const MoreEntry(
             category: 'Bisnis & Lisensi',
             icon: Icons.workspace_premium_rounded,
+            iconColor: Color(0xFF7C3AED),
+            iconBg: Color(0xFFEDE9FE),
+            badge: 'Velora Pro',
+            badgeColor: Color(0xFFEDE9FE),
+            badgeTextColor: Color(0xFF6D28D9),
             title: 'Paket & Langganan Toko',
             subtitle: 'Status paket Velora Pro, kuota outlet, & masa aktif',
             builder: _buildSubscription,
           ),
+
+          // Pengaturan & Akun
           const MoreEntry(
             category: 'Pengaturan & Akun',
             icon: Icons.settings_outlined,
+            iconColor: Color(0xFF334155),
+            iconBg: Color(0xFFF1F5F9),
+            badge: 'Keamanan',
+            badgeColor: Color(0xFFF1F5F9),
+            badgeTextColor: Color(0xFF475569),
             title: 'Pengaturan Akun & Keamanan',
             subtitle: 'Profil pengguna, PIN 4 digit kasir, & sesi login',
             builder: _buildSettings,
@@ -72,51 +128,95 @@ class MoreMenuFactory {
       case BusinessVertical.retail:
       default:
         return [
+          // Operasional Toko
           const MoreEntry(
-            category: 'Analitik & CRM',
-            icon: Icons.dashboard_rounded,
+            category: 'Operasional Kasir',
+            icon: Icons.bar_chart_rounded,
+            iconColor: Color(0xFF0284C7),
+            iconBg: Color(0xFFE0F2FE),
+            badge: 'Omzet',
+            badgeColor: Color(0xFFE0F2FE),
+            badgeTextColor: Color(0xFF0369A1),
             title: 'Dashboard & Analitik Penjualan',
             subtitle: 'Ringkasan omzet harian, status penjualan, & tren',
             builder: _buildDashboard,
           ),
           const MoreEntry(
-            category: 'Analitik & CRM',
-            icon: Icons.people_outline_rounded,
-            title: 'Pelanggan & CRM',
-            subtitle: 'Member, poin loyalitas, riwayat, dan buku kasbon',
-            builder: _buildCustomers,
-          ),
-          const MoreEntry(
-            category: 'Operasional Toko',
+            category: 'Operasional Kasir',
             icon: Icons.assignment_return_outlined,
+            iconColor: Color(0xFFE11D48),
+            iconBg: Color(0xFFFFE4E6),
+            badge: 'Retur Faktur',
+            badgeColor: Color(0xFFFFE4E6),
+            badgeTextColor: Color(0xFFBE123C),
             title: 'Retur Penjualan & Faktur',
             subtitle: 'Retur barang invoice transaksi atau ke supplier',
             builder: _buildReturn,
           ),
           const MoreEntry(
-            category: 'Operasional Toko',
+            category: 'Operasional Kasir',
             icon: Icons.payments_outlined,
+            iconColor: Color(0xFFD97706),
+            iconBg: Color(0xFFFEF3C7),
+            badge: 'Petty Cash',
+            badgeColor: Color(0xFFFEF3C7),
+            badgeTextColor: Color(0xFFB45309),
             title: 'Pengeluaran Kasir (Petty Cash)',
             subtitle: 'Pencatatan kas operasional toko harian',
             builder: _buildExpenses,
           ),
+
+          // Pelanggan & CRM
+          const MoreEntry(
+            category: 'Pelanggan & CRM',
+            icon: Icons.people_outline_rounded,
+            iconColor: Color(0xFF2563EB),
+            iconBg: Color(0xFFDBEAFE),
+            badge: 'Member Toko',
+            badgeColor: Color(0xFFDBEAFE),
+            badgeTextColor: Color(0xFF1D4ED8),
+            title: 'Pelanggan & CRM',
+            subtitle: 'Member, poin loyalitas, riwayat, dan buku kasbon',
+            builder: _buildCustomers,
+          ),
+
+          // Perangkat Keras
           const MoreEntry(
             category: 'Perangkat Keras',
             icon: Icons.print_rounded,
+            iconColor: Color(0xFF4338CA),
+            iconBg: Color(0xFFE0E7FF),
+            badge: 'Bluetooth / LAN',
+            badgeColor: Color(0xFFE0E7FF),
+            badgeTextColor: Color(0xFF3730A3),
             title: 'Printer Struk & Hardware Kasir',
             subtitle: 'Konfigurasi Bluetooth, LAN port 9100, & laci kas',
             builder: _buildPrinter,
           ),
+
+          // Bisnis & Lisensi
           const MoreEntry(
             category: 'Bisnis & Lisensi',
             icon: Icons.workspace_premium_rounded,
+            iconColor: Color(0xFF7C3AED),
+            iconBg: Color(0xFFEDE9FE),
+            badge: 'Velora Pro',
+            badgeColor: Color(0xFFEDE9FE),
+            badgeTextColor: Color(0xFF6D28D9),
             title: 'Paket & Langganan Toko',
             subtitle: 'Status paket Velora Pro, kuota outlet, & masa aktif',
             builder: _buildSubscription,
           ),
+
+          // Pengaturan & Akun
           const MoreEntry(
             category: 'Pengaturan & Akun',
             icon: Icons.settings_outlined,
+            iconColor: Color(0xFF334155),
+            iconBg: Color(0xFFF1F5F9),
+            badge: 'Keamanan',
+            badgeColor: Color(0xFFF1F5F9),
+            badgeTextColor: Color(0xFF475569),
             title: 'Pengaturan Akun & Keamanan',
             subtitle: 'Profil pengguna, PIN 4 digit kasir, & sesi login',
             builder: _buildSettings,

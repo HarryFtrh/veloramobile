@@ -7,6 +7,11 @@ class MoreEntry {
     required this.subtitle,
     required this.builder,
     this.category,
+    this.iconColor,
+    this.iconBg,
+    this.badge,
+    this.badgeColor,
+    this.badgeTextColor,
   });
 
   final IconData icon;
@@ -14,4 +19,9 @@ class MoreEntry {
   final String subtitle;
   final WidgetBuilder builder;
   final String? category;
+  final Color? iconColor;
+  final Color? iconBg;
+  final String? badge;
+  final Color? badgeColor;
+  final Color? badgeTextColor;
 }
