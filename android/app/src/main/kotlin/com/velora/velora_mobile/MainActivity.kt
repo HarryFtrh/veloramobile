@@ -151,9 +151,21 @@ class MainActivity : FlutterActivity() {
 
             socket.use { s ->
                 val os = s.outputStream
-                os.write(bytes)
-                os.flush()
-                Thread.sleep(160)
+                // Chunk bytes into 512-byte blocks with pacing to prevent thermal printer hardware buffer overflow
+                val chunkSize = 512
+                var offset = 0
+                while (offset < bytes.size) {
+                    val length = Math.min(chunkSize, bytes.size - offset)
+                    os.write(bytes, offset, length)
+                    os.flush()
+                    offset += length
+                    if (offset < bytes.size) {
+                        Thread.sleep(15)
+                    }
+                }
+                // Allow the physical thermal print head enough time to burn dots and feed paper before closing socket
+                val drainWaitMs = if (bytes.size > 2000) 2000L else 500L
+                Thread.sleep(drainWaitMs)
             }
             return mapOf("success" to true, "message" to "Berhasil mencetak ke '${device.name}'")
         } catch (e: Exception) {

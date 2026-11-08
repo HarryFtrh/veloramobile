@@ -554,7 +554,16 @@ class BillingSettings {
         }
       }
 
-      final storeName = data.getString('store_name', fallback: data.getString('company_name', fallback: data.getString('name')));
+      final storeName = data.getString(
+        'cafe_name',
+        fallback: data.getString(
+          'business_name',
+          fallback: data.getString(
+            'store_name',
+            fallback: data.getString('company_name', fallback: data.getString('name')),
+          ),
+        ),
+      );
       final storeAddress = data.getString('address', fallback: data.getString('store_address'));
       final storePhone = data.getString('phone', fallback: data.getString('store_phone'));
       final storeLogo = data.getString('logo', fallback: data.getString('logo_url', fallback: data.getString('store_logo', fallback: data.getString('image_url'))));

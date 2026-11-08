@@ -494,7 +494,28 @@ class AuthUser {
       isVeloraStaff: isVeloraStaff,
       permissions: perms,
       tenantId: source.getString('tenant_id', fallback: json.getString('tenant_id', fallback: json.getString('current_tenant_id'))),
-      tenantName: tenant.getString('name', fallback: source.getString('store_name', fallback: json.getString('store_name', fallback: ''))),
+      tenantName: tenant.getString(
+        'cafe_name',
+        fallback: tenant.getString(
+          'business_name',
+          fallback: tenant.getString(
+            'name',
+            fallback: tenant.getString(
+              'store_name',
+              fallback: source.getString(
+                'cafe_name',
+                fallback: source.getString(
+                  'business_name',
+                  fallback: source.getString(
+                    'store_name',
+                    fallback: json.getString('store_name', fallback: json.getString('cafe_name', fallback: '')),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
       businessType: tenant.getString('business_type', fallback: source.getString('business_type', fallback: json.getString('business_type', fallback: 'retail'))),
       locations: locList,
     );
@@ -779,8 +800,23 @@ class AuthService {
         ),
       );
       final tenantName = tenantMap.getString(
-        'name',
-        fallback: data.getString('store_name', fallback: data.getString('tenant_name', fallback: user.tenantName)),
+        'cafe_name',
+        fallback: tenantMap.getString(
+          'business_name',
+          fallback: tenantMap.getString(
+            'name',
+            fallback: tenantMap.getString(
+              'store_name',
+              fallback: data.getString(
+                'cafe_name',
+                fallback: data.getString(
+                  'business_name',
+                  fallback: data.getString('store_name', fallback: data.getString('tenant_name', fallback: user.tenantName)),
+                ),
+              ),
+            ),
+          ),
+        ),
       );
       if (tenantName.isNotEmpty || storeLogo.isNotEmpty) {
         await SessionStorage.instance.saveTenantProfile(

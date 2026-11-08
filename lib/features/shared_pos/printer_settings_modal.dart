@@ -162,7 +162,7 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
     await _saveConfig();
 
     final testData = ReceiptData(
-      storeName: SessionStorage.instance.getTenantName() ?? SessionStorage.instance.getLocationName() ?? 'VELORA POS',
+      storeName: SessionStorage.instance.getTenantName() ?? SessionStorage.instance.getLocationName() ?? 'Cafe & Eatery',
       storeAddress: SessionStorage.instance.getStoreAddress() ?? (SessionStorage.instance.getLocationName() ?? 'Outlet Utama'),
       storePhone: SessionStorage.instance.getStorePhone() ?? '0812-3456-7890',
       storeLogo: SessionStorage.instance.getStoreLogo(),

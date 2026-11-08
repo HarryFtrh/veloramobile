@@ -192,7 +192,17 @@ class SessionStorage {
     }
   }
 
-  String? getTenantName() => _getString(_tenantNameKey);
+  String? getTenantName() {
+    final val = _getString(_tenantNameKey);
+    if (val != null && val.trim().isNotEmpty && val.trim().toUpperCase() != 'VELORA POS') {
+      return val.trim();
+    }
+    final loc = getLocationName();
+    if (loc != null && loc.trim().isNotEmpty && loc.trim().toUpperCase() != 'TERMINAL #01') {
+      return loc.trim();
+    }
+    return (val != null && val.trim().isNotEmpty) ? val.trim() : null;
+  }
   String? getStoreAddress() => _getString(_storeAddressKey);
   String? getStorePhone() => _getString(_storePhoneKey);
   String? getStoreLogo() => _getString(_storeLogoKey);
