@@ -7,81 +7,131 @@ import '../finance/return_screen.dart';
 import '../fnb/fnb_payment_split_screen.dart';
 import '../fnb_customer/customer_home_screen.dart';
 import '../settings/settings_screen.dart';
+import '../shared_pos/printer_settings_screen.dart';
+import '../subscription/subscription_screen.dart';
 import 'more_entry.dart';
 
 /// Centralized Factory for MoreScreen menu entries per business vertical.
-/// Eliminates redundant inline hardcoded menu declarations.
+/// Pecah menu secara terstruktur: Operasional, Hardware/Printer, Lisensi, dan Pengaturan Akun.
 class MoreMenuFactory {
   static List<MoreEntry> entriesFor(BusinessVertical vertical) {
     switch (vertical) {
       case BusinessVertical.fnb:
         return [
-          MoreEntry(
+          const MoreEntry(
+            category: 'Analitik & CRM',
             icon: Icons.dashboard_rounded,
             title: 'Dashboard & Analitik Penjualan',
             subtitle: 'Ringkasan omzet harian, status pesanan, & tren',
-            builder: (_) => const DashboardScreen(),
+            builder: _buildDashboard,
           ),
-          MoreEntry(
+          const MoreEntry(
+            category: 'Operasional Kasir',
             icon: Icons.coffee_rounded,
             title: 'Mode Pelanggan (Customer Self-Order)',
-            subtitle: 'Layar eksplorasi menu, kustomisasi pesanan, & live tracking',
-            builder: (_) => const CustomerHomeScreen(),
+            subtitle: 'Layar eksplorasi menu meja & live tracking pesanan',
+            builder: _buildCustomerHome,
           ),
-          MoreEntry(
+          const MoreEntry(
+            category: 'Operasional Kasir',
             icon: Icons.call_split_rounded,
             title: 'Kasir Split Bill & Pecahan Uang',
             subtitle: 'Pembayaran bagi tagihan, numpad, & kalkulator kembalian',
-            builder: (_) => const FnbPaymentSplitScreen(),
+            builder: _buildSplitBill,
           ),
-          MoreEntry(
+          const MoreEntry(
+            category: 'Analitik & CRM',
             icon: Icons.people_outline_rounded,
             title: 'Pelanggan & CRM',
-            subtitle: 'Daftar pelanggan dan riwayat transaksi',
-            builder: (_) => const CustomersScreen(),
+            subtitle: 'Daftar pelanggan loyalitas dan riwayat pesanan',
+            builder: _buildCustomers,
           ),
-          MoreEntry(
+          const MoreEntry(
+            category: 'Perangkat Keras',
+            icon: Icons.print_rounded,
+            title: 'Printer Struk & Hardware Kasir',
+            subtitle: 'Konfigurasi Bluetooth, LAN port 9100, & laci kas',
+            builder: _buildPrinter,
+          ),
+          const MoreEntry(
+            category: 'Bisnis & Lisensi',
+            icon: Icons.workspace_premium_rounded,
+            title: 'Paket & Langganan Toko',
+            subtitle: 'Status paket Velora Pro, kuota outlet, & masa aktif',
+            builder: _buildSubscription,
+          ),
+          const MoreEntry(
+            category: 'Pengaturan & Akun',
             icon: Icons.settings_outlined,
-            title: 'Pengaturan & Cabang',
-            subtitle: 'Pilih cabang aktif, printer kasir, dan sesi',
-            builder: (_) => const SettingsScreen(),
+            title: 'Pengaturan Akun & Keamanan',
+            subtitle: 'Profil pengguna, PIN 4 digit kasir, & sesi login',
+            builder: _buildSettings,
           ),
         ];
 
       case BusinessVertical.retail:
       default:
         return [
-          MoreEntry(
+          const MoreEntry(
+            category: 'Analitik & CRM',
             icon: Icons.dashboard_rounded,
             title: 'Dashboard & Analitik Penjualan',
             subtitle: 'Ringkasan omzet harian, status penjualan, & tren',
-            builder: (_) => const DashboardScreen(),
+            builder: _buildDashboard,
           ),
-          MoreEntry(
+          const MoreEntry(
+            category: 'Analitik & CRM',
             icon: Icons.people_outline_rounded,
             title: 'Pelanggan & CRM',
             subtitle: 'Member, poin loyalitas, riwayat, dan buku kasbon',
-            builder: (_) => const CustomersScreen(),
+            builder: _buildCustomers,
           ),
-          MoreEntry(
+          const MoreEntry(
+            category: 'Operasional Toko',
             icon: Icons.assignment_return_outlined,
             title: 'Retur Penjualan & Faktur',
             subtitle: 'Retur barang invoice transaksi atau ke supplier',
-            builder: (_) => const ReturnScreen(),
+            builder: _buildReturn,
           ),
-          MoreEntry(
+          const MoreEntry(
+            category: 'Operasional Toko',
             icon: Icons.payments_outlined,
             title: 'Pengeluaran Kasir (Petty Cash)',
             subtitle: 'Pencatatan kas operasional toko harian',
-            builder: (_) => const ExpensesScreen(),
+            builder: _buildExpenses,
           ),
-          MoreEntry(
+          const MoreEntry(
+            category: 'Perangkat Keras',
+            icon: Icons.print_rounded,
+            title: 'Printer Struk & Hardware Kasir',
+            subtitle: 'Konfigurasi Bluetooth, LAN port 9100, & laci kas',
+            builder: _buildPrinter,
+          ),
+          const MoreEntry(
+            category: 'Bisnis & Lisensi',
+            icon: Icons.workspace_premium_rounded,
+            title: 'Paket & Langganan Toko',
+            subtitle: 'Status paket Velora Pro, kuota outlet, & masa aktif',
+            builder: _buildSubscription,
+          ),
+          const MoreEntry(
+            category: 'Pengaturan & Akun',
             icon: Icons.settings_outlined,
-            title: 'Pengaturan & Cabang',
-            subtitle: 'Pilih cabang aktif, printer kasir, dan sesi',
-            builder: (_) => const SettingsScreen(),
+            title: 'Pengaturan Akun & Keamanan',
+            subtitle: 'Profil pengguna, PIN 4 digit kasir, & sesi login',
+            builder: _buildSettings,
           ),
         ];
     }
   }
+
+  static Widget _buildDashboard(BuildContext _) => const DashboardScreen();
+  static Widget _buildCustomerHome(BuildContext _) => const CustomerHomeScreen();
+  static Widget _buildSplitBill(BuildContext _) => const FnbPaymentSplitScreen();
+  static Widget _buildCustomers(BuildContext _) => const CustomersScreen();
+  static Widget _buildReturn(BuildContext _) => const ReturnScreen();
+  static Widget _buildExpenses(BuildContext _) => const ExpensesScreen();
+  static Widget _buildPrinter(BuildContext _) => const PrinterSettingsScreen();
+  static Widget _buildSubscription(BuildContext _) => const SubscriptionScreen();
+  static Widget _buildSettings(BuildContext _) => const SettingsScreen();
 }

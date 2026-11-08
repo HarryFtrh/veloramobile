@@ -28,6 +28,8 @@ import '../pharmacy/widgets/pharmacy_pbf_order_modal.dart';
 import '../pharmacy/widgets/pharmacy_prescription_review_modal.dart';
 import '../sales/sales_dashboard_screen.dart';
 import '../settings/settings_screen.dart';
+import '../shared_pos/printer_settings_screen.dart';
+import '../subscription/subscription_screen.dart';
 import '../tables/tables_screen.dart';
 import 'more_entry.dart';
 
@@ -441,25 +443,32 @@ class MenuRegistry {
     // 6. KONFIGURASI, HARDWARE, & PRINTER (ALL BUSINESSES)
     // ==========================================
     'settings': _RegisteredRoute(
-      defaultTitle: 'Pengaturan & Cabang',
-      defaultSubtitle: 'Pilih cabang aktif, printer kasir, akun, dan sesi',
-      defaultCategory: 'Konfigurasi & Hardware',
+      defaultTitle: 'Pengaturan Akun & Keamanan',
+      defaultSubtitle: 'Profil pengguna, PIN 4 digit kasir, & sesi login',
+      defaultCategory: 'Pengaturan & Akun',
       defaultIcon: Icons.settings_outlined,
       builder: (_) => const SettingsScreen(),
     ),
     'pengaturan': _RegisteredRoute(
-      defaultTitle: 'Pengaturan & Cabang',
-      defaultSubtitle: 'Pilih cabang aktif, printer kasir, akun, dan sesi',
-      defaultCategory: 'Konfigurasi & Hardware',
+      defaultTitle: 'Pengaturan Akun & Keamanan',
+      defaultSubtitle: 'Profil pengguna, PIN 4 digit kasir, & sesi login',
+      defaultCategory: 'Pengaturan & Akun',
       defaultIcon: Icons.settings_outlined,
       builder: (_) => const SettingsScreen(),
     ),
     'printer': _RegisteredRoute(
-      defaultTitle: 'Pengaturan & Cabang',
-      defaultSubtitle: 'Pilih cabang aktif, printer kasir, akun, dan sesi',
-      defaultCategory: 'Konfigurasi & Hardware',
-      defaultIcon: Icons.settings_outlined,
-      builder: (_) => const SettingsScreen(),
+      defaultTitle: 'Printer Struk & Hardware Kasir',
+      defaultSubtitle: 'Konfigurasi Bluetooth, LAN port 9100, & laci kas',
+      defaultCategory: 'Perangkat Keras',
+      defaultIcon: Icons.print_rounded,
+      builder: (_) => const PrinterSettingsScreen(),
+    ),
+    'subscription': _RegisteredRoute(
+      defaultTitle: 'Paket & Langganan Toko',
+      defaultSubtitle: 'Status paket Velora Pro, kuota outlet, & masa aktif',
+      defaultCategory: 'Bisnis & Lisensi',
+      defaultIcon: Icons.workspace_premium_rounded,
+      builder: (_) => const SubscriptionScreen(),
     ),
   };
 

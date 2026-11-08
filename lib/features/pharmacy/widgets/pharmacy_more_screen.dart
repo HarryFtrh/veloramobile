@@ -8,8 +8,10 @@ import '../../dashboard/dashboard_screen.dart';
 import '../../finance/expenses_screen.dart';
 import '../../finance/return_screen.dart';
 import '../../settings/settings_screen.dart';
+import '../../shared_pos/printer_settings_screen.dart';
 import '../../shared_pos/receipt_printer_service.dart';
 import '../../shared_pos/shift_badge.dart';
+import '../../subscription/subscription_screen.dart';
 import '../pharmacy_calling_display_screen.dart';
 import '../pharmacy_compounding_screen.dart';
 import '../pharmacy_doctor_emr_screen.dart';
@@ -378,16 +380,41 @@ class PharmacyMoreScreen extends StatelessWidget {
 
                       const SizedBox(height: 24),
 
-                      // Section 5: Konfigurasi & Hardware
-                      _buildSectionHeader('PENGATURAN & PERANGKAT KERAS', Icons.settings_rounded, const Color(0xFF475569)),
+                      // Section 5: Perangkat & Hardware
+                      _buildSectionHeader('PERANGKAT KERAS & HARDWARE', Icons.print_rounded, const Color(0xFF475569)),
                       const SizedBox(height: 8),
+                      _buildModuleCard(
+                        context: context,
+                        icon: Icons.print_rounded,
+                        iconBg: const Color(0xFFEFF6FF),
+                        iconColor: const Color(0xFF2563EB),
+                        title: 'Printer Struk & Hardware Apotek',
+                        subtitle: 'Konfigurasi Bluetooth, LAN port 9100, etiket, & laci kas',
+                        destination: const PrinterSettingsScreen(),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Section 6: Lisensi & Pengaturan
+                      _buildSectionHeader('LISENSI & PENGATURAN AKUN', Icons.settings_rounded, const Color(0xFF475569)),
+                      const SizedBox(height: 8),
+                      _buildModuleCard(
+                        context: context,
+                        icon: Icons.workspace_premium_rounded,
+                        iconBg: const Color(0xFFFEF3C7),
+                        iconColor: const Color(0xFFD97706),
+                        title: 'Paket & Langganan Apotek',
+                        subtitle: 'Status paket Velora Pro, kuota transaksi, & masa aktif',
+                        destination: const SubscriptionScreen(),
+                      ),
+                      const SizedBox(height: 10),
                       _buildModuleCard(
                         context: context,
                         icon: Icons.tune_rounded,
                         iconBg: const Color(0xFFF1F5F9),
                         iconColor: const Color(0xFF334155),
-                        title: 'Konfigurasi Apotek & Hardware',
-                        subtitle: 'Pengaturan printer thermal ESC/POS, profil akun, PIN kasir',
+                        title: 'Pengaturan Akun & Keamanan',
+                        subtitle: 'Profil apoteker, PIN cepat kasir, & sesi perangkat',
                         destination: const SettingsScreen(),
                       ),
 
