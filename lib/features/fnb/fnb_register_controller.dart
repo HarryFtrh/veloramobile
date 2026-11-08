@@ -303,11 +303,16 @@ class RegisterController extends ChangeNotifier {
 
   void autoApplyBestPromotion() {
     if (manualDiscountTotal > 0) return;
-    if (activePromotion != null) {
+    if (activePromotion != null && !activePromotion!.isAutomatic) {
       voucherDiscountAmount = activePromotion!.calculateDiscount(subtotal);
       return;
     }
-    if (subtotal <= 0) return;
+    if (subtotal <= 0) {
+      if (activePromotion?.isAutomatic == true) {
+        _pricing.removePromotion();
+      }
+      return;
+    }
 
     final locId = SessionStorage.instance.getLocationId();
     final bestPromo = _pricing.findBestAutoPromotion(
@@ -317,6 +322,8 @@ class RegisterController extends ChangeNotifier {
     );
     if (bestPromo != null) {
       _pricing.applyPromotion(bestPromo, subtotal);
+    } else if (activePromotion?.isAutomatic == true) {
+      _pricing.removePromotion();
     }
   }
 

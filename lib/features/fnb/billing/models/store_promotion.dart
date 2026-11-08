@@ -1,4 +1,4 @@
-import '../../../core/utils/safe_json.dart';
+import '../../../../core/utils/safe_json.dart';
 
 enum PromotionType {
   percentage,

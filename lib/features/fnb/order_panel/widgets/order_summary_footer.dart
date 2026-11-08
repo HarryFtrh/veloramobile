@@ -255,7 +255,7 @@ class OrderSummaryFooter extends StatelessWidget {
             ),
           if (bill != null && (bill.rounding != 0 || (ctrl.billing != null && ctrl.billing!.roundingEnabled)))
             SummaryRow(
-              label: 'Pembulatan Sistem (${ctrl.billing?.roundingStep ?? 100})',
+              label: 'Pembulatan Sistem (${(ctrl.billing?.roundingStep != null && ctrl.billing!.roundingStep > 1) ? ctrl.billing!.roundingStep : 100})',
               value: CurrencyFormatter.format(bill.rounding),
             ),
           const SizedBox(height: 4),
