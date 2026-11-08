@@ -202,24 +202,22 @@ class _MoreScreenState extends State<MoreScreen> {
                 vertical: isTablet ? 24 : 18,
               ),
               children: [
-                // 1. Profil & Outlet Hero Card
-                _buildProfileHero(
-                  userName: userName,
-                  roleName: roleName,
-                  tenantName: tenantName,
-                  locationName: locationName,
-                  brandPrimary: brandPrimary,
-                  isTablet: isTablet,
-                ),
+                // 1. Profil & Outlet Hero Card (Hanya di mobile, karena layar tablet sudah memiliki AppShell Top Header lengkap!)
+                if (!isTablet) ...[
+                  _buildProfileHero(
+                    userName: userName,
+                    roleName: roleName,
+                    tenantName: tenantName,
+                    locationName: locationName,
+                    brandPrimary: brandPrimary,
+                    isTablet: isTablet,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildQuickOperationalCard(brandPrimary),
+                  const SizedBox(height: 20),
+                ],
 
-                const SizedBox(height: 20),
-
-                // 2. Operasional Register & Quick Hardware Strip
-                _buildQuickOperationalCard(brandPrimary),
-
-                const SizedBox(height: 24),
-
-                // 3. Categorized Sections (Responsive: 2-Column on Tablet, 1-Column on Mobile)
+                // 2. Categorized Sections (Responsive: 2-Column on Tablet, 1-Column on Mobile)
                 if (isTablet)
                   _buildTabletSplitLayout(effectiveEntries, brandPrimary)
                 else

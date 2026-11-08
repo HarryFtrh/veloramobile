@@ -480,6 +480,45 @@ class MenuRegistry {
   /// Mencocokkan ServerMenuItem dengan rute yang terdaftar
   static MoreEntry? resolve(ServerMenuItem item) {
     final cleanKey = item.key.toLowerCase().trim().replaceAll('-', '_');
+    final titleLower = item.title.toLowerCase().trim();
+
+    // 0. Filter out modul yang sudah menjadi Tab Navigasi Utama (Kasir, Meja, Dapur, Dashboard, Pelanggan)
+    // agar tidak pernah muncul dobel di dalam menu "Lainnya"
+    if (cleanKey == 'tables' ||
+        cleanKey == 'meja' ||
+        cleanKey == 'kitchen' ||
+        cleanKey == 'dapur' ||
+        cleanKey == 'kds' ||
+        cleanKey == 'fnb_pos' ||
+        cleanKey == 'pos_fnb' ||
+        cleanKey == 'pos' ||
+        cleanKey == 'kasir' ||
+        cleanKey == 'dashboard' ||
+        cleanKey == 'dashboards' ||
+        cleanKey == 'analytics' ||
+        cleanKey == 'customers' ||
+        cleanKey == 'pelanggan' ||
+        cleanKey == 'crm' ||
+        cleanKey == 'active_tables' ||
+        cleanKey == 'kitchen_display') {
+      return null;
+    }
+
+    if (titleLower == 'active tables' ||
+        titleLower == 'kitchen display' ||
+        titleLower == 'kitchen display (kds)' ||
+        titleLower == 'dashboards' ||
+        titleLower == 'analytics' ||
+        titleLower == 'crm & customers' ||
+        titleLower == 'pelanggan & crm' ||
+        titleLower == 'kasir' ||
+        titleLower == 'meja' ||
+        titleLower == 'dapur' ||
+        titleLower == 'dashboard' ||
+        titleLower == 'pelanggan') {
+      return null;
+    }
+
     // 1. Direct O(1) route map lookup
     _RegisteredRoute? route = _routes[cleanKey];
 
