@@ -120,62 +120,70 @@ class OrderSummaryFooter extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Voucher banner if applied, or button to apply
-          if (ctrl.activeVoucherCode != null)
+          // Active Manual Discount banner or button to apply discount
+          if (ctrl.manualDiscountTotal > 0)
             Container(
               margin: const EdgeInsets.only(bottom: 6),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: const Color(0xFF059669).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: const Color(0xFF059669).withValues(alpha: 0.3)),
+                color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.25)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.check_circle_outline, size: 14, color: Color(0xFF059669)),
+                  const Icon(Icons.discount_rounded, size: 14, color: Color(0xFFEF4444)),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      'Voucher ${ctrl.activeVoucherCode!} Diterapkan',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF059669)),
+                      ctrl.manualDiscountPercent > 0
+                          ? 'Diskon ${ctrl.manualDiscountPercent.round()}% (-${CurrencyFormatter.format(ctrl.manualDiscountTotal)})'
+                          : 'Diskon Manual (-${CurrencyFormatter.format(ctrl.manualDiscountTotal)})',
+                      style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFFDC2626)),
                     ),
                   ),
                   InkWell(
-                    onTap: ctrl.removeVoucher,
-                    child: Text('Hapus', style: TextStyle(fontSize: 11, color: p.danger, fontWeight: FontWeight.w700)),
+                    onTap: () => FnbDiscountSheet.show(context, ctrl),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      child: Text('Ubah', style: TextStyle(fontSize: 11, color: scheme.primary, fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  InkWell(
+                    onTap: ctrl.removeManualDiscount,
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      child: Icon(Icons.close_rounded, size: 14, color: Color(0xFFDC2626)),
+                    ),
                   ),
                 ],
               ),
             )
           else if (ctrl.lines.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(bottom: 4),
+              padding: const EdgeInsets.only(bottom: 6),
               child: InkWell(
-                onTap: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    showDragHandle: true,
-                    backgroundColor: context.palette.surface,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                    ),
-                    builder: (ctx) => ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxWidth: isMobile ? double.infinity : 540,
-                        maxHeight: MediaQuery.sizeOf(ctx).height * 0.85,
+                onTap: () => FnbDiscountSheet.show(context, ctrl),
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: scheme.primary.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: scheme.primary.withValues(alpha: 0.2)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.discount_outlined, size: 13, color: scheme.primary),
+                      const SizedBox(width: 5),
+                      Text(
+                        '+ Tambah Diskon',
+                        style: TextStyle(fontSize: 11, color: scheme.primary, fontWeight: FontWeight.w700),
                       ),
-                      child: PromoAndVoucherSheet(ctrl: ctrl),
-                    ),
-                  );
-                },
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.discount_outlined, size: 13, color: scheme.primary),
-                    const SizedBox(width: 4),
-                    Text('Diskon / Promosi Toko', style: TextStyle(fontSize: 11, color: scheme.primary, fontWeight: FontWeight.w600)),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -188,18 +196,9 @@ class OrderSummaryFooter extends StatelessWidget {
           if (ctrl.manualDiscountTotal > 0)
             SummaryRow(
               label: ctrl.manualDiscountPercent > 0
-                  ? 'Diskon Manual (${ctrl.manualDiscountPercent.round()}%)'
-                  : 'Diskon Manual (Kasir)',
+                  ? 'Potongan Diskon (${ctrl.manualDiscountPercent.round()}%)'
+                  : 'Potongan Diskon',
               value: '-${CurrencyFormatter.format(ctrl.manualDiscountTotal)}',
-            ),
-          if (ctrl.promoDiscountAmount > 0)
-            SummaryRow(
-              label: ctrl.activePromotion != null
-                  ? 'Promo: ${ctrl.activePromotion!.name}'
-                  : (ctrl.activeVoucherCode != null
-                      ? 'Diskon (${ctrl.activeVoucherCode})'
-                      : 'Diskon'),
-              value: '-${CurrencyFormatter.format(ctrl.promoDiscountAmount)}',
             ),
           if (bill != null && bill.serviceCharge > 0)
             SummaryRow(label: 'Biaya Layanan', value: CurrencyFormatter.format(bill.serviceCharge)),

@@ -1,412 +1,501 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/design/tokens.dart';
-import '../../../../core/network/api_exception.dart';
+import '../../../../core/utils/audio_helper.dart';
 import '../../../../core/utils/currency_formatter.dart';
-import '../../billing.dart';
 import '../../fnb_register_controller.dart';
 
-/// Bottom sheet for selecting active store promotions, inputting voucher codes,
-/// or applying custom cashier discount percentages/amounts.
-class PromoAndVoucherSheet extends StatefulWidget {
-  const PromoAndVoucherSheet({super.key, required this.ctrl});
+typedef PromoAndVoucherSheet = FnbDiscountSheet;
+
+/// Lembar modal modern untuk menerapkan diskon manual transaksi (Persentase % atau Nominal Rp).
+class FnbDiscountSheet extends StatefulWidget {
+  const FnbDiscountSheet({super.key, required this.ctrl});
   final RegisterController ctrl;
 
+  static Future<void> show(BuildContext context, RegisterController ctrl) {
+    final isMobile = context.isMobile;
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: context.palette.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: isMobile ? double.infinity : 520,
+          maxHeight: MediaQuery.sizeOf(ctx).height * 0.88,
+        ),
+        child: FnbDiscountSheet(ctrl: ctrl),
+      ),
+    );
+  }
+
   @override
-  State<PromoAndVoucherSheet> createState() => _PromoAndVoucherSheetState();
+  State<FnbDiscountSheet> createState() => _FnbDiscountSheetState();
 }
 
-class _PromoAndVoucherSheetState extends State<PromoAndVoucherSheet> {
-  final _codeCtrl = TextEditingController();
-  final _customAmountCtrl = TextEditingController();
-  final _customPercentCtrl = TextEditingController();
-  String? _errorMsg;
-  bool _showCustom = false;
-  bool _isVerifying = false;
-  bool _isLoadingPromos = false;
+class _FnbDiscountSheetState extends State<FnbDiscountSheet> {
+  bool _isPercent = true;
+  final _percentCtrl = TextEditingController();
+  final _amountCtrl = TextEditingController();
+
+  double _currentPercent = 0.0;
+  double _currentAmount = 0.0;
+
+  static const _percentPresets = [5, 10, 15, 20, 25, 50];
 
   @override
   void initState() {
     super.initState();
-    if ((widget.ctrl.billing?.activePromotions.isEmpty ?? true)) {
-      _loadDiscounts();
+    final ctrl = widget.ctrl;
+    if (ctrl.manualDiscountPercent > 0) {
+      _isPercent = true;
+      _currentPercent = ctrl.manualDiscountPercent;
+      _percentCtrl.text = _formatNumber(_currentPercent);
+    } else if (ctrl.manualDiscountAmount > 0) {
+      _isPercent = false;
+      _currentAmount = ctrl.manualDiscountAmount;
+      _amountCtrl.text = _currentAmount.toStringAsFixed(0);
     }
   }
 
-  Future<void> _loadDiscounts() async {
-    setState(() {
-      _isLoadingPromos = true;
-      _errorMsg = null;
-    });
-    try {
-      await widget.ctrl.refreshDiscounts();
-    } catch (_) {
-    } finally {
-      if (mounted) setState(() => _isLoadingPromos = false);
+  String _formatNumber(double val) {
+    if (val == val.roundToDouble()) {
+      return val.toInt().toString();
     }
+    return val.toString();
   }
 
   @override
   void dispose() {
-    _codeCtrl.dispose();
-    _customAmountCtrl.dispose();
-    _customPercentCtrl.dispose();
+    _percentCtrl.dispose();
+    _amountCtrl.dispose();
     super.dispose();
   }
 
-  void _applyPromo(StorePromotion promo) {
-    if (promo.minOrderAmount > 0 && widget.ctrl.subtotal < promo.minOrderAmount) {
-      setState(() {
-        _errorMsg = 'Minimal transaksi ${CurrencyFormatter.format(promo.minOrderAmount)} untuk promo "${promo.name}"';
-      });
-      return;
+  List<int> get _amountPresets {
+    final sub = widget.ctrl.subtotal.round();
+    final base = [5000, 10000, 20000, 50000, 100000];
+    return base.where((b) => b < sub).toList();
+  }
+
+  double get _calculatedDiscount {
+    final sub = widget.ctrl.subtotal.toDouble();
+    if (sub <= 0) return 0.0;
+    if (_isPercent) {
+      return (sub * (_currentPercent / 100)).clamp(0.0, sub);
+    } else {
+      return _currentAmount.clamp(0.0, sub);
     }
-    widget.ctrl.applyPromotion(promo);
+  }
+
+  double get _newSubtotal {
+    final sub = widget.ctrl.subtotal.toDouble();
+    return (sub - _calculatedDiscount).clamp(0.0, double.infinity);
+  }
+
+  void _applyDiscount() {
+    AudioHelper.actionFeedback();
+    if (_isPercent) {
+      widget.ctrl.applyManualDiscount(percent: _currentPercent, amount: 0);
+    } else {
+      widget.ctrl.applyManualDiscount(percent: 0, amount: _currentAmount);
+    }
     Navigator.pop(context);
   }
 
-  Future<void> _applyCode() async {
-    final code = _codeCtrl.text.trim();
-    if (code.isEmpty) return;
-    setState(() {
-      _isVerifying = true;
-      _errorMsg = null;
-    });
-    try {
-      final applied = await widget.ctrl.applyVoucherCode(code);
-      if (applied) {
-        if (mounted) Navigator.pop(context);
-      } else {
-        if (mounted) {
-          setState(() {
-            _errorMsg = 'Kode voucher "$code" tidak ditemukan atau sudah tidak aktif';
-          });
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMsg = ApiException.from(e).message;
-        });
-      }
-    } finally {
-      if (mounted) setState(() => _isVerifying = false);
-    }
-  }
-
-  void _applyCustomNominal() {
-    final amt = double.tryParse(_customAmountCtrl.text.trim()) ?? 0.0;
-    if (amt <= 0) return;
-    widget.ctrl.applyManualDiscount(amount: amt);
-    Navigator.pop(context);
-  }
-
-  void _applyCustomPercent() {
-    final pct = double.tryParse(_customPercentCtrl.text.trim()) ?? 0.0;
-    if (pct <= 0) return;
-    final maxPct = widget.ctrl.billing?.maxDiscountPercent ?? 100.0;
-    if (pct > maxPct) {
-      setState(() {
-        _errorMsg = 'Maksimal diskon kasir adalah ${maxPct.round()}%';
-      });
-      return;
-    }
-    widget.ctrl.applyManualDiscount(percent: pct);
+  void _removeDiscount() {
+    AudioHelper.tapFeedback();
+    widget.ctrl.removeManualDiscount();
     Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    final text = Theme.of(context).textTheme;
-    final b = widget.ctrl.billing;
-    final promos = b?.activePromotions ?? const [];
-    final subtotal = widget.ctrl.subtotal;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final subtotal = widget.ctrl.subtotal.toDouble();
+    final discountVal = _calculatedDiscount;
+    final newTotal = _newSubtotal;
+
+    final hasActiveDiscount =
+        widget.ctrl.manualDiscountPercent > 0 || widget.ctrl.manualDiscountAmount > 0;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(16, 0, 16, MediaQuery.viewInsetsOf(context).bottom + 20),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        4,
+        20,
+        MediaQuery.viewInsetsOf(context).bottom + 20,
+      ),
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // 1. Header Dialog
             Row(
               children: [
-                Expanded(
-                  child: Text('Diskon & Promosi Toko', style: text.titleMedium?.copyWith(fontWeight: FontWeight.w800, fontSize: 18)),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEF4444).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.discount_rounded, color: Color(0xFFEF4444), size: 22),
                 ),
-                IconButton(
-                  icon: _isLoadingPromos
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.refresh_rounded, size: 20),
-                  tooltip: 'Tarik ulang diskon & promosi',
-                  onPressed: _isLoadingPromos ? null : _loadDiscounts,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Diskon Transaksi',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w900,
+                          color: p.textPrimary,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      Text(
+                        'Subtotal Belanja: ${CurrencyFormatter.format(subtotal)}',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: p.textSecondary),
+                      ),
+                    ],
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close_rounded, size: 20),
                   onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (_errorMsg != null)
-              Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: p.danger.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: p.danger.withValues(alpha: 0.3)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.error_outline_rounded, size: 16, color: p.danger),
-                    const SizedBox(width: 8),
-                    Expanded(child: Text(_errorMsg!, style: TextStyle(color: p.danger, fontSize: 12, fontWeight: FontWeight.w600))),
-                  ],
-                ),
-              ),
-
-            // Input kode promo opsional
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _codeCtrl,
-                    textCapitalization: TextCapitalization.characters,
-                    decoration: const InputDecoration(
-                      hintText: 'Kode promo toko (opsional)',
-                      prefixIcon: Icon(Icons.tag_rounded, size: 18),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    ),
-                    onSubmitted: (_) => _applyCode(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  onPressed: _isVerifying ? null : _applyCode,
-                  child: _isVerifying
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Text('Gunakan'),
+                  tooltip: 'Tutup',
                 ),
               ],
             ),
 
             const SizedBox(height: 16),
 
-            if (_isLoadingPromos && promos.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                child: Center(
-                  child: Column(
-                    children: [
-                      const CircularProgressIndicator(strokeWidth: 2),
-                      const SizedBox(height: 10),
-                      Text('Menarik data diskon & promosi dari server...', style: TextStyle(fontSize: 12, color: p.textSecondary)),
-                    ],
-                  ),
-                ),
+            // 2. Mode Selector: [Persentase (%)] vs [Nominal (Rp)]
+            Container(
+              decoration: BoxDecoration(
+                color: p.surfaceMuted,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: p.line),
               ),
-
-            // Daftar promosi dari sistem preferensi
-            if (promos.isNotEmpty) ...[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              padding: const EdgeInsets.all(4),
+              child: Row(
                 children: [
-                  Text(
-                    'Promosi Aktif (${promos.length})',
-                    style: text.labelLarge?.copyWith(fontWeight: FontWeight.w700, color: p.textSecondary),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () {
+                        AudioHelper.tapFeedback();
+                        setState(() {
+                          _isPercent = true;
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 9),
+                        decoration: BoxDecoration(
+                          color: _isPercent ? p.surface : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: _isPercent
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.06),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.percent_rounded,
+                              size: 15,
+                              color: _isPercent ? primaryColor : p.textSecondary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Persentase (%)',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: _isPercent ? FontWeight.w800 : FontWeight.w600,
+                                color: _isPercent ? p.textPrimary : p.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                  if (_isLoadingPromos)
-                    const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 1.8)),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () {
+                        AudioHelper.tapFeedback();
+                        setState(() {
+                          _isPercent = false;
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 9),
+                        decoration: BoxDecoration(
+                          color: !_isPercent ? p.surface : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: !_isPercent
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.06),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.payments_rounded,
+                              size: 15,
+                              color: !_isPercent ? primaryColor : p.textSecondary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Nominal (Rp)',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: !_isPercent ? FontWeight.w800 : FontWeight.w600,
+                                color: !_isPercent ? p.textPrimary : p.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(height: 8),
-              for (final promo in promos) ...[
-                Builder(
-                  builder: (ctx) {
-                    final eligible = promo.minOrderAmount <= 0 || subtotal >= promo.minOrderAmount;
-                    final discountEst = promo.calculateDiscount(subtotal);
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: eligible ? p.surface : p.surfaceMuted,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: eligible ? p.primary.withValues(alpha: 0.3) : p.line,
-                        ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // 3. Konten Input Sesuai Mode
+            if (_isPercent) ...[
+              // Preset Persentase Cepat
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final pVal in _percentPresets)
+                    ChoiceChip(
+                      label: Text('$pVal%', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+                      selected: _currentPercent == pVal,
+                      showCheckmark: false,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      selectedColor: primaryColor.withValues(alpha: 0.15),
+                      labelStyle: TextStyle(
+                        color: _currentPercent == pVal ? primaryColor : p.textSecondary,
                       ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: eligible ? p.primary.withValues(alpha: 0.1) : p.line,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              promo.type == PromotionType.percentage ? Icons.percent_rounded : Icons.discount_outlined,
-                              color: eligible ? p.primary : p.textTertiary,
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        promo.name,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 13,
-                                          color: eligible ? p.textPrimary : p.textSecondary,
-                                        ),
-                                      ),
-                                    ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: eligible ? p.tertiary : p.line,
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        promo.type == PromotionType.percentage
-                                            ? '${promo.value.round()}% OFF'
-                                            : CurrencyFormatter.format(promo.value),
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w800,
-                                          color: eligible ? Colors.white : p.textSecondary,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  promo.minOrderAmount > 0
-                                      ? 'Min. transaksi ${CurrencyFormatter.format(promo.minOrderAmount)}${eligible ? " • Hemat ${CurrencyFormatter.format(discountEst)}" : " (Kurang ${CurrencyFormatter.format(promo.minOrderAmount - subtotal)})"}'
-                                      : 'Tanpa min. transaksi • Hemat ${CurrencyFormatter.format(discountEst)}',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: eligible ? p.textSecondary : p.danger,
-                                    fontWeight: eligible ? FontWeight.normal : FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          FilledButton.tonal(
-                            onPressed: eligible ? () => _applyPromo(promo) : null,
-                            style: FilledButton.styleFrom(
-                              visualDensity: VisualDensity.compact,
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            ),
-                            child: const Text('Pakai', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
-                          ),
-                        ],
+                      side: BorderSide(
+                        color: _currentPercent == pVal ? primaryColor : p.line,
                       ),
-                    );
-                  },
-                ),
-              ],
-            ] else ...[
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: p.surfaceMuted,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: p.line),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline_rounded, size: 18, color: p.textTertiary),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Tidak ada promosi toko aktif saat ini. Anda tetap dapat memasukkan kode voucher atau diskon manual.',
-                        style: TextStyle(fontSize: 12, color: p.textSecondary),
-                      ),
+                      onSelected: (_) {
+                        AudioHelper.tapFeedback();
+                        setState(() {
+                          _currentPercent = pVal.toDouble();
+                          _percentCtrl.text = pVal.toString();
+                        });
+                      },
                     ),
+                ],
+              ),
+
+              const SizedBox(height: 12),
+
+              // Custom Input Persentase
+              TextField(
+                controller: _percentCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                decoration: InputDecoration(
+                  labelText: 'Ketik Persentase Diskon',
+                  hintText: 'Contoh: 12.5',
+                  suffixText: '%',
+                  suffixStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: p.textPrimary),
+                  filled: true,
+                  fillColor: p.surfaceMuted,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: p.line)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: p.line)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: primaryColor, width: 1.5)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                ),
+                onChanged: (v) {
+                  final parsed = double.tryParse(v.trim().replaceAll(',', '.')) ?? 0.0;
+                  setState(() {
+                    _currentPercent = parsed.clamp(0.0, 100.0);
+                  });
+                },
+              ),
+            ] else ...[
+              // Preset Nominal Cepat
+              if (_amountPresets.isNotEmpty) ...[
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final aVal in _amountPresets)
+                      ChoiceChip(
+                        label: Text(
+                          CurrencyFormatter.format(aVal),
+                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+                        ),
+                        selected: _currentAmount == aVal,
+                        showCheckmark: false,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        selectedColor: primaryColor.withValues(alpha: 0.15),
+                        labelStyle: TextStyle(
+                          color: _currentAmount == aVal ? primaryColor : p.textSecondary,
+                        ),
+                        side: BorderSide(
+                          color: _currentAmount == aVal ? primaryColor : p.line,
+                        ),
+                        onSelected: (_) {
+                          AudioHelper.tapFeedback();
+                          setState(() {
+                            _currentAmount = aVal.toDouble();
+                            _amountCtrl.text = aVal.toString();
+                          });
+                        },
+                      ),
                   ],
                 ),
+                const SizedBox(height: 12),
+              ],
+
+              // Custom Input Nominal
+              TextField(
+                controller: _amountCtrl,
+                keyboardType: TextInputType.number,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                decoration: InputDecoration(
+                  labelText: 'Ketik Nominal Potongan Rupiah',
+                  prefixText: 'Rp ',
+                  prefixStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: p.textPrimary),
+                  filled: true,
+                  fillColor: p.surfaceMuted,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: p.line)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: p.line)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: primaryColor, width: 1.5)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                ),
+                onChanged: (v) {
+                  final clean = v.replaceAll('.', '').replaceAll(',', '').replaceAll(' ', '');
+                  final parsed = double.tryParse(clean) ?? 0.0;
+                  setState(() {
+                    _currentAmount = parsed.clamp(0.0, subtotal);
+                  });
+                },
               ),
             ],
 
-            // Diskon Kustom Kasir
-            if (b?.allowCustomDiscount == true) ...[
-              const SizedBox(height: 8),
-              InkWell(
-                onTap: () => setState(() => _showCustom = !_showCustom),
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Row(
+            const SizedBox(height: 16),
+
+            // 4. Kartu Live Preview Hasil Diskon
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: p.surfaceMuted,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: p.line),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Icon(_showCustom ? Icons.expand_less_rounded : Icons.expand_more_rounded, size: 18, color: p.textSecondary),
-                      const SizedBox(width: 6),
+                      Text('Subtotal Awal', style: TextStyle(fontSize: 12, color: p.textSecondary)),
+                      Text(CurrencyFormatter.format(subtotal), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: p.textPrimary)),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Potongan Diskon',
+                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFFEF4444)),
+                      ),
                       Text(
-                        'Diskon Manual Kasir (Maks. ${(b?.maxDiscountPercent ?? 100).round()}%)',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: p.textSecondary),
+                        '-${CurrencyFormatter.format(discountVal)}',
+                        style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w900, color: Color(0xFFEF4444)),
                       ),
                     ],
                   ),
-                ),
+                  const Divider(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Total Setelah Diskon',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: p.textPrimary),
+                      ),
+                      Text(
+                        CurrencyFormatter.format(newTotal),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              if (_showCustom) ...[
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _customAmountCtrl,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Potongan (Rp)',
-                          contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        ),
-                      ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // 5. Tombol Aksi: [Hapus Diskon] + [Terapkan Diskon]
+            Row(
+              children: [
+                if (hasActiveDiscount) ...[
+                  OutlinedButton.icon(
+                    onPressed: _removeDiscount,
+                    icon: const Icon(Icons.delete_outline_rounded, size: 16),
+                    label: const Text('Hapus', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFEF4444),
+                      side: const BorderSide(color: Color(0xFFFCA5A5)),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    const SizedBox(width: 8),
-                    FilledButton.tonal(
-                      onPressed: _applyCustomNominal,
-                      child: const Text('Terapkan Rp'),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: discountVal > 0 ? _applyDiscount : null,
+                    icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+                    label: const Text(
+                      'Terapkan Diskon',
+                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _customPercentCtrl,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Potongan (%)',
-                          contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        ),
-                      ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    const SizedBox(width: 8),
-                    FilledButton.tonal(
-                      onPressed: _applyCustomPercent,
-                      child: const Text('Terapkan %'),
-                    ),
-                  ],
+                  ),
                 ),
               ],
-            ],
+            ),
           ],
         ),
       ),
