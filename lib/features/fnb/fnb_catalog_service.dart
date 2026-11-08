@@ -219,9 +219,86 @@ class FnbCatalogService {
     if (categoryName.isEmpty || categoryName == '-') categoryName = 'Minuman & Makanan';
     categoryName = sanitizeDisplayName(categoryName);
 
-    double priceVal = json.getDouble('promo_price');
-    if (priceVal <= 0) priceVal = json.getDouble('price');
-    if (priceVal <= 0) priceVal = json.getDouble('selling_price');
+    // Deteksi harga normal / reguler dan harga promo / diskon
+    double rawRegularPrice = json.getDouble('original_price');
+    if (rawRegularPrice <= 0) rawRegularPrice = json.getDouble('normal_price');
+    if (rawRegularPrice <= 0) rawRegularPrice = json.getDouble('base_price');
+    if (rawRegularPrice <= 0) rawRegularPrice = json.getDouble('regular_price');
+    if (rawRegularPrice <= 0) rawRegularPrice = json.getDouble('harga_normal');
+    if (rawRegularPrice <= 0) rawRegularPrice = json.getDouble('harga_asli');
+    if (rawRegularPrice <= 0) rawRegularPrice = json.getDouble('price');
+    if (rawRegularPrice <= 0) rawRegularPrice = json.getDouble('selling_price');
+    if (rawRegularPrice <= 0) rawRegularPrice = json.getDouble('harga_jual');
+    if (rawRegularPrice <= 0) rawRegularPrice = json.getDouble('harga');
+
+    double rawPromoPrice = json.getDouble('promo_price');
+    if (rawPromoPrice <= 0) rawPromoPrice = json.getDouble('discount_price');
+    if (rawPromoPrice <= 0) rawPromoPrice = json.getDouble('discounted_price');
+    if (rawPromoPrice <= 0) rawPromoPrice = json.getDouble('special_price');
+    if (rawPromoPrice <= 0) rawPromoPrice = json.getDouble('sale_price');
+    if (rawPromoPrice <= 0) rawPromoPrice = json.getDouble('harga_promo');
+    if (rawPromoPrice <= 0) rawPromoPrice = json.getDouble('harga_diskon');
+
+    // Cek kemungkinan objek nested promo atau diskon
+    final promoMap = json['promo'] is Map
+        ? Map<String, dynamic>.from(json['promo'])
+        : (json['promotion'] is Map
+            ? Map<String, dynamic>.from(json['promotion'])
+            : (json['discount'] is Map ? Map<String, dynamic>.from(json['discount']) : null));
+    if (promoMap != null) {
+      if (rawPromoPrice <= 0) {
+        rawPromoPrice = promoMap.getDouble(
+          'promo_price',
+          fallback: promoMap.getDouble('price', fallback: promoMap.getDouble('discount_price')),
+        );
+      }
+    }
+
+    double discountPct = json.getDouble('discount_percentage');
+    if (discountPct <= 0) discountPct = json.getDouble('discount_percent');
+    if (discountPct <= 0) discountPct = json.getDouble('discount_rate');
+    if (discountPct <= 0) discountPct = json.getDouble('diskon_persen');
+    if (discountPct <= 0) discountPct = json.getDouble('discount');
+    if (discountPct <= 0 && promoMap != null) {
+      discountPct = promoMap.getDouble(
+        'percentage',
+        fallback: promoMap.getDouble('discount_percent', fallback: promoMap.getDouble('discount')),
+      );
+    }
+
+    final bool isPromoFlag = json.getBool('is_promo') ||
+        json.getBool('has_promo') ||
+        json.getBool('is_discount') ||
+        json.getBool('on_sale') ||
+        (promoMap != null && promoMap.getBool('is_active', fallback: true));
+
+    double priceVal;
+    double? originalPriceVal;
+
+    if (rawPromoPrice > 0 && rawRegularPrice > rawPromoPrice) {
+      priceVal = rawPromoPrice;
+      originalPriceVal = rawRegularPrice;
+      if (discountPct <= 0 && rawRegularPrice > 0) {
+        discountPct = ((rawRegularPrice - rawPromoPrice) / rawRegularPrice) * 100;
+      }
+    } else if (rawPromoPrice > 0 && rawRegularPrice <= 0) {
+      priceVal = rawPromoPrice;
+    } else if (discountPct > 0 && discountPct < 100 && rawRegularPrice > 0) {
+      priceVal = (rawRegularPrice * (1.0 - (discountPct / 100.0))).roundToDouble();
+      originalPriceVal = rawRegularPrice;
+    } else {
+      priceVal = rawRegularPrice;
+      final explicitOrig = json.getDouble(
+        'original_price',
+        fallback: json.getDouble('normal_price', fallback: json.getDouble('base_price')),
+      );
+      if (explicitOrig > priceVal) {
+        originalPriceVal = explicitOrig;
+        if (discountPct <= 0) {
+          discountPct = ((explicitOrig - priceVal) / explicitOrig) * 100;
+        }
+      }
+    }
 
     final bool hasStockField = (json.containsKey('stock') && json['stock'] != null) ||
         (json.containsKey('stock_qty') && json['stock_qty'] != null);
@@ -254,6 +331,15 @@ class FnbCatalogService {
     String? productTag = json.getString('station');
     if (productTag.isEmpty) productTag = json.getString('badge');
     if (productTag.isEmpty) productTag = json.getString('tag');
+    if (productTag.isEmpty) productTag = json.getString('promo_badge');
+    if (productTag.isEmpty) productTag = json.getString('promo_label');
+    if (productTag.isEmpty && (isPromoFlag || (originalPriceVal != null && originalPriceVal > priceVal))) {
+      if (discountPct > 0) {
+        productTag = 'DISKON ${discountPct.round()}%';
+      } else {
+        productTag = 'PROMO';
+      }
+    }
 
     String? desc = json.getString('description');
 
@@ -287,6 +373,8 @@ class FnbCatalogService {
       category: categoryName,
       categoryId: catId != null && catId.isNotEmpty ? catId : null,
       price: priceVal,
+      originalPrice: originalPriceVal,
+      discountPercent: discountPct > 0 ? discountPct : null,
       stock: stockVal,
       sku: skuVal,
       barcode: barcodeVal,
@@ -342,13 +430,16 @@ class FnbCatalogService {
     }
 
     final categorySet = <String>{'Semua'};
+    if (rawProducts.any((p) => p.isOnPromo)) {
+      categorySet.add('Promo');
+    }
     for (final item in categoryList) {
       final clean = sanitizeDisplayName(item is Map ? (item['name'] ?? item['category_name']) : item);
-      if (clean.isNotEmpty && clean != 'Semua') categorySet.add(clean);
+      if (clean.isNotEmpty && clean != 'Semua' && clean != 'Promo') categorySet.add(clean);
     }
     for (final p in rawProducts) {
       final clean = sanitizeDisplayName(p.category);
-      if (clean.isNotEmpty && clean != 'Semua' && clean != 'Umum') {
+      if (clean.isNotEmpty && clean != 'Semua' && clean != 'Umum' && clean != 'Promo') {
         categorySet.add(clean);
       }
     }

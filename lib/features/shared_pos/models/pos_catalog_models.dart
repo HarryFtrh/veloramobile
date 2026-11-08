@@ -116,6 +116,8 @@ class PosProduct {
   final String category;
   final String? categoryId;
   final double price;
+  final double? originalPrice;
+  final double? discountPercent;
   final double stock;
   final String sku;
   final String barcode;
@@ -138,6 +140,8 @@ class PosProduct {
     required this.category,
     this.categoryId,
     required this.price,
+    this.originalPrice,
+    this.discountPercent,
     required this.stock,
     required this.sku,
     required this.barcode,
@@ -155,12 +159,31 @@ class PosProduct {
     this.modifierGroups = const [],
   });
 
+  /// Indikator apakah produk sedang promo / diskon
+  bool get isOnPromo {
+    if (originalPrice != null && originalPrice! > price) return true;
+    if (discountPercent != null && discountPercent! > 0) return true;
+    final t = (tag ?? '').toLowerCase();
+    return t.contains('promo') || t.contains('diskon') || t.contains('sale') || t.contains('off');
+  }
+
+  /// Menghitung persentase diskon efektif produk (%)
+  double get effectiveDiscountPercent {
+    if (discountPercent != null && discountPercent! > 0) return discountPercent!;
+    if (originalPrice != null && originalPrice! > price && originalPrice! > 0) {
+      return ((originalPrice! - price) / originalPrice!) * 100;
+    }
+    return 0.0;
+  }
+
   PosProduct copyWith({
     String? id,
     String? name,
     String? category,
     String? categoryId,
     double? price,
+    double? originalPrice,
+    double? discountPercent,
     double? stock,
     String? sku,
     String? barcode,
@@ -183,6 +206,8 @@ class PosProduct {
         category: category ?? this.category,
         categoryId: categoryId ?? this.categoryId,
         price: price ?? this.price,
+        originalPrice: originalPrice ?? this.originalPrice,
+        discountPercent: discountPercent ?? this.discountPercent,
         stock: stock ?? this.stock,
         sku: sku ?? this.sku,
         barcode: barcode ?? this.barcode,

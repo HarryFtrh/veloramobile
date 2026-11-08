@@ -28,16 +28,28 @@ class FnbProductGridCard extends StatelessWidget {
     String? badgeTag;
     Color badgeBg = primaryColor;
     final tagStr = item.tag?.toString().trim() ?? '';
+    final hasDiscount = item.originalPrice != null && item.originalPrice! > item.price;
+
     if (isOutOfStock) {
       badgeTag = 'Habis';
       badgeBg = p.danger;
+    } else if (item.isOnPromo) {
+      final effPct = item.effectiveDiscountPercent.round();
+      if (effPct > 0) {
+        badgeTag = '$effPct% OFF';
+      } else if (tagStr.isNotEmpty) {
+        badgeTag = tagStr;
+      } else {
+        badgeTag = 'PROMO';
+      }
+      badgeBg = const Color(0xFFEF4444); // Vibrant Red promo badge
     } else if (tagStr.isNotEmpty) {
       badgeTag = tagStr;
       final lowerTag = tagStr.toLowerCase();
       if (lowerTag.contains('plant') || lowerTag.contains('sehat')) {
         badgeBg = p.tertiary;
       } else if (lowerTag.contains('promo') || lowerTag.contains('diskon')) {
-        badgeBg = p.secondary;
+        badgeBg = const Color(0xFFEF4444);
       }
     } else if (item.stock > 0 && item.stock <= 5) {
       badgeTag = 'Sisa Sedikit';
@@ -211,17 +223,40 @@ class FnbProductGridCard extends StatelessWidget {
 
                 // Price and Add Button
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Expanded(
-                      child: Text(
-                        CurrencyFormatter.format(item.price),
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 13,
-                          color: p.textPrimary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (hasDiscount) ...[
+                            Text(
+                              CurrencyFormatter.format(item.originalPrice!),
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                color: p.textTertiary,
+                                decoration: TextDecoration.lineThrough,
+                                decorationColor: p.textTertiary,
+                                fontWeight: FontWeight.w500,
+                                height: 1.1,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 1),
+                          ],
+                          Text(
+                            CurrencyFormatter.format(item.price),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13,
+                              color: hasDiscount ? const Color(0xFFDC2626) : p.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
                     ),
                     if (isOutOfStock)
@@ -233,8 +268,14 @@ class FnbProductGridCard extends StatelessWidget {
                     else
                       CircleAvatar(
                         radius: 13,
-                        backgroundColor: primaryColor.withValues(alpha: 0.12),
-                        child: Icon(Icons.add, size: 16, color: primaryColor),
+                        backgroundColor: hasDiscount
+                            ? const Color(0xFFEF4444).withValues(alpha: 0.12)
+                            : primaryColor.withValues(alpha: 0.12),
+                        child: Icon(
+                          Icons.add,
+                          size: 16,
+                          color: hasDiscount ? const Color(0xFFDC2626) : primaryColor,
+                        ),
                       ),
                   ],
                 ),

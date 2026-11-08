@@ -206,12 +206,28 @@ class _FnbModifierSheetState extends State<FnbModifierSheet> {
                     const SizedBox(height: 2),
                     Row(
                       children: [
+                        if (widget.product.originalPrice != null &&
+                            widget.product.originalPrice! > widget.product.price) ...[
+                          Text(
+                            CurrencyFormatter.format(widget.product.originalPrice!),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: p.textTertiary,
+                              decoration: TextDecoration.lineThrough,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                        ],
                         Text(
                           CurrencyFormatter.format(widget.product.price),
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
-                            color: primaryColor,
+                            color: widget.product.originalPrice != null &&
+                                    widget.product.originalPrice! > widget.product.price
+                                ? const Color(0xFFDC2626)
+                                : primaryColor,
                           ),
                         ),
                         if (widget.product.category.isNotEmpty) ...[

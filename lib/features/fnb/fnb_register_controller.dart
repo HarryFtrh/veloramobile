@@ -108,6 +108,7 @@ class RegisterController extends ChangeNotifier {
 
     try {
       billing = await _service.billingSettings();
+      _applyAutoPromotionsToCatalog();
     } catch (_) {
       billing = const BillingSettings(
         serviceChargeEnabled: false,
@@ -207,13 +208,67 @@ class RegisterController extends ChangeNotifier {
       _memoizedVisibleProducts = const [];
       return;
     }
+    final isPromoFilter = category == 'Promo';
     _memoizedVisibleProducts = products.where((p) {
-      final inCategory = category == 'Semua' || p.category == category;
+      final inCategory = category == 'Semua' || (isPromoFilter ? p.isOnPromo : p.category == category);
       final matches = q.isEmpty ||
           p.name.toLowerCase().contains(q) ||
-          p.sku.toLowerCase().contains(q);
+          p.sku.toLowerCase().contains(q) ||
+          (p.tag?.toLowerCase().contains(q) ?? false) ||
+          (q == 'promo' && p.isOnPromo) ||
+          (q == 'diskon' && p.isOnPromo);
       return inCategory && matches;
     }).toList(growable: false);
+  }
+
+  void _applyAutoPromotionsToCatalog() {
+    final autoPromos = billing?.autoPromotions ?? const [];
+    if (autoPromos.isEmpty) return;
+
+    final updated = <PosProduct>[];
+    for (final p in products) {
+      if (p.originalPrice != null && p.originalPrice! > p.price) {
+        updated.add(p);
+        continue;
+      }
+      StorePromotion? matchedPromo;
+      for (final promo in autoPromos) {
+        if (promo.applicableCategoryIds.isNotEmpty) {
+          if (p.categoryId != null && promo.applicableCategoryIds.contains(p.categoryId)) {
+            matchedPromo = promo;
+            break;
+          }
+        }
+      }
+      if (matchedPromo != null && matchedPromo.value > 0) {
+        double discounted;
+        if (matchedPromo.type == PromotionType.percentage) {
+          discounted = (p.price * (1.0 - (matchedPromo.value / 100.0))).roundToDouble();
+        } else {
+          discounted = (p.price - matchedPromo.value).clamp(0.0, p.price);
+        }
+        updated.add(p.copyWith(
+          originalPrice: p.price,
+          price: discounted,
+          discountPercent: matchedPromo.type == PromotionType.percentage ? matchedPromo.value : null,
+          tag: p.tag ?? matchedPromo.name,
+        ));
+      } else {
+        updated.add(p);
+      }
+    }
+    products = updated;
+    if (products.any((p) => p.isOnPromo) && !categories.contains('Promo')) {
+      final list = List<String>.from(categories);
+      final idx = list.indexOf('Semua');
+      if (idx >= 0) {
+        list.insert(idx + 1, 'Promo');
+      } else {
+        list.insert(0, 'Promo');
+      }
+      categories = list;
+    }
+    _recomputeVisibleProducts();
   }
 
   num get subtotal => lines.fold<num>(0, (sum, l) => sum + l.subtotal);

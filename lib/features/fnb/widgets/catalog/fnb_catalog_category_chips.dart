@@ -15,6 +15,7 @@ class FnbCatalogCategoryChips extends StatelessWidget {
   static IconData getCategoryIcon(String cat) {
     final lower = cat.toLowerCase();
     if (lower == 'semua' || lower == 'all') return Icons.grid_view_rounded;
+    if (lower == 'promo' || lower.contains('diskon') || lower.contains('sale')) return Icons.local_offer_rounded;
     if (lower.contains('espresso') || lower.contains('kopi') || lower.contains('coffee')) return Icons.coffee_rounded;
     if (lower.contains('manual') || lower.contains('brew') || lower.contains('tea') || lower.contains('teh')) return Icons.local_cafe_rounded;
     if (lower.contains('pastry') || lower.contains('bakery') || lower.contains('roti')) return Icons.bakery_dining_rounded;
@@ -40,12 +41,18 @@ class FnbCatalogCategoryChips extends StatelessWidget {
                 final p = context.palette;
                 final primaryColor = Theme.of(context).colorScheme.primary;
                 final isSelected = ctrl.category == c;
+                final isPromoCategory = c.toLowerCase() == 'promo' || c.toLowerCase().contains('diskon');
                 final count = c == 'Semua'
                     ? ctrl.products.length
-                    : ctrl.products.where((p) => p.category == c).length;
+                    : (isPromoCategory
+                        ? ctrl.products.where((p) => p.isOnPromo).length
+                        : ctrl.products.where((p) => p.category == c).length);
+
+                final activeColor = isPromoCategory ? const Color(0xFFDC2626) : primaryColor;
                 final labelText = c == 'Semua'
                     ? 'Semua Menu ($count)'
                     : (count > 0 ? '$c ($count)' : c);
+
                 return InkWell(
                   onTap: () => ctrl.setCategory(c),
                   borderRadius: BorderRadius.circular(20),
@@ -53,16 +60,24 @@ class FnbCatalogCategoryChips extends StatelessWidget {
                     duration: const Duration(milliseconds: 180),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                     decoration: BoxDecoration(
-                      color: isSelected ? primaryColor : p.surface,
+                      color: isSelected
+                          ? activeColor
+                          : (isPromoCategory
+                              ? const Color(0xFFEF4444).withValues(alpha: 0.08)
+                              : p.surface),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: isSelected ? primaryColor : p.line,
-                        width: 1,
+                        color: isSelected
+                            ? activeColor
+                            : (isPromoCategory
+                                ? const Color(0xFFEF4444).withValues(alpha: 0.3)
+                                : p.line),
+                        width: isPromoCategory && !isSelected ? 1.2 : 1,
                       ),
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: primaryColor.withValues(alpha: 0.18),
+                                color: activeColor.withValues(alpha: 0.22),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),
@@ -75,7 +90,9 @@ class FnbCatalogCategoryChips extends StatelessWidget {
                         Icon(
                           getCategoryIcon(c),
                           size: 15,
-                          color: isSelected ? Colors.white : p.textSecondary,
+                          color: isSelected
+                              ? Colors.white
+                              : (isPromoCategory ? const Color(0xFFDC2626) : p.textSecondary),
                         ),
                         const SizedBox(width: 6),
                         Text(
@@ -83,7 +100,9 @@ class FnbCatalogCategoryChips extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                            color: isSelected ? Colors.white : p.textPrimary,
+                            color: isSelected
+                                ? Colors.white
+                                : (isPromoCategory ? const Color(0xFFDC2626) : p.textPrimary),
                           ),
                         ),
                       ],
