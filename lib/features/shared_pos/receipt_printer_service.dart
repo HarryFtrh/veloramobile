@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/network/api_client.dart';
@@ -327,24 +328,79 @@ class ReceiptPrinterService {
     );
   }
 
-  /// Helper pengiriman byte ESC/POS langsung ke printer thermal fisik via TCP socket port 9100 (LAN / WiFi)
-  Future<bool> _sendToPrinterSocket(List<int> bytes) async {
+  static const MethodChannel _printerChannel = MethodChannel('com.velora.mobile/printer');
+
+  /// Mengambil daftar printer Bluetooth yang sudah dipasangkan (paired) di HP/tablet kasir
+  Future<List<Map<String, String>>> getPairedBluetoothDevices() async {
+    try {
+      final res = await _printerChannel.invokeMethod<List<dynamic>>('getPairedDevices');
+      if (res != null) {
+        return res
+            .whereType<Map>()
+            .map((m) => {
+                  'name': (m['name'] ?? '').toString(),
+                  'address': (m['address'] ?? '').toString(),
+                })
+            .toList();
+      }
+    } catch (e) {
+      debugPrint('⚠️ [PRINTER SERVICE] Gagal membaca perangkat Bluetooth paired: $e');
+    }
+    return [];
+  }
+
+  /// Helper pengiriman byte ESC/POS langsung ke printer thermal fisik via Bluetooth atau TCP socket port 9100 (LAN / WiFi)
+  Future<bool> _sendToPrinter(List<int> bytes) async {
     final connType = SessionStorage.instance.getPrinterConnectionType();
     final address = SessionStorage.instance.getPrinterAddress();
-    if (connType == 'Network IP (LAN)' && address != null && address.trim().isNotEmpty) {
+
+    // 1. Bluetooth Connection Mode
+    if (connType == 'Bluetooth') {
+      if (address == null || address.trim().isEmpty) {
+        debugPrint('⚠️ [ESC/POS BLUETOOTH] Alamat atau nama printer Bluetooth belum diatur');
+        return false;
+      }
       try {
-        final host = address.trim();
-        final socket = await Socket.connect(host, 9100, timeout: const Duration(seconds: 4));
-        socket.add(bytes);
-        await socket.flush();
-        await socket.close();
-        debugPrint('✅ [ESC/POS PRINTER] Sukses mengirim ${bytes.length} bytes ke $host:9100');
-        return true;
+        final target = address.trim();
+        final ok = await _printerChannel.invokeMethod<bool>('printBluetooth', {
+          'target': target,
+          'bytes': Uint8List.fromList(bytes),
+        });
+        if (ok == true) {
+          debugPrint('✅ [ESC/POS BLUETOOTH] Sukses mengirim ${bytes.length} bytes ke $target');
+          return true;
+        } else {
+          debugPrint('⚠️ [ESC/POS BLUETOOTH] Gagal mencetak ke $target. Pastikan perangkat aktif dan terhubung.');
+          return false;
+        }
       } catch (e) {
-        debugPrint('⚠️ [ESC/POS PRINTER] Gagal koneksi socket printer LAN ($address:9100): $e');
+        debugPrint('⚠️ [ESC/POS BLUETOOTH] Error method channel: $e');
         return false;
       }
     }
+
+    // 2. Network IP (LAN / WiFi) Connection Mode
+    if (connType == 'Network IP (LAN)' && address != null && address.trim().isNotEmpty) {
+      try {
+        String host = address.trim();
+        int port = 9100;
+        if (host.contains(':')) {
+          final parts = host.split(':');
+          host = parts[0];
+          port = int.tryParse(parts[1]) ?? 9100;
+        }
+        final socket = await Socket.connect(host, port, timeout: const Duration(seconds: 4));
+        socket.add(bytes);
+        await socket.flush();
+        await socket.close();
+        debugPrint('✅ [ESC/POS PRINTER] Sukses mengirim ${bytes.length} bytes ke $host:$port');
+        return true;
+      } catch (e) {
+        debugPrint('⚠️ [ESC/POS PRINTER] Gagal koneksi socket printer LAN ($address): $e');
+        return false;
+      }
+    }
+
     return true;
   }
 
@@ -356,7 +412,7 @@ class ReceiptPrinterService {
         '=== [ESC/POS PRINTER] DISPATCHING RECEIPT #${data.invoiceNumber} (${bytes.length} bytes) ===',
       );
     }
-    return await _sendToPrinterSocket(bytes);
+    return await _sendToPrinter(bytes);
   }
 
   /// Mengonversi laporan Z-Report tutup shift ke format teks rapi untuk dibagikan via WhatsApp/chat
@@ -512,7 +568,7 @@ class ReceiptPrinterService {
     if (kDebugMode) {
       debugPrint('=== [ESC/POS PRINTER] DISPATCHING Z-REPORT SHIFT #${summary.shiftId} (${bytes.length} bytes) ===');
     }
-    return await _sendToPrinterSocket(bytes);
+    return await _sendToPrinter(bytes);
   }
 
   /// Mengonversi rekap kas berjalan (X-Report) ke format teks rapi untuk dibagikan via WhatsApp
@@ -641,7 +697,7 @@ class ReceiptPrinterService {
     if (kDebugMode) {
       debugPrint('=== [ESC/POS PRINTER] DISPATCHING X-REPORT SHIFT #${status.shiftId} (${bytes.length} bytes) ===');
     }
-    return await _sendToPrinterSocket(bytes);
+    return await _sendToPrinter(bytes);
   }
 
   /// Membagikan teks audit berjalan (X-Report) via Android ShareSheet / WhatsApp
@@ -660,7 +716,7 @@ class ReceiptPrinterService {
     if (kDebugMode) {
       debugPrint('=== [ESC/POS] CASH DRAWER PULSE SENT (PIN 2 / 24V) ===');
     }
-    return await _sendToPrinterSocket(const [0x1B, 0x70, 0x00, 0x19, 0xFA]);
+    return await _sendToPrinter(const [0x1B, 0x70, 0x00, 0x19, 0xFA]);
   }
 
   /// Menarik preferensi konfigurasi printer & routing stasiun dari API (/v1/pos/printers / /cafe/setting/printers)

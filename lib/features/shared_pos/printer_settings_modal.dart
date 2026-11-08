@@ -66,6 +66,8 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
 
   List<Map<String, dynamic>> _cloudPrinters = [];
   bool _isLoadingCloud = false;
+  List<Map<String, String>> _pairedBtDevices = [];
+  bool _isLoadingBt = false;
 
   @override
   void initState() {
@@ -76,6 +78,19 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
       text: SessionStorage.instance.getPrinterAddress() ?? '',
     );
     _loadCloudPrinters();
+    _loadPairedBtDevices();
+  }
+
+  Future<void> _loadPairedBtDevices() async {
+    if (!mounted) return;
+    setState(() => _isLoadingBt = true);
+    final list = await ReceiptPrinterService.instance.getPairedBluetoothDevices();
+    if (mounted) {
+      setState(() {
+        _isLoadingBt = false;
+        _pairedBtDevices = list;
+      });
+    }
   }
 
   Future<void> _loadCloudPrinters() async {
@@ -330,8 +345,12 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: InkWell(
                       onTap: () {
-                        setState(() => _connectionType = mode['id'] as String);
+                        final newMode = mode['id'] as String;
+                        setState(() => _connectionType = newMode);
                         _saveConfig();
+                        if (newMode == 'Bluetooth') {
+                          _loadPairedBtDevices();
+                        }
                       },
                       borderRadius: BorderRadius.circular(16),
                       child: AnimatedContainer(
@@ -596,19 +615,38 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: brandColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(Icons.bluetooth_connected_rounded, color: brandColor, size: 18),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: brandColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(Icons.bluetooth_connected_rounded, color: brandColor, size: 18),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Identitas Printer Bluetooth',
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: p.textPrimary),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 10),
-                Text(
-                  'Identitas Printer Bluetooth',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: p.textPrimary),
+                TextButton.icon(
+                  onPressed: _isLoadingBt ? null : _loadPairedBtDevices,
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    foregroundColor: brandColor,
+                  ),
+                  icon: _isLoadingBt
+                      ? SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: brandColor))
+                      : const Icon(Icons.refresh_rounded, size: 16),
+                  label: Text(
+                    _isLoadingBt ? 'Memuat...' : 'Cari Paired',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                  ),
                 ),
               ],
             ),
@@ -638,6 +676,53 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
               ),
               onChanged: (_) => _saveConfig(),
             ),
+
+            // Perangkat Bluetooth yang sudah dipasangkan di HP kasir
+            if (_pairedBtDevices.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Perangkat Bluetooth Terpasang di Tablet/HP:',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: p.textSecondary),
+              ),
+              const SizedBox(height: 6),
+              ..._pairedBtDevices.map((dev) {
+                final name = dev['name'] ?? 'Bluetooth Device';
+                final addr = dev['address'] ?? '';
+                final currentText = _addressController.text.trim().toLowerCase();
+                final isCurrent = currentText == name.toLowerCase() || (addr.isNotEmpty && currentText == addr.toLowerCase());
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 6),
+                  decoration: BoxDecoration(
+                    color: isCurrent ? brandColor.withValues(alpha: 0.08) : p.surfaceMuted,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: isCurrent ? brandColor : p.line),
+                  ),
+                  child: ListTile(
+                    dense: true,
+                    leading: Icon(Icons.print_rounded, color: isCurrent ? brandColor : p.textSecondary, size: 20),
+                    title: Text(name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                    subtitle: Text(addr.isNotEmpty ? addr : 'Bluetooth Thermal POS', style: const TextStyle(fontSize: 11)),
+                    trailing: isCurrent
+                        ? Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: brandColor,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text('Aktif', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
+                          )
+                        : TextButton(
+                            onPressed: () {
+                              setState(() => _addressController.text = name);
+                              _saveConfig();
+                            },
+                            child: const Text('Pilih', style: TextStyle(fontWeight: FontWeight.w800)),
+                          ),
+                  ),
+                );
+              }),
+            ],
+
             const SizedBox(height: 12),
             Text(
               'Pilih Cepat Nama Printer Populer:',
@@ -682,7 +767,7 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Pastikan printer sudah dipasangkan (Paired) di menu Pengaturan Bluetooth HP Anda (PIN: 0000 atau 1234).',
+                      'Pastikan printer sudah dinyalakan & dipasangkan (Paired) di menu Bluetooth HP/Tablet Anda (PIN: 0000 atau 1234).',
                       style: TextStyle(fontSize: 11, color: p.textSecondary, height: 1.3),
                     ),
                   ),

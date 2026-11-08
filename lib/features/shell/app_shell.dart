@@ -266,12 +266,6 @@ class _AppShellState extends State<AppShell> {
                     }
                   },
                 ),
-              const SizedBox(width: 2),
-              IconButton(
-                tooltip: 'Pengaturan Printer',
-                icon: const Icon(Icons.print_outlined, size: 18),
-                onPressed: () => ReceiptPrinterService.instance.openSettings(context),
-              ),
               const SizedBox(width: 4),
               CircleAvatar(
                 radius: 14,
