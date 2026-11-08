@@ -132,29 +132,39 @@ class ReceiptPrinterService {
         }
         rawBytes = base64Decode(b64);
       }
-      // 2. Remote URL (http / https)
-      else if (trimmed.startsWith('http')) {
-        final res = await ApiClient.instance.dio.get<List<int>>(
-          trimmed,
-          options: Options(
-            responseType: ResponseType.bytes,
-            receiveTimeout: const Duration(milliseconds: 1500),
-            sendTimeout: const Duration(milliseconds: 1500),
+      // 2. Remote / Storage URL dari backend (Gunakan clean Dio tanpa Authorization agar tidak ditolak AWS S3 / Cloudflare)
+      else {
+        final primaryUrl = PosCatalogItem.resolveImageUrl(trimmed) ??
+            (trimmed.startsWith('http') ? trimmed : 'https://velora.co.id$trimmed');
+        final cleanDio = Dio(
+          BaseOptions(
+            connectTimeout: const Duration(seconds: 4),
+            receiveTimeout: const Duration(seconds: 4),
           ),
         );
-        if (res.data != null) rawBytes = Uint8List.fromList(res.data!);
-      }
-      // 3. Relative URL dari backend
-      else if (trimmed.startsWith('/')) {
-        final res = await ApiClient.instance.dio.get<List<int>>(
-          trimmed,
-          options: Options(
-            responseType: ResponseType.bytes,
-            receiveTimeout: const Duration(milliseconds: 1500),
-            sendTimeout: const Duration(milliseconds: 1500),
-          ),
-        );
-        if (res.data != null) rawBytes = Uint8List.fromList(res.data!);
+
+        try {
+          final res = await cleanDio.get<List<int>>(
+            primaryUrl,
+            options: Options(responseType: ResponseType.bytes),
+          );
+          if (res.data != null && res.data!.isNotEmpty) {
+            rawBytes = Uint8List.fromList(res.data!);
+          }
+        } catch (_) {
+          final fallbackUrl = PosCatalogItem.resolveImageFallbackUrl(primaryUrl);
+          if (fallbackUrl != null) {
+            try {
+              final res = await cleanDio.get<List<int>>(
+                fallbackUrl,
+                options: Options(responseType: ResponseType.bytes),
+              );
+              if (res.data != null && res.data!.isNotEmpty) {
+                rawBytes = Uint8List.fromList(res.data!);
+              }
+            } catch (_) {}
+          }
+        }
       }
 
       if (rawBytes != null && rawBytes.isNotEmpty) {
@@ -298,18 +308,22 @@ class ReceiptPrinterService {
     bytes.addAll(cmdKickDrawer);
 
     // 1b. Store Logo (Raster Bit Image GS v 0) from API if available & enabled
+    bool logoPrinted = false;
     if (data.showLogo && _cachedRasterLogo != null) {
       bytes.addAll(cmdAlignCenter);
       bytes.addAll(_cachedRasterLogo!);
       bytes.addAll(latin1.encode('\n'));
+      logoPrinted = true;
     }
 
     // 2. Store Header
+    // Jika logo grafis toko sudah tercetak di paling atas, nama toko dicetak rapi (bold)
+    // Jika tidak ada logo, gunakan format double-size
     writeLine(
       data.storeName.toUpperCase(),
       align: cmdAlignCenter,
       bold: true,
-      doubleSize: true,
+      doubleSize: !logoPrinted,
     );
     if (data.storeAddress.isNotEmpty) {
       writeLine(data.storeAddress, align: cmdAlignCenter);
@@ -596,11 +610,14 @@ class ReceiptPrinterService {
 
   /// Sends command to thermal printer or logs formatted receipt in debug mode
   Future<bool> printReceipt(ReceiptData data, {bool is80mm = false}) async {
-    // Siapkan logo dari API dengan batas timeout 2 detik agar tidak pernah menghambat proses cetak
-    if (data.showLogo && data.storeLogo != null && data.storeLogo!.isNotEmpty) {
+    // Siapkan logo dari API dengan batas timeout 3 detik agar tidak pernah menghambat proses cetak
+    final effectiveLogo = (data.storeLogo != null && data.storeLogo!.isNotEmpty)
+        ? data.storeLogo
+        : SessionStorage.instance.getStoreLogo();
+    if (data.showLogo && effectiveLogo != null && effectiveLogo.isNotEmpty) {
       try {
-        await prepareRasterLogo(logoSource: data.storeLogo, is80mm: is80mm)
-            .timeout(const Duration(milliseconds: 2000), onTimeout: () => null);
+        await prepareRasterLogo(logoSource: effectiveLogo, is80mm: is80mm)
+            .timeout(const Duration(milliseconds: 3000), onTimeout: () => null);
       } catch (_) {}
     }
 

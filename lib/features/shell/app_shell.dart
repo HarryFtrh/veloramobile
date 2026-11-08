@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/config/business_vertical.dart';
 import '../../core/design/tokens.dart';
 import '../../core/storage/session_storage.dart';
+import '../../core/widgets/store_logo_avatar.dart';
 import '../shared_pos/offline_sync_badge.dart';
 import '../shared_pos/receipt_printer_service.dart';
 import '../shared_pos/shift_badge.dart';
@@ -115,28 +116,14 @@ class _AppShellState extends State<AppShell> {
           child: Row(
             children: [
               // Brand Logo + Store Name + Terminal
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: brandPrimary,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  switch (vertical) {
-                    BusinessVertical.pharmacy => Icons.local_pharmacy_rounded,
-                    BusinessVertical.sales => Icons.inventory_2_rounded,
-                    BusinessVertical.fnb => Icons.coffee_maker_rounded,
-                    BusinessVertical.customer => Icons.shopping_bag_rounded,
-                    BusinessVertical.marketplace => Icons.store_mall_directory_rounded,
-                    BusinessVertical.retail => Icons.storefront_rounded,
-                  },
-                  color: Colors.white,
-                  size: 18,
-                ),
+              StoreLogoAvatar(
+                size: 32,
+                vertical: vertical,
+                brandColor: brandPrimary,
               ),
               const SizedBox(width: 8),
               ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: isVeryCompact ? 80 : (isCompact ? 110 : 160)),
+                constraints: BoxConstraints(maxWidth: isVeryCompact ? 130 : (isCompact ? 180 : 260)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,

@@ -763,7 +763,34 @@ class AuthService {
             ? Map<String, dynamic>.from(inner)
             : Map<String, dynamic>.from(rawData);
       }
-      return AuthUser.fromJson(data);
+      final user = AuthUser.fromJson(data);
+      final tenantMap = data.getMap('tenant');
+      final storeLogo = tenantMap.getString(
+        'logo',
+        fallback: tenantMap.getString(
+          'logo_url',
+          fallback: tenantMap.getString(
+            'store_logo',
+            fallback: data.getString(
+              'logo',
+              fallback: data.getString('logo_url'),
+            ),
+          ),
+        ),
+      );
+      final tenantName = tenantMap.getString(
+        'name',
+        fallback: data.getString('store_name', fallback: data.getString('tenant_name', fallback: user.tenantName)),
+      );
+      if (tenantName.isNotEmpty || storeLogo.isNotEmpty) {
+        await SessionStorage.instance.saveTenantProfile(
+          name: tenantName.isNotEmpty ? tenantName : user.tenantName,
+          address: tenantMap.getString('address'),
+          phone: tenantMap.getString('phone'),
+          logo: storeLogo.isNotEmpty ? storeLogo : null,
+        );
+      }
+      return user;
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
         return null;

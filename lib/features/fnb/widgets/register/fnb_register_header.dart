@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/design/tokens.dart';
 import '../../../../core/storage/session_storage.dart';
+import '../../../../core/widgets/store_logo_avatar.dart';
 import '../../../shared_pos/offline_sync_badge.dart';
 import '../../../shared_pos/receipt_printer_service.dart';
 import '../../../shared_pos/shift_badge.dart';
@@ -35,10 +36,9 @@ class FnbRegisterHeader extends StatelessWidget implements PreferredSizeWidget {
       titleSpacing: wide ? 16 : 8,
       title: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(7),
-            decoration: BoxDecoration(color: primaryColor, borderRadius: BorderRadius.circular(9)),
-            child: const Icon(Icons.coffee_maker_rounded, color: Colors.white, size: 18),
+          StoreLogoAvatar(
+            size: 32,
+            brandColor: primaryColor,
           ),
           const SizedBox(width: 8),
           Expanded(
