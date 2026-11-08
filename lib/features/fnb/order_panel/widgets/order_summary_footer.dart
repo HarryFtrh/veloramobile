@@ -258,9 +258,11 @@ class OrderSummaryFooter extends StatelessWidget {
               value: CurrencyFormatter.format(bill.tax),
               showInfo: true,
             ),
-          if (bill != null && (bill.rounding != 0 || (ctrl.billing != null && ctrl.billing!.roundingEnabled)))
+          if (bill != null && (bill.rounding != 0 || (ctrl.billing != null && ctrl.billing!.roundingEnabled && ctrl.billing!.roundingStep > 0)))
             SummaryRow(
-              label: 'Pembulatan (Kelipatan ${ctrl.billing?.roundingStep ?? 100})',
+              label: ctrl.billing != null && ctrl.billing!.roundingStep > 0
+                  ? 'Pembulatan (Kelipatan ${ctrl.billing!.roundingStep})'
+                  : 'Pembulatan',
               value: CurrencyFormatter.format(bill.rounding),
             ),
           const SizedBox(height: 4),

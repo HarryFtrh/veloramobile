@@ -269,8 +269,11 @@ class BillingSettings {
       isRoundingOn = step > 0;
     }
 
-    // Jika aktif tapi kelipatan tidak ditentukan di API, gunakan kelipatan standar 100
-    if (step <= 0) step = 100;
+    // Jika step tidak ditentukan di API atau <= 0, pembulatan dinonaktifkan
+    if (step <= 0) {
+      isRoundingOn = false;
+      step = 0;
+    }
 
     // Ekstraksi promosi & diskon dari prefensi
     final rawPromos = json['promotions'] ??
@@ -677,8 +680,8 @@ class BillingSettings {
         pb1Enabled: false,
         pb1Rate: 0,
         pb1Inclusive: false,
-        roundingEnabled: true,
-        roundingStep: 100,
+        roundingEnabled: false,
+        roundingStep: 0,
         roundingScope: 'both',
         roundingDirection: 'floor',
         taxName: 'PB1',

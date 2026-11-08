@@ -48,13 +48,7 @@ class RegisterController extends ChangeNotifier {
   List<ModifierGroup> modifierGroups = const [];
   String category = 'Semua';
   String search = '';
-  BillingSettings? billing = const BillingSettings(
-    roundingEnabled: true,
-    roundingStep: 100,
-    roundingScope: 'both',
-    roundingDirection: 'floor',
-    taxName: 'PB1',
-  );
+  BillingSettings? billing;
   String? loadError;
   bool loading = true;
   bool busy = false;

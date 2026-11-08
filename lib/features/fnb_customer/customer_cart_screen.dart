@@ -82,7 +82,7 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
           pb1Rate: 0,
           pb1Inclusive: false,
           roundingEnabled: false,
-          roundingStep: 100,
+          roundingStep: 0,
           roundingScope: 'both',
           roundingDirection: 'floor',
         );
