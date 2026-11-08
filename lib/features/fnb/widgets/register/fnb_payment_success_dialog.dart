@@ -112,9 +112,16 @@ class FnbPaymentSuccessDialog extends StatelessWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () async {
-                    await ReceiptPrinterService.instance.printReceipt(finalReceipt);
+                    final ok = await ReceiptPrinterService.instance.printReceipt(finalReceipt);
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Struk dikirim ke printer')));
+                      final msg = ReceiptPrinterService.instance.lastStatusMessage.isNotEmpty
+                          ? ReceiptPrinterService.instance.lastStatusMessage
+                          : (ok ? 'Struk dikirim ke printer' : 'Gagal mengirim struk ke printer');
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text(msg),
+                        backgroundColor: ok ? const Color(0xFF10B981) : Colors.red.shade700,
+                        behavior: SnackBarBehavior.floating,
+                      ));
                     }
                   },
                   icon: const Icon(Icons.print_outlined, size: 15),

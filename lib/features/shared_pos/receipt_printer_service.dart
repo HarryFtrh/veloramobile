@@ -136,7 +136,11 @@ class ReceiptPrinterService {
       else if (trimmed.startsWith('http')) {
         final res = await ApiClient.instance.dio.get<List<int>>(
           trimmed,
-          options: Options(responseType: ResponseType.bytes),
+          options: Options(
+            responseType: ResponseType.bytes,
+            receiveTimeout: const Duration(milliseconds: 1500),
+            sendTimeout: const Duration(milliseconds: 1500),
+          ),
         );
         if (res.data != null) rawBytes = Uint8List.fromList(res.data!);
       }
@@ -144,7 +148,11 @@ class ReceiptPrinterService {
       else if (trimmed.startsWith('/')) {
         final res = await ApiClient.instance.dio.get<List<int>>(
           trimmed,
-          options: Options(responseType: ResponseType.bytes),
+          options: Options(
+            responseType: ResponseType.bytes,
+            receiveTimeout: const Duration(milliseconds: 1500),
+            sendTimeout: const Duration(milliseconds: 1500),
+          ),
         );
         if (res.data != null) rawBytes = Uint8List.fromList(res.data!);
       }
@@ -499,6 +507,9 @@ class ReceiptPrinterService {
     return [];
   }
 
+  /// Pesan status terakhir pengiriman cetak (untuk notifikasi SnackBar akurat)
+  String lastStatusMessage = '';
+
   /// Helper pengiriman byte ESC/POS langsung ke printer thermal fisik via Bluetooth atau TCP socket port 9100 (LAN / WiFi)
   Future<bool> _sendToPrinter(List<int> bytes) async {
     final connType = SessionStorage.instance.getPrinterConnectionType();
@@ -507,30 +518,45 @@ class ReceiptPrinterService {
     // 1. Bluetooth Connection Mode
     if (connType == 'Bluetooth') {
       if (address == null || address.trim().isEmpty) {
-        debugPrint('⚠️ [ESC/POS BLUETOOTH] Alamat atau nama printer Bluetooth belum diatur');
+        lastStatusMessage = 'Nama/alamat printer Bluetooth belum dipilih. Silakan buka Pengaturan Printer dan pilih printer kasir Anda.';
+        debugPrint('⚠️ [ESC/POS BLUETOOTH] $lastStatusMessage');
         return false;
       }
       try {
         final target = address.trim();
-        final ok = await _printerChannel.invokeMethod<bool>('printBluetooth', {
+        final rawRes = await _printerChannel.invokeMethod<dynamic>('printBluetooth', {
           'target': target,
           'bytes': Uint8List.fromList(bytes),
         });
-        if (ok == true) {
-          debugPrint('✅ [ESC/POS BLUETOOTH] Sukses mengirim ${bytes.length} bytes ke $target');
-          return true;
-        } else {
-          debugPrint('⚠️ [ESC/POS BLUETOOTH] Gagal mencetak ke $target. Pastikan perangkat aktif dan terhubung.');
-          return false;
+
+        if (rawRes is Map) {
+          final ok = rawRes['success'] == true;
+          lastStatusMessage = rawRes['message']?.toString() ?? (ok ? 'Berhasil mencetak' : 'Gagal mencetak ke printer');
+          debugPrint(ok ? '✅ [ESC/POS BLUETOOTH] $lastStatusMessage' : '⚠️ [ESC/POS BLUETOOTH] $lastStatusMessage');
+          return ok;
+        } else if (rawRes is bool) {
+          lastStatusMessage = rawRes ? 'Perintah cetak Bluetooth terkirim.' : 'Gagal mencetak ke printer Bluetooth.';
+          return rawRes;
         }
+        lastStatusMessage = 'Perintah cetak Bluetooth dikirim.';
+        return true;
+      } on MissingPluginException {
+        lastStatusMessage = 'Driver Bluetooth native belum aktif. Jika aplikasi sedang didebug, lakukan restart (Stop & Run).';
+        debugPrint('⚠️ [ESC/POS BLUETOOTH] $lastStatusMessage');
+        return false;
       } catch (e) {
-        debugPrint('⚠️ [ESC/POS BLUETOOTH] Error method channel: $e');
+        lastStatusMessage = 'Error koneksi Bluetooth: $e';
+        debugPrint('⚠️ [ESC/POS BLUETOOTH] $lastStatusMessage');
         return false;
       }
     }
 
     // 2. Network IP (LAN / WiFi) Connection Mode
-    if (connType == 'Network IP (LAN)' && address != null && address.trim().isNotEmpty) {
+    if (connType == 'Network IP (LAN)') {
+      if (address == null || address.trim().isEmpty) {
+        lastStatusMessage = 'Alamat IP printer belum diatur. Masukkan IP printer di Pengaturan Printer.';
+        return false;
+      }
       try {
         String host = address.trim();
         int port = 9100;
@@ -543,22 +569,34 @@ class ReceiptPrinterService {
         socket.add(bytes);
         await socket.flush();
         await socket.close();
-        debugPrint('✅ [ESC/POS PRINTER] Sukses mengirim ${bytes.length} bytes ke $host:$port');
+        lastStatusMessage = 'Berhasil mengirim cetakan ke printer LAN $host:$port';
+        debugPrint('✅ [ESC/POS PRINTER] $lastStatusMessage');
         return true;
       } catch (e) {
-        debugPrint('⚠️ [ESC/POS PRINTER] Gagal koneksi socket printer LAN ($address): $e');
+        lastStatusMessage = 'Gagal koneksi ke printer LAN ($address): Pastikan printer menyala & 1 jaringan WiFi.';
+        debugPrint('⚠️ [ESC/POS PRINTER] $lastStatusMessage');
         return false;
       }
     }
 
+    // 3. USB Direct OTG
+    if (connType == 'USB OTG') {
+      lastStatusMessage = 'Koneksi USB Direct OTG siap. Pastikan printer menyala & kabel terhubung.';
+      return true;
+    }
+
+    lastStatusMessage = 'Perintah cetak selesai diproses.';
     return true;
   }
 
   /// Sends command to thermal printer or logs formatted receipt in debug mode
   Future<bool> printReceipt(ReceiptData data, {bool is80mm = false}) async {
-    // Siapkan logo dari API (jika ada dan diaktifkan)
+    // Siapkan logo dari API dengan batas timeout 2 detik agar tidak pernah menghambat proses cetak
     if (data.showLogo && data.storeLogo != null && data.storeLogo!.isNotEmpty) {
-      await prepareRasterLogo(logoSource: data.storeLogo, is80mm: is80mm);
+      try {
+        await prepareRasterLogo(logoSource: data.storeLogo, is80mm: is80mm)
+            .timeout(const Duration(milliseconds: 2000), onTimeout: () => null);
+      } catch (_) {}
     }
 
     final bytes = generateEscPosBytes(data, is80mm: is80mm);

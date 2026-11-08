@@ -21,6 +21,20 @@ class MainActivity : FlutterActivity() {
     private val PRINTER_CHANNEL = "com.velora.mobile/printer"
     private val SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
 
+    private fun checkBluetoothPermissions(): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val hasConnect = checkSelfPermission(android.Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
+            if (!hasConnect) {
+                requestPermissions(arrayOf(
+                    android.Manifest.permission.BLUETOOTH_CONNECT,
+                    android.Manifest.permission.BLUETOOTH_SCAN
+                ), 101)
+                return false
+            }
+        }
+        return true
+    }
+
     private fun getBluetoothAdapter(): BluetoothAdapter? {
         return try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -36,7 +50,9 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun getBondedDevices(): List<Map<String, String>> {
+        checkBluetoothPermissions()
         val adapter = getBluetoothAdapter() ?: return emptyList()
+        if (!adapter.isEnabled) return emptyList()
         val list = mutableListOf<Map<String, String>>()
         try {
             val devices = adapter.bondedDevices
@@ -48,50 +64,100 @@ class MainActivity : FlutterActivity() {
                     ))
                 }
             }
-        } catch (e: SecurityException) {
-            // Permission not granted or restricted
         } catch (e: Exception) {
-            // Ignored
+            // Permission or state error
         }
         return list
     }
 
-    private fun printBluetooth(target: String, bytes: ByteArray): Boolean {
-        val adapter = getBluetoothAdapter() ?: return false
+    private fun printBluetooth(target: String, bytes: ByteArray): Map<String, Any> {
+        if (!checkBluetoothPermissions()) {
+            return mapOf(
+                "success" to false,
+                "message" to "Izin Bluetooth (BLUETOOTH_CONNECT) belum diberikan. Silakan izinkan pada dialog izin sistem."
+            )
+        }
+
+        val adapter = getBluetoothAdapter()
+            ?: return mapOf("success" to false, "message" to "Perangkat ini tidak memiliki modul Bluetooth.")
+
+        if (!adapter.isEnabled) {
+            return mapOf("success" to false, "message" to "Bluetooth tablet/HP sedang nonaktif. Silakan aktifkan Bluetooth Anda.")
+        }
+
         try {
-            val devices = adapter.bondedDevices ?: return false
+            val devices = adapter.bondedDevices
+                ?: return mapOf("success" to false, "message" to "Tidak dapat mengakses daftar perangkat Bluetooth terpasang.")
+
+            // Cocokkan alamat MAC atau nama printer (termasuk pencocokan parsial)
             val device = devices.firstOrNull {
-                it.address.equals(target, ignoreCase = true) || it.name.equals(target, ignoreCase = true)
-            } ?: return false
+                it.address.equals(target, ignoreCase = true) ||
+                (it.name != null && it.name.equals(target, ignoreCase = true)) ||
+                (it.name != null && it.name.contains(target, ignoreCase = true)) ||
+                (it.name != null && target.contains(it.name, ignoreCase = true))
+            } ?: return mapOf(
+                "success" to false,
+                "message" to "Printer '$target' tidak ditemukan di daftar Paired Bluetooth. Buka Pengaturan Bluetooth Android & pasangkan (pair) printer terlebih dahulu."
+            )
 
             try {
                 adapter.cancelDiscovery()
             } catch (_: Exception) {}
 
             var socket: BluetoothSocket? = null
+            var lastError: Exception? = null
+
+            // Coba 1: SPP Standard UUID
             try {
                 socket = device.createRfcommSocketToServiceRecord(SPP_UUID)
                 socket.connect()
-            } catch (e: IOException) {
+            } catch (e: Exception) {
+                lastError = e
+                try { socket?.close() } catch (_: Exception) {}
+                socket = null
+            }
+
+            // Coba 2: Insecure RFCOMM Socket
+            if (socket == null) {
+                try {
+                    socket = device.createInsecureRfcommSocketToServiceRecord(SPP_UUID)
+                    socket.connect()
+                } catch (e: Exception) {
+                    lastError = e
+                    try { socket?.close() } catch (_: Exception) {}
+                    socket = null
+                }
+            }
+
+            // Coba 3: Reflection Channel 1 (Sangat kompatibel untuk printer thermal POS portable)
+            if (socket == null) {
                 try {
                     val m = device.javaClass.getMethod("createRfcommSocket", Int::class.javaPrimitiveType)
                     socket = m.invoke(device, 1) as? BluetoothSocket
                     socket?.connect()
-                } catch (e2: Exception) {
+                } catch (e: Exception) {
+                    lastError = e
                     try { socket?.close() } catch (_: Exception) {}
-                    return false
+                    socket = null
                 }
             }
 
-            socket?.use { s ->
+            if (socket == null) {
+                return mapOf(
+                    "success" to false,
+                    "message" to "Gagal menghubungkan ke printer '${device.name}'. Pastikan printer dalam keadaan HIDUP dan berada dalam jangkauan: ${lastError?.message ?: ""}"
+                )
+            }
+
+            socket.use { s ->
                 val os = s.outputStream
                 os.write(bytes)
                 os.flush()
-                Thread.sleep(150)
+                Thread.sleep(160)
             }
-            return true
+            return mapOf("success" to true, "message" to "Berhasil mencetak ke '${device.name}'")
         } catch (e: Exception) {
-            return false
+            return mapOf("success" to false, "message" to "Gagal mencetak: ${e.message}")
         }
     }
 
@@ -162,7 +228,7 @@ class MainActivity : FlutterActivity() {
                     val target = call.argument<String>("target") ?: ""
                     val bytes = call.argument<ByteArray>("bytes")
                     if (target.isEmpty() || bytes == null) {
-                        result.success(false)
+                        result.success(mapOf("success" to false, "message" to "Target printer atau data cetak kosong."))
                         return@setMethodCallHandler
                     }
                     Thread {

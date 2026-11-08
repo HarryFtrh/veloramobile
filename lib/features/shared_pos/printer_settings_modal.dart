@@ -197,8 +197,12 @@ class _PrinterSettingsModalState extends State<PrinterSettingsModal> {
               Expanded(
                 child: Text(
                   success
-                      ? 'Perintah cetak uji coba ESC/POS berhasil dikirim!'
-                      : 'Gagal mengirim data ke printer. Periksa koneksi perangkat.',
+                      ? (ReceiptPrinterService.instance.lastStatusMessage.isNotEmpty
+                          ? ReceiptPrinterService.instance.lastStatusMessage
+                          : 'Perintah cetak uji coba ESC/POS berhasil dikirim!')
+                      : (ReceiptPrinterService.instance.lastStatusMessage.isNotEmpty
+                          ? ReceiptPrinterService.instance.lastStatusMessage
+                          : 'Gagal mengirim data ke printer. Periksa koneksi perangkat.'),
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
