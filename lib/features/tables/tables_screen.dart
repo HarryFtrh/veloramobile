@@ -431,51 +431,60 @@ class _TablesScreenState extends State<TablesScreen> {
                                 ],
                               ),
                             ),
-                          if (isWide) ...[
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Column(
+                          if (isWide)
+                            LayoutBuilder(
+                              builder: (context, headerConstraints) {
+                                final showInline = headerConstraints.maxWidth >= 580;
+
+                                final titleSection = Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          'Manajemen Meja & Denah Ruangan',
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w800,
-                                            color: p.textPrimary,
-                                          ),
+                                    Text.rich(
+                                      TextSpan(
+                                        text: 'Manajemen Meja & Denah Ruangan ',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w800,
+                                          color: p.textPrimary,
                                         ),
-                                        const SizedBox(width: 8),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFF059669).withValues(alpha: 0.12),
-                                            borderRadius: BorderRadius.circular(4),
-                                          ),
-                                          child: const Text(
-                                            'LIVE FLOOR',
-                                            style: TextStyle(
-                                              fontSize: 9,
-                                              fontWeight: FontWeight.w800,
-                                              color: Color(0xFF059669),
+                                        children: [
+                                          WidgetSpan(
+                                            alignment: PlaceholderAlignment.middle,
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF059669).withValues(alpha: 0.12),
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                              child: const Text(
+                                                'LIVE FLOOR',
+                                                style: TextStyle(
+                                                  fontSize: 9,
+                                                  fontWeight: FontWeight.w800,
+                                                  color: Color(0xFF059669),
+                                                ),
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
                                       '${SessionStorage.instance.getLocationName() ?? "Outlet"} • Live Table Occupancy & Orders',
                                       style: TextStyle(fontSize: 11, color: p.textSecondary),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ],
-                                ),
-                                Row(
+                                );
+
+                                final actionButtons = Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
                                   children: [
                                     OutlinedButton.icon(
                                       onPressed: _showAddTableDialog,
@@ -487,7 +496,6 @@ class _TablesScreenState extends State<TablesScreen> {
                                         shape: const StadiumBorder(),
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
                                     ElevatedButton.icon(
                                       onPressed: () => _toast('Formulir reservasi baru dibuka'),
                                       icon: const Icon(Icons.bookmark_add_outlined, size: 16),
@@ -500,11 +508,35 @@ class _TablesScreenState extends State<TablesScreen> {
                                       ),
                                     ),
                                   ],
-                                ),
-                              ],
+                                );
+
+                                if (showInline) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 14),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(child: titleSection),
+                                        const SizedBox(width: 12),
+                                        actionButtons,
+                                      ],
+                                    ),
+                                  );
+                                }
+
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 14),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      titleSection,
+                                      const SizedBox(height: 10),
+                                      actionButtons,
+                                    ],
+                                  ),
+                                );
+                              },
                             ),
-                            const SizedBox(height: 14),
-                          ],
 
                           // Dynamic Unified Filter Ribbon & Occupancy Pill
                           TableFilterRibbon(
