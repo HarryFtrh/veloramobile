@@ -30,7 +30,10 @@ abstract final class BillCalculator {
     required num subtotal,
     num discount = 0,
   }) {
-    final disc = discount > subtotal ? subtotal : discount;
+    final rawDisc = discount > subtotal ? subtotal : discount;
+    final disc = (s.roundingEnabled && (s.roundingScope == 'both' || s.roundingScope == 'discount_only') && rawDisc > 0)
+        ? _round(s, rawDisc)
+        : rawDisc;
     final net = (subtotal - disc).clamp(0, double.infinity);
 
     final service = s.serviceChargeEnabled && s.serviceChargeRate > 0 && net > 0

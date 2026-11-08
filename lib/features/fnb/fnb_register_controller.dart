@@ -48,7 +48,13 @@ class RegisterController extends ChangeNotifier {
   List<ModifierGroup> modifierGroups = const [];
   String category = 'Semua';
   String search = '';
-  BillingSettings? billing;
+  BillingSettings? billing = const BillingSettings(
+    roundingEnabled: true,
+    roundingStep: 100,
+    roundingScope: 'both',
+    roundingDirection: 'floor',
+    taxName: 'PB1',
+  );
   String? loadError;
   bool loading = true;
   bool busy = false;
@@ -118,18 +124,10 @@ class RegisterController extends ChangeNotifier {
     try {
       billing = await _service.billingSettings();
       _applyAutoPromotionsToCatalog();
-    } catch (_) {
-      billing = const BillingSettings(
-        serviceChargeEnabled: false,
-        serviceChargeRate: 0,
-        pb1Enabled: false,
-        pb1Rate: 0,
-        pb1Inclusive: false,
-        roundingEnabled: true,
-        roundingStep: 100,
-        roundingScope: 'both',
-        roundingDirection: 'floor',
-      );
+      autoApplyBestPromotion();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('⚠️ [FnbRegisterController] Gagal memuat billing settings dari API: $e');
     }
 
     if (modifierGroups.isEmpty) {
