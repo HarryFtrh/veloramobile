@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
 import '../../core/network/api_client.dart';
 import '../../core/storage/session_storage.dart';
@@ -12,6 +13,9 @@ import '../../core/storage/session_storage.dart';
 class OfflineSyncManager {
   static final OfflineSyncManager instance = OfflineSyncManager._();
   OfflineSyncManager._();
+
+  static const MethodChannel _networkChannel = MethodChannel('com.velora.mobile/network');
+  bool _networkListenerBound = false;
 
   bool _isSyncing = false;
   Timer? _autoSyncTimer;
@@ -32,11 +36,33 @@ class OfflineSyncManager {
   /// Callback jika ada transaksi offline yang berhasil disinkronkan ke server
   static void Function(int syncedCount)? onSyncSuccess;
 
-  /// Memulai pengecekan periodik sinkronisasi offline dengan adaptive timing
+  /// Memulai pengecekan periodik sinkronisasi offline dengan adaptive timing & native connectivity callback
   void startAutoSync({Duration interval = const Duration(seconds: _defaultIntervalSeconds)}) {
     _autoSyncTimer?.cancel();
+    _bindNetworkListener();
     refreshState();
     _scheduleNextSync(interval.inSeconds);
+  }
+
+  void _bindNetworkListener() {
+    if (_networkListenerBound) return;
+    _networkListenerBound = true;
+    _networkChannel.setMethodCallHandler((call) async {
+      if (call.method == 'onNetworkChanged') {
+        final args = call.arguments;
+        final online = args is Map ? (args['online'] == true) : true;
+        isOnlineNotifier.value = online;
+        if (online) {
+          _consecutiveFailures = 0;
+          final pending = SessionStorage.instance.getOfflineQueueCount();
+          if (pending > 0) {
+            debugPrint('📶 [OFFLINE SYNC] Koneksi pulih! Memicu sinkronisasi instan ($pending antrean)...');
+            unawaited(triggerSync());
+          }
+        }
+      }
+      return null;
+    });
   }
 
   void _scheduleNextSync(int seconds) {

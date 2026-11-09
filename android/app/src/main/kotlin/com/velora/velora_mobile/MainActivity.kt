@@ -8,18 +8,32 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.AudioManager
+import android.media.ToneGenerator
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.Build
+import android.speech.tts.TextToSpeech
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.IOException
+import java.util.Locale
 import java.util.UUID
 
 class MainActivity : FlutterActivity() {
     private val APP_UPDATE_CHANNEL = "com.velora.mobile/app_update"
     private val PRINTER_CHANNEL = "com.velora.mobile/printer"
+    private val AUDIO_CHANNEL = "com.velora.mobile/audio"
+    private val NETWORK_CHANNEL = "com.velora.mobile/network"
     private val SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
+
+    private var tts: TextToSpeech? = null
+    private var ttsReady = false
+    private var networkChannel: MethodChannel? = null
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
     private fun checkBluetoothPermissions(): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -251,5 +265,128 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+
+        // 3. Audio & Indonesian TTS Channel (KDS Chime + Pharmacy Calling Voice)
+        if (tts == null) {
+            try {
+                tts = TextToSpeech(applicationContext) { status ->
+                    if (status == TextToSpeech.SUCCESS) {
+                        val idLocale = Locale.forLanguageTag("id-ID")
+                        val res = tts?.setLanguage(idLocale)
+                        if (res == TextToSpeech.LANG_MISSING_DATA || res == TextToSpeech.LANG_NOT_SUPPORTED) {
+                            tts?.setLanguage(Locale.getDefault())
+                        }
+                        tts?.setSpeechRate(0.95f)
+                        ttsReady = true
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, AUDIO_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "playChime" -> {
+                    val type = call.argument<String>("type") ?: "order"
+                    Thread {
+                        try {
+                            val toneGen = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100)
+                            when (type) {
+                                "order" -> {
+                                    toneGen.startTone(ToneGenerator.TONE_PROP_BEEP2, 320)
+                                    Thread.sleep(360)
+                                    toneGen.startTone(ToneGenerator.TONE_PROP_ACK, 260)
+                                    Thread.sleep(300)
+                                }
+                                "error" -> {
+                                    toneGen.startTone(ToneGenerator.TONE_SUP_ERROR, 300)
+                                    Thread.sleep(320)
+                                }
+                                else -> {
+                                    toneGen.startTone(ToneGenerator.TONE_PROP_ACK, 180)
+                                    Thread.sleep(200)
+                                }
+                            }
+                            toneGen.release()
+                        } catch (_: Exception) {}
+                    }.start()
+                    result.success(true)
+                }
+                "speak" -> {
+                    val text = call.argument<String>("text") ?: ""
+                    if (text.isNotEmpty() && ttsReady) {
+                        try {
+                            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "velora_tts_${System.currentTimeMillis()}")
+                            result.success(true)
+                        } catch (e: Exception) {
+                            result.success(false)
+                        }
+                    } else {
+                        result.success(false)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        // 4. Instant Network Connectivity Listener Channel (Offline Sync Auto-Trigger)
+        val netChan = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, NETWORK_CHANNEL)
+        networkChannel = netChan
+        netChan.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "isConnected" -> {
+                    try {
+                        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+                        val active = cm?.activeNetwork
+                        val caps = if (active != null) cm.getNetworkCapabilities(active) else null
+                        val online = caps != null && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                        result.success(online)
+                    } catch (_: Exception) {
+                        result.success(true)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        if (networkCallback == null) {
+            try {
+                val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+                val cb = object : ConnectivityManager.NetworkCallback() {
+                    override fun onAvailable(network: Network) {
+                        runOnUiThread {
+                            try {
+                                networkChannel?.invokeMethod("onNetworkChanged", mapOf("online" to true))
+                            } catch (_: Exception) {}
+                        }
+                    }
+
+                    override fun onLost(network: Network) {
+                        runOnUiThread {
+                            try {
+                                networkChannel?.invokeMethod("onNetworkChanged", mapOf("online" to false))
+                            } catch (_: Exception) {}
+                        }
+                    }
+                }
+                cm?.registerDefaultNetworkCallback(cb)
+                networkCallback = cb
+            } catch (_: Exception) {}
+        }
+    }
+
+    override fun onDestroy() {
+        try {
+            networkCallback?.let { cb ->
+                val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+                cm?.unregisterNetworkCallback(cb)
+            }
+            networkCallback = null
+        } catch (_: Exception) {}
+        try {
+            tts?.stop()
+            tts?.shutdown()
+            tts = null
+        } catch (_: Exception) {}
+        super.onDestroy()
     }
 }

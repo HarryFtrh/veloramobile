@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/safe_json.dart';
+import '../../../../core/widgets/offline_cached_image.dart';
 import '../../../shared_pos/product_catalog_service.dart';
 
 /// Clean, responsive product grid card for FnB Catalog
@@ -86,11 +87,11 @@ class FnbProductGridCard extends StatelessWidget {
                         ),
                         clipBehavior: Clip.antiAlias,
                         child: item.imageUrl != null && item.imageUrl!.isNotEmpty
-                            ? Image.network(
-                                item.imageUrl!,
+                            ? OfflineCachedImage(
+                                imageUrl: item.imageUrl!,
                                 fit: BoxFit.cover,
                                 cacheWidth: 320,
-                                errorBuilder: (_, _, _) => Center(
+                                fallback: Center(
                                   child: Icon(item.defaultIcon, size: 28, color: primaryColor),
                                 ),
                               )

@@ -17,11 +17,13 @@ dependencies:
 
   # Network & realtime
   dio: ^5.11.1
+  http: ^1.6.0
   web_socket_channel: ^3.0.3
 
   # Storage & security
   crypto: ^3.0.7
   flutter_secure_storage: ^11.2.0
+  path_provider: ^2.1.6
   shared_preferences: ^2.5.5
   uuid: ^4.6.0
 

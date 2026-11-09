@@ -119,6 +119,11 @@ class _PharmacyCallingDisplayScreenState extends State<PharmacyCallingDisplayScr
       patientName: patient,
       destination: dest,
     );
+    AudioHelper.orderChime(force: true);
+    AudioHelper.speak(
+      'Nomor Antrean $_currentCallingToken, silakan menuju ${station['counter'] ?? _currentCallingDestination}',
+      force: true,
+    );
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(

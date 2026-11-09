@@ -1,6 +1,8 @@
 import 'package:flutter/services.dart';
 
 class AudioHelper {
+  static const MethodChannel _audioChannel = MethodChannel('com.velora.mobile/audio');
+
   /// Status aktif dari konfigurasi API / preferensi backend
   static bool soundEnabledFromApi = true;
 
@@ -20,6 +22,7 @@ class AudioHelper {
     HapticFeedback.heavyImpact();
     if (soundEnabledFromApi || force) {
       SystemSound.play(SystemSoundType.click);
+      _playNativeChime('success');
     }
   }
 
@@ -27,6 +30,7 @@ class AudioHelper {
     HapticFeedback.heavyImpact();
     if (soundEnabledFromApi || force) {
       SystemSound.play(SystemSoundType.alert);
+      _playNativeChime('order');
     }
   }
 
@@ -34,6 +38,22 @@ class AudioHelper {
     HapticFeedback.vibrate();
     if (soundEnabledFromApi || force) {
       SystemSound.play(SystemSoundType.alert);
+      _playNativeChime('error');
     }
+  }
+
+  /// Panggilan suara Bahasa Indonesia (Text-to-Speech) untuk Antrean Apotek & KDS
+  static Future<void> speak(String text, {bool force = false}) async {
+    if (text.trim().isEmpty) return;
+    if (!soundEnabledFromApi && !force) return;
+    try {
+      await _audioChannel.invokeMethod<bool>('speak', {'text': text.trim()});
+    } catch (_) {}
+  }
+
+  static Future<void> _playNativeChime(String type) async {
+    try {
+      await _audioChannel.invokeMethod<bool>('playChime', {'type': type});
+    } catch (_) {}
   }
 }
