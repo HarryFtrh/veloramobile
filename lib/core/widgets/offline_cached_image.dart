@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -30,7 +31,6 @@ class _OfflineCachedImageState extends State<OfflineCachedImage> {
   static Directory? _cacheDir;
   static final Map<String, File> _memoryFileMap = {};
   File? _cachedFile;
-  bool _loading = true;
 
   @override
   void initState() {
@@ -42,7 +42,6 @@ class _OfflineCachedImageState extends State<OfflineCachedImage> {
   void didUpdateWidget(covariant OfflineCachedImage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.imageUrl != widget.imageUrl) {
-      _loading = true;
       _cachedFile = null;
       _resolveImage();
     }
@@ -51,7 +50,6 @@ class _OfflineCachedImageState extends State<OfflineCachedImage> {
   Future<void> _resolveImage() async {
     final url = widget.imageUrl.trim();
     if (url.isEmpty) {
-      if (mounted) setState(() => _loading = false);
       return;
     }
 
@@ -61,7 +59,6 @@ class _OfflineCachedImageState extends State<OfflineCachedImage> {
         if (mounted) {
           setState(() {
             _cachedFile = cachedInMem;
-            _loading = false;
           });
         }
         return;
@@ -77,7 +74,6 @@ class _OfflineCachedImageState extends State<OfflineCachedImage> {
           if (mounted) {
             setState(() {
               _cachedFile = file;
-              _loading = false;
             });
           }
           return;
@@ -93,17 +89,12 @@ class _OfflineCachedImageState extends State<OfflineCachedImage> {
           if (mounted) {
             setState(() {
               _cachedFile = file;
-              _loading = false;
             });
           }
           return;
         }
       }
     } catch (_) {}
-
-    if (mounted) {
-      setState(() => _loading = false);
-    }
   }
 
   static Future<Directory?> _initCacheDir() async {
@@ -130,20 +121,12 @@ class _OfflineCachedImageState extends State<OfflineCachedImage> {
       );
     }
 
-    if (_loading) {
-      return Image.network(
-        widget.imageUrl,
-        fit: widget.fit,
-        cacheWidth: widget.cacheWidth,
-        errorBuilder: (_, _, _) => widget.fallback,
-      );
-    }
-
-    return Image.network(
-      widget.imageUrl,
+    return CachedNetworkImage(
+      imageUrl: widget.imageUrl,
       fit: widget.fit,
-      cacheWidth: widget.cacheWidth,
-      errorBuilder: (_, _, _) => widget.fallback,
+      memCacheWidth: widget.cacheWidth,
+      placeholder: (_, _) => widget.fallback,
+      errorWidget: (_, _, _) => widget.fallback,
     );
   }
 }

@@ -1,8 +1,12 @@
 import 'package:flutter/services.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import '../storage/session_storage.dart';
 
 class AudioHelper {
   static const MethodChannel _audioChannel = MethodChannel('com.velora.mobile/audio');
+  static final FlutterTts _tts = FlutterTts();
+  static bool _ttsConfigured = false;
 
   /// Status aktif dari konfigurasi API / preferensi pengaturan perangkat
   static bool soundEnabledFromApi = true;
@@ -23,6 +27,9 @@ class AudioHelper {
       await SessionStorage.instance.setKeepScreenOnEnabled(enabled);
     }
     try {
+      await WakelockPlus.toggle(enable: enabled);
+    } catch (_) {}
+    try {
       await _audioChannel.invokeMethod<bool>('setKeepScreenOn', {'enabled': enabled});
     } catch (_) {}
   }
@@ -30,6 +37,9 @@ class AudioHelper {
   /// Terapkan status Wakelock sesuai pengaturan yang tersimpan di perangkat
   static Future<void> syncKeepScreenOnFromPrefs() async {
     final enabled = SessionStorage.instance.getKeepScreenOnEnabled();
+    try {
+      await WakelockPlus.toggle(enable: enabled);
+    } catch (_) {}
     try {
       await _audioChannel.invokeMethod<bool>('setKeepScreenOn', {'enabled': enabled});
     } catch (_) {}
@@ -69,10 +79,21 @@ class AudioHelper {
 
   /// Panggilan suara Bahasa Indonesia (Text-to-Speech) untuk Antrean Apotek & KDS
   static Future<void> speak(String text, {bool force = false}) async {
-    if (text.trim().isEmpty) return;
+    final clean = text.trim();
+    if (clean.isEmpty) return;
     if (!isSoundEnabled && !force) return;
     try {
-      await _audioChannel.invokeMethod<bool>('speak', {'text': text.trim()});
+      if (!_ttsConfigured) {
+        await _tts.setLanguage('id-ID');
+        await _tts.setSpeechRate(0.48);
+        await _tts.setPitch(1.0);
+        _ttsConfigured = true;
+      }
+      await _tts.speak(clean);
+      return;
+    } catch (_) {}
+    try {
+      await _audioChannel.invokeMethod<bool>('speak', {'text': clean});
     } catch (_) {}
   }
 

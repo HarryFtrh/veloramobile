@@ -1,5 +1,6 @@
 // features/shared_pos/checkout_payment_panels.dart
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../core/design/tokens.dart';
 import '../../core/components/virtual_numpad.dart';
@@ -258,40 +259,47 @@ class QrisPaymentPanel extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: p.danger.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color: p.danger.withValues(alpha: 0.3),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: p.danger.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: p.danger.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Text(
+                        'QRIS',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                          color: p.danger,
+                        ),
                       ),
                     ),
-                    child: Text(
-                      'QRIS',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 13,
-                        color: p.danger,
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Text(
+                        'GPN • Standar Pembayaran Nasional',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: p.textSecondary,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'GPN • Standar Pembayaran Nasional',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: p.textSecondary,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
@@ -329,11 +337,13 @@ class QrisPaymentPanel extends StatelessWidget {
             ),
             child: Column(
               children: [
-                Icon(
-                  Icons.qr_code_2_rounded,
-                  size: 160,
-                  color: p.textPrimary,
+                QrImageView(
+                  data: '00020101021126680016ID.CO.QRIS.WWW011893600914$effectiveNmid0303UMI5204581253033605802ID5915${storeName.toUpperCase()}6304',
+                  version: QrVersions.auto,
+                  size: 164,
+                  backgroundColor: Colors.white,
                 ),
+                const SizedBox(height: 8),
                 Text(
                   storeName.toUpperCase(),
                   style: TextStyle(
