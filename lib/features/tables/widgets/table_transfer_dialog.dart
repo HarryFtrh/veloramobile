@@ -15,13 +15,18 @@ Future<void> showTransferTableSheet(
 
   return showModalBottomSheet<void>(
     context: context,
+    isScrollControlled: true,
     showDragHandle: true,
     backgroundColor: p.surface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (sheetCtx) => SafeArea(
-      child: Padding(
+    builder: (sheetCtx) => ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(sheetCtx).height * 0.85,
+      ),
+      child: SafeArea(
+        child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -82,6 +87,7 @@ Future<void> showTransferTableSheet(
           ],
         ),
       ),
+    ),
     ),
   );
 }

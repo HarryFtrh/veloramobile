@@ -79,17 +79,28 @@ class _CashierShiftBadgeState extends State<CashierShiftBadge> {
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         return ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: isMobile ? double.infinity : 560),
+          constraints: BoxConstraints(
+            maxWidth: isMobile ? double.infinity : 560,
+            maxHeight: MediaQuery.sizeOf(ctx).height * 0.90,
+          ),
           child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: p.canvas,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                border: Border(top: BorderSide(color: p.line, width: 1.5)),
-              ),
+            padding: EdgeInsets.fromLTRB(
+              isMobile ? 16 : 24,
+              isMobile ? 18 : 24,
+              isMobile ? 16 : 24,
+              MediaQuery.paddingOf(ctx).bottom + (isMobile ? 16 : 24),
+            ),
+            decoration: BoxDecoration(
+              color: p.canvas,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border(top: BorderSide(color: p.line, width: 1.5)),
+            ),
+            child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,27 +108,33 @@ class _CashierShiftBadgeState extends State<CashierShiftBadge> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Shift Kasir: ${_status?.cashierName ?? 'Kasir'}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 16,
-                              color: p.textPrimary,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Shift Kasir: ${_status?.cashierName ?? 'Kasir'}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: isMobile ? 15 : 16,
+                                color: p.textPrimary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Modal Awal: ${CurrencyFormatter.format(_status?.startingCash ?? 0)}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: p.tertiary,
+                            const SizedBox(height: 2),
+                            Text(
+                              'Modal Awal: ${CurrencyFormatter.format(_status?.startingCash ?? 0)}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: p.tertiary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                       IconButton(
                         icon: Icon(Icons.close_rounded, size: 20, color: p.textSecondary),
@@ -212,9 +229,10 @@ class _CashierShiftBadgeState extends State<CashierShiftBadge> {
                 ],
               ),
             ),
-          );
-        },
-      );
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildShiftActionCard({
