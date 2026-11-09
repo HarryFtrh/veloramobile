@@ -16,6 +16,7 @@ import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.Build
 import android.speech.tts.TextToSpeech
+import android.view.WindowManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -322,6 +323,21 @@ class MainActivity : FlutterActivity() {
                         }
                     } else {
                         result.success(false)
+                    }
+                }
+                "setKeepScreenOn" -> {
+                    val enabled = call.argument<Boolean>("enabled") ?: true
+                    runOnUiThread {
+                        try {
+                            if (enabled) {
+                                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                            } else {
+                                window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                            }
+                            result.success(true)
+                        } catch (_: Exception) {
+                            result.success(false)
+                        }
                     }
                 }
                 else -> result.notImplemented()

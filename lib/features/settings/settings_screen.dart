@@ -5,6 +5,7 @@ import '../../core/config/app_config.dart';
 import '../../core/design/tokens.dart';
 import '../../core/services/app_update_service.dart';
 import '../../core/storage/session_storage.dart';
+import '../../core/utils/audio_helper.dart';
 import '../auth/auth_service.dart';
 import '../auth/cubit/auth_cubit.dart';
 import '../auth/cubit/auth_state.dart';
@@ -29,12 +30,35 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool? _hasPin;
   AppVersionInfo? _versionInfo;
+  late bool _keepScreenOn;
+  late bool _soundEnabled;
 
   @override
   void initState() {
     super.initState();
+    _keepScreenOn = SessionStorage.instance.getKeepScreenOnEnabled();
+    _soundEnabled = AudioHelper.isSoundEnabled;
     _loadPin();
     _loadVersionInfo();
+  }
+
+  Future<void> _toggleKeepScreenOn(bool val) async {
+    setState(() => _keepScreenOn = val);
+    await AudioHelper.setKeepScreenOn(val, saveLocal: true);
+    _toast(val
+        ? '☀️ Layar Selalu Menyala (Wakelock) diaktifkan'
+        : '🌙 Layar mengikuti batas waktu tidur perangkat');
+  }
+
+  Future<void> _toggleSoundEnabled(bool val) async {
+    setState(() => _soundEnabled = val);
+    AudioHelper.setSoundEnabled(val, saveLocal: true);
+    if (val) {
+      AudioHelper.orderChime(force: true);
+    }
+    _toast(val
+        ? '🔔 Suara bel KDS & notifikasi diaktifkan'
+        : '🔇 Suara bel KDS & notifikasi dimatikan');
   }
 
   Future<void> _loadVersionInfo() async {
@@ -373,7 +397,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 20),
 
-              // 4. Section: Sistem & Informasi Versi
+              // 4. Section: Perangkat, Layar & Suara (KDS / POS)
+              SettingsGroup(
+                title: 'Perangkat, Layar & Suara (KDS / POS)',
+                headerIcon: Icons.important_devices_rounded,
+                items: [
+                  SettingsTile(
+                    icon: _keepScreenOn ? Icons.wb_sunny_rounded : Icons.bedtime_rounded,
+                    iconColor: const Color(0xFFD97706),
+                    iconBgColor: const Color(0xFFFEF3C7),
+                    title: 'Layar Selalu Menyala (Wakelock)',
+                    subtitle: 'Cegah layar tablet KDS dapur & kasir mati otomatis',
+                    trailing: Switch.adaptive(
+                      value: _keepScreenOn,
+                      activeTrackColor: primary,
+                      onChanged: _toggleKeepScreenOn,
+                    ),
+                    onTap: () => _toggleKeepScreenOn(!_keepScreenOn),
+                  ),
+                  SettingsTile(
+                    icon: _soundEnabled ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+                    iconColor: const Color(0xFF059669),
+                    iconBgColor: const Color(0xFFD1FAE5),
+                    title: 'Suara Bel Pesanan KDS & Panggilan',
+                    subtitle: 'Bunyikan lonceng saat pesanan baru masuk di dapur',
+                    trailing: Switch.adaptive(
+                      value: _soundEnabled,
+                      activeTrackColor: primary,
+                      onChanged: _toggleSoundEnabled,
+                    ),
+                    onTap: () => _toggleSoundEnabled(!_soundEnabled),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // 5. Section: Sistem & Informasi Versi
               SettingsGroup(
                 title: 'Sistem & Pembaruan',
                 headerIcon: Icons.info_outline_rounded,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/config/business_vertical.dart';
 import '../../core/design/tokens.dart';
 import '../../core/storage/session_storage.dart';
+import '../../core/utils/audio_helper.dart';
 import '../../core/widgets/store_logo_avatar.dart';
 import '../shared_pos/offline_sync_badge.dart';
 import '../shared_pos/receipt_printer_service.dart';
@@ -53,6 +54,7 @@ class _AppShellState extends State<AppShell> {
     _index = widget.initialIndex;
     _visited.add(_index);
     widget.tabControllerNotifier?.addListener(_onTabControllerChanged);
+    AudioHelper.syncKeepScreenOnFromPrefs();
   }
 
   @override

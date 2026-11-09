@@ -364,6 +364,29 @@ class SessionStorage {
 
   String? getPrinterAddress() => _getString(_printerAddressKey);
 
+  static const _keepScreenOnKey = 'velora_keep_screen_on';
+  static const _soundNotificationKey = 'velora_sound_notification';
+
+  bool getKeepScreenOnEnabled() {
+    return _prefs?.getBool(_keepScreenOnKey) ??
+        (_memCache[_keepScreenOnKey] as bool? ?? true);
+  }
+
+  Future<void> setKeepScreenOnEnabled(bool enabled) async {
+    _memCache[_keepScreenOnKey] = enabled;
+    await _prefs?.setBool(_keepScreenOnKey, enabled);
+  }
+
+  bool getSoundNotificationEnabled({bool fallback = true}) {
+    return _prefs?.getBool(_soundNotificationKey) ??
+        (_memCache[_soundNotificationKey] as bool? ?? fallback);
+  }
+
+  Future<void> setSoundNotificationEnabled(bool enabled) async {
+    _memCache[_soundNotificationKey] = enabled;
+    await _prefs?.setBool(_soundNotificationKey, enabled);
+  }
+
   List<String> getOfflineQueue() {
     final fromMem = _memCache[_offlineSalesQueueKey];
     if (fromMem is List<String>) return fromMem;

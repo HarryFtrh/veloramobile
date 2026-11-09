@@ -98,16 +98,20 @@ class KitchenCubit extends Cubit<KitchenState> {
   String? _subscribedChannel;
 
   void start() {
+    AudioHelper.syncKeepScreenOnFromPrefs();
     refresh(silent: false);
     _timer?.cancel();
     _timer = Timer.periodic(pollInterval, (_) => refresh());
 
-    // Sinkronisasi status audio langsung dari API backend
+    // Sinkronisasi status audio langsung dari API backend (dengan fallback preferensi perangkat)
     BillingSettings.fetch().then((settings) {
-      AudioHelper.setSoundEnabled(settings.kitchenSoundEnabled);
+      final resolvedSound = SessionStorage.instance.getSoundNotificationEnabled(
+        fallback: settings.kitchenSoundEnabled,
+      );
+      AudioHelper.setSoundEnabled(resolvedSound);
       final current = state;
       if (current is KitchenLoaded) {
-        emit(current.copyWith(soundEnabled: settings.kitchenSoundEnabled));
+        emit(current.copyWith(soundEnabled: resolvedSound));
       }
     }).catchError((_) {});
 
@@ -152,7 +156,7 @@ class KitchenCubit extends Cubit<KitchenState> {
     final current = state;
     if (current is KitchenLoaded) {
       final next = !current.soundEnabled;
-      AudioHelper.setSoundEnabled(next);
+      AudioHelper.setSoundEnabled(next, saveLocal: true);
       if (next) AudioHelper.orderChime(force: true);
       emit(current.copyWith(soundEnabled: next));
     }

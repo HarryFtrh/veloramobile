@@ -30,6 +30,7 @@ class _PharmacyCallingDisplayScreenState extends State<PharmacyCallingDisplayScr
   @override
   void initState() {
     super.initState();
+    AudioHelper.syncKeepScreenOnFromPrefs();
     _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _now = DateTime.now());
     });
