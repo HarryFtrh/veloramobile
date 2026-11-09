@@ -16,35 +16,26 @@ dependencies:
   flutter_bloc: ^9.1.1
 
   # Network & realtime
-  connectivity_plus: ^7.3.2
   dio: ^5.11.1
   http: ^1.6.0
   web_socket_channel: ^3.0.3
 
   # Storage & security
-  crypto: ^3.0.8
+  crypto: ^3.0.7
   flutter_secure_storage: ^11.2.0
   path_provider: ^2.1.6
-  shared_preferences: ^2.5.6
+  shared_preferences: ^2.5.5
   uuid: ^4.6.0
 
   # UI & assets
-  cached_network_image: ^4.0.6
   flutter_animate: ^4.5.2
-  flutter_svg: ^2.3.2
+  flutter_svg: ^2.3.0
   google_fonts: ^9.0.0
-  qr_flutter: ^4.1.0
   shimmer: ^4.0.0
 
-  # Hardware, media & POS utilities
-  audioplayers: ^6.8.1
-  flutter_tts: ^4.2.5
+  # Utilities
   intl: ^0.20.3
-  mobile_scanner: ^7.5.0
-  pdf: ^3.13.1
-  printing: ^5.15.1
   share_plus: ^13.3.1
-  wakelock_plus: ^1.8.2
 
 dev_dependencies:
   flutter_test:

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
@@ -16,7 +15,6 @@ class OfflineSyncManager {
   OfflineSyncManager._();
 
   static const MethodChannel _networkChannel = MethodChannel('com.velora.mobile/network');
-  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   bool _networkListenerBound = false;
 
   bool _isSyncing = false;
@@ -49,20 +47,6 @@ class OfflineSyncManager {
   void _bindNetworkListener() {
     if (_networkListenerBound) return;
     _networkListenerBound = true;
-    try {
-      _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
-        final online = results.any((r) => r != ConnectivityResult.none);
-        isOnlineNotifier.value = online;
-        if (online) {
-          _consecutiveFailures = 0;
-          final pending = SessionStorage.instance.getOfflineQueueCount();
-          if (pending > 0) {
-            debugPrint('📶 [OFFLINE SYNC] ConnectivityPlus mendeteksi jaringan! Memicu sinkronisasi ($pending antrean)...');
-            unawaited(triggerSync());
-          }
-        }
-      });
-    } catch (_) {}
     _networkChannel.setMethodCallHandler((call) async {
       if (call.method == 'onNetworkChanged') {
         final args = call.arguments;
@@ -84,8 +68,6 @@ class OfflineSyncManager {
   void stopAutoSync() {
     _autoSyncTimer?.cancel();
     _autoSyncTimer = null;
-    _connectivitySub?.cancel();
-    _connectivitySub = null;
     _networkListenerBound = false;
   }
 

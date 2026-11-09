@@ -1,6 +1,5 @@
 // features/shared_pos/checkout_payment_panels.dart
 import 'package:flutter/material.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../core/design/tokens.dart';
 import '../../core/components/virtual_numpad.dart';
@@ -337,13 +336,11 @@ class QrisPaymentPanel extends StatelessWidget {
             ),
             child: Column(
               children: [
-                QrImageView(
-                  data: '00020101021126680016ID.CO.QRIS.WWW011893600914$effectiveNmid0303UMI5204581253033605802ID5915${storeName.toUpperCase()}6304',
-                  version: QrVersions.auto,
-                  size: 164,
-                  backgroundColor: Colors.white,
+                Icon(
+                  Icons.qr_code_2_rounded,
+                  size: 160,
+                  color: p.textPrimary,
                 ),
-                const SizedBox(height: 8),
                 Text(
                   storeName.toUpperCase(),
                   style: TextStyle(
