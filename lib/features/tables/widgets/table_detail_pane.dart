@@ -412,20 +412,41 @@ class TableDetailPane extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   flex: 2,
-                  child: ElevatedButton.icon(
-                    onPressed: onDirectPayment,
-                    icon: const Icon(Icons.payments_rounded, size: 16),
-                    label: const FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text('Langsung Bayar', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800)),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF059669),
-                      foregroundColor: Colors.white,
-                      shape: const StadiumBorder(),
-                      elevation: 0,
-                    ),
-                  ),
+                  child: activeOrder?.isAlreadyPaid == true
+                      ? ElevatedButton.icon(
+                          onPressed: null,
+                          icon: const Icon(Icons.check_circle_rounded, size: 16),
+                          label: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'Sudah Lunas',
+                              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            disabledBackgroundColor: const Color(0xFF059669).withValues(alpha: 0.14),
+                            disabledForegroundColor: const Color(0xFF059669),
+                            shape: const StadiumBorder(),
+                            elevation: 0,
+                          ),
+                        )
+                      : ElevatedButton.icon(
+                          onPressed: onDirectPayment,
+                          icon: const Icon(Icons.payments_rounded, size: 16),
+                          label: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'Langsung Bayar',
+                              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF059669),
+                            foregroundColor: Colors.white,
+                            shape: const StadiumBorder(),
+                            elevation: 0,
+                          ),
+                        ),
                 ),
               ],
             ),

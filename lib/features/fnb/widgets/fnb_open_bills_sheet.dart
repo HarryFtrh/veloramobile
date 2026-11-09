@@ -43,9 +43,12 @@ class _FnbOpenBillsSheetState extends State<FnbOpenBillsSheet>
     });
     try {
       final list = await KitchenService.instance.load();
+      // Hanya tampilkan pesanan yang BELUM lunas di daftar Open Bills kasir
+      // agar pesanan yang sudah dibayar tidak ditagih 2 kali.
+      final unpaidList = list.where((o) => !o.isPaid).toList();
       if (mounted) {
         setState(() {
-          _orders = list;
+          _orders = unpaidList;
           _loading = false;
         });
       }

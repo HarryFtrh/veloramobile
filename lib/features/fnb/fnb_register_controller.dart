@@ -96,7 +96,14 @@ class RegisterController extends ChangeNotifier {
 
   num get manualDiscountTotal => _pricing.calculateManualDiscount(subtotal);
 
-  String? get activeOrderId => existingOrderId ?? table?.order?.id;
+  String? get activeOrderId {
+    if (existingOrderId != null) return existingOrderId;
+    final tableOrderId = table?.order?.id;
+    if (tableOrderId != null && !KitchenService.instance.isOrderPaid(tableOrderId)) {
+      return tableOrderId;
+    }
+    return null;
+  }
 
   Future<void> load() async {
     loading = true;
@@ -505,7 +512,18 @@ class RegisterController extends ChangeNotifier {
       notifyListeners();
       try {
         final activeOrder = await TableService.instance.getActiveOrder(t.id);
-        if (activeOrder != null && activeOrder.items.isNotEmpty) {
+        final isPaid = activeOrder != null &&
+            (activeOrder.isAlreadyPaid ||
+                KitchenService.instance.isOrderPaid(activeOrder.id));
+        if (activeOrder != null && isPaid) {
+          // Pesanan meja ini sudah lunas; jangan muat ulang item lama ke keranjang
+          // agar tidak ditagih 2 kali saat kasir ingin menambah item baru.
+          existingOrderId = null;
+          if (activeOrder.customerName.isNotEmpty) {
+            customerName = activeOrder.customerName;
+          }
+          lines.clear();
+        } else if (activeOrder != null && activeOrder.items.isNotEmpty) {
           existingOrderId = activeOrder.id;
           if (activeOrder.customerName.isNotEmpty) {
             customerName = activeOrder.customerName;
@@ -566,6 +584,9 @@ class RegisterController extends ChangeNotifier {
   }
 
   Future<void> loadKitchenOrder(KitchenOrder order) async {
+    if (order.isPaid) {
+      throw ApiException.from('Pesanan ${order.number} sudah lunas');
+    }
     busy = true;
     notifyListeners();
     try {
@@ -779,7 +800,7 @@ class RegisterController extends ChangeNotifier {
         voucherCode: activeVoucherCode,
       );
       if (effectiveOrderId != null) {
-        KitchenService.instance.removeHeldOrder(effectiveOrderId);
+        KitchenService.instance.markOrderPaid(effectiveOrderId);
       }
       existingOrderId = null;
       return res;

@@ -57,6 +57,11 @@ class _TablesScreenState extends State<TablesScreen> {
     );
 
   Future<void> _openPayment(CafeTableInfo table, ActiveTableOrder? activeOrder) async {
+    if (activeOrder?.isAlreadyPaid == true) {
+      _toast('Tagihan ${table.name} sudah lunas');
+      return;
+    }
+
     final total = activeOrder?.totalAmount.round() ?? table.order?.total.round() ?? 0;
     final orderId = activeOrder?.id ?? table.order?.id;
 
@@ -73,6 +78,7 @@ class _TablesScreenState extends State<TablesScreen> {
             orderId: orderId,
             activeOrder: activeOrder,
             customerName: activeOrder?.customerName,
+            initialSplitBill: true,
             onPaymentComplete: () {
               _toast('${table.name} pembayaran selesai');
               _cubit.loadTables();
@@ -87,8 +93,10 @@ class _TablesScreenState extends State<TablesScreen> {
     // Direct Single Payment
     final cubit = PaymentSplitCubit(
       tableId: table.id,
+      activeOrder: activeOrder,
       totalAmount: total,
     );
+    await cubit.ready;
     cubit.selectMethod(choice.method);
     if (choice.method == 'cash') {
       cubit.setPreset(choice.paid.toInt());
@@ -100,9 +108,12 @@ class _TablesScreenState extends State<TablesScreen> {
       customerName: activeOrder?.customerName,
       tableName: table.name,
     );
-    if (ok && mounted) {
-      _toast('${table.name} pembayaran lunas');
+    if (!mounted) return;
+    if (ok) {
+      _toast('✓ ${table.name} pembayaran lunas');
       _cubit.loadTables();
+    } else {
+      _toast(cubit.state.error ?? 'Pembayaran meja gagal diproses');
     }
   }
 

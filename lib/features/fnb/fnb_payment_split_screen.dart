@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/design/tokens.dart';
 import '../../core/storage/session_storage.dart';
 import '../../core/utils/safe_json.dart';
+import '../kitchen/kitchen_service.dart';
 import '../shared_pos/sales_history_drawer.dart';
 import '../tables/table_service.dart';
 import 'billing.dart';
@@ -34,6 +35,7 @@ class FnbPaymentSplitScreen extends StatefulWidget {
     this.shiftId,
     this.onPaymentComplete,
     this.tableName,
+    this.initialSplitBill = false,
   });
 
   final String? orderId;
@@ -49,6 +51,7 @@ class FnbPaymentSplitScreen extends StatefulWidget {
   final int? shiftId;
   final VoidCallback? onPaymentComplete;
   final String? tableName;
+  final bool initialSplitBill;
 
   @override
   State<FnbPaymentSplitScreen> createState() => _FnbPaymentSplitScreenState();
@@ -64,7 +67,9 @@ class _FnbPaymentSplitScreenState extends State<FnbPaymentSplitScreen> {
       lines: widget.lines,
       bill: widget.bill,
       tableId: widget.tableId,
+      activeOrder: widget.activeOrder,
       totalAmount: widget.totalAmount,
+      initialSplitBill: widget.initialSplitBill,
     );
   }
 
@@ -114,6 +119,10 @@ class _FnbPaymentSplitScreenState extends State<FnbPaymentSplitScreen> {
     final bool hasRemainingSplit = state.isSplitBill &&
         ((state.splitMode == 'item' && remainingItems.isNotEmpty) ||
             (state.splitMode == 'equal' && state.paxToPay < state.paxCount));
+
+    if (!hasRemainingSplit && widget.orderId != null) {
+      KitchenService.instance.markOrderPaid(widget.orderId);
+    }
 
     showDialog(
       context: context,

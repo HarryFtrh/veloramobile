@@ -145,7 +145,23 @@ class TableMobileBottomBar extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  if (table.status != TableStatus.available)
+                  if (table.status != TableStatus.available && activeOrder?.isAlreadyPaid == true)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF059669).withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        '✓ Lunas',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF059669),
+                        ),
+                      ),
+                    )
+                  else if (table.status != TableStatus.available)
                     FilledButton(
                       onPressed: onPayment,
                       style: FilledButton.styleFrom(

@@ -83,6 +83,7 @@ class _FnbRegisterScreenState extends State<FnbRegisterScreen> {
           bill: _ctrl.bill,
           shiftId: int.tryParse(_ctrl.shiftId ?? ''),
           customerName: _ctrl.customerName,
+          initialSplitBill: true,
           onPaymentComplete: () {
             _ctrl.reset();
             Navigator.of(context).pop();

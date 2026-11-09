@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/storage/session_storage.dart';
+import '../../../kitchen/kitchen_service.dart';
 import '../../../shared_pos/pos_checkout_service.dart';
 import '../../../shared_pos/qris_payment_service.dart';
 import '../../../shared_pos/receipt_printer_service.dart';
@@ -16,20 +17,26 @@ class PaymentSplitCubit extends Cubit<PaymentSplitState> {
     List<RegisterLine>? lines,
     BillBreakdown? bill,
     String? tableId,
+    ActiveTableOrder? activeOrder,
     int totalAmount = 0,
-  }) : super(const PaymentSplitState()) {
-    initData(
+    bool initialSplitBill = false,
+  }) : super(PaymentSplitState(isSplitBill: initialSplitBill)) {
+    ready = initData(
       lines: lines,
       bill: bill,
       tableId: tableId,
+      activeOrder: activeOrder,
       totalAmount: totalAmount,
     );
   }
+
+  late final Future<void> ready;
 
   Future<void> initData({
     List<RegisterLine>? lines,
     BillBreakdown? bill,
     String? tableId,
+    ActiveTableOrder? activeOrder,
     int totalAmount = 0,
   }) async {
     emit(state.copyWith(loading: true, clearError: true));
@@ -56,10 +63,13 @@ class PaymentSplitCubit extends Cubit<PaymentSplitState> {
             'line': l,
           };
         }).toList();
-      } else if (tableId != null) {
-        final activeOrder = await TableService.instance.getActiveOrder(tableId);
-        if (activeOrder != null && activeOrder.items.isNotEmpty) {
-          items = activeOrder.items.map((it) {
+      } else {
+        final effectiveOrder = activeOrder ??
+            (tableId != null
+                ? await TableService.instance.getActiveOrder(tableId)
+                : null);
+        if (effectiveOrder != null && effectiveOrder.items.isNotEmpty) {
+          items = effectiveOrder.items.map((it) {
             final effectiveProdId =
                 it.productId.isNotEmpty ? it.productId : it.id;
             return {
@@ -93,9 +103,11 @@ class PaymentSplitCubit extends Cubit<PaymentSplitState> {
       );
 
       final total = newState.calculateTotalBill(totalAmount);
+      final effectiveCash =
+          newState.cashReceived > 0 ? newState.cashReceived : total;
       emit(newState.copyWith(
-        cashReceived: total,
-        numpadBuffer: total > 0 ? total.toString() : '',
+        cashReceived: effectiveCash,
+        numpadBuffer: effectiveCash > 0 ? effectiveCash.toString() : '',
       ));
     } catch (_) {
       emit(state.copyWith(loading: false));
@@ -273,6 +285,8 @@ class PaymentSplitCubit extends Cubit<PaymentSplitState> {
     if (state.submitting) return false;
     emit(state.copyWith(submitting: true, clearError: true));
 
+    await ready;
+
     String invoiceNumber = orderId ??
         '#POS-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
 
@@ -318,8 +332,12 @@ class PaymentSplitCubit extends Cubit<PaymentSplitState> {
       }
     }
 
+    if (selectedLines.isEmpty && linesFallback != null && linesFallback.isNotEmpty) {
+      selectedLines.addAll(linesFallback);
+    }
+
     try {
-      final billingSettings = await BillingSettings.fetch();
+      final billingSettings = state.billingSettings ?? await BillingSettings.fetch();
       final calculatedBill = BillCalculator.calculate(
         billingSettings,
         subtotal: selectedLines.fold<num>(0, (s, l) => s + l.subtotal),
@@ -339,6 +357,10 @@ class PaymentSplitCubit extends Cubit<PaymentSplitState> {
         customerName: customerName,
         shiftId: shiftId?.toString(),
       );
+
+      if (!state.isSplitBill && orderId != null && orderId.isNotEmpty) {
+        KitchenService.instance.markOrderPaid(orderId);
+      }
 
       if (outcome.invoice.isNotEmpty) {
         invoiceNumber = outcome.invoice;

@@ -132,6 +132,7 @@ class KitchenOrder {
     required this.createdAt,
     required this.items,
     this.status,
+    this.paymentStatus,
     this.kitchenStatus,
     this.customerName,
     this.notes,
@@ -147,12 +148,27 @@ class KitchenOrder {
   final DateTime createdAt;
   final List<KitchenItem> items;
   final String? status;
+  final String? paymentStatus;
   final String? kitchenStatus;
   final String? customerName;
   final String? notes;
   final num? totalAmount;
   final String orderType;
   final String? serverName;
+
+  bool get isPaid {
+    if (KitchenService.instance.isOrderPaid(id)) return true;
+    final s = (status ?? '').toLowerCase().trim();
+    final ps = (paymentStatus ?? '').toLowerCase().trim();
+    return s == 'paid' ||
+        s == 'completed' ||
+        s == 'settled' ||
+        s == 'lunas' ||
+        ps == 'paid' ||
+        ps == 'completed' ||
+        ps == 'settled' ||
+        ps == 'lunas';
+  }
 
   bool get isHeld =>
       status == 'held' ||
@@ -179,6 +195,7 @@ class KitchenOrder {
   KitchenOrder copyWith({
     List<KitchenItem>? items,
     String? status,
+    String? paymentStatus,
     String? kitchenStatus,
     KitchenStage? stage,
     String? tableLabel,
@@ -192,6 +209,7 @@ class KitchenOrder {
         createdAt: createdAt,
         items: items ?? this.items,
         status: status ?? this.status,
+        paymentStatus: paymentStatus ?? this.paymentStatus,
         kitchenStatus: kitchenStatus ?? this.kitchenStatus,
         customerName: customerName ?? this.customerName,
         notes: notes ?? this.notes,
@@ -203,6 +221,10 @@ class KitchenOrder {
   factory KitchenOrder.fromJson(Map<String, dynamic> json) {
     final rawKitchenStatus = json.getString('kitchen_status', fallback: json.getString('kitchen_state'));
     final rawOrderStatus = json.getString('status', fallback: json.getString('order_status'));
+    final rawPaymentStatus = json.getString(
+      'payment_status',
+      fallback: json.getString('paid_status', fallback: json['is_paid'] == true ? 'paid' : ''),
+    );
     final effectiveStatus = rawKitchenStatus.isNotEmpty ? rawKitchenStatus : rawOrderStatus;
 
     String customer = json.getString('customer_name');
@@ -294,6 +316,7 @@ class KitchenOrder {
       createdAt: DateTime.tryParse(json.getString('created_at'))?.toLocal() ?? DateTime.now(),
       items: parsedItems,
       status: rawOrderStatus.isEmpty ? null : rawOrderStatus,
+      paymentStatus: rawPaymentStatus.isEmpty ? null : rawPaymentStatus,
       kitchenStatus: rawKitchenStatus.isEmpty ? null : rawKitchenStatus,
       customerName: customer.isEmpty ? null : sanitizeDisplayName(customer),
       notes: notes.isEmpty ? null : notes,
@@ -309,6 +332,7 @@ class KitchenService {
   KitchenService._();
 
   final Map<String, KitchenOrder> _localHeldOrders = {};
+  final Set<String> _paidOrderIds = {};
 
   /// Menyimpan pesanan hold ke memori lokal kasir agar seketika muncul di antrean
   void registerLocalHeldOrder(KitchenOrder order) {
@@ -318,6 +342,23 @@ class KitchenService {
   /// Menghapus pesanan hold setelah berhasil dibayar atau dibatalkan
   void removeHeldOrder(String orderId) {
     _localHeldOrders.remove(orderId);
+  }
+
+  /// Menandai pesanan telah lunas agar tidak muncul kembali di Open Bills kasir
+  void markOrderPaid(String? orderId) {
+    if (orderId == null || orderId.trim().isEmpty) return;
+    final clean = orderId.trim().replaceFirst(RegExp(r'^#'), '');
+    _localHeldOrders.remove(orderId);
+    _localHeldOrders.remove(clean);
+    _paidOrderIds.add(orderId.trim());
+    _paidOrderIds.add(clean);
+  }
+
+  /// Memeriksa apakah pesanan sudah ditandai lunas pada sesi kasir ini
+  bool isOrderPaid(String? orderId) {
+    if (orderId == null || orderId.trim().isEmpty) return false;
+    final clean = orderId.trim().replaceFirst(RegExp(r'^#'), '');
+    return _paidOrderIds.contains(orderId.trim()) || _paidOrderIds.contains(clean);
   }
 
   /// Ekstraksi list order dari berbagai bentuk payload JSON backend
