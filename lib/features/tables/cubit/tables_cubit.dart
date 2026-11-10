@@ -15,6 +15,10 @@ class TablesCubit extends Cubit<TablesState> {
 
   final TableService _service;
   Timer? _pollTimer;
+  Timer? _realtimeDebounce;
+  bool _isLoadingTables = false;
+  String? _loadingOrderTableId;
+  bool _isMutatingTable = false;
   String? _subscribedChannel;
   static const _pollInterval = Duration(seconds: 30);
 
@@ -47,12 +51,17 @@ class TablesCubit extends Cubit<TablesState> {
 
   void _onRealtimeTableEvent(Map<String, dynamic> data) {
     debugPrint('🍽️ [TABLES REALTIME] Menerima update status meja via Reverb: $data');
-    loadTables(silent: true);
+    _realtimeDebounce?.cancel();
+    _realtimeDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (!isClosed) loadTables(silent: true);
+    });
   }
 
   void stopPolling() {
     _pollTimer?.cancel();
     _pollTimer = null;
+    _realtimeDebounce?.cancel();
+    _realtimeDebounce = null;
     if (_subscribedChannel != null) {
       ReverbClient.instance.off('table.status_changed', _onRealtimeTableEvent);
       ReverbClient.instance.off('order.created', _onRealtimeTableEvent);
@@ -66,6 +75,8 @@ class TablesCubit extends Cubit<TablesState> {
   }
 
   Future<void> loadTables({bool silent = false}) async {
+    if (_isLoadingTables) return;
+    _isLoadingTables = true;
     if (!silent) {
       emit(state.copyWith(isLoading: state.tables == null, clearError: true));
     }
@@ -95,6 +106,8 @@ class TablesCubit extends Cubit<TablesState> {
           error: 'Gagal memuat denah meja: $e',
         ));
       }
+    } finally {
+      _isLoadingTables = false;
     }
   }
 
@@ -123,6 +136,8 @@ class TablesCubit extends Cubit<TablesState> {
       ));
       return;
     }
+    if (_loadingOrderTableId == table.id) return;
+    _loadingOrderTableId = table.id;
 
     emit(state.copyWith(isLoadingActiveOrder: true));
     try {
@@ -141,23 +156,39 @@ class TablesCubit extends Cubit<TablesState> {
           isLoadingActiveOrder: false,
         ));
       }
+    } finally {
+      if (_loadingOrderTableId == table.id) {
+        _loadingOrderTableId = null;
+      }
     }
   }
 
   Future<void> releaseTable(String tableId) async {
-    await _service.release(tableId);
-    await loadTables();
-    if (state.selectedTable?.id == tableId) {
-      emit(state.copyWith(
-        clearSelectedTable: true,
-        clearActiveOrder: true,
-      ));
+    if (_isMutatingTable) return;
+    _isMutatingTable = true;
+    try {
+      await _service.release(tableId);
+      await loadTables();
+      if (state.selectedTable?.id == tableId) {
+        emit(state.copyWith(
+          clearSelectedTable: true,
+          clearActiveOrder: true,
+        ));
+      }
+    } finally {
+      _isMutatingTable = false;
     }
   }
 
   Future<void> seedDefaultTables() async {
-    await _service.seedDefaultTables();
-    await loadTables();
+    if (_isMutatingTable) return;
+    _isMutatingTable = true;
+    try {
+      await _service.seedDefaultTables();
+      await loadTables();
+    } finally {
+      _isMutatingTable = false;
+    }
   }
 
   @override

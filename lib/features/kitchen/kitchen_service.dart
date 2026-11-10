@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exception.dart';
@@ -536,6 +537,12 @@ class KitchenService {
         return;
       } catch (e) {
         lastError = e;
+        // Hanya lanjut ke fallback endpoint jika route belum ditemukan (404 / 405).
+        // Jangan menembak ulang ke 7 endpoint lain jika terjadi timeout / 500 / 422!
+        final statusCode = e is DioException ? e.response?.statusCode : null;
+        if (statusCode != 404 && statusCode != 405) {
+          break;
+        }
       }
     }
 
@@ -580,7 +587,12 @@ class KitchenService {
       try {
         await attempt();
         return;
-      } catch (_) {}
+      } catch (e) {
+        final statusCode = e is DioException ? e.response?.statusCode : null;
+        if (statusCode != 404 && statusCode != 405) {
+          break;
+        }
+      }
     }
   }
 
@@ -607,6 +619,10 @@ class KitchenService {
           return;
         } catch (e) {
           lastError = e;
+          final statusCode = e is DioException ? e.response?.statusCode : null;
+          if (statusCode != 404 && statusCode != 405) {
+            break;
+          }
         }
       }
 

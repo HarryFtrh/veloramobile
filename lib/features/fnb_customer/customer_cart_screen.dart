@@ -97,9 +97,12 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
   int get _grandTotal => _calculatedBill.total.round();
 
   Future<void> _checkout() async {
+    if (_isSubmitting || widget.cartItems.isEmpty) return;
     setState(() => _isSubmitting = true);
     try {
-      final lines = widget.cartItems.map((ci) {
+      final submittedItems = List<CustomerCartItem>.from(widget.cartItems);
+      final submittedTotal = _grandTotal;
+      final lines = submittedItems.map((ci) {
         final opts = <ModifierOption>[];
         if (ci.size.isNotEmpty && ci.size != 'Regular') {
           opts.add(ModifierOption(
@@ -160,15 +163,17 @@ class _CustomerCartScreenState extends State<CustomerCartScreen> {
           ? '#POS-$orderId'
           : '#ORDER-${DateTime.now().millisecondsSinceEpoch % 100000}';
 
+      widget.onClearCart();
+
       if (!mounted) return;
-      Navigator.of(context).push(
+      Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => CustomerOrderTrackingScreen(
             orderId: orderId,
             orderNumber: orderNumber,
             tableNumber: widget.tableName,
-            totalAmount: _grandTotal,
-            items: widget.cartItems,
+            totalAmount: submittedTotal,
+            items: submittedItems,
           ),
         ),
       );

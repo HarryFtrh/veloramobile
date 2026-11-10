@@ -95,6 +95,9 @@ class KitchenCubit extends Cubit<KitchenState> {
 
   final KitchenService _service;
   Timer? _timer;
+  Timer? _realtimeDebounce;
+  bool _isRefreshing = false;
+  final Set<String> _busyKeys = {};
   String? _subscribedChannel;
 
   void start() {
@@ -144,12 +147,16 @@ class KitchenCubit extends Cubit<KitchenState> {
 
   void _onRealtimeOrderEvent(Map<String, dynamic> data) {
     debugPrint('🔔 [KDS REALTIME] Menerima sinyal pesanan dapur via Reverb: $data');
-    final current = state;
-    final isSoundActive = (current is KitchenLoaded ? current.soundEnabled : true) && AudioHelper.soundEnabledFromApi;
-    if (isSoundActive) {
-      AudioHelper.orderChime();
-    }
-    refresh();
+    _realtimeDebounce?.cancel();
+    _realtimeDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (isClosed) return;
+      final current = state;
+      final isSoundActive = (current is KitchenLoaded ? current.soundEnabled : true) && AudioHelper.soundEnabledFromApi;
+      if (isSoundActive) {
+        AudioHelper.orderChime();
+      }
+      refresh();
+    });
   }
 
   void toggleSound() {
@@ -163,6 +170,8 @@ class KitchenCubit extends Cubit<KitchenState> {
   }
 
   Future<void> refresh({bool silent = true}) async {
+    if (_isRefreshing) return;
+    _isRefreshing = true;
     if (!silent && state is! KitchenLoaded) emit(const KitchenLoading());
     try {
       final orders = await _service.load();
@@ -182,6 +191,8 @@ class KitchenCubit extends Cubit<KitchenState> {
     } catch (e) {
       // Polling yang gagal tidak boleh menimpa data yang sudah tampil.
       if (state is! KitchenLoaded) emit(KitchenFailed(ApiException.from(e).message));
+    } finally {
+      _isRefreshing = false;
     }
   }
 
@@ -194,6 +205,8 @@ class KitchenCubit extends Cubit<KitchenState> {
   Future<void> advance(KitchenOrder order) async {
     final current = state;
     if (current is! KitchenLoaded) return;
+    if (_busyKeys.contains(order.id)) return;
+    _busyKeys.add(order.id);
 
     final originalOrders = List<KitchenOrder>.from(current.orders);
 
@@ -227,6 +240,8 @@ class KitchenCubit extends Cubit<KitchenState> {
       }
     } catch (e) {
       emit(current.copyWith(orders: originalOrders, actionError: ApiException.from(e).message));
+    } finally {
+      _busyKeys.remove(order.id);
     }
   }
 
@@ -234,6 +249,8 @@ class KitchenCubit extends Cubit<KitchenState> {
   Future<void> revert(KitchenOrder order) async {
     final current = state;
     if (current is! KitchenLoaded) return;
+    if (_busyKeys.contains(order.id)) return;
+    _busyKeys.add(order.id);
 
     final originalOrders = List<KitchenOrder>.from(current.orders);
 
@@ -250,6 +267,8 @@ class KitchenCubit extends Cubit<KitchenState> {
       await _service.revert(order);
     } catch (e) {
       emit(current.copyWith(orders: originalOrders, actionError: ApiException.from(e).message));
+    } finally {
+      _busyKeys.remove(order.id);
     }
   }
 
@@ -257,6 +276,8 @@ class KitchenCubit extends Cubit<KitchenState> {
   Future<void> cancelTicket(KitchenOrder order, {String? reason}) async {
     final current = state;
     if (current is! KitchenLoaded) return;
+    if (_busyKeys.contains(order.id)) return;
+    _busyKeys.add(order.id);
 
     final originalOrders = List<KitchenOrder>.from(current.orders);
     emit(current.copyWith(orders: current.orders.where((o) => o.id != order.id).toList()));
@@ -266,12 +287,17 @@ class KitchenCubit extends Cubit<KitchenState> {
       await _service.cancelOrder(order.id, reason: reason);
     } catch (e) {
       emit(current.copyWith(orders: originalOrders, actionError: ApiException.from(e).message));
+    } finally {
+      _busyKeys.remove(order.id);
     }
   }
 
   Future<void> toggleItem(KitchenOrder order, KitchenItem item) async {
     final current = state;
     if (current is! KitchenLoaded) return;
+    final itemKey = '${order.id}:${item.id}';
+    if (_busyKeys.contains(itemKey)) return;
+    _busyKeys.add(itemKey);
 
     final newDone = !item.done;
     final optimistic = current.orders.map((o) {
@@ -287,12 +313,15 @@ class KitchenCubit extends Cubit<KitchenState> {
       await _service.toggleItemDone(order.id, item.id, isDone: newDone);
     } catch (e) {
       emit(current.copyWith(actionError: ApiException.from(e).message));
+    } finally {
+      _busyKeys.remove(itemKey);
     }
   }
 
   @override
   Future<void> close() {
     _timer?.cancel();
+    _realtimeDebounce?.cancel();
     if (_subscribedChannel != null) {
       ReverbClient.instance.off('kitchen.order.created', _onRealtimeOrderEvent);
       ReverbClient.instance.off('CafeKitchenOrderCreated', _onRealtimeOrderEvent);

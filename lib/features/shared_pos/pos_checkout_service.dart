@@ -78,6 +78,7 @@ class PosCheckoutService {
   PosCheckoutService._();
 
   final _uuid = const Uuid();
+  bool _isCheckingOut = false;
 
   int get pendingOfflineCount => SessionStorage.instance.getOfflineQueueCount();
 
@@ -96,8 +97,13 @@ class PosCheckoutService {
     num? discountAmount,
     num? roundingAmount,
   }) async {
+    if (_isCheckingOut) {
+      throw Exception('Transaksi pembayaran sedang diproses, mohon tunggu...');
+    }
+    _isCheckingOut = true;
     final clientTxId = _uuid.v4();
     final locationId = SessionStorage.instance.getLocationId() ?? '';
+    final reqOptions = Options(headers: {'Idempotency-Key': clientTxId});
 
     final payload = {
       'client_tx_id': clientTxId,
@@ -149,12 +155,14 @@ class PosCheckoutService {
         response = await ApiClient.instance.dio.post(
           '/v1/pos/checkout-sale',
           data: payload,
+          options: reqOptions,
         );
       } on DioException catch (e) {
         if (e.response?.statusCode == 404 || e.response?.statusCode == 405) {
           response = await ApiClient.instance.dio.post(
             '/cafe/pos/checkout',
             data: payload,
+            options: reqOptions,
           );
         } else {
           rethrow;
@@ -201,12 +209,25 @@ class PosCheckoutService {
         settlementRef: settlementRef,
       );
     } on DioException catch (e) {
-      // Offline fallback: save locally if internet drops!
+      final isNetworkOrServerDown = e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.unknown ||
+          (e.response?.statusCode != null && e.response!.statusCode! >= 500);
+
+      if (!isNetworkOrServerDown) {
+        rethrow;
+      }
+
+      // Offline fallback: save locally only if internet drops or server is 5xx!
       final offlineInvoice = 'OFFLINE-${DateTime.now().millisecondsSinceEpoch}';
       
       final offlineRecord = {
         'offline_id': clientTxId,
         'offline_reference_id': clientTxId,
+        'client_tx_id': clientTxId,
+        'idempotency_key': clientTxId,
         'location_id': locationId,
         'payment_method': paymentMethod,
         'grand_total': totalAmount,
@@ -243,6 +264,8 @@ class PosCheckoutService {
         isOffline: true,
         errorMessage: 'Disimpan di antrean offline: ${e.message}',
       );
+    } finally {
+      _isCheckingOut = false;
     }
   }
 

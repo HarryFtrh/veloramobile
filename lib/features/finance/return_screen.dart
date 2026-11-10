@@ -75,6 +75,7 @@ class _ReturnScreenState extends State<ReturnScreen> {
   }
 
   Future<void> _submit() async {
+    if (_submitting || _order == null) return;
     final order = _order!;
     final ok = await showDialog<bool>(
       context: context,

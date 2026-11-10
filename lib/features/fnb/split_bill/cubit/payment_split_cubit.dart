@@ -197,6 +197,7 @@ class PaymentSplitCubit extends Cubit<PaymentSplitState> {
     String? orderId,
     String tableName = 'Meja Kasir',
   }) async {
+    if (state.generatingQris || state.submitting) return;
     emit(state.copyWith(generatingQris: true, clearError: true));
     try {
       final invoice = await QrisPaymentService.instance.generateDynamicQris(
@@ -223,6 +224,7 @@ class PaymentSplitCubit extends Cubit<PaymentSplitState> {
     List<RegisterLine>? linesFallback,
     String tableName = 'Meja Kasir',
   }) async {
+    if (state.checkingQrisStatus || state.submitting) return false;
     final inv = state.qrisInvoice;
     if (inv == null) {
       return await checkout(
@@ -260,16 +262,12 @@ class PaymentSplitCubit extends Cubit<PaymentSplitState> {
         return false;
       }
     } catch (e) {
-      emit(state.copyWith(checkingQrisStatus: false));
-      return await checkout(
-        fallbackTotal: fallbackTotal,
-        orderId: orderId,
-        tableId: tableId,
-        customerName: customerName,
-        shiftId: shiftId,
-        linesFallback: linesFallback,
-        tableName: tableName,
-      );
+      final errMsg = ApiException.from(e).message;
+      emit(state.copyWith(
+        checkingQrisStatus: false,
+        error: 'Gagal memeriksa status QRIS: $errMsg',
+      ));
+      return false;
     }
   }
 

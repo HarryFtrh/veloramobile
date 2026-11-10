@@ -10,6 +10,9 @@ class ApiClient {
   static late ApiClient instance;
   static const _uuid = Uuid();
 
+  /// Pelacak mutasi in-flight untuk mencegah pengiriman request duplikat (double-tap / race condition)
+  final Map<String, DateTime> _inFlightMutations = {};
+
   static void init() {
     instance = ApiClient._();
   }
@@ -81,8 +84,32 @@ class ApiClient {
           final method = options.method.toUpperCase();
           if (const ['POST', 'PUT', 'PATCH', 'DELETE'].contains(method)) {
             if (!options.headers.containsKey('Idempotency-Key') && !options.headers.containsKey('X-Idempotency-Key')) {
-              options.headers['Idempotency-Key'] = _uuid.v4();
+              final dataMap = options.data is Map ? options.data as Map : null;
+              final existingTxKey = (dataMap?['idempotency_key'] ?? dataMap?['client_tx_id'])?.toString();
+              options.headers['Idempotency-Key'] =
+                  (existingTxKey != null && existingTxKey.isNotEmpty) ? existingTxKey : _uuid.v4();
             }
+
+            // 🛡️ In-Flight Mutation Deduplication Guard:
+            // Cegah 2 request mutasi dengan path & payload identik terbang bersamaan (< 15 detik)
+            final fingerprint = _mutationFingerprint(method, options.path, options.data);
+            final now = DateTime.now();
+            _inFlightMutations.removeWhere((_, startedAt) => now.difference(startedAt).inSeconds > 15);
+            final activeStart = _inFlightMutations[fingerprint];
+            if (activeStart != null && now.difference(activeStart).inMilliseconds < 15000) {
+              if (kDebugMode) {
+                debugPrint('🛑 [DEDUP GUARD] Menahan request mutasi duplikat in-flight: $method ${options.path}');
+              }
+              return handler.reject(
+                DioException(
+                  requestOptions: options,
+                  type: DioExceptionType.cancel,
+                  message: 'Permintaan sedang diproses, mohon tunggu...',
+                ),
+              );
+            }
+            _inFlightMutations[fingerprint] = now;
+            options.extra['_mutation_fingerprint'] = fingerprint;
           }
 
           // 🔍 W3C Distributed Tracing / RFC 9457 Correlation ID untuk pelacakan end-to-end di Cloudflare & backend
@@ -98,6 +125,9 @@ class ApiClient {
           return handler.next(options);
         },
         onResponse: (response, handler) {
+          final fp = response.requestOptions.extra['_mutation_fingerprint']?.toString();
+          if (fp != null) _inFlightMutations.remove(fp);
+
           final cfRay = response.headers.value('cf-ray');
           final cfCache = response.headers.value('cf-cache-status');
           if (kDebugMode) {
@@ -107,6 +137,9 @@ class ApiClient {
           return handler.next(response);
         },
         onError: (DioException e, handler) async {
+          final fp = e.requestOptions.extra['_mutation_fingerprint']?.toString();
+          if (fp != null) _inFlightMutations.remove(fp);
+
           final traceId = e.response?.data is Map ? e.response?.data['trace_id'] : null;
           final cfRay = e.response?.headers.value('cf-ray');
           final statusCode = e.response?.statusCode;
@@ -217,5 +250,19 @@ class ApiClient {
       return data.map((e) => _sanitizeData(e)).toList();
     }
     return data;
+  }
+
+  /// Membuat fingerprint deterministik dari method, path, dan payload (mengabaikan client_tx_id/idempotency_key acak)
+  static String _mutationFingerprint(String method, String path, dynamic data) {
+    if (data is Map) {
+      final filtered = <String, dynamic>{};
+      for (final entry in data.entries) {
+        final k = entry.key.toString();
+        if (k == 'client_tx_id' || k == 'idempotency_key') continue;
+        filtered[k] = entry.value;
+      }
+      return '$method:$path:${filtered.toString()}';
+    }
+    return '$method:$path:${data?.toString() ?? ''}';
   }
 }

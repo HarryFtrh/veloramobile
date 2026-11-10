@@ -144,7 +144,17 @@ class OfflineSyncManager {
 
       debugPrint('🔄 [OFFLINE SYNC] Mengirim ${transactions.length} transaksi offline ke backend...');
 
+      final batchIds = transactions
+          .map((t) => (t['offline_id'] ?? t['client_tx_id'] ?? t['idempotency_key'] ?? '').toString())
+          .where((s) => s.isNotEmpty)
+          .join('_');
+      final batchIdempotencyKey = batchIds.isNotEmpty
+          ? 'BATCH-${batchIds.hashCode.abs()}-${transactions.length}'
+          : 'BATCH-${transactions.length}';
+      final batchOptions = Options(headers: {'Idempotency-Key': batchIdempotencyKey});
+
       final payload = {
+        'idempotency_key': batchIdempotencyKey,
         'transactions': transactions,
         'orders': transactions,
       };
@@ -154,15 +164,18 @@ class OfflineSyncManager {
         res = await ApiClient.instance.dio.post(
           '/v1/pos/offline-batch-sync',
           data: payload,
+          options: batchOptions,
         );
-      } catch (e) {
-        // Fallback endpoint baru dari commit 1c2e3e9c5
-        try {
+      } on DioException catch (e) {
+        // Fallback hanya jika endpoint utama belum tersedia (404 / 405),
+        // JANGAN fallback saat timeout / 500 agar batch tidak terkirim 2 kali!
+        if (e.response?.statusCode == 404 || e.response?.statusCode == 405) {
           res = await ApiClient.instance.dio.post(
             '/retail/pos/checkout/batch-offline',
             data: payload,
+            options: batchOptions,
           );
-        } catch (_) {
+        } else {
           rethrow;
         }
       }

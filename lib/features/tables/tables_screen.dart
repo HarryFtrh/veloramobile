@@ -32,6 +32,7 @@ class TablesScreen extends StatefulWidget {
 
 class _TablesScreenState extends State<TablesScreen> {
   late final TablesCubit _cubit;
+  bool _isBusy = false;
 
   @override
   void initState() {
@@ -57,63 +58,69 @@ class _TablesScreenState extends State<TablesScreen> {
     );
 
   Future<void> _openPayment(CafeTableInfo table, ActiveTableOrder? activeOrder) async {
+    if (_isBusy) return;
     if (activeOrder?.isAlreadyPaid == true) {
       _toast('Tagihan ${table.name} sudah lunas');
       return;
     }
 
-    final total = activeOrder?.totalAmount.round() ?? table.order?.total.round() ?? 0;
-    final orderId = activeOrder?.id ?? table.order?.id;
+    _isBusy = true;
+    try {
+      final total = activeOrder?.totalAmount.round() ?? table.order?.total.round() ?? 0;
+      final orderId = activeOrder?.id ?? table.order?.id;
 
-    final choice = await FnbPaymentSheet.show(context, total, allowSplit: true);
-    if (choice == null || !mounted) return;
+      final choice = await FnbPaymentSheet.show(context, total, allowSplit: true);
+      if (choice == null || !mounted) return;
 
-    if (choice.method == 'split') {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => FnbPaymentSplitScreen(
-            totalAmount: total,
-            tableId: table.id,
-            tableName: table.name,
-            orderId: orderId,
-            activeOrder: activeOrder,
-            customerName: activeOrder?.customerName,
-            initialSplitBill: true,
-            onPaymentComplete: () {
-              _toast('${table.name} pembayaran selesai');
-              _cubit.loadTables();
-              Navigator.of(context).pop();
-            },
+      if (choice.method == 'split') {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => FnbPaymentSplitScreen(
+              totalAmount: total,
+              tableId: table.id,
+              tableName: table.name,
+              orderId: orderId,
+              activeOrder: activeOrder,
+              customerName: activeOrder?.customerName,
+              initialSplitBill: true,
+              onPaymentComplete: () {
+                _toast('${table.name} pembayaran selesai');
+                _cubit.loadTables();
+                Navigator.of(context).pop();
+              },
+            ),
           ),
-        ),
-      );
-      return;
-    }
+        );
+        return;
+      }
 
-    // Direct Single Payment
-    final cubit = PaymentSplitCubit(
-      tableId: table.id,
-      activeOrder: activeOrder,
-      totalAmount: total,
-    );
-    await cubit.ready;
-    cubit.selectMethod(choice.method);
-    if (choice.method == 'cash') {
-      cubit.setPreset(choice.paid.toInt());
-    }
-    final ok = await cubit.checkout(
-      fallbackTotal: total,
-      orderId: orderId,
-      tableId: table.id,
-      customerName: activeOrder?.customerName,
-      tableName: table.name,
-    );
-    if (!mounted) return;
-    if (ok) {
-      _toast('✓ ${table.name} pembayaran lunas');
-      _cubit.loadTables();
-    } else {
-      _toast(cubit.state.error ?? 'Pembayaran meja gagal diproses');
+      // Direct Single Payment
+      final cubit = PaymentSplitCubit(
+        tableId: table.id,
+        activeOrder: activeOrder,
+        totalAmount: total,
+      );
+      await cubit.ready;
+      cubit.selectMethod(choice.method);
+      if (choice.method == 'cash') {
+        cubit.setPreset(choice.paid.toInt());
+      }
+      final ok = await cubit.checkout(
+        fallbackTotal: total,
+        orderId: orderId,
+        tableId: table.id,
+        customerName: activeOrder?.customerName,
+        tableName: table.name,
+      );
+      if (!mounted) return;
+      if (ok) {
+        _toast('✓ ${table.name} pembayaran lunas');
+        _cubit.loadTables();
+      } else {
+        _toast(cubit.state.error ?? 'Pembayaran meja gagal diproses');
+      }
+    } finally {
+      _isBusy = false;
     }
   }
 
@@ -148,49 +155,53 @@ class _TablesScreenState extends State<TablesScreen> {
   }
 
   Future<void> _releaseTable(CafeTableInfo t) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) {
-        final p = ctx.palette;
-        return AlertDialog(
-          backgroundColor: p.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          title: Row(
-            children: [
-              Icon(Icons.warning_amber_rounded, color: p.danger),
-              const SizedBox(width: 8),
-              Text('Kosongkan ${t.name}?', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: p.textPrimary)),
-            ],
-          ),
-          content: Text(
-            'Tagihan aktif pada meja ini akan diselesaikan dan status meja akan dikembalikan menjadi Meja Kosong.',
-            style: TextStyle(fontSize: 13, color: p.textSecondary),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: p.danger,
-                foregroundColor: Colors.white,
-                shape: const StadiumBorder(),
-              ),
-              child: const Text('Kosongkan Meja'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirm != true) return;
+    if (_isBusy) return;
+    _isBusy = true;
     try {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) {
+          final p = ctx.palette;
+          return AlertDialog(
+            backgroundColor: p.surface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            title: Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: p.danger),
+                const SizedBox(width: 8),
+                Text('Kosongkan ${t.name}?', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: p.textPrimary)),
+              ],
+            ),
+            content: Text(
+              'Tagihan aktif pada meja ini akan diselesaikan dan status meja akan dikembalikan menjadi Meja Kosong.',
+              style: TextStyle(fontSize: 13, color: p.textSecondary),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: p.danger,
+                  foregroundColor: Colors.white,
+                  shape: const StadiumBorder(),
+                ),
+                child: const Text('Kosongkan Meja'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (confirm != true) return;
       await _cubit.releaseTable(t.id);
       _toast('✓ ${t.name} berhasil dikosongkan');
     } catch (e) {
       _toast('Gagal mengosongkan meja: $e');
+    } finally {
+      _isBusy = false;
     }
   }
 
@@ -227,12 +238,16 @@ class _TablesScreenState extends State<TablesScreen> {
   }
 
   Future<void> _seedDefaultTables() async {
+    if (_isBusy) return;
+    _isBusy = true;
     _toast('Sedang membuat meja standar (01 s/d 08)...');
     try {
       await _cubit.seedDefaultTables();
       _toast('✓ Meja standar berhasil dibuat');
     } catch (e) {
       _toast('Gagal membuat meja: $e');
+    } finally {
+      _isBusy = false;
     }
   }
 

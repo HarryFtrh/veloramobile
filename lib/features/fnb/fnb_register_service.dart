@@ -123,6 +123,8 @@ class FnbRegisterService {
   static const _uuid = Uuid();
 
   String? get _locationId => SessionStorage.instance.getLocationId();
+  bool _isSendingToKitchen = false;
+  bool _isCheckingOut = false;
 
   Future<BillingSettings> billingSettings() => BillingSettings.fetch();
 
@@ -136,14 +138,20 @@ class FnbRegisterService {
     bool isHold = false,
     String? orderType,
   }) async {
+    if (_isSendingToKitchen) {
+      throw ApiException.from('Pesanan sedang dikirim, mohon tunggu...');
+    }
     final locId = _locationId ?? SessionStorage.instance.getLocationId();
     if (locId == null || locId.isEmpty) {
       throw ApiException.from('Cabang kasir belum dipilih. Silakan pilih cabang di pengaturan.');
     }
 
+    _isSendingToKitchen = true;
     final clientTxId = _uuid.v4();
+    final reqOptions = Options(headers: {'Idempotency-Key': clientTxId});
     final payload = {
       'client_tx_id': clientTxId,
+      'idempotency_key': clientTxId,
       'location_id': int.tryParse(locId) ?? locId,
       if (orderId != null && orderId.isNotEmpty) 'order_id': int.tryParse(orderId) ?? orderId,
       if (tableId != null && tableId.isNotEmpty) 'table_id': int.tryParse(tableId) ?? tableId,
@@ -158,10 +166,10 @@ class FnbRegisterService {
     try {
       Response res;
       try {
-        res = await ApiClient.instance.dio.post('/v1/pos/orders', data: payload);
+        res = await ApiClient.instance.dio.post('/v1/pos/orders', data: payload, options: reqOptions);
       } on DioException catch (e) {
-        if (e.response?.statusCode == 404) {
-          res = await ApiClient.instance.dio.post('/cafe/pos/orders', data: payload);
+        if (e.response?.statusCode == 404 || e.response?.statusCode == 405) {
+          res = await ApiClient.instance.dio.post('/cafe/pos/orders', data: payload, options: reqOptions);
         } else if (e.type == DioExceptionType.connectionError ||
                    e.type == DioExceptionType.connectionTimeout ||
                    e.type == DioExceptionType.sendTimeout ||
@@ -188,6 +196,8 @@ class FnbRegisterService {
       return '';
     } catch (e) {
       throw ApiException.from(e);
+    } finally {
+      _isSendingToKitchen = false;
     }
   }
 
@@ -203,15 +213,21 @@ class FnbRegisterService {
     String? shiftId,
     String? voucherCode,
   }) async {
+    if (_isCheckingOut) {
+      throw ApiException.from('Pembayaran sedang diproses, mohon tunggu...');
+    }
     final locId = _locationId ?? SessionStorage.instance.getLocationId();
     if (locId == null || locId.isEmpty) {
       throw ApiException.from('Cabang kasir belum dipilih. Silakan pilih cabang di pengaturan.');
     }
 
+    _isCheckingOut = true;
     final clientTxId = _uuid.v4();
+    final reqOptions = Options(headers: {'Idempotency-Key': clientTxId});
     final change = paid > bill.total ? paid - bill.total : 0;
     final payload = {
       'client_tx_id': clientTxId,
+      'idempotency_key': clientTxId,
       'location_id': int.tryParse(locId) ?? locId,
       if (orderId != null && orderId.isNotEmpty) 'order_id': int.tryParse(orderId) ?? orderId,
       if (tableId != null && tableId.isNotEmpty) 'table_id': int.tryParse(tableId) ?? tableId,
@@ -258,15 +274,19 @@ class FnbRegisterService {
       Response res;
       try {
         // Prioritas 1: Canonical POS v1 Engine (/v1/pos/checkout-sale)
-        res = await ApiClient.instance.dio.post('/v1/pos/checkout-sale', data: payload);
+        res = await ApiClient.instance.dio.post('/v1/pos/checkout-sale', data: payload, options: reqOptions);
       } on DioException catch (e) {
         if (e.response?.statusCode == 404 || e.response?.statusCode == 405) {
           try {
             // Fallback 1: POS v1 Checkout (/v1/pos/checkout)
-            res = await ApiClient.instance.dio.post('/v1/pos/checkout', data: payload);
-          } catch (_) {
-            // Fallback 2: Endpoint domain cafe (/cafe/pos/checkout)
-            res = await ApiClient.instance.dio.post('/cafe/pos/checkout', data: payload);
+            res = await ApiClient.instance.dio.post('/v1/pos/checkout', data: payload, options: reqOptions);
+          } on DioException catch (e2) {
+            if (e2.response?.statusCode == 404 || e2.response?.statusCode == 405) {
+              // Fallback 2: Endpoint domain cafe (/cafe/pos/checkout)
+              res = await ApiClient.instance.dio.post('/cafe/pos/checkout', data: payload, options: reqOptions);
+            } else {
+              rethrow;
+            }
           }
         } else if (e.type == DioExceptionType.connectionError ||
                    e.type == DioExceptionType.connectionTimeout ||
@@ -306,6 +326,8 @@ class FnbRegisterService {
       return CheckoutOutcome(invoice: invoice, change: change);
     } catch (e) {
       throw ApiException.from(e);
+    } finally {
+      _isCheckingOut = false;
     }
   }
 }

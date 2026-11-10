@@ -62,6 +62,8 @@ class SalesHistoryDrawer extends StatefulWidget {
 }
 
 class _SalesHistoryDrawerState extends State<SalesHistoryDrawer> {
+  final Set<String> _voidingInvoices = {};
+
   num get _totalSalesToday {
     return SalesHistoryDrawer.activeShiftSales
         .where((s) => !s.isVoided)
@@ -125,6 +127,7 @@ class _SalesHistoryDrawerState extends State<SalesHistoryDrawer> {
   }
 
   void _voidTransaction(CompletedSaleRecord sale) {
+    if (sale.isVoided || _voidingInvoices.contains(sale.invoiceNumber)) return;
     AudioHelper.actionFeedback();
     final p = context.palette;
     showDialog(
@@ -155,22 +158,35 @@ class _SalesHistoryDrawerState extends State<SalesHistoryDrawer> {
             child: Text('Batal', style: TextStyle(color: p.textSecondary, fontWeight: FontWeight.w700)),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
+              if (sale.isVoided || _voidingInvoices.contains(sale.invoiceNumber)) {
+                Navigator.pop(ctx);
+                return;
+              }
+              _voidingInvoices.add(sale.invoiceNumber);
               Navigator.pop(ctx);
               setState(() {
                 sale.isVoided = true;
               });
-              KitchenService.instance.cancelOrder(
-                sale.invoiceNumber,
-                reason: 'Void via riwayat transaksi kasir',
-              );
+              try {
+                await KitchenService.instance.cancelOrder(
+                  sale.invoiceNumber,
+                  reason: 'Void via riwayat transaksi kasir',
+                );
+              } catch (_) {
+                // Tetap tandai void secara lokal pada sesi shift jika transaksi adalah walk-in/offline
+              } finally {
+                _voidingInvoices.remove(sale.invoiceNumber);
+              }
               AudioHelper.actionFeedback();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('✓ Transaksi #${sale.invoiceNumber} telah di-void.'),
-                  backgroundColor: p.danger,
-                ),
-              );
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('✓ Transaksi #${sale.invoiceNumber} telah di-void.'),
+                    backgroundColor: p.danger,
+                  ),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: p.danger,

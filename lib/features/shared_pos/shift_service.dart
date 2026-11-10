@@ -352,6 +352,7 @@ class ShiftService extends ChangeNotifier {
 
   ShiftCloseSummary? _lastCloseSummary;
   ShiftCloseSummary? get lastCloseSummary => _lastCloseSummary;
+  bool _isMutatingShift = false;
 
   Future<ShiftStatus> getShiftStatus() async {
     final locationId = SessionStorage.instance.getLocationId();
@@ -389,30 +390,41 @@ class ShiftService extends ChangeNotifier {
   }
 
   Future<void> openShift({required num startingCash, String? notes}) async {
+    if (_isMutatingShift) return;
+    _isMutatingShift = true;
     final locationId = SessionStorage.instance.getLocationId();
+    final idempotencyKey = 'SHIFT-OPEN-${locationId ?? "0"}-${DateTime.now().millisecondsSinceEpoch ~/ 5000}';
+    final reqOptions = Options(headers: {'Idempotency-Key': idempotencyKey});
     final payload = {
+      'idempotency_key': idempotencyKey,
       'opening_cash': startingCash,
       'starting_cash': startingCash,
       if (locationId != null && locationId.isNotEmpty) 'location_id': int.tryParse(locationId) ?? locationId,
       'notes': notes ?? 'Shift dibuka via Flutter POS',
     };
     try {
-      await ApiClient.instance.dio.post(
-        '/v1/pos/shift-open',
-        data: payload,
-      );
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
+      try {
         await ApiClient.instance.dio.post(
-          '/pos/shift-open',
+          '/v1/pos/shift-open',
           data: payload,
+          options: reqOptions,
         );
-      } else {
-        rethrow;
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 404 || e.response?.statusCode == 405) {
+          await ApiClient.instance.dio.post(
+            '/pos/shift-open',
+            data: payload,
+            options: reqOptions,
+          );
+        } else {
+          rethrow;
+        }
       }
+      ShiftSalesStorage.activeShiftSales.clear();
+      await getShiftStatus();
+    } finally {
+      _isMutatingShift = false;
     }
-    ShiftSalesStorage.activeShiftSales.clear();
-    await getShiftStatus();
   }
 
   Future<ShiftCloseSummary> closeShift({
@@ -420,9 +432,16 @@ class ShiftService extends ChangeNotifier {
     required num actualCash,
     String? notes,
   }) async {
+    if (_isMutatingShift) {
+      throw Exception('Proses penutupan shift sedang berjalan...');
+    }
+    _isMutatingShift = true;
     final locationId = SessionStorage.instance.getLocationId();
     final shiftIdVal = currentShift.shiftId;
+    final idempotencyKey = 'SHIFT-CLOSE-${shiftIdVal ?? locationId ?? "0"}-${DateTime.now().millisecondsSinceEpoch ~/ 5000}';
+    final reqOptions = Options(headers: {'Idempotency-Key': idempotencyKey});
     final payload = {
+      'idempotency_key': idempotencyKey,
       if (shiftIdVal != null && shiftIdVal.isNotEmpty) 'shift_id': int.tryParse(shiftIdVal) ?? shiftIdVal,
       'closing_cash': actualCash,
       'actual_cash': actualCash,
@@ -430,44 +449,50 @@ class ShiftService extends ChangeNotifier {
       if (locationId != null && locationId.isNotEmpty) 'location_id': int.tryParse(locationId) ?? locationId,
       'notes': notes,
     };
-    Response response;
     try {
-      response = await ApiClient.instance.dio.post(
-        '/v1/pos/shift-close',
-        data: payload,
-      );
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
+      Response response;
+      try {
         response = await ApiClient.instance.dio.post(
-          '/pos/shift-close',
+          '/v1/pos/shift-close',
           data: payload,
+          options: reqOptions,
         );
-      } else {
-        rethrow;
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 404 || e.response?.statusCode == 405) {
+          response = await ApiClient.instance.dio.post(
+            '/pos/shift-close',
+            data: payload,
+            options: reqOptions,
+          );
+        } else {
+          rethrow;
+        }
       }
+      final rawData = response.data;
+      Map<String, dynamic> data = {};
+      if (rawData is Map) {
+        final inner = rawData['data'];
+        data = inner is Map
+            ? Map<String, dynamic>.from(inner)
+            : Map<String, dynamic>.from(rawData);
+      }
+
+      final summary = ShiftCloseSummary.fromResponse(
+        data: data,
+        currentShift: currentShift,
+        actualCash: actualCash,
+        notes: notes,
+      );
+
+      _lastCloseSummary = summary;
+      _currentStatus = ShiftStatus(isOpen: false);
+      ShiftSalesStorage.activeShiftSales.clear();
+      notifyListeners();
+
+      return summary;
+    } finally {
+      _isMutatingShift = false;
     }
-    final rawData = response.data;
-    Map<String, dynamic> data = {};
-    if (rawData is Map) {
-      final inner = rawData['data'];
-      data = inner is Map
-          ? Map<String, dynamic>.from(inner)
-          : Map<String, dynamic>.from(rawData);
-    }
-
-    final summary = ShiftCloseSummary.fromResponse(
-      data: data,
-      currentShift: currentShift,
-      actualCash: actualCash,
-      notes: notes,
-    );
-
-    _lastCloseSummary = summary;
-    _currentStatus = ShiftStatus(isOpen: false);
-    ShiftSalesStorage.activeShiftSales.clear();
-    notifyListeners();
-
-    return summary;
   }
 
   Future<void> recordPettyCash({
@@ -476,9 +501,14 @@ class ShiftService extends ChangeNotifier {
     required String reason,
     String? shiftId,
   }) async {
+    if (_isMutatingShift) return;
+    _isMutatingShift = true;
     final locationId = SessionStorage.instance.getLocationId();
     final effectiveShiftId = shiftId ?? _currentStatus?.shiftId;
+    final idempotencyKey = 'PETTY-$type-$amount-${DateTime.now().millisecondsSinceEpoch ~/ 5000}';
+    final reqOptions = Options(headers: {'Idempotency-Key': idempotencyKey});
     final payload = {
+      'idempotency_key': idempotencyKey,
       'type': type,
       'amount': amount,
       'reason': reason,
@@ -489,20 +519,26 @@ class ShiftService extends ChangeNotifier {
         'location_id': int.tryParse(locationId) ?? locationId,
     };
     try {
-      await ApiClient.instance.dio.post(
-        '/v1/pos/petty-cash',
-        data: payload,
-      );
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
+      try {
         await ApiClient.instance.dio.post(
-          '/pos/petty-cash',
+          '/v1/pos/petty-cash',
           data: payload,
+          options: reqOptions,
         );
-      } else {
-        rethrow;
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 404 || e.response?.statusCode == 405) {
+          await ApiClient.instance.dio.post(
+            '/pos/petty-cash',
+            data: payload,
+            options: reqOptions,
+          );
+        } else {
+          rethrow;
+        }
       }
+      await getShiftStatus();
+    } finally {
+      _isMutatingShift = false;
     }
-    await getShiftStatus();
   }
 }

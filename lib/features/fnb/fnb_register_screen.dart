@@ -39,6 +39,7 @@ class FnbRegisterScreen extends StatefulWidget {
 
 class _FnbRegisterScreenState extends State<FnbRegisterScreen> {
   final _ctrl = RegisterController();
+  bool _openingModal = false;
 
   @override
   void initState() {
@@ -94,6 +95,7 @@ class _FnbRegisterScreenState extends State<FnbRegisterScreen> {
   }
 
   Future<void> _kitchen() async {
+    if (_ctrl.busy || _openingModal || _ctrl.lines.isEmpty) return;
     try {
       final orderLines = List<RegisterLine>.from(_ctrl.lines);
       final currentTable = _ctrl.table;
@@ -138,7 +140,7 @@ class _FnbRegisterScreenState extends State<FnbRegisterScreen> {
   }
 
   Future<void> _hold() async {
-    if (_ctrl.lines.isEmpty) return;
+    if (_ctrl.busy || _openingModal || _ctrl.lines.isEmpty) return;
 
     if (_ctrl.orderType == OrderType.dineIn && _ctrl.table == null) {
       _toast('Pilih meja terlebih dahulu untuk pesanan Dine-In');
@@ -148,8 +150,10 @@ class _FnbRegisterScreenState extends State<FnbRegisterScreen> {
 
     String? name = _ctrl.customerName;
     if (name.isEmpty && _ctrl.table == null) {
+      _openingModal = true;
       final defaultLabel = 'Walk-In #${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
       final enteredName = await FnbHoldOrderDialog.show(context, defaultLabel: defaultLabel);
+      _openingModal = false;
       if (enteredName == null) return;
       name = enteredName;
     }
@@ -164,68 +168,75 @@ class _FnbRegisterScreenState extends State<FnbRegisterScreen> {
     }
   }
 
-  void _openBillsModal() {
-    final isMobile = context.isMobile;
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      useSafeArea: true,
-      backgroundColor: context.palette.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetContext) => SizedBox(
-        height: MediaQuery.sizeOf(sheetContext).height * 0.88,
-        child: Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: isMobile ? double.infinity : 720),
-            child: FnbOpenBillsSheet(
-              onSelectOrder: (order) async {
-                await _ctrl.loadKitchenOrder(order);
-                if (mounted) {
-                  _toast('Memuat pesanan ${order.number} ke kasir');
-                }
-              },
+  Future<void> _openBillsModal() async {
+    if (_openingModal) return;
+    _openingModal = true;
+    try {
+      final isMobile = context.isMobile;
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        showDragHandle: true,
+        useSafeArea: true,
+        backgroundColor: context.palette.surface,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (sheetContext) => SizedBox(
+          height: MediaQuery.sizeOf(sheetContext).height * 0.88,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: isMobile ? double.infinity : 720),
+              child: FnbOpenBillsSheet(
+                onSelectOrder: (order) async {
+                  await _ctrl.loadKitchenOrder(order);
+                  if (mounted) {
+                    _toast('Memuat pesanan ${order.number} ke kasir');
+                  }
+                },
+              ),
             ),
           ),
         ),
-      ),
-    );
+      );
+    } finally {
+      _openingModal = false;
+    }
   }
 
   Future<void> _pay() async {
-    if (_ctrl.busy) return;
+    if (_ctrl.busy || _openingModal) return;
     final bill = _ctrl.bill;
     if (bill == null || _ctrl.lines.isEmpty) return;
 
-    if (_ctrl.shiftId == null) {
-      final s = await _ctrl.refreshShift();
-      if ((s == null || !s.isOpen || _ctrl.shiftId == null) && mounted) {
-        _toast('Shift kasir belum aktif. Silakan buka shift kasir terlebih dahulu.');
-        // ignore: use_build_context_synchronously
-        await ShiftDialogs.showOpenShiftDialog(
-          context,
-          onOpened: (_) => _ctrl.refreshShift(),
-        );
-        if (_ctrl.shiftId == null || !mounted) return;
-      }
-    }
-
-    if (!mounted) return;
-    final choice = await FnbPaymentSheet.show(
-      context,
-      bill.total,
-      allowSplit: _ctrl.lines.length > 1,
-    );
-    if (choice == null || !mounted) return;
-
-    if (choice.method == 'split') {
-      _openSplitBill();
-      return;
-    }
-
+    _openingModal = true;
     try {
+      if (_ctrl.shiftId == null) {
+        final s = await _ctrl.refreshShift();
+        if ((s == null || !s.isOpen || _ctrl.shiftId == null) && mounted) {
+          _toast('Shift kasir belum aktif. Silakan buka shift kasir terlebih dahulu.');
+          // ignore: use_build_context_synchronously
+          await ShiftDialogs.showOpenShiftDialog(
+            context,
+            onOpened: (_) => _ctrl.refreshShift(),
+          );
+          if (_ctrl.shiftId == null || !mounted) return;
+        }
+      }
+
+      if (!mounted) return;
+      final choice = await FnbPaymentSheet.show(
+        context,
+        bill.total,
+        allowSplit: _ctrl.lines.length > 1,
+      );
+      if (choice == null || !mounted) return;
+
+      if (choice.method == 'split') {
+        _openSplitBill();
+        return;
+      }
+
       final receiptItems = [
         for (final line in _ctrl.lines)
           PosCartItem(
@@ -303,6 +314,8 @@ class _FnbRegisterScreenState extends State<FnbRegisterScreen> {
       );
     } catch (e) {
       _toast(ApiException.from(e).message);
+    } finally {
+      _openingModal = false;
     }
   }
 
@@ -336,25 +349,31 @@ class _FnbRegisterScreenState extends State<FnbRegisterScreen> {
   }
 
   Future<void> _pickTable() async {
-    final chosen = await FnbTablePickerSheet.show(
-      context,
-      currentTable: _ctrl.table,
-    );
-    if (chosen != null && mounted) {
-      if (chosen.id == FnbTablePickerSheet.clearTableSentinelId) {
-        _ctrl.setTable(null);
-        _toast('Meja dilepas (kembali ke Walk-In)');
-      } else if (chosen.order != null) {
-        await _ctrl.loadTableActiveOrder(chosen);
-        if (mounted) {
-          _toast('Memuat pesanan aktif meja ${chosen.name}');
-        }
-      } else {
-        _ctrl.setTable(chosen);
-        if (mounted) {
-          _toast('Memilih meja ${chosen.name}');
+    if (_openingModal) return;
+    _openingModal = true;
+    try {
+      final chosen = await FnbTablePickerSheet.show(
+        context,
+        currentTable: _ctrl.table,
+      );
+      if (chosen != null && mounted) {
+        if (chosen.id == FnbTablePickerSheet.clearTableSentinelId) {
+          _ctrl.setTable(null);
+          _toast('Meja dilepas (kembali ke Walk-In)');
+        } else if (chosen.order != null) {
+          await _ctrl.loadTableActiveOrder(chosen);
+          if (mounted) {
+            _toast('Memuat pesanan aktif meja ${chosen.name}');
+          }
+        } else {
+          _ctrl.setTable(chosen);
+          if (mounted) {
+            _toast('Memilih meja ${chosen.name}');
+          }
         }
       }
+    } finally {
+      _openingModal = false;
     }
   }
 
