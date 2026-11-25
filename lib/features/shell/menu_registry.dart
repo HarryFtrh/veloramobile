@@ -1,0 +1,789 @@
+import 'package:material_ui/material_ui.dart';
+import '../../core/utils/safe_json.dart';
+import '../customers/customers_screen.dart';
+import '../dashboard/dashboard_screen.dart';
+import '../finance/expenses_screen.dart';
+import '../finance/return_screen.dart';
+import '../fnb/screens/fnb_payment_split_screen.dart';
+import '../fnb/screens/fnb_register_screen.dart';
+import '../fnb_customer/screens/customer_home_screen.dart';
+import '../kitchen/kitchen_screen.dart';
+import '../marketplace/marketplace_screen.dart';
+import '../pharmacy/screens/pharmacy_pos_screen.dart';
+import '../pharmacy/screens/pharmacy_queue_screen.dart';
+import '../pharmacy/screens/pharmacy_stock_alert_screen.dart';
+import '../pharmacy/screens/pharmacy_shift_report_screen.dart';
+import '../pharmacy/screens/pharmacy_compounding_screen.dart';
+import '../pharmacy/screens/pharmacy_calling_display_screen.dart';
+import '../pharmacy/screens/pharmacy_stock_opname_screen.dart';
+import '../pharmacy/screens/pharmacy_doctor_emr_screen.dart';
+import '../pharmacy/screens/pharmacy_executive_analytics_screen.dart';
+import '../pharmacy/widgets/pharmacy_medical_records_modal.dart';
+import '../pharmacy/widgets/pharmacy_pbf_order_modal.dart';
+import '../pharmacy/widgets/pharmacy_prescription_review_modal.dart';
+import '../sales/sales_dashboard_screen.dart';
+import '../settings/settings_screen.dart';
+import '../shared_pos/widgets/printer_settings_screen.dart';
+import '../subscription/subscription_screen.dart';
+import '../tables/tables_screen.dart';
+import 'more_entry.dart';
+
+/// Model item menu dari response server-driven /api/my-menu
+class ServerMenuItem {
+  final String key;
+  final String title;
+  final String subtitle;
+  final String category;
+  final String? iconName;
+  final int order;
+  final List<ServerMenuItem> children;
+
+  ServerMenuItem({
+    required this.key,
+    required this.title,
+    this.subtitle = '',
+    this.category = 'Fitur & Menu Toko',
+    this.iconName,
+    this.order = 0,
+    this.children = const [],
+  });
+
+  factory ServerMenuItem.fromJson(Map<String, dynamic> json, {String defaultCategory = 'Fitur & Menu Toko'}) {
+    final k = (json['key'] ?? json['code'] ?? json['id'] ?? json['name'] ?? '').toString();
+    final t = (json['title'] ?? json['label'] ?? json['name'] ?? k).toString();
+    final sub = (json['subtitle'] ?? json['description'] ?? json['desc'] ?? '').toString();
+    final cat = (json['category'] ?? json['group'] ?? json['section'] ?? defaultCategory).toString();
+    final ico = json['icon']?.toString() ?? json['icon_name']?.toString();
+    final ord = json.getInt('order', fallback: json.getInt('sort_order', fallback: 0));
+
+    final rawChildren = json['children'] ?? json['submenus'] ?? json['items'];
+    final List<ServerMenuItem> childList = [];
+    if (rawChildren is List) {
+      for (final c in rawChildren) {
+        if (c is Map) {
+          childList.add(ServerMenuItem.fromJson(Map<String, dynamic>.from(c), defaultCategory: cat));
+        }
+      }
+    }
+
+    return ServerMenuItem(
+      key: k,
+      title: t,
+      subtitle: sub,
+      category: cat.isNotEmpty ? cat : defaultCategory,
+      iconName: ico,
+      order: ord,
+      children: childList,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'key': key,
+    'title': title,
+    'subtitle': subtitle,
+    'category': category,
+    'icon': iconName,
+    'order': order,
+    'children': children.map((c) => c.toJson()).toList(),
+  };
+}
+
+/// Registry global untuk memetakan key menu dari server backend ke Screen/WidgetBuilder di Flutter
+/// Mendukung seluruh tipe bisnis: FnB (Resto/Cafe), Apotek/Klinik (Pharmacy), Retail, Grosir, & Sales
+class MenuRegistry {
+  static final Map<String, _RegisteredRoute> _routes = {
+    // ==========================================
+    // 1. F&B (CAFE, RESTO, FOOD & BEVERAGE)
+    // ==========================================
+    'tables': _RegisteredRoute(
+      defaultTitle: 'Manajemen Meja & Dine-In',
+      defaultSubtitle: 'Denah visual, status meja, booking, dan pindah meja',
+      defaultCategory: 'Operasional Meja & Dine-In',
+      defaultIcon: Icons.table_restaurant_outlined,
+      builder: (_) => const TablesScreen(),
+    ),
+    'meja': _RegisteredRoute(
+      defaultTitle: 'Manajemen Meja & Dine-In',
+      defaultSubtitle: 'Denah visual, status meja, booking, dan pindah meja',
+      defaultCategory: 'Operasional Meja & Dine-In',
+      defaultIcon: Icons.table_restaurant_outlined,
+      builder: (_) => const TablesScreen(),
+    ),
+    'kitchen': _RegisteredRoute(
+      defaultTitle: 'Kitchen Display System (KDS)',
+      defaultSubtitle: 'Tiket pesanan dapur, antrean masak, dan penyajian',
+      defaultCategory: 'Dapur & Pengolahan (KDS)',
+      defaultIcon: Icons.soup_kitchen_outlined,
+      builder: (_) => const KitchenScreen(),
+    ),
+    'dapur': _RegisteredRoute(
+      defaultTitle: 'Kitchen Display System (KDS)',
+      defaultSubtitle: 'Tiket pesanan dapur, antrean masak, dan penyajian',
+      defaultCategory: 'Dapur & Pengolahan (KDS)',
+      defaultIcon: Icons.soup_kitchen_outlined,
+      builder: (_) => const KitchenScreen(),
+    ),
+    'kds': _RegisteredRoute(
+      defaultTitle: 'Kitchen Display System (KDS)',
+      defaultSubtitle: 'Tiket pesanan dapur, antrean masak, dan penyajian',
+      defaultCategory: 'Dapur & Pengolahan (KDS)',
+      defaultIcon: Icons.soup_kitchen_outlined,
+      builder: (_) => const KitchenScreen(),
+    ),
+    'fnb_pos': _RegisteredRoute(
+      defaultTitle: 'Kasir Register F&B',
+      defaultSubtitle: 'Input pesanan makan di tempat & bawa pulang',
+      defaultCategory: 'Operasional Kasir & POS',
+      defaultIcon: Icons.point_of_sale_outlined,
+      builder: (_) => const FnbRegisterScreen(),
+    ),
+    'pos_fnb': _RegisteredRoute(
+      defaultTitle: 'Kasir Register F&B',
+      defaultSubtitle: 'Input pesanan makan di tempat & bawa pulang',
+      defaultCategory: 'Operasional Kasir & POS',
+      defaultIcon: Icons.point_of_sale_outlined,
+      builder: (_) => const FnbRegisterScreen(),
+    ),
+    'split_bill': _RegisteredRoute(
+      defaultTitle: 'Kasir Split Bill & Pecahan Uang',
+      defaultSubtitle: 'Pembayaran bagi tagihan meja, numpad, & kembalian',
+      defaultCategory: 'Operasional Kasir & POS',
+      defaultIcon: Icons.call_split_rounded,
+      builder: (_) => const FnbPaymentSplitScreen(),
+    ),
+    'customer_mode': _RegisteredRoute(
+      defaultTitle: 'Mode Pelanggan (Customer Self-Order)',
+      defaultSubtitle: 'Layar eksplorasi menu, kustomisasi pesanan, & live tracking',
+      defaultCategory: 'Kanal Pelanggan & Self-Order',
+      defaultIcon: Icons.coffee_rounded,
+      builder: (_) => const CustomerHomeScreen(),
+    ),
+    'self_order': _RegisteredRoute(
+      defaultTitle: 'Mode Pelanggan (Customer Self-Order)',
+      defaultSubtitle: 'Layar eksplorasi menu, kustomisasi pesanan, & live tracking',
+      defaultCategory: 'Kanal Pelanggan & Self-Order',
+      defaultIcon: Icons.coffee_rounded,
+      builder: (_) => const CustomerHomeScreen(),
+    ),
+
+    // ==========================================
+    // 2. PELANGGAN, CRM, & KASBON (ALL BUSINESSES)
+    // ==========================================
+    'customers': _RegisteredRoute(
+      defaultTitle: 'Pelanggan & CRM',
+      defaultSubtitle: 'Member, poin loyalitas, riwayat, dan buku kasbon',
+      defaultCategory: 'Pelanggan & CRM',
+      defaultIcon: Icons.people_outline_rounded,
+      builder: (_) => const CustomersScreen(),
+    ),
+    'pelanggan': _RegisteredRoute(
+      defaultTitle: 'Pelanggan & CRM',
+      defaultSubtitle: 'Member, poin loyalitas, riwayat, dan buku kasbon',
+      defaultCategory: 'Pelanggan & CRM',
+      defaultIcon: Icons.people_outline_rounded,
+      builder: (_) => const CustomersScreen(),
+    ),
+    'crm': _RegisteredRoute(
+      defaultTitle: 'Pelanggan & CRM',
+      defaultSubtitle: 'Member, poin loyalitas, riwayat, dan buku kasbon',
+      defaultCategory: 'Pelanggan & CRM',
+      defaultIcon: Icons.people_outline_rounded,
+      builder: (_) => const CustomersScreen(),
+    ),
+
+    // ==========================================
+    // 3. SALES, GROSIR, & MARKETPLACE
+    // ==========================================
+    'sales_dashboard': _RegisteredRoute(
+      defaultTitle: 'Dashboard Sales Lapangan',
+      defaultSubtitle: 'Presensi GPS, rute kunjungan outlet, dan katalog mobile',
+      defaultCategory: 'Penjualan & Sales Lapangan',
+      defaultIcon: Icons.trending_up_rounded,
+      builder: (_) => SalesDashboardScreen(onLogout: () {}),
+    ),
+    'sales': _RegisteredRoute(
+      defaultTitle: 'Dashboard Sales Lapangan',
+      defaultSubtitle: 'Presensi GPS, rute kunjungan outlet, dan katalog mobile',
+      defaultCategory: 'Penjualan & Sales Lapangan',
+      defaultIcon: Icons.trending_up_rounded,
+      builder: (_) => SalesDashboardScreen(onLogout: () {}),
+    ),
+    'marketplace': _RegisteredRoute(
+      defaultTitle: 'Katalog & Toko Online',
+      defaultSubtitle: 'Eksplorasi produk grosir, keranjang, dan order marketplace',
+      defaultCategory: 'Katalog & Marketplace',
+      defaultIcon: Icons.shopping_bag_outlined,
+      builder: (_) => MarketplaceScreen(onLogout: () {}),
+    ),
+    'toko_online': _RegisteredRoute(
+      defaultTitle: 'Katalog & Toko Online',
+      defaultSubtitle: 'Eksplorasi produk grosir, keranjang, dan order marketplace',
+      defaultCategory: 'Katalog & Marketplace',
+      defaultIcon: Icons.shopping_bag_outlined,
+      builder: (_) => MarketplaceScreen(onLogout: () {}),
+    ),
+
+    // ==========================================
+    // 4. APOTEK & KLINIK (PHARMACY & HEALTHCARE)
+    // ==========================================
+    'pharmacy_pos': _RegisteredRoute(
+      defaultTitle: 'Kasir Apotek & Farmasi',
+      defaultSubtitle: 'Penjualan OTC, e-resep dokter, multi-satuan, & telaah obat',
+      defaultCategory: 'Pelayanan Resep & Farmasi Klinis',
+      defaultIcon: Icons.point_of_sale_outlined,
+      builder: (_) => PharmacyPosScreen(onLogout: () {}),
+    ),
+    'pharmacy_queue': _RegisteredRoute(
+      defaultTitle: 'Antrean Pasien & Billing Poli',
+      defaultSubtitle: 'Antrean poli rawat jalan, racikan, dan billing kasir',
+      defaultCategory: 'Pelayanan Resep & Farmasi Klinis',
+      defaultIcon: Icons.receipt_long_outlined,
+      builder: (_) => const PharmacyQueueScreen(),
+    ),
+    'prescription_review': _RegisteredRoute(
+      defaultTitle: 'Telaah Resep Dokter',
+      defaultSubtitle: 'Skrining 7 Benar & racikan pulveres',
+      defaultCategory: 'Pelayanan Resep & Farmasi Klinis',
+      defaultIcon: Icons.assignment_outlined,
+      builder: (_) => const PharmacyPrescriptionReviewPage(),
+    ),
+    'telaah_resep': _RegisteredRoute(
+      defaultTitle: 'Telaah Resep Dokter',
+      defaultSubtitle: 'Skrining 7 Benar & racikan pulveres',
+      defaultCategory: 'Pelayanan Resep & Farmasi Klinis',
+      defaultIcon: Icons.assignment_outlined,
+      builder: (_) => const PharmacyPrescriptionReviewPage(),
+    ),
+    'compounding': _RegisteredRoute(
+      defaultTitle: 'Meja Racik & Etiket',
+      defaultSubtitle: 'Kalkulator DTD, mortar digital, cetak etiket',
+      defaultCategory: 'Pelayanan Resep & Farmasi Klinis',
+      defaultIcon: Icons.science_outlined,
+      builder: (_) => const PharmacyCompoundingScreen(),
+    ),
+    'racikan': _RegisteredRoute(
+      defaultTitle: 'Meja Racik & Etiket',
+      defaultSubtitle: 'Kalkulator DTD, mortar digital, cetak etiket',
+      defaultCategory: 'Pelayanan Resep & Farmasi Klinis',
+      defaultIcon: Icons.science_outlined,
+      builder: (_) => const PharmacyCompoundingScreen(),
+    ),
+    'medical_records': _RegisteredRoute(
+      defaultTitle: 'Rekam Medis & Riwayat Pasien',
+      defaultSubtitle: 'Histori obat, profil alergi, dan ulangi resep',
+      defaultCategory: 'Pelayanan Resep & Farmasi Klinis',
+      defaultIcon: Icons.medical_information_outlined,
+      builder: (_) => const PharmacyMedicalRecordsPage(),
+    ),
+    'rekam_medis': _RegisteredRoute(
+      defaultTitle: 'Rekam Medis & Riwayat Pasien',
+      defaultSubtitle: 'Histori obat, profil alergi, dan ulangi resep',
+      defaultCategory: 'Pelayanan Resep & Farmasi Klinis',
+      defaultIcon: Icons.medical_information_outlined,
+      builder: (_) => const PharmacyMedicalRecordsPage(),
+    ),
+    'calling_display': _RegisteredRoute(
+      defaultTitle: 'Display Antrean Loket',
+      defaultSubtitle: 'Layar pemanggil nomor antrean publik',
+      defaultCategory: 'Pelayanan Resep & Farmasi Klinis',
+      defaultIcon: Icons.tv_rounded,
+      builder: (_) => const PharmacyCallingDisplayScreen(),
+    ),
+    'display_antrean': _RegisteredRoute(
+      defaultTitle: 'Display Antrean Loket',
+      defaultSubtitle: 'Layar pemanggil nomor antrean publik',
+      defaultCategory: 'Pelayanan Resep & Farmasi Klinis',
+      defaultIcon: Icons.tv_rounded,
+      builder: (_) => const PharmacyCallingDisplayScreen(),
+    ),
+    'pbf_orders': _RegisteredRoute(
+      defaultTitle: 'Pengadaan Order PBF',
+      defaultSubtitle: 'Surat Pesanan (SP) & jatuh tempo faktur',
+      defaultCategory: 'Pengadaan & Logistik Obat',
+      defaultIcon: Icons.local_shipping_outlined,
+      builder: (_) => const PharmacyPbfOrderPage(),
+    ),
+    'pbf': _RegisteredRoute(
+      defaultTitle: 'Pengadaan Order PBF',
+      defaultSubtitle: 'Surat Pesanan (SP) & jatuh tempo faktur',
+      defaultCategory: 'Pengadaan & Logistik Obat',
+      defaultIcon: Icons.local_shipping_outlined,
+      builder: (_) => const PharmacyPbfOrderPage(),
+    ),
+    'stock_alert': _RegisteredRoute(
+      defaultTitle: 'Peringatan Stok & Kedaluwarsa',
+      defaultSubtitle: 'Alert obat menipis dan sistem batch FEFO',
+      defaultCategory: 'Pengadaan & Logistik Obat',
+      defaultIcon: Icons.warning_amber_rounded,
+      builder: (_) => const PharmacyStockAlertScreen(),
+    ),
+    'stock_opname': _RegisteredRoute(
+      defaultTitle: 'Gudang & Stock Opname Fisik',
+      defaultSubtitle: 'Audit stok fisik, batch lot, dan berita acara',
+      defaultCategory: 'Pengadaan & Logistik Obat',
+      defaultIcon: Icons.inventory_rounded,
+      builder: (_) => const PharmacyStockOpnameScreen(),
+    ),
+    'opname': _RegisteredRoute(
+      defaultTitle: 'Gudang & Stock Opname Fisik',
+      defaultSubtitle: 'Audit stok fisik, batch lot, dan berita acara',
+      defaultCategory: 'Pengadaan & Logistik Obat',
+      defaultIcon: Icons.inventory_rounded,
+      builder: (_) => const PharmacyStockOpnameScreen(),
+    ),
+    'doctor_emr': _RegisteredRoute(
+      defaultTitle: 'Workstation Dokter & e-Resep',
+      defaultSubtitle: 'EMR pasien, ICD-10, dan peresepan digital',
+      defaultCategory: 'Integrasi Dokter & Poli',
+      defaultIcon: Icons.medical_services_outlined,
+      builder: (_) => const PharmacyDoctorEmrScreen(),
+    ),
+    'emr': _RegisteredRoute(
+      defaultTitle: 'Workstation Dokter & e-Resep',
+      defaultSubtitle: 'EMR pasien, ICD-10, dan peresepan digital',
+      defaultCategory: 'Integrasi Dokter & Poli',
+      defaultIcon: Icons.medical_services_outlined,
+      builder: (_) => const PharmacyDoctorEmrScreen(),
+    ),
+    'clinic': _RegisteredRoute(
+      defaultTitle: 'Workstation Dokter & e-Resep',
+      defaultSubtitle: 'EMR pasien, ICD-10, dan peresepan digital',
+      defaultCategory: 'Integrasi Dokter & Poli',
+      defaultIcon: Icons.medical_services_outlined,
+      builder: (_) => const PharmacyDoctorEmrScreen(),
+    ),
+    'poliklinik': _RegisteredRoute(
+      defaultTitle: 'Workstation Dokter & e-Resep',
+      defaultSubtitle: 'EMR pasien, ICD-10, dan peresepan digital',
+      defaultCategory: 'Integrasi Dokter & Poli',
+      defaultIcon: Icons.medical_services_outlined,
+      builder: (_) => const PharmacyDoctorEmrScreen(),
+    ),
+    'shift_report': _RegisteredRoute(
+      defaultTitle: 'Laporan Shift & Kasir',
+      defaultSubtitle: 'Rekapitulasi penjualan, petty cash, dan selisih laci',
+      defaultCategory: 'Keuangan & Analitik Bisnis',
+      defaultIcon: Icons.analytics_outlined,
+      builder: (_) => const PharmacyShiftReportScreen(),
+    ),
+    'executive_analytics': _RegisteredRoute(
+      defaultTitle: 'Executive Analytics & Laba Rugi',
+      defaultSubtitle: 'Gross margin, HPP, laba bersih, dan tren Q4',
+      defaultCategory: 'Keuangan & Analitik Bisnis',
+      defaultIcon: Icons.insights_rounded,
+      builder: (_) => const PharmacyExecutiveAnalyticsScreen(),
+    ),
+    'laba_rugi': _RegisteredRoute(
+      defaultTitle: 'Executive Analytics & Laba Rugi',
+      defaultSubtitle: 'Gross margin, HPP, laba bersih, dan tren Q4',
+      defaultCategory: 'Keuangan & Analitik Bisnis',
+      defaultIcon: Icons.insights_rounded,
+      builder: (_) => const PharmacyExecutiveAnalyticsScreen(),
+    ),
+
+    // ==========================================
+    // 5. OPERASIONAL KEUANGAN & RETUR (ALL BUSINESSES)
+    // ==========================================
+    'returns': _RegisteredRoute(
+      defaultTitle: 'Retur Penjualan & Faktur',
+      defaultSubtitle: 'Retur barang dari invoice transaksi atau ke supplier',
+      defaultCategory: 'Pengadaan & Logistik',
+      defaultIcon: Icons.assignment_return_outlined,
+      builder: (_) => const ReturnScreen(),
+    ),
+    'retur': _RegisteredRoute(
+      defaultTitle: 'Retur Penjualan & Faktur',
+      defaultSubtitle: 'Retur barang dari invoice transaksi atau ke supplier',
+      defaultCategory: 'Pengadaan & Logistik',
+      defaultIcon: Icons.assignment_return_outlined,
+      builder: (_) => const ReturnScreen(),
+    ),
+    'analytics': _RegisteredRoute(
+      defaultTitle: 'Dashboard & Analitik Penjualan',
+      defaultSubtitle: 'Ringkasan omzet harian, status pesanan, & tren',
+      defaultCategory: 'Keuangan & Analitik Bisnis',
+      defaultIcon: Icons.bar_chart_rounded,
+      builder: (_) => const DashboardScreen(),
+    ),
+    'dashboard': _RegisteredRoute(
+      defaultTitle: 'Dashboard & Analitik Penjualan',
+      defaultSubtitle: 'Ringkasan omzet harian, status pesanan, & tren',
+      defaultCategory: 'Keuangan & Analitik Bisnis',
+      defaultIcon: Icons.bar_chart_rounded,
+      builder: (_) => const DashboardScreen(),
+    ),
+    'expenses': _RegisteredRoute(
+      defaultTitle: 'Pengeluaran Kasir (Petty Cash)',
+      defaultSubtitle: 'Biaya operasional kas kecil toko/kasir',
+      defaultCategory: 'Keuangan & Analitik Bisnis',
+      defaultIcon: Icons.payments_outlined,
+      builder: (_) => const ExpensesScreen(),
+    ),
+    'pengeluaran': _RegisteredRoute(
+      defaultTitle: 'Pengeluaran Kasir (Petty Cash)',
+      defaultSubtitle: 'Biaya operasional kas kecil toko/kasir',
+      defaultCategory: 'Keuangan & Analitik Bisnis',
+      defaultIcon: Icons.payments_outlined,
+      builder: (_) => const ExpensesScreen(),
+    ),
+    'petty_cash': _RegisteredRoute(
+      defaultTitle: 'Pengeluaran Kasir (Petty Cash)',
+      defaultSubtitle: 'Biaya operasional kas kecil toko/kasir',
+      defaultCategory: 'Keuangan & Analitik Bisnis',
+      defaultIcon: Icons.payments_outlined,
+      builder: (_) => const ExpensesScreen(),
+    ),
+
+    // ==========================================
+    // 6. KONFIGURASI, HARDWARE, & PRINTER (ALL BUSINESSES)
+    // ==========================================
+    'settings': _RegisteredRoute(
+      defaultTitle: 'Pengaturan Akun & Keamanan',
+      defaultSubtitle: 'Profil pengguna, PIN 4 digit kasir, & sesi login',
+      defaultCategory: 'Pengaturan & Akun',
+      defaultIcon: Icons.settings_outlined,
+      builder: (_) => const SettingsScreen(),
+    ),
+    'pengaturan': _RegisteredRoute(
+      defaultTitle: 'Pengaturan Akun & Keamanan',
+      defaultSubtitle: 'Profil pengguna, PIN 4 digit kasir, & sesi login',
+      defaultCategory: 'Pengaturan & Akun',
+      defaultIcon: Icons.settings_outlined,
+      builder: (_) => const SettingsScreen(),
+    ),
+    'printer': _RegisteredRoute(
+      defaultTitle: 'Printer Struk & Hardware Kasir',
+      defaultSubtitle: 'Konfigurasi Bluetooth, LAN port 9100, & laci kas',
+      defaultCategory: 'Perangkat Keras',
+      defaultIcon: Icons.print_rounded,
+      builder: (_) => const PrinterSettingsScreen(),
+    ),
+    'subscription': _RegisteredRoute(
+      defaultTitle: 'Paket & Langganan Toko',
+      defaultSubtitle: 'Status paket Velora Pro, kuota outlet, & masa aktif',
+      defaultCategory: 'Bisnis & Lisensi',
+      defaultIcon: Icons.workspace_premium_rounded,
+      builder: (_) => const SubscriptionScreen(),
+    ),
+  };
+
+  static final Map<String, _RegisteredRoute> _titleMap = {
+    for (final entry in _routes.entries)
+      entry.value.defaultTitle.toLowerCase().trim(): entry.value,
+  };
+
+  /// Mencocokkan ServerMenuItem dengan rute yang terdaftar
+  static MoreEntry? resolve(ServerMenuItem item) {
+    final cleanKey = item.key.toLowerCase().trim().replaceAll('-', '_');
+    final titleLower = item.title.toLowerCase().trim();
+
+    // 0. Filter out modul yang sudah menjadi Tab Navigasi Utama (Kasir, Meja, Dapur, Dashboard, Pelanggan)
+    // agar tidak pernah muncul dobel di dalam menu "Lainnya"
+    if (cleanKey == 'tables' ||
+        cleanKey == 'meja' ||
+        cleanKey == 'kitchen' ||
+        cleanKey == 'dapur' ||
+        cleanKey == 'kds' ||
+        cleanKey == 'fnb_pos' ||
+        cleanKey == 'pos_fnb' ||
+        cleanKey == 'pos' ||
+        cleanKey == 'kasir' ||
+        cleanKey == 'dashboard' ||
+        cleanKey == 'dashboards' ||
+        cleanKey == 'analytics' ||
+        cleanKey == 'customers' ||
+        cleanKey == 'pelanggan' ||
+        cleanKey == 'crm' ||
+        cleanKey == 'active_tables' ||
+        cleanKey == 'kitchen_display' ||
+        cleanKey.contains('dashboard') ||
+        cleanKey.contains('analytic') ||
+        cleanKey.contains('customer') ||
+        cleanKey.contains('pelanggan')) {
+      return null;
+    }
+
+    if (titleLower.contains('dashboard') ||
+        titleLower.contains('analytic') ||
+        titleLower.contains('analitik') ||
+        titleLower.contains('omzet') ||
+        titleLower.contains('laporan') ||
+        titleLower.contains('ringkasan') ||
+        titleLower.contains('pelanggan') ||
+        titleLower.contains('customer') ||
+        titleLower.contains('crm') ||
+        titleLower.contains('member') ||
+        titleLower.contains('table') ||
+        titleLower.contains('meja') ||
+        titleLower.contains('kitchen') ||
+        titleLower.contains('dapur') ||
+        titleLower.contains('kds') ||
+        titleLower == 'kasir' ||
+        titleLower.contains('kasir register') ||
+        titleLower.contains('register f&b')) {
+      return null;
+    }
+
+    // 1. Direct O(1) route map lookup
+    _RegisteredRoute? route = _routes[cleanKey];
+
+    // 2. Direct O(1) title lookup
+    if (route == null && item.title.isNotEmpty) {
+      route = _titleMap[item.title.toLowerCase().trim()];
+    }
+
+    // 3. Fallback partial matching jika key atau judul berbeda variasi
+    if (route == null) {
+      for (final entry in _routes.entries) {
+        if (cleanKey.contains(entry.key) || entry.key.contains(cleanKey)) {
+          route = entry.value;
+          break;
+        }
+      }
+    }
+
+    if (route == null) {
+      final titleLower = item.title.toLowerCase();
+      for (final entry in _routes.entries) {
+        if (titleLower.contains(entry.value.defaultTitle.toLowerCase())) {
+          route = entry.value;
+          break;
+        }
+      }
+    }
+
+    if (route == null) return null;
+
+    final IconData icon = _resolveIcon(item.iconName) ?? route.defaultIcon;
+    final String title = item.title.isNotEmpty ? item.title : route.defaultTitle;
+    final String subtitle = item.subtitle.isNotEmpty ? item.subtitle : route.defaultSubtitle;
+    final String category = (item.category.isNotEmpty &&
+            item.category.trim() != 'Fitur & Menu Toko' &&
+            item.category.trim() != 'Fitur & Pengaturan Toko')
+        ? item.category.trim()
+        : route.defaultCategory;
+
+    Color? iconColor;
+    Color? iconBg;
+    String? badge;
+    Color? badgeColor;
+    Color? badgeTextColor;
+
+    final catLower = category.toLowerCase();
+    if (catLower.contains('operasional') || catLower.contains('pos') || catLower.contains('meja') || catLower.contains('dapur')) {
+      iconColor = const Color(0xFF059669);
+      iconBg = const Color(0xFFD1FAE5);
+      badge = 'Operasional';
+      badgeColor = const Color(0xFFD1FAE5);
+      badgeTextColor = const Color(0xFF047857);
+    } else if (catLower.contains('pelanggan') || catLower.contains('crm')) {
+      iconColor = const Color(0xFF2563EB);
+      iconBg = const Color(0xFFDBEAFE);
+      badge = 'CRM';
+      badgeColor = const Color(0xFFDBEAFE);
+      badgeTextColor = const Color(0xFF1D4ED8);
+    } else if (catLower.contains('perangkat') || catLower.contains('printer') || catLower.contains('hardware')) {
+      iconColor = const Color(0xFF4338CA);
+      iconBg = const Color(0xFFE0E7FF);
+      badge = 'Hardware';
+      badgeColor = const Color(0xFFE0E7FF);
+      badgeTextColor = const Color(0xFF3730A3);
+    } else if (catLower.contains('bisnis') || catLower.contains('lisensi') || catLower.contains('paket')) {
+      iconColor = const Color(0xFF7C3AED);
+      iconBg = const Color(0xFFEDE9FE);
+      badge = 'Lisensi';
+      badgeColor = const Color(0xFFEDE9FE);
+      badgeTextColor = const Color(0xFF6D28D9);
+    } else if (catLower.contains('pengaturan') || catLower.contains('akun') || catLower.contains('keamanan')) {
+      iconColor = const Color(0xFF334155);
+      iconBg = const Color(0xFFF1F5F9);
+      badge = 'Akun';
+      badgeColor = const Color(0xFFF1F5F9);
+      badgeTextColor = const Color(0xFF475569);
+    } else {
+      iconColor = const Color(0xFF0284C7);
+      iconBg = const Color(0xFF0284C7).withValues(alpha: 0.14);
+      badge = 'Sistem';
+      badgeColor = const Color(0xFF0284C7).withValues(alpha: 0.14);
+      badgeTextColor = const Color(0xFF0369A1);
+    }
+
+    return MoreEntry(
+      title: title,
+      subtitle: subtitle,
+      category: category,
+      icon: icon,
+      iconColor: iconColor,
+      iconBg: iconBg,
+      badge: badge,
+      badgeColor: badgeColor,
+      badgeTextColor: badgeTextColor,
+      builder: route.builder,
+    );
+  }
+
+  static IconData? _resolveIcon(String? iconName) {
+    if (iconName == null || iconName.isEmpty) return null;
+    final name = iconName.toLowerCase().replaceAll('-', '_').replaceAll('outlined', '').replaceAll('rounded', '').trim();
+    switch (name) {
+      // Meja & FnB
+      case 'table_restaurant':
+      case 'tables':
+      case 'table':
+      case 'meja':
+      case 'chair':
+        return Icons.table_restaurant_outlined;
+      case 'soup_kitchen':
+      case 'kitchen':
+      case 'dapur':
+      case 'kds':
+      case 'chef':
+        return Icons.soup_kitchen_outlined;
+      case 'coffee':
+      case 'cafe':
+      case 'drink':
+      case 'beverage':
+        return Icons.coffee_rounded;
+      case 'call_split':
+      case 'split':
+      case 'split_bill':
+        return Icons.call_split_rounded;
+
+      // Kasir & Retail
+      case 'point_of_sale':
+      case 'pos':
+      case 'register':
+      case 'cashier':
+      case 'kasir':
+        return Icons.point_of_sale_outlined;
+      case 'receipt_long':
+      case 'receipt':
+      case 'bill':
+      case 'struk':
+        return Icons.receipt_long_outlined;
+      case 'shopping_bag':
+      case 'storefront':
+      case 'market':
+      case 'marketplace':
+      case 'toko':
+        return Icons.shopping_bag_outlined;
+      case 'trending_up':
+      case 'sales':
+      case 'canvasing':
+      case 'target':
+        return Icons.trending_up_rounded;
+
+      // Pelanggan & CRM
+      case 'people':
+      case 'person':
+      case 'customers':
+      case 'pelanggan':
+      case 'member':
+      case 'crm':
+        return Icons.people_outline_rounded;
+
+      // Farmasi & Medis
+      case 'assignment':
+      case 'clipboard':
+      case 'review':
+      case 'telaah':
+        return Icons.assignment_outlined;
+      case 'science':
+      case 'mortar':
+      case 'potion':
+      case 'lab':
+      case 'racik':
+        return Icons.science_outlined;
+      case 'medical_information':
+      case 'history':
+      case 'patient':
+      case 'rekam_medis':
+        return Icons.medical_information_outlined;
+      case 'tv':
+      case 'display':
+      case 'antrean':
+        return Icons.tv_rounded;
+      case 'medical_services':
+      case 'doctor':
+      case 'stethoscope':
+      case 'emr':
+      case 'clinic':
+      case 'poli':
+        return Icons.medical_services_outlined;
+      case 'medication':
+      case 'vaccines':
+      case 'drug':
+      case 'obat':
+        return Icons.medication_outlined;
+
+      // Logistik & Gudang
+      case 'local_shipping':
+      case 'truck':
+      case 'shipping':
+      case 'pbf':
+      case 'supplier':
+        return Icons.local_shipping_outlined;
+      case 'inventory':
+      case 'warehouse':
+      case 'box':
+      case 'opname':
+      case 'gudang':
+        return Icons.inventory_rounded;
+      case 'warning':
+      case 'alert':
+      case 'expiry':
+      case 'kadaluwarsa':
+        return Icons.warning_amber_rounded;
+      case 'assignment_return':
+      case 'return':
+      case 'refund':
+      case 'retur':
+        return Icons.assignment_return_outlined;
+
+      // Keuangan & Analitik
+      case 'insights':
+      case 'profit':
+      case 'executive':
+      case 'laba_rugi':
+        return Icons.insights_rounded;
+      case 'bar_chart':
+      case 'dashboard':
+      case 'chart':
+      case 'analytics':
+      case 'omzet':
+        return Icons.bar_chart_rounded;
+      case 'payments':
+      case 'money':
+      case 'cash':
+      case 'expenses':
+      case 'pengeluaran':
+        return Icons.payments_outlined;
+
+      // Konfigurasi
+      case 'settings':
+      case 'gear':
+      case 'cog':
+      case 'printer':
+      case 'pengaturan':
+        return Icons.settings_outlined;
+      default:
+        return null;
+    }
+  }
+}
+
+class _RegisteredRoute {
+  final String defaultTitle;
+  final String defaultSubtitle;
+  final String defaultCategory;
+  final IconData defaultIcon;
+  final WidgetBuilder builder;
+
+  const _RegisteredRoute({
+    required this.defaultTitle,
+    required this.defaultSubtitle,
+    required this.defaultCategory,
+    required this.defaultIcon,
+    required this.builder,
+  });
+}

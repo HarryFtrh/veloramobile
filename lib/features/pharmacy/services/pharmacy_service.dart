@@ -1,0 +1,877 @@
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/painting.dart' show Color;
+import '../../../core/network/api_client.dart';
+import '../../../core/storage/session_storage.dart';
+import '../../shared_pos/services/shift_service.dart';
+import 'pharmacy_catalog_service.dart';
+import '../models/pharmacy_domain_models.dart';
+import '../models/pharmacy_patient_data.dart';
+import '../models/pharmacy_service_models.dart';
+
+export '../models/pharmacy_domain_models.dart';
+export '../models/pharmacy_patient_data.dart';
+export '../models/pharmacy_service_models.dart';
+
+class PharmacyService {
+  static final PharmacyService instance = PharmacyService._();
+  PharmacyService._();
+
+  Dio get _dio => ApiClient.instance.dio;
+
+  /// Global state for actively selected patient in pharmacy cashier
+  final ValueNotifier<PharmacyPatientData?> activePatient = ValueNotifier<PharmacyPatientData?>(null);
+
+  /// Controller to programmatically switch AppShell tabs
+  final ValueNotifier<int> activeTabNotifier = ValueNotifier<int>(0);
+
+  /// Dynamic tab index for the POS Cashier screen based on user role in PharmacyAppShell
+  int posTabIndex = 0;
+
+  /// Local queue cache for prescriptions submitted within the session
+  final List<ClinicPatientQueueItem> _localPrescriptions = [];
+
+  /// Local cache for newly created PBF Purchase Orders within the session
+  final List<PharmacyPbfOrder> _localPbfOrders = [];
+
+  /// Biaya tuslah/embalase per transaksi resep dari konfigurasi tenant (/v1/pos/config).
+  /// Default 0 (tidak dikenakan) bila backend tidak mengatur.
+  final ValueNotifier<num> tuslahFee = ValueNotifier<num>(0);
+  final ValueNotifier<bool> taxEnabled = ValueNotifier<bool>(false);
+  final ValueNotifier<double> taxRate = ValueNotifier<double>(0.0);
+  final ValueNotifier<String> taxName = ValueNotifier<String>('PPN');
+  final ValueNotifier<bool> taxInclusive = ValueNotifier<bool>(true);
+
+  Future<num> fetchTuslahFee() async {
+    const endpoints = ['/v1/pos/tuslah-config', '/v1/pos/config', '/preferences'];
+    for (final ep in endpoints) {
+      try {
+        final res = await _dio.get(ep, queryParameters: _locationQuery());
+        if (res.statusCode == 200 && res.data != null) {
+          final raw = res.data;
+          final d = raw is Map ? (raw['data'] is Map ? raw['data'] : raw) : null;
+          if (d is Map) {
+            final pharm = d['pharmacy'] is Map ? d['pharmacy'] as Map : const {};
+            final v = pharm['tuslah_fee'] ??
+                pharm['embalase_fee'] ??
+                d['tuslah_fee'] ??
+                d['embalase_fee'] ??
+                d['prescription_fee'];
+            final fee = v is num ? v : num.tryParse(v?.toString() ?? '') ?? 0;
+            tuslahFee.value = fee;
+
+            final bool isTaxOn = d['tax_enabled'] == true ||
+                d['enable_tax'] == true ||
+                d['pb1_enabled'] == true ||
+                pharm['tax_enabled'] == true;
+            final num rawTaxRate = d['tax_rate'] ?? d['pb1_rate'] ?? pharm['tax_rate'] ?? 0;
+            final double rate = (rawTaxRate > 1) ? (rawTaxRate / 100).toDouble() : rawTaxRate.toDouble();
+            taxEnabled.value = isTaxOn && rate > 0;
+            taxRate.value = rate;
+            taxName.value = (d['tax_name'] ?? pharm['tax_name'] ?? 'PPN').toString();
+            taxInclusive.value = d['tax_inclusive'] != false;
+
+            return fee;
+          }
+        }
+      } catch (_) {}
+    }
+    return tuslahFee.value;
+  }
+
+  void setActivePatient(PharmacyPatientData data) {
+    activePatient.value = data;
+  }
+
+  void switchTab(int tabIndex) {
+    activeTabNotifier.value = tabIndex;
+  }
+
+  void switchToPosTab() {
+    activeTabNotifier.value = posTabIndex;
+  }
+
+  Map<String, dynamic> _locationQuery() {
+    final loc = SessionStorage.instance.getLocationId();
+    return {
+      if (loc != null && loc.isNotEmpty) 'location_id': int.tryParse(loc) ?? loc,
+    };
+  }
+
+  /// 1. Ambil Antrean Pasien Poli/Klinik & Resep Pending sesuai `routes/api/pharmacy.php` & `routes/api/pos.php`
+  Future<List<ClinicPatientQueueItem>> fetchPatientQueue() async {
+    final candidateEndpoints = [
+      '/v1/pharmacy/polikliniks/today-queues',
+      '/v1/pos/prescriptions/pending',
+      '/v1/pharmacy/prescriptions',
+    ];
+
+    for (final ep in candidateEndpoints) {
+      try {
+        final res = await _dio.get(ep, queryParameters: _locationQuery());
+        if (res.statusCode == 200 && res.data != null) {
+          final raw = res.data;
+          List items = [];
+          if (raw is List) {
+            items = raw;
+          } else if (raw is Map && raw['data'] is List) {
+            items = raw['data'];
+          } else if (raw is Map && raw['queue'] is List) {
+            items = raw['queue'];
+          } else if (raw is Map && raw['customers'] is List) {
+            items = raw['customers'];
+          }
+
+          if (items.isNotEmpty) {
+            final apiQueue = items.map((e) {
+              final m = e is Map<String, dynamic> ? e : Map<String, dynamic>.from(e as Map);
+              return ClinicPatientQueueItem(
+                queueNumber: m['queue_number']?.toString() ?? '#A-${(m['id'] ?? 1).toString().padLeft(3, '0')}',
+                patientName: m['patient_name']?.toString() ?? m['name']?.toString() ?? 'Pasien',
+                medicalRecordNumber: m['medical_record_number']?.toString() ?? m['rm_number']?.toString() ?? '-',
+                doctorName: m['doctor_name']?.toString() ?? '-',
+                department: m['department']?.toString() ?? m['poli']?.toString() ?? 'Umum',
+                insurance: m['insurance']?.toString() ?? (m['is_bpjs'] == true ? 'BPJS Kesehatan' : 'Umum / Mandiri'),
+                allergy: m['allergy']?.toString() ?? m['allergies']?.toString(),
+                status: m['status']?.toString() ?? 'ready',
+                estimatedTotal: (m['estimated_total'] ?? m['total'] as num?) ?? 0,
+                prescribedDrugs: m['prescribed_drugs'] is List
+                    ? List<String>.from(m['prescribed_drugs'])
+                    : <String>[],
+              );
+            }).toList();
+
+            return [..._localPrescriptions, ...apiQueue];
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠️ [PharmacyService] Candidate $ep failed: $e');
+      }
+    }
+
+    return _localPrescriptions;
+  }
+
+  /// Kirim e-Resep dari Workstation Dokter langsung ke antrean loket farmasi
+  Future<bool> sendElectronicPrescription({
+    required String patientName,
+    required String medicalRecordNumber,
+    required String doctorName,
+    required String department,
+    required String diagnosis,
+    required List<String> prescribedDrugs,
+  }) async {
+    final newItem = ClinicPatientQueueItem(
+      queueNumber: 'R-${(_localPrescriptions.length + 1).toString().padLeft(3, '0')}',
+      patientName: patientName,
+      medicalRecordNumber: medicalRecordNumber,
+      doctorName: doctorName,
+      department: department,
+      insurance: 'Umum / Resep Dokter',
+      allergy: null,
+      status: 'ready',
+      estimatedTotal: 0,
+      prescribedDrugs: prescribedDrugs,
+    );
+    _localPrescriptions.insert(0, newItem);
+
+    final candidateEndpoints = [
+      '/v1/pharmacy/prescriptions',
+      '/v1/pharmacy/medical-records',
+    ];
+
+    final payload = {
+      'patient_name': patientName,
+      'medical_record_number': medicalRecordNumber,
+      'doctor_name': doctorName,
+      'department': department,
+      'diagnosis': diagnosis,
+      'prescribed_drugs': prescribedDrugs,
+      'status': 'ready',
+      ..._locationQuery(),
+    };
+
+    return await _postToFirstAvailable(candidateEndpoints, payload);
+  }
+
+  Future<bool> _postToFirstAvailable(
+    List<String> endpoints,
+    Map<String, dynamic> payload,
+  ) async {
+    for (final ep in endpoints) {
+      try {
+        final res = await _dio.post(ep, data: payload);
+        if (res.statusCode == 200 || res.statusCode == 201) return true;
+      } on DioException catch (e) {
+        final code = e.response?.statusCode;
+        if (code != 404 && code != 405) return false;
+      } catch (e) {
+        if (kDebugMode) debugPrint('[PharmacyService] POST $ep error: $e');
+        return false;
+      }
+    }
+    return false;
+  }
+
+  /// 1B. Verifikasi Telaah Resep 7-Benar oleh Apoteker
+  Future<bool> verifyPrescription({
+    required String patientName,
+    required String medicalRecordNumber,
+    required String doctorName,
+    required Map<String, bool> screenings,
+  }) async {
+    final candidateEndpoints = [
+      '/v1/pharmacy/prescriptions/verify',
+      '/v1/pos/prescriptions/verify',
+      '/v1/pharmacy/prescriptions/review',
+    ];
+    final payload = {
+      'patient_name': patientName,
+      'medical_record_number': medicalRecordNumber,
+      'doctor_name': doctorName,
+      'screenings': screenings,
+      'status': 'verified',
+      'verified_at': DateTime.now().toIso8601String(),
+      ..._locationQuery(),
+    };
+    return await _postToFirstAvailable(candidateEndpoints, payload);
+  }
+
+  /// 1C. Selesaikan Peracikan Obat / Puyer DTD di Meja Racik (`POST /v1/pharmacy/compounding/complete`)
+  Future<bool> completeCompounding({
+    required String patient,
+    required String recipeName,
+    required int packageCount,
+    required String dosageForm,
+    required String signa,
+    required String labelType,
+    required List<Map<String, dynamic>> ingredients,
+  }) async {
+    final candidateEndpoints = [
+      '/v1/pharmacy/compounding/complete',
+      '/v1/pharmacy/prescriptions/complete',
+    ];
+    final payload = {
+      'patient': patient,
+      'recipe_name': recipeName,
+      'package_count': packageCount,
+      'dosage_form': dosageForm,
+      'signa': signa,
+      'label_type': labelType,
+      'ingredients': ingredients,
+      'completed_at': DateTime.now().toIso8601String(),
+      ..._locationQuery(),
+    };
+    return await _postToFirstAvailable(candidateEndpoints, payload);
+  }
+
+  /// 1D. Panggil Nomor Antrean Pasien ke Loket (`POST /v1/pharmacy/queue/call`)
+  Future<bool> callQueueItem({
+    required String queueNumber,
+    required String patientName,
+    required String destination,
+  }) async {
+    return await _postToFirstAvailable(
+      ['/v1/pharmacy/queue/call'],
+      {
+        'queue_number': queueNumber,
+        'patient_name': patientName,
+        'destination': destination,
+        ..._locationQuery(),
+      },
+    );
+  }
+
+  /// 1E. Selesaikan Antrean Pasien setelah Pembayaran Billing Kasir (`POST /v1/pharmacy/queue/complete`)
+  Future<bool> completeQueueItem({
+    required String queueNumber,
+    required String patientName,
+  }) async {
+    _localPrescriptions.removeWhere((item) => item.queueNumber == queueNumber);
+
+    final candidateEndpoints = [
+      '/v1/pharmacy/queue/complete',
+      '/v1/pharmacy/queue/status',
+      '/v1/pharmacy/queue/serve',
+    ];
+    return await _postToFirstAvailable(
+      candidateEndpoints,
+      {
+        'queue_number': queueNumber,
+        'patient_name': patientName,
+        'status': 'completed',
+        ..._locationQuery(),
+      },
+    );
+  }
+
+  /// 2. Ambil Alert Kedaluwarsa & Stok Kritis FEFO sesuai `routes/api/pharmacy.php` (`/v1/pharmacy/inventory/batches/expired-alerts`)
+  Future<List<PharmacyStockAlertItem>> fetchStockAlerts() async {
+    const alertEndpoints = [
+      '/v1/pharmacy/inventory/batches/expired-alerts',
+      '/v1/pharmacy/inventory/batches',
+    ];
+
+    for (final ep in alertEndpoints) {
+      try {
+        final res = await _dio.get(ep, queryParameters: _locationQuery());
+        if (res.statusCode == 200 && res.data != null) {
+          final raw = res.data;
+          List items = [];
+          if (raw is List) {
+            items = raw;
+          } else if (raw is Map) {
+            final d = raw['data'] ?? raw['batches'] ?? raw['alerts'];
+            if (d is List) {
+              items = d;
+            } else if (d is Map && d['data'] is List) {
+              items = d['data'] as List;
+            }
+          }
+          if (items.isNotEmpty) {
+            final parsedAlerts = <PharmacyStockAlertItem>[];
+            for (final e in items) {
+              if (e is Map) {
+                final m = Map<String, dynamic>.from(e);
+                final prodMap = m['product'] is Map ? Map<String, dynamic>.from(m['product'] as Map) : const <String, dynamic>{};
+                final expStr = (m['expired_date'] ?? m['expiry_date'] ?? '-').toString();
+                int days = (m['days_to_expiry'] as num?)?.toInt() ?? 90;
+                if (expStr.isNotEmpty && expStr != '-' && m['days_to_expiry'] == null) {
+                  final dt = DateTime.tryParse(expStr);
+                  if (dt != null) {
+                    days = dt.difference(DateTime.now()).inDays;
+                  }
+                }
+                final stockNum = (m['stock'] ?? m['total_stock'] ?? m['quantity'] ?? 0);
+                final stockInt = stockNum is num ? stockNum.toInt() : (int.tryParse(stockNum.toString()) ?? 0);
+                final priceNum = (m['selling_price'] ?? prodMap['selling_price'] ?? m['price'] ?? 0);
+                final priceVal = priceNum is num ? priceNum : (num.tryParse(priceNum.toString()) ?? 0);
+                parsedAlerts.add(
+                  PharmacyStockAlertItem(
+                    name: (m['product_name'] ?? prodMap['custom_name'] ?? prodMap['name_main'] ?? m['name'] ?? 'Obat').toString(),
+                    category: (m['golongan'] ?? prodMap['golongan'] ?? m['category'] ?? 'Obat').toString(),
+                    batchNumber: (m['batch_no'] ?? m['batch_number'] ?? '-').toString(),
+                    expiryDate: expStr,
+                    daysToExpiry: days,
+                    stock: stockInt,
+                    unit: (m['unit'] ?? prodMap['unit_3'] ?? 'TAB').toString().toUpperCase(),
+                    price: priceVal,
+                    isHardDrug: m['is_narcotic'] == true ||
+                        m['is_psychotropic'] == true ||
+                        prodMap['is_narcotic'] == true ||
+                        (m['golongan'] ?? prodMap['golongan'] ?? '').toString().toLowerCase().contains('keras'),
+                  ),
+                );
+              }
+            }
+            if (parsedAlerts.isNotEmpty) {
+              parsedAlerts.sort((a, b) => a.daysToExpiry.compareTo(b.daysToExpiry));
+              return parsedAlerts;
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠️ [PharmacyService] Alert endpoint $ep failed: $e');
+      }
+    }
+
+    // Fallback ke live catalog Apotek untuk mengecek batch number & tanggal kedaluwarsa nyata
+    try {
+      final catalog = await PharmacyCatalogService.instance.fetchCatalog();
+      final List<PharmacyStockAlertItem> list = [];
+
+      for (final p in catalog.products) {
+        if (p.batches.isNotEmpty) {
+          for (final b in p.batches) {
+            int days = 180;
+            if (b.expiryDate.isNotEmpty && b.expiryDate != '-') {
+              final exp = DateTime.tryParse(b.expiryDate);
+              if (exp != null) {
+                days = exp.difference(DateTime.now()).inDays;
+              }
+            }
+            if (days <= 90 || b.stock <= 10) {
+              list.add(
+                PharmacyStockAlertItem(
+                  name: p.name,
+                  category: p.category,
+                  batchNumber: b.batchNumber,
+                  expiryDate: b.expiryDate,
+                  daysToExpiry: days,
+                  stock: b.stock.toInt(),
+                  unit: 'TAB',
+                  price: p.price,
+                  isHardDrug: p.isPrescriptionOnly,
+                ),
+              );
+            }
+          }
+        }
+      }
+
+      if (list.isNotEmpty) {
+        list.sort((a, b) => a.daysToExpiry.compareTo(b.daysToExpiry));
+        return list;
+      }
+    } catch (e) {
+      debugPrint('⚠️ [PharmacyService] Error parsing catalog batches: $e');
+    }
+
+    return const [];
+  }
+
+  /// 3. Ambil Rekap Shift & Rekonsiliasi Kas (Stitch Screen 4) dari API (/v1/pos/shift-status & /v1/pos/dashboard/overview)
+  Future<PharmacyShiftReconciliation> fetchShiftReconciliation() async {
+    num startingCash = 0;
+    num cashSales = 0;
+    num qrisSales = 0;
+    num debitSales = 0;
+    num insuranceSales = 0;
+    int txCount = 0;
+
+    try {
+      final status = await ShiftService.instance.getShiftStatus();
+      startingCash = status.startingCash ?? 0;
+      if (status.expectedCash >= startingCash) {
+        cashSales = status.expectedCash - startingCash;
+      }
+
+      dynamic rawOverview;
+      for (final ep in ['/v1/pharmacy/dashboard/analytics', '/v1/pos/dashboard/overview', '/v1/cafe/dashboard/overview']) {
+        try {
+          final res = await _dio.get(ep, queryParameters: _locationQuery());
+          if (res.statusCode == 200 && res.data != null) {
+            rawOverview = res.data;
+            break;
+          }
+        } catch (_) {}
+      }
+      if (rawOverview != null) {
+        final d = rawOverview is Map ? rawOverview['data'] ?? rawOverview : {};
+        if (d is Map) {
+          final salesOver = d['sales_overview'] is Map ? d['sales_overview'] as Map : d;
+          if (salesOver['total_orders'] != null) {
+            txCount = (salesOver['total_orders'] as num).toInt();
+          } else if (d['transaction_count'] != null) {
+            txCount = (d['transaction_count'] as num).toInt();
+          }
+          if (d['qris_total'] != null) qrisSales = d['qris_total'] as num;
+          if (d['debit_total'] != null) debitSales = d['debit_total'] as num;
+          if (d['insurance_total'] != null) insuranceSales = d['insurance_total'] as num;
+          if (cashSales == 0 && d['cash_total'] != null) cashSales = d['cash_total'] as num;
+        }
+      }
+    } catch (_) {}
+
+    return PharmacyShiftReconciliation(
+      startingCash: startingCash,
+      cashSales: cashSales,
+      qrisSales: qrisSales,
+      debitSales: debitSales,
+      insuranceSales: insuranceSales,
+      expectedTotalDrawer: startingCash + cashSales,
+      transactionCount: txCount,
+      shiftName: 'Shift Berjalan',
+      cashierName: SessionStorage.instance.getUserName() ?? 'Kasir',
+    );
+  }
+
+  /// 4. Ambil Daftar PO Pengadaan PBF sesuai `routes/api/pharmacy.php`
+  Future<List<PharmacyPbfOrder>> fetchPbfOrders() async {
+    final candidateEndpoints = [
+      '/v1/pharmacy/purchase-orders',
+      '/v1/pharmacy/pembelian/orders',
+      '/v1/pharmacy/b2b/my-orders',
+    ];
+
+    for (final ep in candidateEndpoints) {
+      try {
+        final res = await _dio.get(ep, queryParameters: _locationQuery());
+        if (res.statusCode == 200 && res.data != null) {
+          final raw = res.data;
+          List items = [];
+          if (raw is List) {
+            items = raw;
+          } else if (raw is Map && raw['data'] is List) {
+            items = raw['data'];
+          }
+          if (items.isNotEmpty) {
+            final apiOrders = items.map((e) {
+              final m = e is Map<String, dynamic> ? e : Map<String, dynamic>.from(e as Map);
+              return PharmacyPbfOrder(
+                poNumber: m['po_number']?.toString() ?? 'PO-PBF-${m['id']}',
+                pbfName: m['pbf_name']?.toString() ?? m['supplier_name']?.toString() ?? 'PBF Mitra',
+                date: m['date']?.toString() ?? m['created_at']?.toString() ?? '-',
+                dueDate: m['due_date']?.toString() ?? '-',
+                totalAmount: (m['total_amount'] as num?) ?? (m['grand_total'] as num?) ?? 0,
+                status: m['status']?.toString() ?? 'pending',
+                itemCount: (m['item_count'] as num?)?.toInt() ?? (m['items'] is List ? (m['items'] as List).length : 0),
+              );
+            }).toList();
+            return [..._localPbfOrders, ...apiOrders];
+          }
+        }
+      } catch (_) {}
+    }
+
+    return List<PharmacyPbfOrder>.from(_localPbfOrders);
+  }
+
+  /// 4B. Buat Surat Pesanan (SP) Pengadaan Obat PBF Baru (`POST /v1/pharmacy/purchase-orders`)
+  Future<bool> createPbfOrder({
+    required String pbfName,
+    required String spType,
+    required int itemCount,
+    required num totalAmount,
+    String? dueDate,
+  }) async {
+    final now = DateTime.now();
+    final dateStr = '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
+    final due = dueDate ??
+        '${now.add(const Duration(days: 30)).day.toString().padLeft(2, '0')}/${now.add(const Duration(days: 30)).month.toString().padLeft(2, '0')}/${now.add(const Duration(days: 30)).year}';
+    final poNumber = 'SP-${spType.toUpperCase()}-${now.millisecondsSinceEpoch.toString().substring(8)}';
+
+    final newOrder = PharmacyPbfOrder(
+      poNumber: poNumber,
+      pbfName: pbfName,
+      date: dateStr,
+      dueDate: due,
+      totalAmount: totalAmount,
+      status: 'sent',
+      itemCount: itemCount,
+    );
+    _localPbfOrders.insert(0, newOrder);
+
+    final candidateEndpoints = [
+      '/v1/pharmacy/purchase-orders',
+      '/v1/pharmacy/pembelian/orders',
+      '/v1/pharmacy/pbf-orders',
+    ];
+    final payload = {
+      'po_number': poNumber,
+      'pbf_name': pbfName,
+      'sp_type': spType,
+      'date': dateStr,
+      'due_date': due,
+      'total_amount': totalAmount,
+      'item_count': itemCount,
+      'status': 'sent',
+      ..._locationQuery(),
+    };
+    return await _postToFirstAvailable(candidateEndpoints, payload);
+  }
+
+  /// 5. Ambil Riwayat Rekam Medis & Histori Obat Pasien sesuai `routes/api/pharmacy.php`
+  Future<List<PharmacyPatientHistory>> fetchPatientMedicationHistory(String patientIdOrRm) async {
+    final candidateEndpoints = [
+      '/v1/pharmacy/medical-records',
+      '/v1/pharmacy/prescriptions',
+      '/v1/pharmacy/orders',
+    ];
+
+    final q = {
+      ..._locationQuery(),
+      'search': patientIdOrRm,
+      'patient_id': patientIdOrRm,
+    };
+
+    for (final ep in candidateEndpoints) {
+      try {
+        final res = await _dio.get(ep, queryParameters: q);
+        if (res.statusCode == 200 && res.data != null) {
+          final raw = res.data;
+          List items = [];
+          if (raw is List) {
+            items = raw;
+          } else if (raw is Map && raw['data'] is List) {
+            items = raw['data'];
+          }
+          if (items.isNotEmpty) {
+            return items.map((e) {
+              final m = e is Map<String, dynamic> ? e : Map<String, dynamic>.from(e as Map);
+              return PharmacyPatientHistory(
+                visitDate: m['visit_date']?.toString() ?? m['created_at']?.toString() ?? 'Hari ini',
+                invoiceNumber: m['invoice_number']?.toString() ?? m['order_number']?.toString() ?? '-',
+                doctorName: m['doctor_name']?.toString() ?? '-',
+                diagnosis: m['diagnosis']?.toString() ?? '-',
+                medicines: m['medicines'] is List
+                    ? List<String>.from(m['medicines'])
+                    : (m['items'] is List
+                        ? (m['items'] as List).map((it) => it is Map ? (it['name']?.toString() ?? '') : it.toString()).where((s) => s.isNotEmpty).toList()
+                        : <String>[]),
+                total: (m['total'] as num?) ?? (m['grand_total'] as num?) ?? 0,
+              );
+            }).toList();
+          }
+        }
+      } catch (_) {}
+    }
+
+    return const [];
+  }
+
+  /// 6. Ambil Analitik Eksekutif Laba Rugi dari API (/v1/pharmacy/dashboard/analytics)
+  Future<PharmacyExecutiveData> fetchExecutiveAnalytics({String? period, String? branchId}) async {
+    final candidateEndpoints = [
+      '/v1/pharmacy/dashboard/analytics',
+      '/v1/pos/dashboard/overview',
+      '/pharmacy/dashboard/analytics',
+    ];
+
+    num revenue = 0;
+    num cogs = 0;
+    num operationalExpense = 0;
+    num netProfit = 0;
+    List<Map<String, dynamic>> categoryShare = [];
+    List<Map<String, dynamic>> topMedicines = [];
+
+    final q = {
+      ..._locationQuery(),
+      if (branchId != null && branchId.isNotEmpty) 'branch_id': branchId,
+      if (period != null && period.isNotEmpty) 'period': period,
+    };
+
+    for (final ep in candidateEndpoints) {
+      try {
+        final res = await _dio.get(ep, queryParameters: q);
+        if (res.statusCode == 200 && res.data != null) {
+          final raw = res.data;
+          final d = raw is Map ? (raw['data'] is Map ? raw['data'] : raw) : {};
+          if (d is Map) {
+            final overview = d['sales_overview'] is Map ? d['sales_overview'] : {};
+            final earnings = d['total_earnings'] is Map ? d['total_earnings'] : {};
+
+            revenue = (overview['total_sales'] as num?) ??
+                (d['total_sales'] as num?) ??
+                (d['revenue'] as num?) ??
+                0;
+
+            cogs = (earnings['cogs'] as num?) ??
+                (d['cogs'] as num?) ??
+                (d['hpp'] as num?) ??
+                0;
+
+            operationalExpense = (earnings['operational_expenses'] as num?) ??
+                (d['operational_expenses'] as num?) ??
+                (d['expenses'] as num?) ??
+                0;
+
+            // Jika beban operasional belum ada di dashboard analitik, sinkronkan dengan /v1/pharmacy/finance/expenses
+            if (operationalExpense == 0) {
+              try {
+                Response? expRes;
+                for (final expEp in ['/v1/pharmacy/finance/expenses', '/v1/pos/expenses']) {
+                  try {
+                    final r = await _dio.get(expEp, queryParameters: q);
+                    if (r.statusCode == 200 && r.data != null) {
+                      expRes = r;
+                      break;
+                    }
+                  } catch (_) {}
+                }
+                if (expRes != null) {
+                  final expRaw = expRes.data;
+                  final expItems = expRaw is Map ? (expRaw['data'] ?? expRaw['expenses']) : expRaw;
+                  if (expItems is List) {
+                    operationalExpense = expItems.fold<num>(0, (sum, it) {
+                      final m = it is Map ? it : {};
+                      return sum + ((m['amount'] ?? m['nominal'] ?? 0) as num);
+                    });
+                  }
+                }
+              } catch (_) {}
+            }
+
+            netProfit = (earnings['net_profit'] as num?) ??
+                (d['net_profit'] as num?) ??
+                (revenue - cogs - operationalExpense);
+
+            if (d['category_sales'] is List) {
+              final list = d['category_sales'] as List;
+              categoryShare = list.map((e) {
+                final m = e is Map ? e : {};
+                return {
+                  'name': m['category_name']?.toString() ?? m['name']?.toString() ?? 'Lainnya',
+                  'value': (m['total'] as num?) ?? 0,
+                  'pct': (m['percentage'] as num?)?.toInt() ?? 0,
+                  'color': const Color(0xFF059669),
+                };
+              }).toList();
+            }
+
+            if (d['top_products'] is List) {
+              final list = d['top_products'] as List;
+              topMedicines = list.map((e) {
+                final m = e is Map ? e : {};
+                return {
+                  'name': m['name']?.toString() ?? 'Obat',
+                  'sales': '${m['total_quantity'] ?? m['qty'] ?? 0} Unit',
+                  'revenue': (m['total_sales'] as num?) ?? (m['revenue'] as num?) ?? 0,
+                  'growth': m['growth']?.toString() ?? '-',
+                };
+              }).toList();
+            }
+
+            if (revenue > 0) break;
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠️ [PharmacyService] Candidate $ep failed: $e');
+      }
+    }
+
+    if (revenue == 0) {
+      try {
+        final catalog = await PharmacyCatalogService.instance.fetchCatalog();
+        if (catalog.products.isNotEmpty) {
+          topMedicines = catalog.products.take(5).map((p) => {
+            'name': p.name,
+            'sales': '${p.stock.toInt()} Stok',
+            'revenue': (p.price * (p.stock > 0 ? p.stock : 0)).round(),
+            'growth': 'Tersedia',
+          }).toList();
+        }
+      } catch (_) {}
+    }
+
+    final grossProfit = revenue > cogs ? revenue - cogs : 0;
+    final marginPct = revenue > 0 ? (grossProfit / revenue) * 100 : 0.0;
+
+    return PharmacyExecutiveData(
+      grossRevenue: revenue,
+      cogs: cogs,
+      operationalExpense: operationalExpense,
+      netProfit: netProfit,
+      grossMarginPct: marginPct,
+      categoryShare: categoryShare,
+      topMedicines: topMedicines,
+    );
+  }
+
+  /// 7. Pencarian instan Pasien via Laravel Scout / Meilisearch (`/v1/pharmacy/patients/search-scout`)
+  Future<List<PharmacyPatientData>> searchPatientsScout(String query) async {
+    final trimmed = query.trim();
+    final qParams = <String, dynamic>{
+      ..._locationQuery(),
+      'q': trimmed,
+      'search': trimmed,
+      'limit': 15,
+    };
+
+    const candidateEndpoints = [
+      '/v1/pharmacy/patients/search-scout',
+      '/v1/pharmacy/patients',
+      '/v1/pos/customers',
+    ];
+
+    for (final ep in candidateEndpoints) {
+      try {
+        final res = await _dio.get(ep, queryParameters: qParams);
+        if (res.statusCode == 200 && res.data != null) {
+          final raw = res.data;
+          List<dynamic> list = const [];
+          if (raw is Map) {
+            final d = raw['data'] ?? raw['patients'] ?? raw['customers'] ?? raw['items'];
+            if (d is List) {
+              list = d;
+            } else if (d is Map && d['data'] is List) {
+              list = d['data'] as List;
+            }
+          } else if (raw is List) {
+            list = raw;
+          }
+
+          if (list.isNotEmpty) {
+            return list.whereType<Map>().map((m) {
+              final name = (m['name'] ?? m['patient_name'] ?? m['full_name'] ?? 'Pasien').toString();
+              final rm = (m['mr_number'] ??
+                      m['medical_record_number'] ??
+                      m['no_rm'] ??
+                      m['rm_number'] ??
+                      m['code'] ??
+                      '-')
+                  .toString();
+              final rawAllergies = m['allergies'] ?? m['allergy_history'] ?? m['alergi'] ?? '';
+              final allergies = rawAllergies is List
+                  ? rawAllergies.map((e) => e.toString()).join(', ')
+                  : rawAllergies.toString();
+              final cat = (m['category'] ??
+                      m['patient_category'] ??
+                      m['insurance_type'] ??
+                      (m['bpjs_number'] != null && m['bpjs_number'].toString().isNotEmpty
+                          ? 'BPJS Kesehatan'
+                          : 'Umum'))
+                  .toString();
+              final doc = (m['doctor_name'] ?? m['doctor'] ?? '-').toString();
+              return PharmacyPatientData(
+                patient: name,
+                doctor: doc,
+                queueNumber: '-',
+                medicalRecordNumber: rm,
+                patientCategory: cat,
+                allergies: allergies,
+              );
+            }).toList();
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠️ [PharmacyService] Scout patient search $ep failed: $e');
+      }
+    }
+    return const [];
+  }
+
+  /// 8. Pencarian Dokter Pemeriksa & SIP (`/v1/pharmacy/doctors?search=...`)
+  Future<List<Map<String, String>>> searchDoctors(String query) async {
+    final trimmed = query.trim();
+    final qParams = <String, dynamic>{
+      ..._locationQuery(),
+      if (trimmed.isNotEmpty) 'search': trimmed,
+      if (trimmed.isNotEmpty) 'q': trimmed,
+      'limit': 15,
+    };
+
+    const candidateEndpoints = [
+      '/v1/pharmacy/doctors',
+      '/pharmacy/doctors',
+      '/v1/doctors',
+    ];
+
+    for (final ep in candidateEndpoints) {
+      try {
+        final res = await _dio.get(ep, queryParameters: qParams);
+        if (res.statusCode == 200 && res.data != null) {
+          final raw = res.data;
+          List<dynamic> list = const [];
+          if (raw is Map) {
+            final d = raw['data'] ?? raw['doctors'] ?? raw['items'];
+            if (d is List) {
+              list = d;
+            } else if (d is Map && d['data'] is List) {
+              list = d['data'] as List;
+            }
+          } else if (raw is List) {
+            list = raw;
+          }
+
+          if (list.isNotEmpty) {
+            return list.whereType<Map>().map((m) {
+              final name = (m['name'] ?? m['doctor_name'] ?? 'dr. -').toString();
+              final sip = (m['sip_number'] ?? m['sip'] ?? m['license_number'] ?? '').toString();
+              final spec = (m['specialization'] ?? m['spesialis'] ?? 'Umum').toString();
+              return {
+                'name': name,
+                'sip': sip,
+                'specialization': spec,
+                'display': sip.isNotEmpty ? '$name (SIP: $sip)' : name,
+              };
+            }).toList();
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠️ [PharmacyService] Doctor search $ep failed: $e');
+      }
+    }
+    return const [];
+  }
+}
