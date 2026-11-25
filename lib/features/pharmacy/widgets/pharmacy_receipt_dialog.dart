@@ -1,16 +1,18 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../core/design/tokens.dart';
 import '../../../core/storage/session_storage.dart';
-import '../../shared_pos/pos_checkout_service.dart';
-import '../../shared_pos/receipt_printer_service.dart';
+import '../../shared_pos/services/pos_checkout_service.dart';
+import '../../shared_pos/services/receipt_printer_service.dart';
 import 'receipt/pharmacy_receipt_financial_breakdown.dart';
 import 'receipt/pharmacy_receipt_item_list.dart';
 import 'receipt/pharmacy_receipt_patient_banner.dart';
+import '../pharmacy_colors.dart';
 
 export 'receipt/pharmacy_receipt_financial_breakdown.dart';
 export 'receipt/pharmacy_receipt_item_list.dart';
 export 'receipt/pharmacy_receipt_patient_banner.dart';
 
-class PharmacyReceiptDialog extends StatelessWidget {
+class PharmacyReceiptDialog extends StatefulWidget {
   final PosCheckoutResult result;
   final String patientName;
   final String queueNumber;
@@ -37,6 +39,9 @@ class PharmacyReceiptDialog extends StatelessWidget {
     required this.paymentMethod,
     required this.onNewSale,
   });
+
+  @override
+  State<PharmacyReceiptDialog> createState() => _PharmacyReceiptDialogState();
 
   static Future<void> show({
     required BuildContext context,
@@ -80,21 +85,23 @@ class PharmacyReceiptDialog extends StatelessWidget {
       ),
     );
   }
+}
+
+class _PharmacyReceiptDialogState extends State<PharmacyReceiptDialog> {
+  bool _isPrinting = false;
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF059669);
-    const borderColor = Color(0xFFE2E8F0);
-    const textPrimary = Color(0xFF0F172A);
-    const textMuted = Color(0xFF6D7A72);
+    const emeraldPrimary = PharmacyColors.primary;
+    final borderColor = context.palette.line;
+    final textPrimary = context.palette.textPrimary;
+    final textMuted = context.palette.textSecondary;
     final now = DateTime.now();
-    final monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-    final monthName = (now.month >= 1 && now.month <= 12) ? monthNames[now.month - 1] : '';
-    final timeStr = '${now.day} $monthName ${now.year}, ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')} WIB';
+    final timeStr = DateTimeFormatter.dateTime(now);
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFFAF8FF),
+        color: context.palette.canvas,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: borderColor),
         boxShadow: const [
@@ -145,8 +152,8 @@ class PharmacyReceiptDialog extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    'Faktur #${result.invoiceNumber}',
-                    style: const TextStyle(
+                    'Faktur #${widget.result.invoiceNumber}',
+                    style: TextStyle(
                       fontFamily: 'JetBrains Mono',
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -156,30 +163,30 @@ class PharmacyReceiptDialog extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     timeStr,
-                    style: const TextStyle(fontSize: 11, color: textMuted),
+                    style: TextStyle(fontSize: 11, color: textMuted),
                   ),
                   const SizedBox(height: 14),
 
                   // Patient Banner
                   PharmacyReceiptPatientBanner(
-                    patientName: patientName,
-                    medicalRecordNumber: medicalRecordNumber,
-                    doctorName: doctorName,
+                    patientName: widget.patientName,
+                    medicalRecordNumber: widget.medicalRecordNumber,
+                    doctorName: widget.doctorName,
                   ),
                   const SizedBox(height: 12),
 
                   // Itemized Receipt List
                   PharmacyReceiptItemList(
-                    items: items,
-                    tuslahFee: tuslahFee,
+                    items: widget.items,
+                    tuslahFee: widget.tuslahFee,
                   ),
                   const SizedBox(height: 12),
 
                   // Financial Breakdown
                   PharmacyReceiptFinancialBreakdown(
-                    subtotal: subtotal,
-                    paymentMethod: paymentMethod,
-                    grandTotal: grandTotal,
+                    subtotal: widget.subtotal,
+                    paymentMethod: widget.paymentMethod,
+                    grandTotal: widget.grandTotal,
                   ),
                 ],
               ),
@@ -189,8 +196,8 @@ class PharmacyReceiptDialog extends StatelessWidget {
           // Bottom Action Buttons
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            decoration: BoxDecoration(
+              color: context.palette.surface,
               borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
               border: Border(top: BorderSide(color: borderColor)),
             ),
@@ -198,33 +205,46 @@ class PharmacyReceiptDialog extends StatelessWidget {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () {
-                      final session = SessionStorage.instance;
-                      ReceiptPrinterService.instance.printReceipt(
-                        ReceiptData(
-                          storeName: session.getTenantName() ?? session.getLocationName() ?? 'Apotek',
-                          storeAddress: session.getStoreAddress() ?? session.getLocationName() ?? '-',
-                          storePhone: session.getStorePhone() ?? '-',
-                          invoiceNumber: result.invoiceNumber,
-                          cashierName: session.getUserName() ?? 'Apoteker',
-                          tableOrPatient: '$patientName ($queueNumber)',
-                          timestamp: DateTime.now(),
-                          items: items,
-                          subtotal: subtotal,
-                          tax: tuslahFee,
-                          grandTotal: grandTotal,
-                          paidAmount: result.paidAmount,
-                          changeAmount: result.changeAmount,
-                          paymentMethod: paymentMethod,
-                          qrData: result.qrData,
-                        ),
-                      );
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Struk resep dikirim ke printer thermal kasir.')),
-                      );
-                    },
+                    onPressed: _isPrinting
+                        ? null
+                        : () async {
+                            if (_isPrinting) return;
+                            setState(() => _isPrinting = true);
+                            try {
+                              final session = SessionStorage.instance;
+                              await ReceiptPrinterService.instance.printReceipt(
+                                ReceiptData(
+                                  storeName: session.getTenantName() ?? session.getLocationName() ?? 'Apotek',
+                                  storeAddress: session.getStoreAddress() ?? session.getLocationName() ?? '-',
+                                  storePhone: session.getStorePhone() ?? '-',
+                                  invoiceNumber: widget.result.invoiceNumber,
+                                  cashierName: session.getUserName() ?? 'Apoteker',
+                                  tableOrPatient: '${widget.patientName} (${widget.queueNumber})',
+                                  timestamp: DateTime.now(),
+                                  items: widget.items,
+                                  subtotal: widget.subtotal,
+                                  tax: widget.tuslahFee,
+                                  grandTotal: widget.grandTotal,
+                                  paidAmount: widget.result.paidAmount,
+                                  changeAmount: widget.result.changeAmount,
+                                  paymentMethod: widget.paymentMethod,
+                                  qrData: widget.result.qrData,
+                                ),
+                              );
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Struk resep dikirim ke printer thermal kasir.')),
+                                );
+                              }
+                            } finally {
+                              if (mounted) setState(() => _isPrinting = false);
+                            }
+                          },
                     icon: const Icon(Icons.print_outlined, size: 16),
-                    label: const Text('Cetak Struk', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                    label: Text(
+                      _isPrinting ? 'Mencetak...' : 'Cetak Struk',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                    ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFF0D9488),
                       side: const BorderSide(color: Color(0xFF0D9488)),
@@ -237,7 +257,7 @@ class PharmacyReceiptDialog extends StatelessWidget {
                 Expanded(
                   flex: 2,
                   child: ElevatedButton.icon(
-                    onPressed: onNewSale,
+                    onPressed: widget.onNewSale,
                     icon: const Icon(Icons.add_shopping_cart, size: 16),
                     label: const Text('Transaksi Resep Baru', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
                     style: ElevatedButton.styleFrom(

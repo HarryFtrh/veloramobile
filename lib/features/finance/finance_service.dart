@@ -155,10 +155,10 @@ class FinanceService {
       };
       dynamic res;
       try {
-        res = await ApiClient.instance.dio.get('/v1/pos/expenses', queryParameters: q);
+        res = await ApiClient.instance.dio.get('/v1/pharmacy/finance/expenses', queryParameters: q);
       } on DioException catch (e) {
-        if (e.response?.statusCode == 404) {
-          res = await ApiClient.instance.dio.get('/v1/pharmacy/finance/expenses', queryParameters: q);
+        if (e.response?.statusCode == 404 || e.response?.statusCode == 405) {
+          res = await ApiClient.instance.dio.get('/v1/pos/expenses', queryParameters: q);
         } else {
           rethrow;
         }
@@ -210,10 +210,10 @@ class FinanceService {
         description: description,
       );
       try {
-        await ApiClient.instance.dio.post('/v1/pos/expenses', data: payload);
+        await ApiClient.instance.dio.post('/v1/pharmacy/finance/expenses', data: payload);
       } on DioException catch (e) {
-        if (e.response?.statusCode == 404) {
-          await ApiClient.instance.dio.post('/v1/pharmacy/finance/expenses', data: payload);
+        if (e.response?.statusCode == 404 || e.response?.statusCode == 405) {
+          await ApiClient.instance.dio.post('/v1/pos/expenses', data: payload);
         } else {
           rethrow;
         }

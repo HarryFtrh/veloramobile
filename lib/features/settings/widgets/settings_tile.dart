@@ -1,5 +1,5 @@
 // features/settings/widgets/settings_tile.dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../core/design/tokens.dart';
 
@@ -45,7 +45,7 @@ class SettingsGroup extends StatelessWidget {
         ),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: p.surface,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: p.line.withValues(alpha: 0.8), width: 1.2),
             boxShadow: const [

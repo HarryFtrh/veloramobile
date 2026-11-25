@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+import '../../../core/utils/currency_formatter.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../core/design/tokens.dart';
-import '../customer_models.dart';
+import '../models/customer_models.dart';
 
 /// Top hero image, category pill, rating, base price, and description for Customer Product Detail Sheet
 class CustomerProductHeroHeader extends StatelessWidget {
@@ -31,6 +32,7 @@ class CustomerProductHeroHeader extends StatelessWidget {
                   product.imageUrl,
                   fit: BoxFit.cover,
                   cacheWidth: 600,
+                  gaplessPlayback: true,
                   errorBuilder: (_, _, _) => Container(
                     color: p.surfaceMuted,
                     child: Icon(
@@ -52,7 +54,7 @@ class CustomerProductHeroHeader extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: p.surface.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -189,7 +191,7 @@ class CustomerProductHeroHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  'Rp ${product.basePrice.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
+                  product.basePrice.toRupiah(),
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,

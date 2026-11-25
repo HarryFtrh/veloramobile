@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import 'pharmacy_queue_modal_card.dart';
 
@@ -25,10 +26,10 @@ class PharmacyQueueCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isReady ? primary : const Color(0xFFE2E8F0),
+          color: isReady ? primary : context.palette.line,
           width: isReady ? 1.4 : 1,
         ),
         boxShadow: const [
@@ -69,11 +70,11 @@ class PharmacyQueueCard extends StatelessWidget {
                     constraints: const BoxConstraints(maxWidth: 180),
                     child: Text(
                       item.patientName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
                         fontWeight: FontWeight.w700,
                         fontSize: 14,
-                        color: Color(0xFF0F172A),
+                        color: context.palette.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -85,8 +86,8 @@ class PharmacyQueueCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: isReady
-                      ? const Color(0xFFD4F8E8)
-                      : (isDone ? const Color(0xFFF1F5F9) : const Color(0xFFEFF6FF)),
+                      ? const Color(0xFF059669).withValues(alpha: 0.14)
+                      : (isDone ? context.palette.surfaceMuted : const Color(0xFF0284C7).withValues(alpha: 0.14)),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -96,7 +97,7 @@ class PharmacyQueueCard extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     color: isReady
                         ? const Color(0xFF059669)
-                        : (isDone ? const Color(0xFF64748B) : const Color(0xFF1D4ED8)),
+                        : (isDone ? context.palette.textSecondary : const Color(0xFF1D4ED8)),
                   ),
                 ),
               ),
@@ -121,7 +122,7 @@ class PharmacyQueueCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
+                  color: context.palette.surfaceMuted,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
@@ -153,7 +154,7 @@ class PharmacyQueueCard extends StatelessWidget {
           ),
 
           const Spacer(),
-          const Divider(height: 12, color: Color(0xFFF1F5F9)),
+          Divider(height: 12, color: context.palette.surfaceMuted),
 
           // Row 4: Estimasi & Actions
           Row(

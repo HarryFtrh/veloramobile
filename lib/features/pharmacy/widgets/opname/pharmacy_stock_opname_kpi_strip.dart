@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../pharmacy_colors.dart';
 
 /// KPI summary strip for Pharmacy Stock Opname Workstation
 class PharmacyStockOpnameKpiStrip extends StatelessWidget {
@@ -20,11 +22,11 @@ class PharmacyStockOpnameKpiStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF059669);
+    const emeraldPrimary = PharmacyColors.primary;
 
     return Container(
       padding: const EdgeInsets.all(14),
-      color: Colors.white,
+      color: context.palette.surface,
       child: Row(
         children: [
           Expanded(
@@ -41,7 +43,7 @@ class PharmacyStockOpnameKpiStrip extends StatelessWidget {
               label: 'Stok Sistem',
               value: '$totalSystemQty Unit',
               color: const Color(0xFF0D9488),
-              bg: const Color(0xFFE0F2FE),
+              bg: const Color(0xFF0284C7).withValues(alpha: 0.14),
             ),
           ),
           const SizedBox(width: 8),
@@ -50,7 +52,7 @@ class PharmacyStockOpnameKpiStrip extends StatelessWidget {
               label: 'Stok Fisik',
               value: '$totalPhysicalQty Unit',
               color: totalDiffQty == 0 ? emeraldPrimary : const Color(0xFFEA580C),
-              bg: totalDiffQty == 0 ? const Color(0xFFD4F8E8) : const Color(0xFFFFF7ED),
+              bg: totalDiffQty == 0 ? const Color(0xFF059669).withValues(alpha: 0.14) : const Color(0xFFD97706).withValues(alpha: 0.14),
             ),
           ),
           const SizedBox(width: 8),
@@ -62,8 +64,8 @@ class PharmacyStockOpnameKpiStrip extends StatelessWidget {
                   ? emeraldPrimary
                   : (totalDiffValue < 0 ? const Color(0xFFBA1A1A) : const Color(0xFF0284C7)),
               bg: totalDiffValue == 0
-                  ? const Color(0xFFD4F8E8)
-                  : (totalDiffValue < 0 ? const Color(0xFFFFDAD6) : const Color(0xFFE0F2FE)),
+                  ? const Color(0xFF059669).withValues(alpha: 0.14)
+                  : (totalDiffValue < 0 ? const Color(0xFFFFDAD6) : const Color(0xFF0284C7).withValues(alpha: 0.14)),
             ),
           ),
         ],

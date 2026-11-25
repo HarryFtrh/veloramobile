@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:uuid/uuid.dart';
@@ -12,6 +13,7 @@ class ApiClient {
 
   /// Pelacak mutasi in-flight untuk mencegah pengiriman request duplikat (double-tap / race condition)
   final Map<String, DateTime> _inFlightMutations = {};
+  DateTime? _lastUnauthorizedAt;
 
   static void init() {
     instance = ApiClient._();
@@ -69,13 +71,16 @@ class ApiClient {
           final flavorName = AppConfig.instance.flavor.name;
           options.headers['X-App-Flavor'] = flavorName;
 
+          final osLabel = kIsWeb
+              ? 'Web'
+              : (Platform.isIOS ? 'iOS' : (Platform.isAndroid ? 'Android' : 'Mobile'));
           try {
             final ver = await AppVersionHelper.getAppVersion();
-            options.headers['User-Agent'] = 'VeloraMobile/${ver.versionName} (Android; Flavor=$flavorName; Build=${ver.versionCode}; DeviceId=$deviceId)';
+            options.headers['User-Agent'] = 'VeloraMobile/${ver.versionName} ($osLabel; Flavor=$flavorName; Build=${ver.versionCode}; DeviceId=$deviceId)';
             options.headers['X-App-Version'] = ver.versionName;
             options.headers['X-App-Version-Code'] = ver.versionCode.toString();
           } catch (_) {
-            options.headers['User-Agent'] = 'VeloraMobile/1.0.0 (Android; Flavor=$flavorName; DeviceId=$deviceId)';
+            options.headers['User-Agent'] = 'VeloraMobile/1.0.0 ($osLabel; Flavor=$flavorName; DeviceId=$deviceId)';
             options.headers.putIfAbsent('X-App-Version', () => '1.0.0');
             options.headers.putIfAbsent('X-App-Version-Code', () => '1');
           }
@@ -149,10 +154,16 @@ class ApiClient {
             debugPrint('❌ [API ERR] $statusCode ${e.requestOptions.path}$cfInfo (trace: $traceId) -> data: ${_sanitizeData(e.response?.data)} | msg: ${e.message}');
           }
 
-          // 1. Tangani 401 Unauthorized / Sesi Berakhir
+          // 1. Tangani 401 Unauthorized / Sesi Berakhir (debounce agar request paralel tidak memicu logout berulang)
           if (statusCode == 401) {
-            await SessionStorage.instance.clearAuthToken();
-            onSessionExpired?.call();
+            final now = DateTime.now();
+            final recentlyHandled = _lastUnauthorizedAt != null &&
+                now.difference(_lastUnauthorizedAt!).inSeconds < 3;
+            if (!recentlyHandled) {
+              _lastUnauthorizedAt = now;
+              await SessionStorage.instance.clearAuthToken();
+              onSessionExpired?.call();
+            }
           }
 
           // 2. Tangani 402 / 403 Batasan Langganan & Kredit (SubscriptionGuard)

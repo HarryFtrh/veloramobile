@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../core/design/tokens.dart';
 import '../../../core/utils/currency_formatter.dart';
-import '../../shared_pos/product_catalog_service.dart';
+import '../../shared_pos/services/product_catalog_service.dart';
 
 /// Helper tanggal dan status kedaluwarsa (FEFO) sediaan farmasi
 class PharmacyDateUtils {
@@ -167,13 +168,13 @@ class DrugClassBadge extends StatelessWidget {
         ),
       );
     } else if (classification.isAlkes) {
-      bgColor = const Color(0xFFE0F2FE);
+      bgColor = const Color(0xFF0284C7).withValues(alpha: 0.14);
       borderColor = const Color(0xFFBAE6FD);
       textColor = const Color(0xFF0369A1);
       label = 'Alkes';
       icon = const Icon(Icons.medical_services_outlined, size: 9.5, color: Color(0xFF0369A1));
     } else {
-      bgColor = const Color(0xFFDCFCE7);
+      bgColor = const Color(0xFF059669).withValues(alpha: 0.14);
       borderColor = const Color(0xFFBBF7D0);
       textColor = const Color(0xFF166534);
       final rawName = item['category']?.toString();
@@ -241,12 +242,12 @@ class DrugStockBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: isOut
             ? const Color(0xFFFFDAD6)
-            : (isLow ? const Color(0xFFFFF7ED) : Colors.white.withValues(alpha: 0.94)),
+            : (isLow ? const Color(0xFFD97706).withValues(alpha: 0.14) : Colors.white.withValues(alpha: 0.94)),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
           color: isOut
               ? const Color(0xFFFCA5A5)
-              : (isLow ? const Color(0xFFFED7AA) : const Color(0xFFE2E8F0)),
+              : (isLow ? const Color(0xFFFED7AA) : context.palette.line),
           width: 0.8,
         ),
         boxShadow: const [
@@ -317,8 +318,8 @@ class DrugThumbnailWidget extends StatelessWidget {
           colors: classification.isRx
               ? [const Color(0xFFFFF1F2), const Color(0xFFFFE4E6)]
               : classification.isAlkes
-                  ? [const Color(0xFFF0F9FF), const Color(0xFFE0F2FE)]
-                  : [const Color(0xFFF0FDF4), const Color(0xFFDCFCE7)],
+                  ? [const Color(0xFFF0F9FF), const Color(0xFF0284C7).withValues(alpha: 0.14)]
+                  : [const Color(0xFF059669).withValues(alpha: 0.14), const Color(0xFF059669).withValues(alpha: 0.14)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -358,7 +359,7 @@ class DrugThumbnailWidget extends StatelessWidget {
       width: effectiveW,
       height: effectiveH,
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: context.palette.canvas,
         borderRadius: effectiveRadius,
       ),
     );
@@ -371,8 +372,8 @@ class DrugThumbnailWidget extends StatelessWidget {
         width: effectiveW,
         height: effectiveH,
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: const Color(0xFFE2E8F0), width: 0.8),
+          color: context.palette.surface,
+          border: Border.all(color: context.palette.line, width: 0.8),
           borderRadius: effectiveRadius,
         ),
         padding: const EdgeInsets.all(6),
@@ -381,6 +382,8 @@ class DrugThumbnailWidget extends StatelessWidget {
           imgUrl,
           fit: BoxFit.contain,
           alignment: Alignment.center,
+          cacheWidth: effectiveW != null ? (effectiveW * 2.5).toInt() : 320,
+          gaplessPlayback: true,
           loadingBuilder: (context, child, loadingProgress) {
             if (loadingProgress == null) return child;
             return loadingBox;
@@ -391,6 +394,8 @@ class DrugThumbnailWidget extends StatelessWidget {
                 altUrl,
                 fit: BoxFit.contain,
                 alignment: Alignment.center,
+                cacheWidth: effectiveW != null ? (effectiveW * 2.5).toInt() : 320,
+                gaplessPlayback: true,
                 errorBuilder: (_, _, _) => fallback,
               );
             }
@@ -435,7 +440,7 @@ class BatchExpBadge extends StatelessWidget {
     final Color iconColor;
 
     if (isExpired) {
-      bgColor = const Color(0xFFFEF2F2);
+      bgColor = const Color(0xFFDC2626).withValues(alpha: 0.14);
       borderColor = const Color(0xFFFECACA);
       textColor = const Color(0xFF991B1B);
       iconColor = const Color(0xFFDC2626);
@@ -445,15 +450,15 @@ class BatchExpBadge extends StatelessWidget {
       textColor = const Color(0xFFBE123C);
       iconColor = const Color(0xFFE11D48);
     } else if (isWarning) {
-      bgColor = const Color(0xFFFFF7ED);
+      bgColor = const Color(0xFFD97706).withValues(alpha: 0.14);
       borderColor = const Color(0xFFFED7AA);
       textColor = const Color(0xFFC2410C);
       iconColor = const Color(0xFFEA580C);
     } else {
-      bgColor = const Color(0xFFF8FAFC);
-      borderColor = const Color(0xFFE2E8F0);
-      textColor = const Color(0xFF334155);
-      iconColor = const Color(0xFF64748B);
+      bgColor = context.palette.canvas;
+      borderColor = context.palette.line;
+      textColor = context.palette.textSecondary;
+      iconColor = context.palette.textSecondary;
     }
 
     if (cleanBatch == null && formattedEd == null) {
@@ -589,10 +594,10 @@ class DrugUnitSelector extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 5.5, vertical: 2),
                 decoration: BoxDecoration(
-                  color: isSel ? primaryEmerald : const Color(0xFFF8FAFC),
+                  color: isSel ? primaryEmerald : context.palette.canvas,
                   borderRadius: BorderRadius.circular(5),
                   border: Border.all(
-                    color: isSel ? primaryEmerald : const Color(0xFFE2E8F0),
+                    color: isSel ? primaryEmerald : context.palette.line,
                     width: isSel ? 1.2 : 0.8,
                   ),
                 ),
@@ -602,7 +607,7 @@ class DrugUnitSelector extends StatelessWidget {
                     fontFamily: 'JetBrains Mono',
                     fontSize: 8.5,
                     fontWeight: FontWeight.bold,
-                    color: isSel ? Colors.white : const Color(0xFF0F172A),
+                    color: isSel ? Colors.white : context.palette.textPrimary,
                   ),
                 ),
               ),
@@ -638,16 +643,16 @@ class DrugQuantityButton extends StatelessWidget {
         width: double.infinity,
         height: 34,
         decoration: BoxDecoration(
-          color: const Color(0xFFF1F5F9),
+          color: context.palette.surfaceMuted,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color: context.palette.line),
         ),
         alignment: Alignment.center,
-        child: const Text(
+        child: Text(
           'Stok Habis',
           style: TextStyle(
             fontFamily: 'Plus Jakarta Sans',
-            color: Color(0xFF94A3B8),
+            color: context.palette.textTertiary,
             fontSize: 11,
             fontWeight: FontWeight.bold,
           ),
@@ -729,7 +734,7 @@ class DrugQuantityButton extends StatelessWidget {
           width: double.infinity,
           height: 34,
           decoration: BoxDecoration(
-            color: const Color(0xFF0F172A),
+            color: context.palette.textPrimary,
             borderRadius: BorderRadius.circular(10),
             boxShadow: const [
               BoxShadow(

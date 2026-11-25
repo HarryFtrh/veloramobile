@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../../core/design/tokens.dart';
 import '../../../../core/storage/session_storage.dart';
 import '../../../../core/utils/currency_formatter.dart';
-import '../../../shared_pos/pos_checkout_service.dart';
+import '../../../shared_pos/services/pos_checkout_service.dart';
 
 /// Jagged paper cut painter for physical receipt look
 class JaggedEdgePainter extends CustomPainter {
@@ -63,7 +63,7 @@ class ReceiptSimulatedBarcode extends StatelessWidget {
           height: 32,
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: const Color(0xFFF8FAFC),
+            color: context.palette.canvas,
             borderRadius: BorderRadius.circular(4),
             border: Border.all(color: ClinicalPalette.border),
           ),
@@ -74,7 +74,7 @@ class ReceiptSimulatedBarcode extends StatelessWidget {
               final w = widths[index % widths.length];
               return Container(
                 width: w,
-                color: index % 2 == 0 ? const Color(0xFF0F172A) : Colors.transparent,
+                color: index % 2 == 0 ? context.palette.textPrimary : Colors.transparent,
                 margin: const EdgeInsets.symmetric(horizontal: 1),
               );
             }),
@@ -139,8 +139,8 @@ class PharmacyCheckoutReceiptAudit extends StatelessWidget {
         // Header Banner
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          decoration: const BoxDecoration(
-            color: Color(0xFFF1F5F9),
+          decoration: BoxDecoration(
+            color: context.palette.surfaceMuted,
             border: Border(bottom: BorderSide(color: ClinicalPalette.border)),
           ),
           child: Row(
@@ -198,11 +198,11 @@ class PharmacyCheckoutReceiptAudit extends StatelessWidget {
               child: Container(
                 constraints: const BoxConstraints(maxWidth: 390),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.palette.surface,
                   borderRadius: BorderRadius.circular(8),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF0F172A).withValues(alpha: 0.06),
+                      color: context.palette.textPrimary.withValues(alpha: 0.06),
                       blurRadius: 14,
                       offset: const Offset(0, 6),
                     ),
@@ -331,7 +331,7 @@ class PharmacyCheckoutReceiptAudit extends StatelessWidget {
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFFF1F5F9),
+                                            color: context.palette.surfaceMuted,
                                             borderRadius: BorderRadius.circular(3),
                                           ),
                                           child: Text(

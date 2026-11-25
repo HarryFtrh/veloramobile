@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/audio_helper.dart';
-import '../../../shared_pos/receipt_printer_service.dart';
-import '../../../shared_pos/shift_modal.dart';
-import '../../../shared_pos/shift_service.dart';
+import '../../../shared_pos/services/receipt_printer_service.dart';
+import '../../../shared_pos/widgets/shift_modal.dart';
+import '../../../shared_pos/services/shift_service.dart';
 
 /// Screen view shown when cashier shift is closed/locked
 class FnbShiftClosedView extends StatelessWidget {

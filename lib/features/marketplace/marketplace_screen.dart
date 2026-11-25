@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../core/design/tokens.dart';
 import '../../core/storage/session_storage.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/audio_helper.dart';
@@ -102,110 +103,119 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
+          final pal = context.palette;
           return AlertDialog(
-            backgroundColor: Colors.white,
+            backgroundColor: pal.surface,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
-              side: const BorderSide(color: Color(0xFFE2E8F0)),
+              side: BorderSide(color: pal.line),
             ),
             title: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE0F2FE),
+                    color: const Color(0xFF0284C7).withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(Icons.shopping_cart_checkout_rounded, color: Color(0xFF0284C7), size: 20),
                 ),
                 const SizedBox(width: 10),
-                Text(
-                  'Keranjang B2B ($_cartItemCount Item)',
-                  style: const TextStyle(color: Color(0xFF0F172A), fontSize: 16, fontWeight: FontWeight.w800),
+                Expanded(
+                  child: Text(
+                    'Keranjang B2B ($_cartItemCount Item)',
+                    style: TextStyle(color: pal.textPrimary, fontSize: 16, fontWeight: FontWeight.w800),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
             content: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 440),
+              constraints: const BoxConstraints(maxWidth: 440, maxHeight: 380),
               child: SizedBox(
                 width: double.maxFinite,
-                child: ListView(
-                  shrinkWrap: true,
-                  children: _cart.entries.map((entry) {
-                    final prod = _productsById[entry.key] ??
-                        MarketplaceProduct(id: entry.key, name: 'Produk', price: 0, stock: 0);
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  prod.name,
-                                  style: const TextStyle(color: Color(0xFF0F172A), fontSize: 13, fontWeight: FontWeight.w700),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                child: Builder(
+                  builder: (_) {
+                    final entries = _cart.entries.toList(growable: false);
+                    return ListView.builder(
+                      itemCount: entries.length,
+                      itemBuilder: (ctx, idx) {
+                        final entry = entries[idx];
+                        final prod = _productsById[entry.key] ??
+                            MarketplaceProduct(id: entry.key, name: 'Produk', price: 0, stock: 0);
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: pal.surfaceMuted,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: pal.line),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      prod.name,
+                                      style: TextStyle(color: pal.textPrimary, fontSize: 13, fontWeight: FontWeight.w700),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${CurrencyFormatter.format(prod.price)} × ${entry.value}',
+                                      style: TextStyle(color: pal.textSecondary, fontSize: 11.5),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '${CurrencyFormatter.format(prod.price)} × ${entry.value}',
-                                  style: const TextStyle(color: Color(0xFF64748B), fontSize: 11.5),
-                                ),
-                              ],
-                            ),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.remove_circle_outline, color: pal.danger, size: 20),
+                                onPressed: () {
+                                  setDialogState(() {
+                                    setState(() {
+                                      if (entry.value > 1) {
+                                        _cart[entry.key] = entry.value - 1;
+                                      } else {
+                                        _cart.remove(entry.key);
+                                      }
+                                    });
+                                  });
+                                },
+                              ),
+                              Text(
+                                '${entry.value}',
+                                style: TextStyle(color: pal.textPrimary, fontWeight: FontWeight.w800, fontSize: 13),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.add_circle_outline, color: Color(0xFF0284C7), size: 20),
+                                onPressed: () {
+                                  setDialogState(() {
+                                    setState(() {
+                                      _cart[entry.key] = entry.value + 1;
+                                    });
+                                  });
+                                },
+                              ),
+                            ],
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.remove_circle_outline, color: Color(0xFFDC2626), size: 20),
-                            onPressed: () {
-                              setDialogState(() {
-                                setState(() {
-                                  if (entry.value > 1) {
-                                    _cart[entry.key] = entry.value - 1;
-                                  } else {
-                                    _cart.remove(entry.key);
-                                  }
-                                });
-                              });
-                            },
-                          ),
-                          Text(
-                            '${entry.value}',
-                            style: const TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.w800, fontSize: 13),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.add_circle_outline, color: Color(0xFF0284C7), size: 20),
-                            onPressed: () {
-                              setDialogState(() {
-                                setState(() {
-                                  _cart[entry.key] = entry.value + 1;
-                                });
-                              });
-                            },
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     );
-                  }).toList(),
+                  },
                 ),
               ),
             ),
             actions: [
               Text(
                 'Total: ${CurrencyFormatter.format(_cartTotal)}',
-                style: const TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.w800, fontSize: 15),
+                style: TextStyle(color: pal.textPrimary, fontWeight: FontWeight.w800, fontSize: 15),
               ),
-              const Spacer(),
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Tutup', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                child: Text('Tutup', style: TextStyle(color: pal.textSecondary, fontWeight: FontWeight.w600)),
               ),
               FilledButton(
                 onPressed: () async {
@@ -254,24 +264,26 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
 
   @override
   Widget build(BuildContext context) {
+    final pal = context.palette;
+    final primary = Theme.of(context).colorScheme.primary;
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: pal.canvas,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: pal.surface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(49),
           child: Container(
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: pal.line)),
             ),
             child: TabBar(
               controller: _tabController,
-              indicatorColor: const Color(0xFF0284C7),
+              indicatorColor: primary,
               indicatorWeight: 3,
-              labelColor: const Color(0xFF0284C7),
-              unselectedLabelColor: const Color(0xFF64748B),
+              labelColor: primary,
+              unselectedLabelColor: pal.textSecondary,
               labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
               unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
               tabs: const [
@@ -286,15 +298,15 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
           children: [
             Text(
               _buyerName,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: pal.textPrimary),
             ),
             Row(
               children: [
-                const Icon(Icons.stars_rounded, color: Color(0xFF0284C7), size: 14),
+                Icon(Icons.stars_rounded, color: primary, size: 14),
                 const SizedBox(width: 4),
                 Text(
                   'Poin Reward: $_points',
-                  style: const TextStyle(color: Color(0xFF0284C7), fontSize: 11, fontWeight: FontWeight.w700),
+                  style: TextStyle(color: primary, fontSize: 11, fontWeight: FontWeight.w700),
                 ),
               ],
             ),
@@ -306,7 +318,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
             children: [
               IconButton(
                 tooltip: 'Keranjang Pembelian',
-                icon: const Icon(Icons.shopping_cart_outlined, color: Color(0xFF0F172A)),
+                icon: Icon(Icons.shopping_cart_outlined, color: pal.textPrimary),
                 onPressed: _showCartDialog,
               ),
               if (_cartItemCount > 0)
@@ -315,8 +327,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                   right: 8,
                   child: Container(
                     padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFDC2626),
+                    decoration: BoxDecoration(
+                      color: pal.danger,
                       shape: BoxShape.circle,
                     ),
                     child: Text(
@@ -329,44 +341,44 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
           ),
           IconButton(
             tooltip: 'Keluar',
-            icon: const Icon(Icons.logout_rounded, color: Color(0xFFDC2626)),
+            icon: Icon(Icons.logout_rounded, color: pal.danger),
             onPressed: () {
               showDialog(
                 context: context,
                 builder: (ctx) => AlertDialog(
-                  backgroundColor: Colors.white,
+                  backgroundColor: pal.surface,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   title: Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFDC2626).withValues(alpha: 0.12),
+                          color: pal.danger.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.logout_rounded, color: Color(0xFFDC2626), size: 20),
+                        child: Icon(Icons.logout_rounded, color: pal.danger, size: 20),
                       ),
                       const SizedBox(width: 10),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           'Keluar Akun B2B?',
-                          style: TextStyle(color: Color(0xFF0F172A), fontSize: 16, fontWeight: FontWeight.w800),
+                          style: TextStyle(color: pal.textPrimary, fontSize: 16, fontWeight: FontWeight.w800),
                         ),
                       ),
                     ],
                   ),
-                  content: const Text(
+                  content: Text(
                     'Apakah Anda yakin ingin keluar dari portal pembelian grosir B2B ini?',
-                    style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                    style: TextStyle(color: pal.textSecondary, fontSize: 13),
                   ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(ctx),
-                      child: const Text('Batal', style: TextStyle(color: Color(0xFF64748B))),
+                      child: Text('Batal', style: TextStyle(color: pal.textSecondary)),
                     ),
                     FilledButton(
                       style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFFDC2626),
+                        backgroundColor: pal.danger,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
@@ -384,7 +396,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF0284C7)))
+          ? Center(child: CircularProgressIndicator(color: primary))
           : Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 860),
@@ -398,9 +410,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                           padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: pal.surface,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                              border: Border.all(color: pal.line),
                               boxShadow: const [
                                 BoxShadow(
                                   color: Color(0x04000000),
@@ -411,15 +423,18 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                             ),
                             child: TextField(
                               controller: _searchController,
-                              style: const TextStyle(color: Color(0xFF0F172A), fontSize: 13.5),
+                              style: TextStyle(color: pal.textPrimary, fontSize: 13.5),
                               decoration: InputDecoration(
+                                filled: false,
                                 hintText: 'Cari obat, alkes, atau principal distributor...',
-                                hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
-                                prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF64748B), size: 20),
+                                hintStyle: TextStyle(color: pal.textTertiary, fontSize: 13),
+                                prefixIcon: Icon(Icons.search_rounded, color: pal.textSecondary, size: 20),
                                 border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                                 suffixIcon: IconButton(
-                                  icon: const Icon(Icons.clear_rounded, color: Color(0xFF94A3B8), size: 18),
+                                  icon: Icon(Icons.clear_rounded, color: pal.textTertiary, size: 18),
                                   onPressed: () {
                                     _searchController.clear();
                                     _loadInitialData();
@@ -444,15 +459,15 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                                       Container(
                                         padding: const EdgeInsets.all(16),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFFF1F5F9),
+                                          color: pal.surfaceMuted,
                                           shape: BoxShape.circle,
                                         ),
-                                        child: const Icon(Icons.inventory_2_outlined, size: 36, color: Color(0xFF94A3B8)),
+                                        child: Icon(Icons.inventory_2_outlined, size: 36, color: pal.textTertiary),
                                       ),
                                       const SizedBox(height: 12),
-                                      const Text(
+                                      Text(
                                         'Tidak ada produk katalog ditemukan dari PBF rekanan.',
-                                        style: TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w600),
+                                        style: TextStyle(color: pal.textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
                                       ),
                                     ],
                                   ),
@@ -466,9 +481,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                                       margin: const EdgeInsets.only(bottom: 10),
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
-                                        color: Colors.white,
+                                        color: pal.surface,
                                         borderRadius: BorderRadius.circular(14),
-                                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                                        border: Border.all(color: pal.line),
                                         boxShadow: const [
                                           BoxShadow(
                                             color: Color(0x04000000),
@@ -483,10 +498,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                                             width: 46,
                                             height: 46,
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFFE0F2FE),
+                                              color: primary.withValues(alpha: 0.14),
                                               borderRadius: BorderRadius.circular(10),
                                             ),
-                                            child: const Icon(Icons.medication_rounded, color: Color(0xFF0284C7), size: 24),
+                                            child: Icon(Icons.medication_rounded, color: primary, size: 24),
                                           ),
                                           const SizedBox(width: 12),
                                           Expanded(
@@ -495,8 +510,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                                               children: [
                                                 Text(
                                                   p.name,
-                                                  style: const TextStyle(
-                                                    color: Color(0xFF0F172A),
+                                                  style: TextStyle(
+                                                    color: pal.textPrimary,
                                                     fontWeight: FontWeight.w800,
                                                     fontSize: 13.5,
                                                   ),
@@ -504,13 +519,13 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                                                 const SizedBox(height: 2),
                                                 Text(
                                                   '${p.packaging ?? 'Box'} • Stok PBF: ${p.stock}',
-                                                  style: const TextStyle(color: Color(0xFF64748B), fontSize: 11),
+                                                  style: TextStyle(color: pal.textSecondary, fontSize: 11),
                                                 ),
                                                 const SizedBox(height: 4),
                                                 Text(
                                                   CurrencyFormatter.format(p.price),
-                                                  style: const TextStyle(
-                                                    color: Color(0xFF0284C7),
+                                                  style: TextStyle(
+                                                    color: primary,
                                                     fontWeight: FontWeight.w800,
                                                     fontSize: 13.5,
                                                   ),
@@ -523,7 +538,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                                             icon: const Icon(Icons.add_shopping_cart_rounded, size: 15),
                                             label: const Text('Beli', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
                                             style: FilledButton.styleFrom(
-                                              backgroundColor: const Color(0xFF0284C7),
+                                              backgroundColor: primary,
                                               foregroundColor: Colors.white,
                                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -546,16 +561,16 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                               children: [
                                 Container(
                                   padding: const EdgeInsets.all(16),
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFFF1F5F9),
+                                  decoration: BoxDecoration(
+                                    color: pal.surfaceMuted,
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(Icons.receipt_long_outlined, size: 36, color: Color(0xFF94A3B8)),
+                                  child: Icon(Icons.receipt_long_outlined, size: 36, color: pal.textTertiary),
                                 ),
                                 const SizedBox(height: 12),
-                                const Text(
+                                Text(
                                   'Belum ada riwayat pesanan faktur B2B.',
-                                  style: TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w600),
+                                  style: TextStyle(color: pal.textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
                                 ),
                               ],
                             ),
@@ -569,9 +584,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                                 margin: const EdgeInsets.only(bottom: 10),
                                 padding: const EdgeInsets.all(14),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: pal.surface,
                                   borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                                  border: Border.all(color: pal.line),
                                   boxShadow: const [
                                     BoxShadow(
                                       color: Color(0x04000000),
@@ -586,10 +601,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                                       width: 42,
                                       height: 42,
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFE0F2FE),
+                                        color: primary.withValues(alpha: 0.14),
                                         borderRadius: BorderRadius.circular(10),
                                       ),
-                                      child: const Icon(Icons.receipt_rounded, color: Color(0xFF0284C7), size: 20),
+                                      child: Icon(Icons.receipt_rounded, color: primary, size: 20),
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
@@ -598,8 +613,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                                         children: [
                                           Text(
                                             o.orderNumber,
-                                            style: const TextStyle(
-                                              color: Color(0xFF0F172A),
+                                            style: TextStyle(
+                                              color: pal.textPrimary,
                                               fontWeight: FontWeight.w800,
                                               fontSize: 13.5,
                                             ),
@@ -607,7 +622,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                                           const SizedBox(height: 2),
                                           Text(
                                             '${CurrencyFormatter.format(o.totalAmount)} • ${o.createdAt.day}/${o.createdAt.month}/${o.createdAt.year}',
-                                            style: const TextStyle(color: Color(0xFF64748B), fontSize: 11.5),
+                                            style: TextStyle(color: pal.textSecondary, fontSize: 11.5),
                                           ),
                                         ],
                                       ),

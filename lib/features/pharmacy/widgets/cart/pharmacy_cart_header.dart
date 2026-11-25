@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/audio_helper.dart';
-
 /// Header Keranjang Kasir & Strip Konteks Pasien / Resep Dokter
 class PharmacyCartHeader extends StatelessWidget {
   final int cartItemCount;
@@ -32,9 +32,9 @@ class PharmacyCartHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     const primaryEmerald = Color(0xFF059669);
     const secondaryTeal = Color(0xFF0D9488);
-    const borderColor = Color(0xFFE2E8F0);
-    const textPrimary = Color(0xFF0F172A);
-    const textMuted = Color(0xFF64748B);
+    final borderColor = context.palette.line;
+    final textPrimary = context.palette.textPrimary;
+    final textMuted = context.palette.textSecondary;
 
     final isWalkIn = (queueNumber == '-' || queueNumber.isEmpty) &&
         (medicalRecordNumber == '-' || medicalRecordNumber.isEmpty) &&
@@ -42,8 +42,8 @@ class PharmacyCartHeader extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: context.palette.surface,
         border: Border(bottom: BorderSide(color: borderColor, width: 1)),
       ),
       child: Column(
@@ -83,7 +83,7 @@ class PharmacyCartHeader extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              const Text(
+                              Text(
                                 'Keranjang Kasir',
                                 style: TextStyle(
                                   fontFamily: 'Plus Jakarta Sans',
@@ -118,7 +118,7 @@ class PharmacyCartHeader extends StatelessWidget {
                           ),
                           Text(
                             cartItemCount == 0 ? 'Belum ada item dipilih' : '$totalQty total kuantitas obat',
-                            style: const TextStyle(fontSize: 11, color: textMuted),
+                            style: TextStyle(fontSize: 11, color: textMuted),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -141,7 +141,7 @@ class PharmacyCartHeader extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFEF2F2),
+                          color: const Color(0xFFDC2626).withValues(alpha: 0.14),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(color: const Color(0xFFFEE2E8)),
                         ),
@@ -165,7 +165,7 @@ class PharmacyCartHeader extends StatelessWidget {
                   if (onClose != null) ...[
                     const SizedBox(width: 6),
                     IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 18, color: textMuted),
+                      icon: Icon(Icons.close_rounded, size: 18, color: textMuted),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                       onPressed: onClose,
@@ -184,7 +184,7 @@ class PharmacyCartHeader extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
+                color: context.palette.canvas,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: borderColor),
               ),
@@ -215,7 +215,7 @@ class PharmacyCartHeader extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 isWalkIn ? 'Pelanggan Walk-in (Umum)' : selectedPatient,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontFamily: 'Plus Jakarta Sans',
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
@@ -251,7 +251,7 @@ class PharmacyCartHeader extends StatelessWidget {
                           isWalkIn
                               ? 'Penjualan langsung tanpa resep dokter'
                               : 'RM: $medicalRecordNumber • ${selectedDoctor != '-' && selectedDoctor.isNotEmpty ? selectedDoctor : 'Resep Luar'}',
-                          style: const TextStyle(fontSize: 10, color: textMuted),
+                          style: TextStyle(fontSize: 10, color: textMuted),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -260,9 +260,9 @@ class PharmacyCartHeader extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFEF2F2),
+                              color: const Color(0xFFDC2626).withValues(alpha: 0.14),
                               borderRadius: BorderRadius.circular(4),
-                              border: Border.all(color: const Color(0xFFFEE2E2)),
+                              border: Border.all(color: const Color(0xFFDC2626).withValues(alpha: 0.14)),
                             ),
                             child: Text(
                               'Alergi: $patientAllergies',
@@ -282,7 +282,7 @@ class PharmacyCartHeader extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.palette.surface,
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(color: borderColor),
                     ),

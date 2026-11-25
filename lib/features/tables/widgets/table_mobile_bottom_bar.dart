@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import '../../../core/utils/currency_formatter.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../core/design/tokens.dart';
 import '../../../core/utils/safe_json.dart';
@@ -127,9 +128,9 @@ class TableMobileBottomBar extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           activeOrder != null
-                              ? 'Rp ${activeOrder!.totalAmount.round().toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")} (${activeOrder!.items.length} item)'
+                              ? '${activeOrder!.totalAmount.toRupiah()} (${activeOrder!.items.length} item)'
                               : (table.order != null
-                                  ? 'Rp ${table.order!.total.round().toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")} (${table.order!.itemCount} item)'
+                                  ? '${table.order!.total.toRupiah()} (${table.order!.itemCount} item)'
                                   : 'Kapasitas ${table.capacity} Kursi • Kosong'),
                           style: TextStyle(
                             fontSize: 11,

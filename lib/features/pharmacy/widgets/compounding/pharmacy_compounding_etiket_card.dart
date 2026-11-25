@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
 import '../../../../core/storage/session_storage.dart';
-
 /// Real-time live etiket preview card for Compounding workstation
 class CompoundingEtiketPreviewCard extends StatelessWidget {
   final String labelType;
@@ -18,14 +18,14 @@ class CompoundingEtiketPreviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const textMuted = Color(0xFF6D7A72);
+    final textMuted = context.palette.textSecondary;
     final isPutih = labelType == 'putih';
     final now = DateTime.now();
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isPutih ? Colors.white : const Color(0xFFEFF6FF),
+        color: isPutih ? Colors.white : const Color(0xFF0284C7).withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isPutih ? const Color(0xFF059669) : const Color(0xFF2563EB),
@@ -73,7 +73,7 @@ class CompoundingEtiketPreviewCard extends StatelessWidget {
             (SessionStorage.instance.getTenantName() ?? SessionStorage.instance.getLocationName() ?? 'APOTEK VELORA').toUpperCase(),
             style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
           ),
-          const Text('SIP & Surat Izin Apotek Aktif Berizin Resmi', style: TextStyle(fontSize: 9.5, color: textMuted)),
+          Text('SIP & Surat Izin Apotek Aktif Berizin Resmi', style: TextStyle(fontSize: 9.5, color: textMuted)),
           const SizedBox(height: 8),
           Text(
             'No. Resep: R/${now.year}${now.month.toString().padLeft(2, "0")}-${now.second.toString().padLeft(3, "0")}  •  Tgl: ${now.day}/${now.month}/${now.year}',
@@ -84,12 +84,12 @@ class CompoundingEtiketPreviewCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
+              color: context.palette.surfaceMuted,
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
               signa,
-              style: const TextStyle(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0F172A)),
+              style: TextStyle(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.bold, fontSize: 13, color: context.palette.textPrimary),
             ),
           ),
           const SizedBox(height: 6),

@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import '../../../core/utils/currency_formatter.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../core/design/tokens.dart';
 import '../../../core/utils/safe_json.dart';
@@ -91,7 +92,7 @@ class TableDetailPane extends StatelessWidget {
           ),
           const SizedBox(width: 6),
           Text(
-            'Rp ${price.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
+            price.toRupiah(),
             style: TextStyle(
               fontWeight: FontWeight.w800,
               fontSize: 12,
@@ -241,7 +242,7 @@ class TableDetailPane extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Rp ${total.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
+                        total.toRupiah(),
                         style: TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 13.5,

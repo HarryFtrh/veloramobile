@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Giant Calling Hero Banner for pharmacy TV/tablet public calling display
 class PharmacyCallingHeroBanner extends StatelessWidget {

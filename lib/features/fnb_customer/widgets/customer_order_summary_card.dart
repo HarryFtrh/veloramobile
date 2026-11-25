@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+import '../../../core/utils/currency_formatter.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../core/design/tokens.dart';
-import '../customer_models.dart';
+import '../models/customer_models.dart';
 
 /// Summary card displaying cart items, total amount, and download/share e-receipt button
 class CustomerOrderSummaryCard extends StatelessWidget {
@@ -23,7 +24,7 @@ class CustomerOrderSummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: p.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: p.line),
       ),
@@ -60,7 +61,7 @@ class CustomerOrderSummaryCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        'Total: Rp ${totalAmount.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')} • QRIS Kasir',
+                        'Total: ${totalAmount.toRupiah()} • QRIS Kasir',
                         style: TextStyle(
                           fontSize: 12,
                           color: p.textSecondary,
@@ -93,7 +94,7 @@ class CustomerOrderSummaryCard extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    'Rp ${item.totalPrice.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}',
+                    item.totalPrice.toRupiah(),
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,

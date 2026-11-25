@@ -1,3 +1,10 @@
+final RegExp _displayNameRegex = RegExp(
+  r'''['"]?(?:name|category_name|title|label|name_main)['"]?\s*[:=]\s*['"]?([^,}\"\']+)['"]?''',
+);
+final RegExp _displayIdRegex = RegExp(
+  r'''['"]?(?:table_number|number|id)['"]?\s*[:=]\s*['"]?([^,}\"\']+)['"]?''',
+);
+
 /// Membersihkan string display name / kategori / label dari stringified Map atau JSON mentah
 /// Contoh: "{id: 1, name: Coffee}" -> "Coffee"
 ///         "{\"id\": 1, \"name\": \"Coffee\"}" -> "Coffee"
@@ -20,12 +27,12 @@ String sanitizeDisplayName(dynamic input) {
   }
   if (str.startsWith('{') && str.endsWith('}')) {
     // Coba ekstrak name
-    final nameMatch = RegExp(r'''['"]?(?:name|category_name|title|label|name_main)['"]?\s*[:=]\s*['"]?([^,}\"\']+)['"]?''').firstMatch(str);
+    final nameMatch = _displayNameRegex.firstMatch(str);
     if (nameMatch != null && nameMatch.group(1) != null) {
       return nameMatch.group(1)!.trim();
     }
     // Coba ekstrak table_number / id
-    final idMatch = RegExp(r'''['"]?(?:table_number|number|id)['"]?\s*[:=]\s*['"]?([^,}\"\']+)['"]?''').firstMatch(str);
+    final idMatch = _displayIdRegex.firstMatch(str);
     if (idMatch != null && idMatch.group(1) != null) {
       return idMatch.group(1)!.trim();
     }

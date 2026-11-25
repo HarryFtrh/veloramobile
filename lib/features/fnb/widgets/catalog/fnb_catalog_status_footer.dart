@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../../core/design/tokens.dart';
-import '../../fnb_register_controller.dart';
+import '../../register/fnb_register_controller.dart';
 
 /// Bottom mini status footer showing inventory counts and PB1 tax status
 class FnbCatalogStatusFooter extends StatelessWidget {
@@ -16,8 +16,8 @@ class FnbCatalogStatusFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    final availableCount = ctrl.products.where((p) => p.stock > 0).length;
-    final outOfStockCount = ctrl.products.where((p) => p.stock <= 0).length;
+    final availableCount = ctrl.availableCount;
+    final outOfStockCount = ctrl.outOfStockCount;
     final w = maxWidth ?? MediaQuery.sizeOf(context).width;
 
     return Container(

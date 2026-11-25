@@ -2,9 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:velora_mobile/core/config/app_config.dart';
 import 'package:velora_mobile/core/config/app_theme.dart';
-import 'package:velora_mobile/features/shared_pos/shift_service.dart';
-import 'package:velora_mobile/features/shared_pos/pos_checkout_service.dart';
-import 'package:velora_mobile/features/shared_pos/receipt_printer_service.dart';
+import 'package:velora_mobile/features/shared_pos/services/shift_service.dart';
+import 'package:velora_mobile/features/shared_pos/services/pos_checkout_service.dart';
+import 'package:velora_mobile/features/shared_pos/services/receipt_printer_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

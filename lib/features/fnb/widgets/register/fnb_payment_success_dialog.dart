@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/audio_helper.dart';
 import '../../../../core/utils/currency_formatter.dart';
-import '../../../shared_pos/receipt_printer_service.dart';
+import '../../../shared_pos/services/receipt_printer_service.dart';
 
 /// Success dialog after settlement in FnB POS with receipt printing and drawer trigger
 class FnbPaymentSuccessDialog extends StatefulWidget {
@@ -127,12 +127,12 @@ class _FnbPaymentSuccessDialogState extends State<FnbPaymentSuccessDialog> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     final p = context.palette;
     final primaryColor = Theme.of(context).colorScheme.primary;
     final dt = widget.finalReceipt.timestamp;
-    final timeStr =
-        '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')} WIB';
+    final timeStr = '${dt.toNumericDateTimeString()} WIB';
 
     final hasCustomerOrTable =
         widget.finalReceipt.tableOrPatient != null && widget.finalReceipt.tableOrPatient!.trim().isNotEmpty;
@@ -149,8 +149,50 @@ class _FnbPaymentSuccessDialogState extends State<FnbPaymentSuccessDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 1. Success Indicator & Title
-              Row(
+              _buildSuccessHeader(p),
+              const SizedBox(height: 16),
+              _buildInvoiceCard(p, primaryColor, timeStr, hasCustomerOrTable),
+              const SizedBox(height: 12),
+              _buildPaymentBreakdown(p, primaryColor),
+              if (widget.changeAmount > 0) ...[
+                const SizedBox(height: 10),
+                _buildChangeBox(p),
+              ],
+              const SizedBox(height: 18),
+              _buildActionButtons(p, primaryColor),
+              const SizedBox(height: 10),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: FilledButton.icon(
+            onPressed: () {
+              AudioHelper.actionFeedback();
+              Navigator.pop(context);
+            },
+            icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),
+            label: const Text(
+              'Pesanan Baru (Selesai)',
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14.5),
+            ),
+            style: FilledButton.styleFrom(
+              backgroundColor: primaryColor,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSuccessHeader(AppPalette p) {
+    return Row(
                 children: [
                   Container(
                     width: 44,
@@ -194,12 +236,11 @@ class _FnbPaymentSuccessDialogState extends State<FnbPaymentSuccessDialog> {
                     ),
                   ),
                 ],
-              ),
+              );
+  }
 
-              const SizedBox(height: 16),
-
-              // 2. Invoice Card with Copy Action
-              Container(
+  Widget _buildInvoiceCard(AppPalette p, Color primaryColor, String timeStr, bool hasCustomerOrTable) {
+    return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
                   color: p.surfaceMuted,
@@ -279,12 +320,11 @@ class _FnbPaymentSuccessDialogState extends State<FnbPaymentSuccessDialog> {
                     ],
                   ],
                 ),
-              ),
+              );
+  }
 
-              const SizedBox(height: 12),
-
-              // 3. Payment Breakdown Box
-              Container(
+  Widget _buildPaymentBreakdown(AppPalette p, Color primaryColor) {
+    return Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: p.surface,
@@ -379,12 +419,11 @@ class _FnbPaymentSuccessDialogState extends State<FnbPaymentSuccessDialog> {
                     ],
                   ],
                 ),
-              ),
+              );
+  }
 
-              // 4. Kembalian Box (Highlight jika > 0, atau Lunas jika 0)
-              if (widget.changeAmount > 0) ...[
-                const SizedBox(height: 10),
-                Container(
+  Widget _buildChangeBox(AppPalette p) {
+    return Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
@@ -431,13 +470,11 @@ class _FnbPaymentSuccessDialogState extends State<FnbPaymentSuccessDialog> {
                       ),
                     ],
                   ),
-                ),
-              ],
+                );
+  }
 
-              const SizedBox(height: 18),
-
-              // 5. Actions: [Cetak Struk] + [Bagikan] + [Buka Laci]
-              Row(
+  Widget _buildActionButtons(AppPalette p, Color primaryColor) {
+    return Row(
                 children: [
                   // Tombol Cetak Struk
                   Expanded(
@@ -521,36 +558,6 @@ class _FnbPaymentSuccessDialogState extends State<FnbPaymentSuccessDialog> {
                     ),
                   ),
                 ],
-              ),
-
-              const SizedBox(height: 10),
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        SizedBox(
-          width: double.infinity,
-          height: 48,
-          child: FilledButton.icon(
-            onPressed: () {
-              AudioHelper.actionFeedback();
-              Navigator.pop(context);
-            },
-            icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),
-            label: const Text(
-              'Pesanan Baru (Selesai)',
-              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14.5),
-            ),
-            style: FilledButton.styleFrom(
-              backgroundColor: primaryColor,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            ),
-          ),
-        ),
-      ],
-    );
+              );
   }
 }

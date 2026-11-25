@@ -1,13 +1,13 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../core/storage/session_storage.dart';
 import '../../../core/utils/audio_helper.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/design/tokens.dart';
-import '../../shared_pos/pos_checkout_service.dart';
-import '../../shared_pos/product_catalog_service.dart';
-import '../../shared_pos/receipt_printer_service.dart';
-import '../../shared_pos/sales_history_drawer.dart';
-import '../pharmacy_service.dart';
+import '../../shared_pos/services/pos_checkout_service.dart';
+import '../../shared_pos/services/product_catalog_service.dart';
+import '../../shared_pos/services/receipt_printer_service.dart';
+import '../../shared_pos/widgets/sales_history_drawer.dart';
+import '../services/pharmacy_service.dart';
 import 'pharmacy_customer_facing_display.dart';
 import 'pharmacy_etiket_dialog.dart';
 import 'pharmacy_receipt_dialog.dart';
@@ -15,6 +15,7 @@ import 'cart/pharmacy_cart_header.dart';
 import 'cart/pharmacy_cart_item_tile.dart';
 import 'cart/pharmacy_cart_summary.dart';
 import 'cart/pharmacy_cart_tender_view.dart';
+import '../pharmacy_colors.dart';
 
 export 'cart/pharmacy_cart_header.dart';
 export 'cart/pharmacy_cart_item_tile.dart';
@@ -75,7 +76,7 @@ class PharmacyCartPanel extends StatefulWidget {
 class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
   static const primaryEmerald = Color(0xFF059669);
   static const secondaryTeal = Color(0xFF0D9488);
-  static const textPrimary = Color(0xFF0F172A);
+  static const textPrimary = PharmacyColors.textPrimary;
   static const textMuted = Color(0xFF64748B);
 
   PharmacyCartPanelMode _panelMode = PharmacyCartPanelMode.cartItems;
@@ -134,7 +135,7 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
     AudioHelper.tapFeedback();
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.surface,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (ctx) {
         return SafeArea(
@@ -382,7 +383,7 @@ class _PharmacyCartPanelState extends State<PharmacyCartPanel> {
     final totalQty = widget.cart.values.fold<int>(0, (s, q) => s + q);
 
     return Container(
-      color: Colors.white,
+      color: context.palette.surface,
       child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 250),
         transitionBuilder: (child, animation) {

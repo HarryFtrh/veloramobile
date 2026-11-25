@@ -1,20 +1,22 @@
 // features/tables/tables_screen.dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../core/storage/session_storage.dart';
 import '../../core/design/tokens.dart';
-import '../fnb/fnb_payment_split_screen.dart';
+import '../fnb/screens/fnb_payment_split_screen.dart';
 import '../fnb/widgets/fnb_payment_sheet.dart';
-import '../shared_pos/pos_checkout_service.dart';
-import '../shared_pos/receipt_printer_service.dart';
+import '../shared_pos/services/pos_checkout_service.dart';
+import '../shared_pos/services/receipt_printer_service.dart';
 import 'cubit/tables_cubit.dart';
 import 'cubit/tables_state.dart';
-import 'table_grid_tile.dart';
+import 'widgets/table_grid_tile.dart';
 import 'table_service.dart';
 import 'widgets/table_add_dialog.dart';
 import 'widgets/table_detail_pane.dart';
+import 'widgets/table_empty_state.dart';
 import 'widgets/table_filter_ribbon.dart';
+import 'widgets/table_layout_header.dart';
 import 'widgets/table_mobile_bottom_bar.dart';
 import 'widgets/table_transfer_dialog.dart';
 
@@ -46,16 +48,7 @@ class _TablesScreenState extends State<TablesScreen> {
     super.dispose();
   }
 
-  void _toast(String m) => ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        content: Text(m),
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
+  void _toast(String m) => context.showToast(m);
 
   Future<void> _openPayment(CafeTableInfo table, ActiveTableOrder? activeOrder) async {
     if (_isBusy) return;
@@ -158,41 +151,12 @@ class _TablesScreenState extends State<TablesScreen> {
     if (_isBusy) return;
     _isBusy = true;
     try {
-      final confirm = await showDialog<bool>(
-        context: context,
-        builder: (ctx) {
-          final p = ctx.palette;
-          return AlertDialog(
-            backgroundColor: p.surface,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-            title: Row(
-              children: [
-                Icon(Icons.warning_amber_rounded, color: p.danger),
-                const SizedBox(width: 8),
-                Text('Kosongkan ${t.name}?', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: p.textPrimary)),
-              ],
-            ),
-            content: Text(
-              'Tagihan aktif pada meja ini akan diselesaikan dan status meja akan dikembalikan menjadi Meja Kosong.',
-              style: TextStyle(fontSize: 13, color: p.textSecondary),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Batal'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: p.danger,
-                  foregroundColor: Colors.white,
-                  shape: const StadiumBorder(),
-                ),
-                child: const Text('Kosongkan Meja'),
-              ),
-            ],
-          );
-        },
+      final confirm = await AppConfirmDialog.show(
+        context,
+        title: 'Kosongkan ${t.name}?',
+        message: 'Tagihan aktif pada meja ini akan diselesaikan dan status meja akan dikembalikan menjadi Meja Kosong.',
+        confirmLabel: 'Kosongkan Meja',
+        isDestructive: true,
       );
 
       if (confirm != true) return;
@@ -419,14 +383,17 @@ class _TablesScreenState extends State<TablesScreen> {
                     // Main Floor Canvas
                     Expanded(
                       flex: isWide ? 7 : 1,
-                      child: ListView(
-                        padding: EdgeInsets.fromLTRB(
-                          isWide ? 16 : 12,
-                          isWide ? 16 : 10,
-                          isWide ? 16 : 12,
-                          (!isWide && selectedTable != null) ? 80 : 20,
-                        ),
-                        children: [
+                      child: CustomScrollView(
+                        slivers: [
+                          SliverPadding(
+                            padding: EdgeInsets.fromLTRB(
+                              isWide ? 16 : 12,
+                              isWide ? 16 : 10,
+                              isWide ? 16 : 12,
+                              14,
+                            ),
+                            sliver: SliverList.list(
+                              children: [
                           if (state.error != null)
                             Container(
                               margin: const EdgeInsets.only(bottom: 12),
@@ -458,110 +425,10 @@ class _TablesScreenState extends State<TablesScreen> {
                               ),
                             ),
                           if (isWide)
-                            LayoutBuilder(
-                              builder: (context, headerConstraints) {
-                                final showInline = headerConstraints.maxWidth >= 580;
-
-                                final titleSection = Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text.rich(
-                                      TextSpan(
-                                        text: 'Manajemen Meja & Denah Ruangan ',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w800,
-                                          color: p.textPrimary,
-                                        ),
-                                        children: [
-                                          WidgetSpan(
-                                            alignment: PlaceholderAlignment.middle,
-                                            child: Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFF059669).withValues(alpha: 0.12),
-                                                borderRadius: BorderRadius.circular(4),
-                                              ),
-                                              child: const Text(
-                                                'LIVE FLOOR',
-                                                style: TextStyle(
-                                                  fontSize: 9,
-                                                  fontWeight: FontWeight.w800,
-                                                  color: Color(0xFF059669),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '${SessionStorage.instance.getLocationName() ?? "Outlet"} • Live Table Occupancy & Orders',
-                                      style: TextStyle(fontSize: 11, color: p.textSecondary),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                );
-
-                                final actionButtons = Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children: [
-                                    OutlinedButton.icon(
-                                      onPressed: _showAddTableDialog,
-                                      icon: const Icon(Icons.add_rounded, size: 16),
-                                      label: const Text('Tambah Meja', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor: p.textPrimary,
-                                        side: BorderSide(color: p.line),
-                                        shape: const StadiumBorder(),
-                                      ),
-                                    ),
-                                    ElevatedButton.icon(
-                                      onPressed: () => _toast('Formulir reservasi baru dibuka'),
-                                      icon: const Icon(Icons.bookmark_add_outlined, size: 16),
-                                      label: const Text('Reservasi', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: primaryColor,
-                                        foregroundColor: Colors.white,
-                                        shape: const StadiumBorder(),
-                                        elevation: 0,
-                                      ),
-                                    ),
-                                  ],
-                                );
-
-                                if (showInline) {
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: 14),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(child: titleSection),
-                                        const SizedBox(width: 12),
-                                        actionButtons,
-                                      ],
-                                    ),
-                                  );
-                                }
-
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 14),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      titleSection,
-                                      const SizedBox(height: 10),
-                                      actionButtons,
-                                    ],
-                                  ),
-                                );
-                              },
+                            TableLayoutHeader(
+                              locationName: SessionStorage.instance.getLocationName() ?? "Outlet",
+                              onAddTable: _showAddTableDialog,
+                              onReservation: () => _toast('Formulir reservasi baru dibuka'),
                             ),
 
                           // Dynamic Unified Filter Ribbon & Occupancy Pill
@@ -573,122 +440,74 @@ class _TablesScreenState extends State<TablesScreen> {
                             occupiedCount: state.countOccupied,
                             reservedCount: state.countReserved,
                           ),
-                          const SizedBox(height: 14),
+                              ],
+                            ),
+                          ),
 
-                          // Tables Grid or Empty State
+                          // Tables Grid or Empty State (virtualized SliverGrid)
                           if (tables.isEmpty && !state.isLoading)
-                            Container(
-                              padding: const EdgeInsets.all(32),
-                              decoration: BoxDecoration(
-                                color: p.surface,
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(color: p.line),
+                            SliverPadding(
+                              padding: EdgeInsets.fromLTRB(
+                                isWide ? 16 : 12,
+                                0,
+                                isWide ? 16 : 12,
+                                (!isWide && selectedTable != null) ? 80 : 20,
                               ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(16),
-                                    decoration: BoxDecoration(
-                                      color: p.surfaceMuted,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      Icons.table_restaurant_outlined,
-                                      size: 40,
-                                      color: primaryColor,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 14),
-                                  Text(
-                                    'Belum Ada Meja Terdaftar',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w800,
-                                      color: p.textPrimary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    'Kelola denah meja untuk pesanan makan di tempat (Dine-In). Anda dapat membuat meja otomatis atau menambahkannya manual.',
-                                    style: TextStyle(fontSize: 12, color: p.textSecondary),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 18),
-                                  Wrap(
-                                    spacing: 10,
-                                    runSpacing: 10,
-                                    alignment: WrapAlignment.center,
-                                    children: [
-                                      ElevatedButton.icon(
-                                        onPressed: _seedDefaultTables,
-                                        icon: const Icon(Icons.auto_awesome_rounded, size: 16),
-                                        label: const Text('Buat Meja Standar (01-08)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: primaryColor,
-                                          foregroundColor: Colors.white,
-                                          shape: const StadiumBorder(),
-                                        ),
-                                      ),
-                                      OutlinedButton.icon(
-                                        onPressed: _showAddTableDialog,
-                                        icon: const Icon(Icons.add_rounded, size: 16),
-                                        label: const Text('+ Tambah Meja Manual', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
-                                        style: OutlinedButton.styleFrom(
-                                          foregroundColor: p.textPrimary,
-                                          side: BorderSide(color: p.line),
-                                          shape: const StadiumBorder(),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                              sliver: SliverToBoxAdapter(
+                                child: TableEmptyState(
+                                  onSeedDefault: _seedDefaultTables,
+                                  onAddTableManual: _showAddTableDialog,
+                                ),
                               ),
                             )
                           else if (filteredTables.isEmpty && !state.isLoading)
-                            Container(
-                              padding: const EdgeInsets.all(32),
-                              decoration: BoxDecoration(
-                                color: p.surface,
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(color: p.line),
+                            SliverPadding(
+                              padding: EdgeInsets.fromLTRB(
+                                isWide ? 16 : 12,
+                                0,
+                                isWide ? 16 : 12,
+                                (!isWide && selectedTable != null) ? 80 : 20,
                               ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.filter_list_off_rounded, size: 36, color: p.textSecondary),
-                                  const SizedBox(height: 10),
-                                  Text('Tidak Ada Meja', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: p.textPrimary)),
-                                  const SizedBox(height: 4),
-                                  Text('Tidak ada meja yang sesuai dengan filter yang dipilih.', style: TextStyle(fontSize: 12, color: p.textSecondary)),
-                                  const SizedBox(height: 12),
-                                  TextButton(
-                                    onPressed: () => _cubit.setFilter('all'),
-                                    child: const Text('Tampilkan Semua Meja'),
-                                  ),
-                                ],
+                              sliver: SliverToBoxAdapter(
+                                child: TableEmptyState(
+                                  isFiltered: true,
+                                  filterLabel: state.selectedFilter == 'available'
+                                      ? 'Kosong'
+                                      : (state.selectedFilter == 'occupied' ? 'Terisi' : 'Reservasi'),
+                                  onSeedDefault: _seedDefaultTables,
+                                  onAddTableManual: _showAddTableDialog,
+                                  onResetFilter: () => _cubit.setFilter('all'),
+                                ),
                               ),
                             )
                           else
-                            GridView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: filteredTables.length,
-                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: isWide ? (constraints.maxWidth > 900 ? 3 : 2) : 2,
-                                childAspectRatio: isWide ? 1.35 : 1.16,
-                                crossAxisSpacing: isWide ? 14 : 10,
-                                mainAxisSpacing: isWide ? 14 : 10,
+                            SliverPadding(
+                              padding: EdgeInsets.fromLTRB(
+                                isWide ? 16 : 12,
+                                0,
+                                isWide ? 16 : 12,
+                                (!isWide && selectedTable != null) ? 80 : 20,
                               ),
-                              itemBuilder: (ctx, i) {
-                                final t = filteredTables[i];
-                                return TableGridTile(
-                                  table: t,
-                                  isSelected: selectedTable?.id == t.id,
-                                  onSelect: () => _cubit.selectTable(t),
-                                  onOpenTable: widget.onOpenTable,
-                                );
-                              },
+                              sliver: SliverGrid(
+                                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: isWide ? (constraints.maxWidth > 900 ? 3 : 2) : 2,
+                                  childAspectRatio: isWide ? 1.35 : 1.16,
+                                  crossAxisSpacing: isWide ? 14 : 10,
+                                  mainAxisSpacing: isWide ? 14 : 10,
+                                ),
+                                delegate: SliverChildBuilderDelegate(
+                                  (ctx, i) {
+                                    final t = filteredTables[i];
+                                    return TableGridTile(
+                                      table: t,
+                                      isSelected: selectedTable?.id == t.id,
+                                      onSelect: () => _cubit.selectTable(t),
+                                      onOpenTable: widget.onOpenTable,
+                                    );
+                                  },
+                                  childCount: filteredTables.length,
+                                ),
+                              ),
                             ),
                         ],
                       ),

@@ -1,5 +1,6 @@
 // features/fnb_customer/widgets/customer_cart_bottom_bar.dart
-import 'package:flutter/material.dart';
+import '../../../core/utils/currency_formatter.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../core/design/tokens.dart';
 
@@ -17,13 +18,6 @@ class CustomerCartBottomBar extends StatelessWidget {
   final bool isSubmitting;
   final VoidCallback onCheckout;
 
-  static String _formatRupiah(num value) {
-    return value
-        .round()
-        .toString()
-        .replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
-  }
-
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
@@ -32,7 +26,7 @@ class CustomerCartBottomBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: p.surface,
         border: Border(top: BorderSide(color: p.line)),
         boxShadow: [
           BoxShadow(
@@ -65,7 +59,7 @@ class CustomerCartBottomBar extends StatelessWidget {
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        'Rp ${_formatRupiah(grandTotal)}',
+                        grandTotal.toRupiah(),
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,

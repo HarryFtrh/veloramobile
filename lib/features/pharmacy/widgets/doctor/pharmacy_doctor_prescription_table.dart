@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
+import '../../pharmacy_colors.dart';
 
 /// Doctor prescription table for adding, displaying, and removing prescribed items
 class DoctorPrescriptionTable extends StatelessWidget {
@@ -15,15 +17,15 @@ class DoctorPrescriptionTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF059669);
-    const textPrimary = Color(0xFF0F172A);
-    const textMuted = Color(0xFF6D7A72);
-    const borderColor = Color(0xFFE2E8F0);
+    const emeraldPrimary = PharmacyColors.primary;
+    final textPrimary = context.palette.textPrimary;
+    final textMuted = context.palette.textSecondary;
+    final borderColor = context.palette.line;
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: borderColor),
       ),
@@ -33,7 +35,7 @@ class DoctorPrescriptionTable extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'e-Resep Elektronik Obat (R/)',
                 style: TextStyle(
                   fontFamily: 'Plus Jakarta Sans',
@@ -71,7 +73,7 @@ class DoctorPrescriptionTable extends StatelessWidget {
                 margin: const EdgeInsets.only(bottom: 6),
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: context.palette.canvas,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: borderColor),
                 ),
@@ -84,13 +86,13 @@ class DoctorPrescriptionTable extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(item['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                          Text('Signa: ${item['signa']}', style: const TextStyle(fontSize: 11, color: textMuted)),
+                          Text('Signa: ${item['signa']}', style: TextStyle(fontSize: 11, color: textMuted)),
                         ],
                       ),
                     ),
                     Text(
                       item['dose'] ?? '',
-                      style: const TextStyle(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.bold, fontSize: 11.5, color: textPrimary),
+                      style: TextStyle(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.bold, fontSize: 11.5, color: textPrimary),
                     ),
                     const SizedBox(width: 8),
                     IconButton(
@@ -111,7 +113,7 @@ class DoctorPrescriptionTable extends StatelessWidget {
                 children: [
                   Icon(Icons.edit_note_rounded, size: 36, color: Colors.grey.shade400),
                   const SizedBox(height: 6),
-                  const Text('Belum ada resep obat tertulis.', style: TextStyle(fontSize: 12, color: textMuted)),
+                  Text('Belum ada resep obat tertulis.', style: TextStyle(fontSize: 12, color: textMuted)),
                   const SizedBox(height: 8),
                   ElevatedButton.icon(
                     onPressed: onAddDrug,

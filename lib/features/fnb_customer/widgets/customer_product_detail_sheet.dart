@@ -1,9 +1,9 @@
 // features/fnb_customer/customer_product_detail_sheet.dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../core/design/tokens.dart';
-import '../../fnb/modifiers.dart';
-import '../customer_models.dart';
+import '../../fnb/models/modifiers.dart';
+import '../models/customer_models.dart';
 import 'customer_product_beverage_options.dart';
 import 'customer_product_hero_header.dart';
 import 'customer_product_modifier_group_card.dart';
@@ -178,8 +178,8 @@ class _CustomerProductDetailSheetState
       maxChildSize: 0.95,
       builder: (_, scrollController) {
         return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: p.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: Column(
@@ -228,7 +228,7 @@ class _CustomerProductDetailSheetState
               Expanded(
                 child: ListView(
                   controller: scrollController,
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + MediaQuery.viewInsetsOf(context).bottom),
                   children: [
                     CustomerProductHeroHeader(product: widget.product),
                     const SizedBox(height: 20),
@@ -347,7 +347,7 @@ class _CustomerProductDetailSheetState
                       decoration: InputDecoration(
                         hintText: 'Contoh: sedikit es, pisahkan sirup, jangan terlalu manis...',
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: p.surface,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
                           borderSide: BorderSide(

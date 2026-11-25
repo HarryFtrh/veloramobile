@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../pharmacy_colors.dart';
 
 /// Financial totals breakdown for pharmacy checkout receipt
 class PharmacyReceiptFinancialBreakdown extends StatelessWidget {
@@ -16,14 +18,14 @@ class PharmacyReceiptFinancialBreakdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF059669);
-    const borderColor = Color(0xFFE2E8F0);
-    const textMuted = Color(0xFF6D7A72);
+    const emeraldPrimary = PharmacyColors.primary;
+    final borderColor = context.palette.line;
+    final textMuted = context.palette.textSecondary;
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: borderColor),
       ),
@@ -32,7 +34,7 @@ class PharmacyReceiptFinancialBreakdown extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Subtotal Obat', style: TextStyle(fontSize: 11, color: textMuted)),
+              Text('Subtotal Obat', style: TextStyle(fontSize: 11, color: textMuted)),
               Text(
                 CurrencyFormatter.format(subtotal),
                 style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11.5, fontWeight: FontWeight.w600),
@@ -43,7 +45,7 @@ class PharmacyReceiptFinancialBreakdown extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Metode Pembayaran', style: TextStyle(fontSize: 11, color: textMuted)),
+              Text('Metode Pembayaran', style: TextStyle(fontSize: 11, color: textMuted)),
               Text(
                 paymentMethod.toUpperCase(),
                 style: const TextStyle(
@@ -55,7 +57,7 @@ class PharmacyReceiptFinancialBreakdown extends StatelessWidget {
               ),
             ],
           ),
-          const Divider(height: 14, color: borderColor),
+          Divider(height: 14, color: borderColor),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

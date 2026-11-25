@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../core/design/tokens.dart';
 import '../../../core/utils/audio_helper.dart';
@@ -27,8 +27,8 @@ Future<CafeTableInfo?> showCustomerTablePickerSheet(
           maxHeight: MediaQuery.sizeOf(ctx).height * 0.75,
         ),
         child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: p.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             boxShadow: [
               BoxShadow(

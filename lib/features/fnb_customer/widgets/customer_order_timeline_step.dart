@@ -1,5 +1,5 @@
 import '../../../core/design/tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class CustomerOrderTimelineStep extends StatelessWidget {
   const CustomerOrderTimelineStep({
@@ -136,7 +136,7 @@ class CustomerOrderTimelineStep extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: p.surface,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: p.secondary.withValues(alpha: 0.3),

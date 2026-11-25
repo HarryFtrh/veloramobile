@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../../core/design/tokens.dart';
-import '../../modifiers.dart';
+import '../../models/modifiers.dart';
 import 'fnb_modifier_card_tile.dart';
 
 /// Group header with requirement badge and responsive grid/column of modifier options

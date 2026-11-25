@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../models/pharmacy_domain_models.dart';
 
@@ -23,12 +24,12 @@ class PharmacyStockAlertModalCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isNearExpiry
               ? const Color(0xFFFED7AA)
-              : (isCritical ? const Color(0xFFFFCDD2) : const Color(0xFFE2E8F0)),
+              : (isCritical ? const Color(0xFFFFCDD2) : context.palette.line),
         ),
         boxShadow: const [
           BoxShadow(
@@ -64,11 +65,11 @@ class PharmacyStockAlertModalCard extends StatelessWidget {
                     Flexible(
                       child: Text(
                         item.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Plus Jakarta Sans',
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
-                          color: Color(0xFF0F172A),
+                          color: context.palette.textPrimary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -117,11 +118,11 @@ class PharmacyStockAlertModalCard extends StatelessWidget {
                     ),
                     child: Text(
                       'Batch: ${item.batchNumber}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'JetBrains Mono',
                         fontSize: 10.5,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF0F172A),
+                        color: context.palette.textPrimary,
                       ),
                     ),
                   ),
@@ -129,10 +130,10 @@ class PharmacyStockAlertModalCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: isNearExpiry ? const Color(0xFFFFF7ED) : const Color(0xFFF8FAFC),
+                      color: isNearExpiry ? const Color(0xFFD97706).withValues(alpha: 0.14) : context.palette.canvas,
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(
-                        color: isNearExpiry ? const Color(0xFFFED7AA) : const Color(0xFFE2E8F0),
+                        color: isNearExpiry ? const Color(0xFFFED7AA) : context.palette.line,
                       ),
                     ),
                     child: Text(

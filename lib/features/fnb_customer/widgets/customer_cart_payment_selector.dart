@@ -1,5 +1,5 @@
 // features/fnb_customer/widgets/customer_cart_payment_selector.dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../core/design/tokens.dart';
 
@@ -112,7 +112,7 @@ class _PaymentOptionTile extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: p.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? primaryColor : p.line,

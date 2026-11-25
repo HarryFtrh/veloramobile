@@ -4,11 +4,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/storage/session_storage.dart';
 import '../../../kitchen/kitchen_service.dart';
-import '../../../shared_pos/pos_checkout_service.dart';
-import '../../../shared_pos/qris_payment_service.dart';
-import '../../../shared_pos/receipt_printer_service.dart';
+import '../../../shared_pos/services/pos_checkout_service.dart';
+import '../../../shared_pos/services/qris_payment_service.dart';
+import '../../../shared_pos/services/receipt_printer_service.dart';
 import '../../billing.dart';
-import '../../fnb_register_service.dart';
+import '../../services/fnb_register_service.dart';
 import '../../../tables/table_service.dart';
 import 'payment_split_state.dart';
 

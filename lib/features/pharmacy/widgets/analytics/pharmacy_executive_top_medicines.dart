@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../pharmacy_colors.dart';
 
 /// Top fast moving medicines list card
 class PharmacyExecutiveTopMedicines extends StatelessWidget {
@@ -12,14 +14,14 @@ class PharmacyExecutiveTopMedicines extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF059669);
-    const textMuted = Color(0xFF6D7A72);
-    const borderColor = Color(0xFFE2E8F0);
+    const emeraldPrimary = PharmacyColors.primary;
+    final textMuted = context.palette.textSecondary;
+    final borderColor = context.palette.line;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: borderColor),
       ),
@@ -41,7 +43,7 @@ class PharmacyExecutiveTopMedicines extends StatelessWidget {
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: context.palette.canvas,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: borderColor),
                 ),
@@ -52,7 +54,7 @@ class PharmacyExecutiveTopMedicines extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(med['name'] as String, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                        Text('Volume: ${med['sales']}', style: const TextStyle(fontSize: 11, color: textMuted)),
+                        Text('Volume: ${med['sales']}', style: TextStyle(fontSize: 11, color: textMuted)),
                       ],
                     ),
                     Column(
@@ -73,7 +75,7 @@ class PharmacyExecutiveTopMedicines extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               alignment: Alignment.center,
-              child: const Text('Belum ada obat terjual pada periode ini.', style: TextStyle(color: textMuted, fontSize: 12)),
+              child: Text('Belum ada obat terjual pada periode ini.', style: TextStyle(color: textMuted, fontSize: 12)),
             ),
         ],
       ),

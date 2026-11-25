@@ -1,9 +1,10 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../core/design/tokens.dart';
-import '../pharmacy_service.dart';
+import '../services/pharmacy_service.dart';
 import 'patient/pharmacy_patient_category_chips.dart';
 import 'patient/pharmacy_patient_autocomplete.dart';
+import '../pharmacy_colors.dart';
 
 export '../models/pharmacy_patient_data.dart';
 export 'patient/pharmacy_patient_category_chips.dart';
@@ -162,16 +163,16 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF059669);
-    const borderColor = Color(0xFFE2E8F0);
-    const surfaceCanvas = Color(0xFFFAF8FF);
+    const emeraldPrimary = PharmacyColors.primary;
+    final borderColor = context.palette.line;
+    final surfaceCanvas = context.palette.canvas;
 
     return AlertDialog(
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.surface,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: borderColor, width: 1),
+        side: BorderSide(color: borderColor, width: 1),
       ),
       titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
       title: Row(
@@ -185,7 +186,7 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
             child: const Icon(Icons.person_pin_circle_outlined, color: emeraldPrimary, size: 22),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -193,7 +194,7 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
                   'Identitas Pasien & Dokter',
                   style: TextStyle(
                     fontFamily: 'Plus Jakarta Sans',
-                    color: Color(0xFF0F172A),
+                    color: context.palette.textPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -250,11 +251,11 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
                         fillColor: surfaceCanvas,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: borderColor),
+                          borderSide: BorderSide(color: borderColor),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: borderColor),
+                          borderSide: BorderSide(color: borderColor),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -270,11 +271,11 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
                     child: TextField(
                       controller: _rmController,
                       onChanged: _onPatientQueryChanged,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'JetBrains Mono',
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF0F172A),
+                        color: context.palette.textPrimary,
                       ),
                       decoration: InputDecoration(
                         labelText: 'No. Rekam Medis (RM)',
@@ -284,11 +285,11 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
                         fillColor: surfaceCanvas,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: borderColor),
+                          borderSide: BorderSide(color: borderColor),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: borderColor),
+                          borderSide: BorderSide(color: borderColor),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -304,7 +305,7 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
               TextField(
                 controller: _patientController,
                 onChanged: _onPatientQueryChanged,
-                style: const TextStyle(fontSize: 13, color: Color(0xFF0F172A)),
+                style: TextStyle(fontSize: 13, color: context.palette.textPrimary),
                 decoration: InputDecoration(
                   labelText: 'Nama Lengkap Pasien (Cari Scout)',
                   labelStyle: const TextStyle(color: Color(0xFF6D7A72), fontSize: 11.5),
@@ -325,11 +326,11 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
                   fillColor: surfaceCanvas,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: borderColor),
+                    borderSide: BorderSide(color: borderColor),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: borderColor),
+                    borderSide: BorderSide(color: borderColor),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -364,7 +365,7 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
               TextField(
                 controller: _doctorController,
                 onChanged: _onDoctorQueryChanged,
-                style: const TextStyle(fontSize: 13, color: Color(0xFF0F172A)),
+                style: TextStyle(fontSize: 13, color: context.palette.textPrimary),
                 decoration: InputDecoration(
                   labelText: 'Dokter Pemeriksa & SIP',
                   labelStyle: const TextStyle(color: Color(0xFF6D7A72), fontSize: 11.5),
@@ -385,11 +386,11 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
                   fillColor: surfaceCanvas,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: borderColor),
+                    borderSide: BorderSide(color: borderColor),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: borderColor),
+                    borderSide: BorderSide(color: borderColor),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -452,11 +453,11 @@ class _PharmacyPatientDialogState extends State<PharmacyPatientDialog> {
                   fillColor: surfaceCanvas,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: borderColor),
+                    borderSide: BorderSide(color: borderColor),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: borderColor),
+                    borderSide: BorderSide(color: borderColor),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),

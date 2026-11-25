@@ -1,5 +1,6 @@
 // features/fnb_customer/widgets/customer_cart_summary_card.dart
-import 'package:flutter/material.dart';
+import '../../../core/utils/currency_formatter.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../core/design/tokens.dart';
 import '../../fnb/billing.dart';
@@ -22,13 +23,6 @@ class CustomerCartSummaryCard extends StatelessWidget {
   final BillBreakdown calculatedBill;
   final String? taxName;
 
-  static String _formatRupiah(num value) {
-    return value
-        .round()
-        .toString()
-        .replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
-  }
-
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
@@ -37,7 +31,7 @@ class CustomerCartSummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: p.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: p.line),
       ),
@@ -64,28 +58,28 @@ class CustomerCartSummaryCard extends StatelessWidget {
           const SizedBox(height: 14),
           _SummaryRow(
             label: 'Subtotal ($itemCount item)',
-            value: 'Rp ${_formatRupiah(subtotal)}',
+            value: subtotal.toRupiah(),
           ),
           if (discount > 0)
             _SummaryRow(
               label: 'Diskon Promo (${voucherCode ?? "PROMO"})',
-              value: '-Rp ${_formatRupiah(discount)}',
+              value: '-${discount.toRupiah()}',
               isDiscount: true,
             ),
           if (calculatedBill.serviceCharge > 0)
             _SummaryRow(
               label: 'Biaya Layanan',
-              value: 'Rp ${_formatRupiah(calculatedBill.serviceCharge)}',
+              value: calculatedBill.serviceCharge.toRupiah(),
             ),
           if (calculatedBill.tax > 0)
             _SummaryRow(
               label: 'Pajak (${taxName ?? 'PB1'})',
-              value: 'Rp ${_formatRupiah(calculatedBill.tax)}',
+              value: calculatedBill.tax.toRupiah(),
             ),
           if (calculatedBill.rounding != 0)
             _SummaryRow(
               label: 'Pembulatan',
-              value: 'Rp ${_formatRupiah(calculatedBill.rounding)}',
+              value: calculatedBill.rounding.toRupiah(),
             ),
         ],
       ),

@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+// ignore: unnecessary_import
+import 'package:flutter/widgets.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/config/app_config.dart';
 import 'core/config/app_theme.dart';
@@ -12,7 +14,7 @@ import 'features/auth/cubit/auth_cubit.dart';
 import 'features/auth/cubit/auth_state.dart';
 import 'features/auth/login_screen.dart';
 import 'features/sales/sales_dashboard_screen.dart';
-import 'features/shared_pos/offline_sync_manager.dart';
+import 'features/shared_pos/services/offline_sync_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -65,6 +67,8 @@ class VeloraSalesApp extends StatelessWidget {
         child: child ?? const SizedBox.shrink(),
       ),
       theme: AppTheme.build(AppFlavor.sales, Brightness.light),
+      darkTheme: AppTheme.build(AppFlavor.sales, Brightness.dark),
+      themeMode: ThemeMode.system,
       home: BlocBuilder<AuthCubit, AuthState>(
         builder: (context, state) {
           if (state is AuthInitial || (state is AuthLoading && state.message != null)) {

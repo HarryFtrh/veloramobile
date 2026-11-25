@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
+import '../../pharmacy_colors.dart';
 
 /// Choice chips for selecting patient category / insurance provider
 class PharmacyPatientCategoryChips extends StatelessWidget {
@@ -15,16 +17,16 @@ class PharmacyPatientCategoryChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF059669);
-    const surfaceCanvas = Color(0xFFFAF8FF);
-    const borderColor = Color(0xFFE2E8F0);
+    const emeraldPrimary = PharmacyColors.primary;
+    final surfaceCanvas = context.palette.canvas;
+    final borderColor = context.palette.line;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Kategori Pasien / Penjamin:',
-          style: TextStyle(color: Color(0xFF0F172A), fontSize: 12, fontWeight: FontWeight.w600),
+          style: TextStyle(color: context.palette.textPrimary, fontSize: 12, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         Wrap(

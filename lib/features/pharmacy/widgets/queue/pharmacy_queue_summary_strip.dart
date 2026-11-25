@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/audio_helper.dart';
-import '../../pharmacy_service.dart';
+import '../../services/pharmacy_service.dart';
 
 /// Live queue summary ribbon showing patient count, estimation, and quick call button
 class PharmacyQueueSummaryStrip extends StatelessWidget {
@@ -24,9 +25,9 @@ class PharmacyQueueSummaryStrip extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: context.palette.line),
         boxShadow: const [
           BoxShadow(
             color: Color(0x08000000),
@@ -57,11 +58,11 @@ class PharmacyQueueSummaryStrip extends StatelessWidget {
                     children: [
                       Text(
                         '$waitingCount Pasien Menunggu Tagihan',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Plus Jakarta Sans',
                           fontWeight: FontWeight.bold,
                           fontSize: 13.5,
-                          color: Color(0xFF0F172A),
+                          color: context.palette.textPrimary,
                         ),
                       ),
                       Text(

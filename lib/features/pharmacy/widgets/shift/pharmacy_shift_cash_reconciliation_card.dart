@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../pharmacy_colors.dart';
 
 /// Card for cash drawer physical counting, denomination modal trigger, and balance/discrepancy status
 class PharmacyShiftCashReconciliationCard extends StatelessWidget {
@@ -18,22 +20,22 @@ class PharmacyShiftCashReconciliationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF059669);
-    const textPrimary = Color(0xFF0F172A);
-    const textMuted = Color(0xFF6D7A72);
-    const borderColor = Color(0xFFE2E8F0);
+    const emeraldPrimary = PharmacyColors.primary;
+    final textPrimary = context.palette.textPrimary;
+    final textMuted = context.palette.textSecondary;
+    final borderColor = context.palette.line;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Rekonsiliasi Fisik Uang Kas Laci',
             style: TextStyle(
               fontFamily: 'Plus Jakarta Sans',
@@ -43,7 +45,7 @@ class PharmacyShiftCashReconciliationCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Hitung fisik uang tunai di laci kasir dan masukkan total untuk mengaudit selisih kas.',
             style: TextStyle(fontSize: 11.5, color: textMuted),
           ),
@@ -59,18 +61,18 @@ class PharmacyShiftCashReconciliationCard extends StatelessWidget {
                   onChanged: onCountedCashChanged,
                   decoration: InputDecoration(
                     labelText: 'Uang Fisik Dihitung (Rp)',
-                    labelStyle: const TextStyle(fontSize: 12, color: textMuted),
+                    labelStyle: TextStyle(fontSize: 12, color: textMuted),
                     prefixText: 'Rp ',
                     filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
+                    fillColor: context.palette.canvas,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: borderColor),
+                      borderSide: BorderSide(color: borderColor),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: borderColor),
+                      borderSide: BorderSide(color: borderColor),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -86,8 +88,8 @@ class PharmacyShiftCashReconciliationCard extends StatelessWidget {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: discrepancy == 0
-                        ? const Color(0xFFD4F8E8)
-                        : (discrepancy < 0 ? const Color(0xFFFFDAD6) : const Color(0xFFE0F2FE)),
+                        ? const Color(0xFF059669).withValues(alpha: 0.14)
+                        : (discrepancy < 0 ? const Color(0xFFFFDAD6) : const Color(0xFF0284C7).withValues(alpha: 0.14)),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Column(

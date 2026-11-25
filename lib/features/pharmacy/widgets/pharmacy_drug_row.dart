@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../core/design/tokens.dart';
 import '../../../core/utils/currency_formatter.dart';
 import 'drug_card_components.dart';
-
 /// Card Produk Apotek Mode Baris / List View (POS Kasir, Resep Racikan, EMR)
 class PharmacyDrugRow extends StatelessWidget {
   final Map<String, dynamic> item;
@@ -22,9 +22,9 @@ class PharmacyDrugRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const primaryEmerald = Color(0xFF059669);
-    const borderColor = Color(0xFFE2E8F0);
-    const textPrimary = Color(0xFF0F172A);
-    const textMuted = Color(0xFF64748B);
+    final borderColor = context.palette.line;
+    final textPrimary = context.palette.textPrimary;
+    final textMuted = context.palette.textSecondary;
 
     final classification = DrugClassification.fromItem(item);
 
@@ -65,7 +65,7 @@ class PharmacyDrugRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
           decoration: BoxDecoration(
             color: isOutOfStock
-                ? const Color(0xFFF8FAFC)
+                ? context.palette.canvas
                 : (quantity > 0 ? const Color(0xFFF9FDFB) : Colors.white),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
@@ -76,15 +76,13 @@ class PharmacyDrugRow extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF0F172A).withValues(alpha: isOutOfStock ? 0.01 : 0.03),
+                color: context.palette.textPrimary.withValues(alpha: isOutOfStock ? 0.01 : 0.03),
                 blurRadius: 4,
                 offset: const Offset(0, 1),
               ),
             ],
           ),
-          child: Opacity(
-            opacity: isOutOfStock ? 0.62 : 1.0,
-            child: Row(
+          child: Row(
               children: [
                 DrugThumbnailWidget(
                   item: item,
@@ -102,7 +100,7 @@ class PharmacyDrugRow extends StatelessWidget {
                           Flexible(
                             child: Text(
                               item['name'] ?? '',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Plus Jakarta Sans',
                                 fontWeight: FontWeight.w700,
                                 fontSize: 13.5,
@@ -133,7 +131,7 @@ class PharmacyDrugRow extends StatelessWidget {
                           subInfo,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 10.5, color: textMuted),
+                          style: TextStyle(fontSize: 10.5, color: textMuted),
                         ),
                       ],
                       const SizedBox(height: 5),
@@ -172,7 +170,7 @@ class PharmacyDrugRow extends StatelessWidget {
                     ),
                     Text(
                       '/$selectedUnit',
-                      style: const TextStyle(color: textMuted, fontSize: 9.5),
+                      style: TextStyle(color: textMuted, fontSize: 9.5),
                     ),
                   ],
                 ),
@@ -181,19 +179,19 @@ class PharmacyDrugRow extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
+                      color: context.palette.surfaceMuted,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: borderColor),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.remove_shopping_cart_outlined, size: 13, color: Color(0xFF94A3B8)),
+                        Icon(Icons.remove_shopping_cart_outlined, size: 13, color: context.palette.textTertiary),
                         SizedBox(width: 4),
                         Text(
                           'Habis',
                           style: TextStyle(
-                            color: Color(0xFF94A3B8),
+                            color: context.palette.textTertiary,
                             fontSize: 10.5,
                             fontWeight: FontWeight.bold,
                           ),
@@ -205,7 +203,7 @@ class PharmacyDrugRow extends StatelessWidget {
                   Container(
                     height: 32,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
+                      color: context.palette.canvas,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: primaryEmerald.withValues(alpha: 0.3)),
                     ),
@@ -214,7 +212,7 @@ class PharmacyDrugRow extends StatelessWidget {
                       children: [
                         InkWell(
                           onTap: onRemove ?? onAdd,
-                          child: const Padding(
+                          child: Padding(
                             padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                             child: Icon(Icons.remove, size: 14, color: textPrimary),
                           ),
@@ -250,7 +248,7 @@ class PharmacyDrugRow extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(7),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF0FDF4),
+                      color: const Color(0xFF059669).withValues(alpha: 0.14),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: const Color(0xFFBBF7D0)),
                     ),
@@ -258,7 +256,6 @@ class PharmacyDrugRow extends StatelessWidget {
                   ),
               ],
             ),
-          ),
         ),
       ),
     );

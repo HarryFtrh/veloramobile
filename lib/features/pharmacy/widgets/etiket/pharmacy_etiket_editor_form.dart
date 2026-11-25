@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/audio_helper.dart';
 import '../../models/pharmacy_etiket_item.dart';
@@ -36,8 +36,8 @@ class PharmacyEtiketEditorForm extends StatelessWidget {
             ChoiceChip(
               label: const Text('Etiket Putih (Oral/Dalam)'),
               selected: !isLuar,
-              selectedColor: const Color(0xFFE2E8F0),
-              backgroundColor: const Color(0xFFF1F5F9),
+              selectedColor: context.palette.line,
+              backgroundColor: context.palette.surfaceMuted,
               labelStyle: TextStyle(
                 fontFamily: 'Plus Jakarta Sans',
                 fontWeight: FontWeight.bold,
@@ -58,7 +58,7 @@ class PharmacyEtiketEditorForm extends StatelessWidget {
               label: const Text('Etiket Biru (Obat Luar)'),
               selected: isLuar,
               selectedColor: const Color(0xFFBAE6FD),
-              backgroundColor: const Color(0xFFF1F5F9),
+              backgroundColor: context.palette.surfaceMuted,
               labelStyle: TextStyle(
                 fontFamily: 'Plus Jakarta Sans',
                 fontWeight: FontWeight.bold,
@@ -99,7 +99,7 @@ class PharmacyEtiketEditorForm extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: isCur ? ClinicalPalette.primary.withValues(alpha: 0.12) : const Color(0xFFF1F5F9),
+                  color: isCur ? ClinicalPalette.primary.withValues(alpha: 0.12) : context.palette.surfaceMuted,
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
                     color: isCur ? ClinicalPalette.primary : ClinicalPalette.border,
@@ -136,7 +136,7 @@ class PharmacyEtiketEditorForm extends StatelessWidget {
                   label: Text(w),
                   selected: isSel,
                   selectedColor: ClinicalPalette.primary,
-                  backgroundColor: const Color(0xFFF1F5F9),
+                  backgroundColor: context.palette.surfaceMuted,
                   labelStyle: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,

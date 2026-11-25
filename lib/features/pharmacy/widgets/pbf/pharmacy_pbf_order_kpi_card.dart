@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../pharmacy_colors.dart';
 
 /// KPI Summary counters for PBF orders & procurement
 class PharmacyPbfOrderKpiCard extends StatelessWidget {
@@ -20,10 +22,10 @@ class PharmacyPbfOrderKpiCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF059669);
-    const borderColor = Color(0xFFE2E8F0);
-    const textPrimary = Color(0xFF0F172A);
-    const textMuted = Color(0xFF6D7A72);
+    const emeraldPrimary = PharmacyColors.primary;
+    final borderColor = context.palette.line;
+    final textPrimary = context.palette.textPrimary;
+    final textMuted = context.palette.textSecondary;
 
     return Row(
       children: [
@@ -31,18 +33,18 @@ class PharmacyPbfOrderKpiCard extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.palette.surface,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: borderColor),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Total PO Periode Ini', style: TextStyle(fontSize: 11, color: textMuted)),
+                Text('Total PO Periode Ini', style: TextStyle(fontSize: 11, color: textMuted)),
                 const SizedBox(height: 4),
                 Text(
                   CurrencyFormatter.format(totalPoAmount),
-                  style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13.5, fontWeight: FontWeight.bold, color: textPrimary),
+                  style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13.5, fontWeight: FontWeight.bold, color: textPrimary),
                 ),
                 Text(
                   '$totalPoCount Faktur • $uniquePbfCount PBF',
@@ -57,7 +59,7 @@ class PharmacyPbfOrderKpiCard extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.palette.surface,
               borderRadius: BorderRadius.circular(10),
               border: const Border(left: BorderSide(color: Color(0xFFBA1A1A), width: 3)),
             ),
@@ -72,7 +74,7 @@ class PharmacyPbfOrderKpiCard extends StatelessWidget {
                 ),
                 Text(
                   '$dueSoonCount Faktur Segera Bayar',
-                  style: const TextStyle(fontSize: 10, color: textMuted),
+                  style: TextStyle(fontSize: 10, color: textMuted),
                 ),
               ],
             ),

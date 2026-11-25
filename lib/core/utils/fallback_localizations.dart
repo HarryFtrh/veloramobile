@@ -1,5 +1,5 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Delegate fallback agar aplikasi tidak crash dengan 'No MaterialLocalizations found'
 /// atau 'A CupertinoLocalizations delegate was not found' ketika berjalan pada perangkat

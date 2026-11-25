@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../core/design/tokens.dart';
 import '../../../core/utils/currency_formatter.dart';
-import '../../shared_pos/product_catalog_service.dart';
-import '../modifiers.dart';
+import '../../shared_pos/services/product_catalog_service.dart';
+import '../models/modifiers.dart';
 import 'modifier/fnb_modifier_action_footer.dart';
 import 'modifier/fnb_modifier_group_section.dart';
 import 'modifier/fnb_modifier_quantity_bar.dart';
@@ -50,7 +50,7 @@ class FnbModifierSheet extends StatefulWidget {
       isScrollControlled: true,
       showDragHandle: true,
       useSafeArea: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -179,6 +179,7 @@ class _FnbModifierSheetState extends State<FnbModifierSheet> {
                           widget.product.imageUrl!,
                           fit: BoxFit.cover,
                           cacheWidth: 320,
+                          gaplessPlayback: true,
                           errorBuilder: (_, _, _) => Icon(
                             Icons.coffee_rounded,
                             color: primaryColor,

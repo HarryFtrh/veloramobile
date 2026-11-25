@@ -1,6 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../../core/design/tokens.dart';
-
 /// Banner Konteks Pasien & Validasi Resep Dokter di Layar Utama POS Apotek
 class PharmacyPatientBanner extends StatelessWidget {
   final bool isClinicPatientLoaded;
@@ -38,7 +37,7 @@ class PharmacyPatientBanner extends StatelessWidget {
 
     const emeraldPrimary = ClinicalPalette.primary;
     const secondaryTeal = ClinicalPalette.secondary;
-    const borderColor = Color(0xFFE2E8F0);
+    final borderColor = context.palette.line;
     final isWalkIn = !isClinicPatientLoaded;
 
     return Column(
@@ -49,12 +48,12 @@ class PharmacyPatientBanner extends StatelessWidget {
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.palette.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: borderColor),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF0F172A).withValues(alpha: 0.03),
+                color: context.palette.textPrimary.withValues(alpha: 0.03),
                 blurRadius: 4,
                 offset: const Offset(0, 1),
               ),
@@ -87,11 +86,11 @@ class PharmacyPatientBanner extends StatelessWidget {
                         Expanded(
                           child: Text(
                             isWalkIn ? 'Pelanggan Walk-in (Umum)' : selectedPatient,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontFamily: 'Plus Jakarta Sans',
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF0F172A),
+                              color: context.palette.textPrimary,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -142,7 +141,7 @@ class PharmacyPatientBanner extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFAF8FF),
+                      color: context.palette.canvas,
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(color: borderColor),
                     ),
@@ -171,7 +170,7 @@ class PharmacyPatientBanner extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                   decoration: BoxDecoration(
-                    color: isWalkIn ? const Color(0xFFFAF8FF) : const Color(0xFFFFF1F2),
+                    color: isWalkIn ? context.palette.canvas : const Color(0xFFFFF1F2),
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(color: isWalkIn ? borderColor : const Color(0xFFFECACA)),
                   ),
@@ -206,7 +205,7 @@ class PharmacyPatientBanner extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: isPrescriptionValidated ? const Color(0xFFF0FDF4) : const Color(0xFFEFF6FF),
+              color: isPrescriptionValidated ? const Color(0xFF059669).withValues(alpha: 0.14) : const Color(0xFF0284C7).withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: isPrescriptionValidated ? const Color(0xFFBBF7D0) : const Color(0xFFBFDBFE),

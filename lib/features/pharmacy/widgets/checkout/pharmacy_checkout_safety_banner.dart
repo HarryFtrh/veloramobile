@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/audio_helper.dart';
 import '../../services/pharmacy_clinical_safety_service.dart';
@@ -25,7 +25,7 @@ class PharmacyCheckoutSafetyBanner extends StatelessWidget {
         margin: margin,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFFF0FDF4),
+          color: const Color(0xFF059669).withValues(alpha: 0.14),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: const Color(0xFFBBF7D0)),
         ),
@@ -51,7 +51,7 @@ class PharmacyCheckoutSafetyBanner extends StatelessWidget {
 
     final hasContra = safetyAlerts.any((a) => a.level == ClinicalSafetyLevel.contraindication);
     final borderColor = hasContra ? const Color(0xFFFECACA) : const Color(0xFFFED7AA);
-    final bgColor = hasContra ? const Color(0xFFFEF2F2) : const Color(0xFFFFF7ED);
+    final bgColor = hasContra ? const Color(0xFFDC2626).withValues(alpha: 0.14) : const Color(0xFFD97706).withValues(alpha: 0.14);
     final iconColor = hasContra ? ClinicalPalette.danger : ClinicalPalette.warning;
 
     return Container(

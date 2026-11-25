@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../core/design/tokens.dart';
 import '../../../core/utils/audio_helper.dart';
-import '../../shared_pos/pos_checkout_service.dart';
-import '../../shared_pos/receipt_printer_service.dart';
+import '../../shared_pos/services/pos_checkout_service.dart';
+import '../../shared_pos/services/receipt_printer_service.dart';
 import '../models/pharmacy_etiket_item.dart';
 import 'etiket/pharmacy_etiket_preview_card.dart';
 import 'etiket/pharmacy_etiket_editor_form.dart';
@@ -174,7 +174,7 @@ class _PharmacyEtiketDialogState extends State<PharmacyEtiketDialog> {
       return Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.palette.surface,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -217,44 +217,50 @@ class _PharmacyEtiketDialogState extends State<PharmacyEtiketDialog> {
           // Header Bar
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF8FAFC),
+            decoration: BoxDecoration(
+              color: context.palette.canvas,
               borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
               border: Border(bottom: BorderSide(color: ClinicalPalette.border)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: ClinicalPalette.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: ClinicalPalette.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.label_important_rounded, color: ClinicalPalette.primary, size: 20),
                       ),
-                      child: const Icon(Icons.label_important_rounded, color: ClinicalPalette.primary, size: 20),
-                    ),
-                    const SizedBox(width: 10),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Generator Etiket Signa Obat (Standar Farmasi)',
-                          style: TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                            color: ClinicalPalette.textPrimary,
-                          ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Generator Etiket Signa Obat (Standar Farmasi)',
+                              style: TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                                color: ClinicalPalette.textPrimary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              'Pasien: ${widget.patientName} (${widget.queueNumber}) • RM: ${widget.medicalRecordNumber}',
+                              style: const TextStyle(fontSize: 11, color: ClinicalPalette.textTertiary),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
-                        Text(
-                          'Pasien: ${widget.patientName} (${widget.queueNumber}) • RM: ${widget.medicalRecordNumber}',
-                          style: const TextStyle(fontSize: 11, color: ClinicalPalette.textTertiary),
-                        ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close_rounded, color: ClinicalPalette.textTertiary),
@@ -264,146 +270,182 @@ class _PharmacyEtiketDialogState extends State<PharmacyEtiketDialog> {
             ),
           ),
 
-          // Main 2-Column Workspace
+          // Responsive Main Workspace (1-Column on Phone < 640px, 2-Column on Tablet/Desktop >= 640px)
           Expanded(
-            child: Row(
-              children: [
-                // Left Drug List Column
-                Container(
-                  width: 250,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFF8FAFC),
-                    border: Border(right: BorderSide(color: ClinicalPalette.border)),
-                  ),
-                  child: ListView.separated(
-                    padding: const EdgeInsets.all(12),
-                    itemCount: _etiketItems.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 6),
-                    itemBuilder: (ctx, idx) {
-                      final it = _etiketItems[idx];
-                      final isSelected = idx == _selectedIndex;
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isCompact = constraints.maxWidth < 640;
 
-                      return InkWell(
-                        onTap: () {
-                          AudioHelper.tapFeedback();
-                          setState(() => _selectedIndex = idx);
-                        },
+                Widget buildDrugItemTile(int idx) {
+                  final it = _etiketItems[idx];
+                  final isSelected = idx == _selectedIndex;
+                  return InkWell(
+                    onTap: () {
+                      AudioHelper.tapFeedback();
+                      setState(() => _selectedIndex = idx);
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      width: isCompact ? 185 : null,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: isSelected ? Colors.white : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: isSelected ? Colors.white : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: isSelected ? ClinicalPalette.primary : Colors.transparent,
-                            ),
-                            boxShadow: isSelected
-                                ? [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.05),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ]
-                                : null,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        border: Border.all(
+                          color: isSelected ? ClinicalPalette.primary : ClinicalPalette.border.withValues(alpha: isCompact ? 0.6 : 0),
+                        ),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
                             children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: BoxDecoration(
-                                      color: it.isObatLuar ? const Color(0xFF0284C7) : const Color(0xFF10B981),
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      it.item.name,
-                                      style: TextStyle(
-                                        fontFamily: 'Plus Jakarta Sans',
-                                        fontSize: 12,
-                                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                                        color: isSelected ? ClinicalPalette.primary : ClinicalPalette.textPrimary,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: it.isObatLuar ? const Color(0xFF0284C7) : const Color(0xFF10B981),
+                                  shape: BoxShape.circle,
+                                ),
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                it.signa,
-                                style: const TextStyle(fontSize: 10, color: ClinicalPalette.textTertiary),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  it.item.name,
+                                  style: TextStyle(
+                                    fontFamily: 'Plus Jakarta Sans',
+                                    fontSize: 12,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                                    color: isSelected ? ClinicalPalette.primary : ClinicalPalette.textPrimary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             ],
                           ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-
-                // Right Editor & Real-time Label Preview
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Signa & Type Form
-                        PharmacyEtiketEditorForm(
-                          item: current,
-                          commonSignasOral: _commonSignasOral,
-                          commonSignasLuar: _commonSignasLuar,
-                          onChanged: () => setState(() {}),
-                        ),
-
-                        // Real-time Label Preview Card
-                        const Text(
-                          'Pratinjau Cetak Label Etiket:',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: ClinicalPalette.textSecondary),
-                        ),
-                        const SizedBox(height: 8),
-
-                        PharmacyEtiketPreviewCard(
-                          item: current,
-                          patientName: widget.patientName,
-                          queueNumber: widget.queueNumber,
-                          medicalRecordNumber: widget.medicalRecordNumber,
-                          doctorName: widget.doctorName,
-                        ),
-                      ],
+                          const SizedBox(height: 4),
+                          Text(
+                            it.signa,
+                            style: const TextStyle(fontSize: 10, color: ClinicalPalette.textTertiary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
                     ),
+                  );
+                }
+
+                final editorAndPreview = SingleChildScrollView(
+                  padding: EdgeInsets.all(isCompact ? 14 : 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Signa & Type Form
+                      PharmacyEtiketEditorForm(
+                        item: current,
+                        commonSignasOral: _commonSignasOral,
+                        commonSignasLuar: _commonSignasLuar,
+                        onChanged: () => setState(() {}),
+                      ),
+
+                      // Real-time Label Preview Card
+                      const Text(
+                        'Pratinjau Cetak Label Etiket:',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: ClinicalPalette.textSecondary),
+                      ),
+                      const SizedBox(height: 8),
+
+                      PharmacyEtiketPreviewCard(
+                        item: current,
+                        patientName: widget.patientName,
+                        queueNumber: widget.queueNumber,
+                        medicalRecordNumber: widget.medicalRecordNumber,
+                        doctorName: widget.doctorName,
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                );
+
+                if (isCompact) {
+                  return Column(
+                    children: [
+                      Container(
+                        height: 76,
+                        decoration: BoxDecoration(
+                          color: context.palette.canvas,
+                          border: Border(bottom: BorderSide(color: ClinicalPalette.border)),
+                        ),
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          itemCount: _etiketItems.length,
+                          separatorBuilder: (_, _) => const SizedBox(width: 8),
+                          itemBuilder: (_, idx) => buildDrugItemTile(idx),
+                        ),
+                      ),
+                      Expanded(child: editorAndPreview),
+                    ],
+                  );
+                }
+
+                return Row(
+                  children: [
+                    // Left Drug List Column
+                    Container(
+                      width: 250,
+                      decoration: BoxDecoration(
+                        color: context.palette.canvas,
+                        border: Border(right: BorderSide(color: ClinicalPalette.border)),
+                      ),
+                      child: ListView.separated(
+                        padding: const EdgeInsets.all(12),
+                        itemCount: _etiketItems.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 6),
+                        itemBuilder: (_, idx) => buildDrugItemTile(idx),
+                      ),
+                    ),
+
+                    // Right Editor & Real-time Label Preview
+                    Expanded(child: editorAndPreview),
+                  ],
+                );
+              },
             ),
           ),
 
           // Footer Action Bar
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            decoration: BoxDecoration(
+              color: context.palette.surface,
               borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
               border: Border(top: BorderSide(color: ClinicalPalette.border)),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 12,
+              runSpacing: 8,
               children: [
                 Text(
                   'Item ${widget.items.indexOf(current.item) + 1} dari ${widget.items.length} obat',
                   style: const TextStyle(fontSize: 12, color: ClinicalPalette.textTertiary),
                 ),
-                Row(
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 8,
                   children: [
                     OutlinedButton.icon(
                       onPressed: _isPrinting ? null : _printSelectedEtiket,
@@ -415,7 +457,6 @@ class _PharmacyEtiketDialogState extends State<PharmacyEtiketDialog> {
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       ),
                     ),
-                    const SizedBox(width: 10),
                     ElevatedButton.icon(
                       onPressed: _isPrinting ? null : _printAllEtikets,
                       icon: const Icon(Icons.print_outlined, size: 16),

@@ -1,8 +1,8 @@
 // features/fnb/split_bill/cubit/payment_split_state.dart
 import 'package:equatable/equatable.dart';
 
-import '../../../shared_pos/qris_payment_service.dart';
-import '../../../shared_pos/receipt_printer_service.dart';
+import '../../../shared_pos/services/qris_payment_service.dart';
+import '../../../shared_pos/services/receipt_printer_service.dart';
 import '../../billing.dart';
 
 class PaymentSplitState extends Equatable {

@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../core/utils/app_regex.dart';
 import '../../../core/utils/safe_json.dart';
-import '../../fnb/modifiers.dart';
+import '../../fnb/models/modifiers.dart';
 
 class PosProductBatch {
   final String id;
@@ -302,7 +303,7 @@ class PosProduct {
     if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
       // Jika Storage::url() di backend menghasilkan https://velora.co.id/storage/<key>
       // padahal file disimpan di disk S3 (https://storage.velora.co.id/<key>), arahkan ke storage.velora.co.id
-      final storageMatch = RegExp(r'^https?://(?:www\.)?velora\.co\.id/storage/(.+)$').firstMatch(trimmed);
+      final storageMatch = _veloraStorageRegex.firstMatch(trimmed);
       if (storageMatch != null && storageMatch.group(1) != null) {
         return 'https://storage.velora.co.id/${storageMatch.group(1)!}';
       }
@@ -310,17 +311,24 @@ class PosProduct {
     }
 
     // Path relatif dari DB (misal: "pharmacy/products/xxx.webp", "products/xxx.jpg", atau "/storage/pharmacy/products/xxx.webp")
-    var cleanKey = trimmed.replaceFirst(RegExp(r'^/+'), '');
+    var cleanKey = trimmed.stripLeadingSlashes();
     if (cleanKey.startsWith('storage/')) {
       cleanKey = cleanKey.substring('storage/'.length);
     }
     return 'https://storage.velora.co.id/$cleanKey';
   }
 
+  static final RegExp _veloraStorageRegex = RegExp(
+    r'^https?://(?:www\.)?velora\.co\.id/storage/(.+)$',
+  );
+  static final RegExp _s3StorageRegex = RegExp(
+    r'^https?://storage\.velora\.co\.id/(.+)$',
+  );
+
   /// URL cadangan ke `/storage/` lokal apabila file tidak ditemukan di S3 `storage.velora.co.id`
   static String? resolveImageFallbackUrl(String? primaryUrl) {
     if (primaryUrl == null || primaryUrl.isEmpty) return null;
-    final s3Match = RegExp(r'^https?://storage\.velora\.co\.id/(.+)$').firstMatch(primaryUrl);
+    final s3Match = _s3StorageRegex.firstMatch(primaryUrl);
     if (s3Match != null && s3Match.group(1) != null) {
       return 'https://velora.co.id/storage/${s3Match.group(1)!}';
     }
@@ -345,5 +353,4 @@ class PosCatalogData {
 }
 
 /// Alias typedef for PosProduct
-typedef PosCatalogItem = PosProduct;
 

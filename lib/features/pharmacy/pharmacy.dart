@@ -1,17 +1,18 @@
 // features/pharmacy/pharmacy.dart
 // Unified barrel export for Pharmacy POS feature & Google Stitch "Clinical Precision" suite
 
-export 'pharmacy_service.dart';
+export 'pharmacy_colors.dart';
+export 'services/pharmacy_service.dart';
 export 'services/pharmacy_catalog_service.dart';
-export 'pharmacy_pos_screen.dart';
-export 'pharmacy_queue_screen.dart';
-export 'pharmacy_stock_alert_screen.dart';
-export 'pharmacy_shift_report_screen.dart';
-export 'pharmacy_compounding_screen.dart';
-export 'pharmacy_calling_display_screen.dart';
-export 'pharmacy_stock_opname_screen.dart';
-export 'pharmacy_doctor_emr_screen.dart';
-export 'pharmacy_executive_analytics_screen.dart';
+export 'screens/pharmacy_pos_screen.dart';
+export 'screens/pharmacy_queue_screen.dart';
+export 'screens/pharmacy_stock_alert_screen.dart';
+export 'screens/pharmacy_shift_report_screen.dart';
+export 'screens/pharmacy_compounding_screen.dart';
+export 'screens/pharmacy_calling_display_screen.dart';
+export 'screens/pharmacy_stock_opname_screen.dart';
+export 'screens/pharmacy_doctor_emr_screen.dart';
+export 'screens/pharmacy_executive_analytics_screen.dart';
 export 'widgets/pharmacy_drug_card.dart';
 export 'widgets/pharmacy_cart_panel.dart';
 export 'widgets/pharmacy_patient_dialog.dart';

@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../../core/design/tokens.dart';
-import '../../../shared_pos/product_catalog_service.dart';
-import '../../fnb_register_controller.dart';
+import '../../../shared_pos/services/product_catalog_service.dart';
+import '../../register/fnb_register_controller.dart';
 
 /// Top search bar with barcode scan and hold action buttons for FnB Catalog
 class FnbCatalogSearchBar extends StatelessWidget {
@@ -31,7 +31,13 @@ class FnbCatalogSearchBar extends StatelessWidget {
             children: [
               Icon(Icons.qr_code_scanner_rounded, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: 8),
-              const Text('Pindai Barcode / SKU', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+              const Expanded(
+                child: Text(
+                  'Pindai Barcode / SKU',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
           content: SingleChildScrollView(
@@ -109,7 +115,7 @@ class FnbCatalogSearchBar extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ).whenComplete(barcodeCtrl.dispose);
   }
 
   @override
@@ -193,41 +199,44 @@ class FnbCatalogSearchBar extends StatelessWidget {
           ),
           if (onHold != null || onOpenBills != null) ...[
             const SizedBox(width: 4),
-            Tooltip(
-              message: ctrl.lines.isNotEmpty
-                  ? 'Simpan pesanan aktif saat ini ke antrean hold'
-                  : 'Buka daftar antrean pesanan / hold',
-              child: ctrl.lines.isNotEmpty
-                  ? FilledButton.icon(
-                      onPressed: !ctrl.busy ? onHold : null,
-                      icon: const Icon(Icons.pause_presentation_rounded, size: 16),
-                      label: Text(
-                        isMobile ? 'Hold' : 'Simpan (Hold)',
-                        style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700),
+            ListenableBuilder(
+              listenable: ctrl,
+              builder: (_, _) => Tooltip(
+                message: ctrl.lines.isNotEmpty
+                    ? 'Simpan pesanan aktif saat ini ke antrean hold'
+                    : 'Buka daftar antrean pesanan / hold',
+                child: ctrl.lines.isNotEmpty
+                    ? FilledButton.icon(
+                        onPressed: !ctrl.busy ? onHold : null,
+                        icon: const Icon(Icons.pause_presentation_rounded, size: 16),
+                        label: Text(
+                          isMobile ? 'Hold' : 'Simpan (Hold)',
+                          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700),
+                        ),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(0, 40),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 12, vertical: 10),
+                        ),
+                      )
+                    : OutlinedButton.icon(
+                        onPressed: onOpenBills ?? onHold,
+                        icon: const Icon(Icons.receipt_long_rounded, size: 16),
+                        label: Text(
+                          isMobile ? 'Antrean' : 'Antrean (Hold)',
+                          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: p.textPrimary,
+                          minimumSize: const Size(0, 40),
+                          side: BorderSide(color: p.line),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 12, vertical: 10),
+                        ),
                       ),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: primaryColor,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(0, 40),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 12, vertical: 10),
-                      ),
-                    )
-                  : OutlinedButton.icon(
-                      onPressed: onOpenBills ?? onHold,
-                      icon: const Icon(Icons.receipt_long_rounded, size: 16),
-                      label: Text(
-                        isMobile ? 'Antrean' : 'Antrean (Hold)',
-                        style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: p.textPrimary,
-                        minimumSize: const Size(0, 40),
-                        side: BorderSide(color: p.line),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 12, vertical: 10),
-                      ),
-                    ),
+              ),
             ),
           ],
         ],

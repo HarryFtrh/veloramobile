@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/audio_helper.dart';
+import '../../pharmacy_colors.dart';
 
 class OpnameItem {
   final String id;
@@ -41,17 +43,17 @@ class PharmacyStockOpnameItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF059669);
-    const textPrimary = Color(0xFF0F172A);
-    const textMuted = Color(0xFF6D7A72);
-    const borderColor = Color(0xFFE2E8F0);
+    const emeraldPrimary = PharmacyColors.primary;
+    final textPrimary = context.palette.textPrimary;
+    final textMuted = context.palette.textSecondary;
+    final borderColor = context.palette.line;
 
     final isDiff = item.difference != 0;
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isDiff ? const Color(0xFFBA1A1A).withValues(alpha: 0.5) : borderColor,
@@ -67,7 +69,7 @@ class PharmacyStockOpnameItemCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   item.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Plus Jakarta Sans',
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
@@ -80,7 +82,7 @@ class PharmacyStockOpnameItemCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: isDiff ? const Color(0xFFFFDAD6) : const Color(0xFFD4F8E8),
+                  color: isDiff ? const Color(0xFFFFDAD6) : const Color(0xFF059669).withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -98,7 +100,7 @@ class PharmacyStockOpnameItemCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             'Lot Batch: ${item.batchNumber}  •  ED: ${item.expiryDate}',
-            style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11, color: textMuted),
+            style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11, color: textMuted),
           ),
           const SizedBox(height: 10),
 
@@ -109,10 +111,10 @@ class PharmacyStockOpnameItemCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Stok Buku Sistem:', style: TextStyle(fontSize: 10.5, color: textMuted)),
+                  Text('Stok Buku Sistem:', style: TextStyle(fontSize: 10.5, color: textMuted)),
                   Text(
                     '${item.systemStock} ${item.unit}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'JetBrains Mono',
                       fontWeight: FontWeight.bold,
                       fontSize: 13,

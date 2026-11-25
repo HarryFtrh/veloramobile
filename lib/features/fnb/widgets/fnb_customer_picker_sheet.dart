@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../core/design/tokens.dart';
 import '../../../core/utils/audio_helper.dart';
 import '../../customers/customer_service.dart';
@@ -199,7 +199,7 @@ class _FnbCustomerPickerSheetState extends State<FnbCustomerPickerSheet> with Si
     final isGeneralSelected = widget.currentName.trim().isEmpty;
 
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

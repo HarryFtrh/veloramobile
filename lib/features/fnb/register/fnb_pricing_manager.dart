@@ -2,7 +2,7 @@ import '../billing/models/bill_breakdown.dart';
 import '../billing/models/billing_settings.dart';
 import '../billing/models/store_promotion.dart';
 import '../billing/services/bill_calculator.dart';
-import '../fnb_register_service.dart';
+import '../services/fnb_register_service.dart';
 
 /// Manajer penetapan harga, hierarki diskon (Rule of Precedence), dan kalkulasi tagihan POS.
 class FnbPricingManager {

@@ -130,8 +130,10 @@ class SessionStorage {
       try {
         await _secureStorage.write(key: _tokenKey, value: clean);
       } catch (e) {
-        // Fallback jika Keychain iOS Simulator terkunci atau error -34018
-        await _prefs?.setString(_tokenKey, clean);
+        // Fallback plaintext hanya untuk mode debug/dev (mis. iOS Simulator -34018)
+        if (!kReleaseMode) {
+          await _prefs?.setString(_tokenKey, clean);
+        }
       }
     } else {
       await clearAuthToken();
@@ -139,19 +141,28 @@ class SessionStorage {
   }
 
   Future<String?> getAuthToken() async {
+    final cached = _cleanString(_memCache[_tokenKey]?.toString());
+    if (cached != null) return cached;
+
     try {
       final token = await _secureStorage.read(key: _tokenKey);
       final clean = _cleanString(token);
-      if (clean != null) return clean;
+      if (clean != null) {
+        _memCache[_tokenKey] = clean;
+        return clean;
+      }
     } catch (e) {
       debugPrint('[SessionStorage] SecureStorage read token error: $e');
     }
 
-    // Fallback ke prefs atau memory cache
+    // Fallback ke prefs (hanya terisi pada mode non-release)
     final fromPrefs = _cleanString(_prefs?.getString(_tokenKey));
-    if (fromPrefs != null) return fromPrefs;
+    if (fromPrefs != null) {
+      _memCache[_tokenKey] = fromPrefs;
+      return fromPrefs;
+    }
 
-    return _cleanString(_memCache[_tokenKey]?.toString());
+    return null;
   }
 
   Future<void> clearAuthToken() async {
@@ -389,34 +400,89 @@ class SessionStorage {
 
   List<String> getOfflineQueue() {
     final fromMem = _memCache[_offlineSalesQueueKey];
-    if (fromMem is List<String>) return fromMem;
+    if (fromMem is List<String>) return List<String>.from(fromMem);
     if (fromMem is List) return fromMem.map((e) => e.toString()).toList();
     final fromPrefs = _prefs?.getStringList(_offlineSalesQueueKey);
-    if (fromPrefs != null) return fromPrefs;
+    if (fromPrefs != null) return List<String>.from(fromPrefs);
     return [];
+  }
+
+  Future<void> _queueWriteLock = Future.value();
+
+  Future<void> _persistOfflineQueue(List<String> queue) {
+    _memCache[_offlineSalesQueueKey] = List<String>.from(queue);
+    final next = _queueWriteLock.then((_) async {
+      final latest = getOfflineQueue();
+      try {
+        if (latest.isEmpty) {
+          await _secureStorage.delete(key: _offlineSalesQueueEncKey);
+          await _prefs?.remove(_offlineSalesQueueKey);
+        } else {
+          // Enkripsi dan simpan di Android Keystore
+          await _secureStorage.write(key: _offlineSalesQueueEncKey, value: jsonEncode(latest));
+          // Bersihkan duplikat plaintext di SharedPreferences
+          await _prefs?.remove(_offlineSalesQueueKey);
+        }
+      } catch (e) {
+        debugPrint('[SessionStorage] Keystore write queue failed, fallback to prefs: $e');
+        if (latest.isEmpty) {
+          await _prefs?.remove(_offlineSalesQueueKey);
+        } else {
+          await _prefs?.setStringList(_offlineSalesQueueKey, latest);
+        }
+      }
+    });
+    _queueWriteLock = next.catchError((_) {});
+    return next;
   }
 
   Future<void> enqueueOfflineSale(String jsonSale) async {
     final queue = List<String>.from(getOfflineQueue());
     queue.add(jsonSale);
-    _memCache[_offlineSalesQueueKey] = queue;
-    try {
-      // Enkripsi dan simpan di Android Keystore
-      await _secureStorage.write(key: _offlineSalesQueueEncKey, value: jsonEncode(queue));
-      // Bersihkan duplikat plaintext di SharedPreferences
-      await _prefs?.remove(_offlineSalesQueueKey);
-    } catch (e) {
-      debugPrint('[SessionStorage] Keystore write queue failed, fallback to prefs: $e');
-      await _prefs?.setStringList(_offlineSalesQueueKey, queue);
+    await _persistOfflineQueue(queue);
+  }
+
+  /// Hapus secara selektif hanya transaksi yang sudah berhasil disinkronkan
+  /// agar transaksi offline baru yang masuk saat HTTP sync sedang berjalan tidak ikut terhapus.
+  Future<void> removeSyncedOfflineSales({
+    required Set<String> syncedIds,
+    required List<String> syncedRawItems,
+  }) async {
+    final current = List<String>.from(getOfflineQueue());
+    final rawQuota = <String, int>{};
+    for (final raw in syncedRawItems) {
+      rawQuota[raw] = (rawQuota[raw] ?? 0) + 1;
     }
+
+    current.removeWhere((raw) {
+      final quota = rawQuota[raw] ?? 0;
+      if (quota > 0) {
+        if (quota == 1) {
+          rawQuota.remove(raw);
+        } else {
+          rawQuota[raw] = quota - 1;
+        }
+        return true;
+      }
+      if (syncedIds.isEmpty) return false;
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is Map) {
+          final id = (decoded['offline_id'] ?? decoded['client_tx_id'] ?? decoded['idempotency_key'] ?? '').toString();
+          if (id.isNotEmpty) {
+            return syncedIds.contains(id);
+          }
+        }
+      } catch (_) {}
+      return false;
+    });
+
+    await _persistOfflineQueue(current);
   }
 
   Future<void> clearOfflineQueue() async {
     _memCache.remove(_offlineSalesQueueKey);
-    try {
-      await _secureStorage.delete(key: _offlineSalesQueueEncKey);
-    } catch (_) {}
-    await _prefs?.remove(_offlineSalesQueueKey);
+    await _persistOfflineQueue(const []);
   }
 
   int getOfflineQueueCount() {

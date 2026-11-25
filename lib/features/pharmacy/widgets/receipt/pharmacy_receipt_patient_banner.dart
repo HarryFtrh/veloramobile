@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
+import '../../pharmacy_colors.dart';
 
 /// Patient context banner displayed on the pharmacy thermal receipt dialog
 class PharmacyReceiptPatientBanner extends StatelessWidget {
@@ -15,15 +17,15 @@ class PharmacyReceiptPatientBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF059669);
-    const borderColor = Color(0xFFE2E8F0);
-    const textPrimary = Color(0xFF0F172A);
-    const textMuted = Color(0xFF6D7A72);
+    const emeraldPrimary = PharmacyColors.primary;
+    final borderColor = context.palette.line;
+    final textPrimary = context.palette.textPrimary;
+    final textMuted = context.palette.textSecondary;
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: borderColor),
       ),
@@ -48,7 +50,7 @@ class PharmacyReceiptPatientBanner extends StatelessWidget {
                     Flexible(
                       child: Text(
                         patientName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Plus Jakarta Sans',
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
@@ -82,7 +84,7 @@ class PharmacyReceiptPatientBanner extends StatelessWidget {
                   (doctorName.isNotEmpty && doctorName != '-' && doctorName != 'dr. -')
                       ? 'Dokter: $doctorName'
                       : 'Penjualan Bebas / Walk-in',
-                  style: const TextStyle(fontSize: 10.5, color: textMuted),
+                  style: TextStyle(fontSize: 10.5, color: textMuted),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),

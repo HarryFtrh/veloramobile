@@ -1,10 +1,12 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../core/design/tokens.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/storage/session_storage.dart';
-import '../../shared_pos/shift_service.dart';
-import '../../shared_pos/shift_modal.dart';
-import '../pharmacy_service.dart';
+import '../../shared_pos/services/shift_service.dart';
+import '../../shared_pos/widgets/shift_modal.dart';
+import '../services/pharmacy_service.dart';
 import 'shift/pharmacy_shift_modal_revenue_banner.dart';
+import '../pharmacy_colors.dart';
 
 export 'shift/pharmacy_shift_modal_revenue_banner.dart';
 
@@ -20,7 +22,7 @@ class PharmacyShiftReportModal extends StatefulWidget {
       backgroundColor: Colors.transparent,
       builder: (ctx) => ConstrainedBox(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.9,
+          maxHeight: MediaQuery.sizeOf(context).height * 0.9,
           maxWidth: 580,
         ),
         child: Container(
@@ -40,6 +42,7 @@ class PharmacyShiftReportModal extends StatefulWidget {
 
 class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
   bool _isLoading = true;
+  bool _isClosingShift = false;
   ShiftStatus? _shiftStatus;
 
   num _openingCash = 0;
@@ -80,10 +83,10 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF059669);
-    const borderColor = Color(0xFFE2E8F0);
-    const textPrimary = Color(0xFF0F172A);
-    const textMuted = Color(0xFF6D7A72);
+    const emeraldPrimary = PharmacyColors.primary;
+    final borderColor = context.palette.line;
+    final textPrimary = context.palette.textPrimary;
+    final textMuted = context.palette.textSecondary;
     const tertiaryCyan = Color(0xFF0D9488);
 
     final totalRevenue = _cashRevenue + _qrisRevenue + _debitRevenue + _insuranceRevenue;
@@ -112,40 +115,46 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: emeraldPrimary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(10),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: emeraldPrimary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.analytics_outlined, color: emeraldPrimary, size: 20),
                         ),
-                        child: const Icon(Icons.analytics_outlined, color: emeraldPrimary, size: 20),
-                      ),
-                      const SizedBox(width: 10),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Rekap Shift & Arus Kas POS',
-                            style: TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontWeight: FontWeight.w800,
-                              fontSize: 15,
-                              color: textPrimary,
-                            ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Rekap Shift & Arus Kas POS',
+                                style: TextStyle(
+                                  fontFamily: 'Plus Jakarta Sans',
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15,
+                                  color: textPrimary,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                '$branchName • $cashierName',
+                                style: TextStyle(fontSize: 11, color: textMuted),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
-                          Text(
-                            '$branchName • $cashierName',
-                            style: const TextStyle(fontSize: 11, color: textMuted),
-                          ),
-                        ],
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 20, color: textMuted),
+                    icon: Icon(Icons.close_rounded, size: 20, color: textMuted),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -153,7 +162,7 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
             ],
           ),
         ),
-        const Divider(height: 1, color: borderColor),
+        Divider(height: 1, color: borderColor),
 
         // Scrollable Body
         Expanded(
@@ -166,7 +175,7 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: context.palette.surface,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: borderColor),
                       ),
@@ -192,7 +201,7 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
                           ),
                           Text(
                             _shiftStatus?.shiftId != null ? 'Shift #${_shiftStatus!.shiftId}' : 'Shift Kasir 1',
-                            style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11, fontWeight: FontWeight.bold, color: textPrimary),
+                            style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11, fontWeight: FontWeight.bold, color: textPrimary),
                           ),
                         ],
                       ),
@@ -211,7 +220,7 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: context.palette.surface,
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: emeraldPrimary.withValues(alpha: 0.3)),
                       ),
@@ -248,7 +257,7 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF8FAFC),
+                              color: context.palette.canvas,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Column(
@@ -256,7 +265,7 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    const Text('Modal Awal Kasir (Petty Cash):', style: TextStyle(fontSize: 11, color: textMuted)),
+                                    Text('Modal Awal Kasir (Petty Cash):', style: TextStyle(fontSize: 11, color: textMuted)),
                                     Text(CurrencyFormatter.format(_openingCash), style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11.5, fontWeight: FontWeight.w600)),
                                   ],
                                 ),
@@ -264,7 +273,7 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    const Text('Penerimaan Tunai Shift:', style: TextStyle(fontSize: 11, color: textMuted)),
+                                    Text('Penerimaan Tunai Shift:', style: TextStyle(fontSize: 11, color: textMuted)),
                                     Text('+ ${CurrencyFormatter.format(_cashRevenue)}', style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11.5, fontWeight: FontWeight.bold, color: emeraldPrimary)),
                                   ],
                                 ),
@@ -288,7 +297,7 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: context.palette.surface,
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: borderColor),
                       ),
@@ -341,8 +350,8 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
         // Bottom CTA Buttons
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: context.palette.surface,
             border: Border(top: BorderSide(color: borderColor)),
           ),
           child: Column(
@@ -351,22 +360,31 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
                 width: double.infinity,
                 height: 46,
                 child: ElevatedButton.icon(
-                  onPressed: () async {
-                    final navigator = Navigator.of(context);
-                    final rootContext = navigator.context;
-                    final status = _shiftStatus ?? await ShiftService.instance.getShiftStatus();
-                    navigator.pop();
-                    if (!rootContext.mounted) return;
-                    ShiftDialogs.showCloseShiftDialog(
-                      rootContext,
-                      status,
-                      onClosed: () => widget.onShiftClosed?.call(),
-                    );
-                  },
+                  onPressed: _isClosingShift
+                      ? null
+                      : () async {
+                          if (_isClosingShift) return;
+                          setState(() => _isClosingShift = true);
+                          try {
+                            final navigator = Navigator.of(context);
+                            final rootContext = navigator.context;
+                            final status = _shiftStatus ?? await ShiftService.instance.getShiftStatus();
+                            if (!mounted) return;
+                            navigator.pop();
+                            if (!rootContext.mounted) return;
+                            ShiftDialogs.showCloseShiftDialog(
+                              rootContext,
+                              status,
+                              onClosed: () => widget.onShiftClosed?.call(),
+                            );
+                          } finally {
+                            if (mounted) setState(() => _isClosingShift = false);
+                          }
+                        },
                   icon: const Icon(Icons.print_rounded, size: 18),
-                  label: const Text(
-                    'Tutup Shift & Cetak Struk Rekap',
-                    style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 13.5),
+                  label: Text(
+                    _isClosingShift ? 'Memuat Status Shift...' : 'Tutup Shift & Cetak Struk Rekap',
+                    style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 13.5),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: emeraldPrimary,
@@ -387,7 +405,7 @@ class _PharmacyShiftReportModalState extends State<PharmacyShiftReportModal> {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: context.palette.canvas,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(

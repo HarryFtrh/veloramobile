@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
 /// Search input, poly department pills, and status tab filters for Pharmacy Queue
 class PharmacyQueueFilters extends StatelessWidget {
   final TextEditingController searchController;
@@ -31,12 +31,12 @@ class PharmacyQueueFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const textMuted = Color(0xFF6D7A72);
-    const borderColor = Color(0xFFE2E8F0);
+    final textMuted = context.palette.textSecondary;
+    final borderColor = context.palette.line;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
-      color: Colors.white,
+      color: context.palette.surface,
       child: Column(
         children: [
           TextField(
@@ -44,8 +44,8 @@ class PharmacyQueueFilters extends StatelessWidget {
             onChanged: onSearchChanged,
             decoration: InputDecoration(
               hintText: 'Cari No. Antrean, RM, Nama Pasien, atau Dokter...',
-              hintStyle: const TextStyle(fontSize: 12.5, color: textMuted),
-              prefixIcon: const Icon(Icons.search_rounded, size: 20, color: textMuted),
+              hintStyle: TextStyle(fontSize: 12.5, color: textMuted),
+              prefixIcon: Icon(Icons.search_rounded, size: 20, color: textMuted),
               suffixIcon: searchQuery.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear_rounded, size: 18),
@@ -53,15 +53,15 @@ class PharmacyQueueFilters extends StatelessWidget {
                     )
                   : null,
               filled: true,
-              fillColor: const Color(0xFFF8FAFC),
+              fillColor: context.palette.canvas,
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: borderColor),
+                borderSide: BorderSide(color: borderColor),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: borderColor),
+                borderSide: BorderSide(color: borderColor),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -86,7 +86,7 @@ class PharmacyQueueFilters extends StatelessWidget {
                       duration: const Duration(milliseconds: 150),
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: isSel ? emeraldPrimary : const Color(0xFFF1F5F9),
+                        color: isSel ? emeraldPrimary : context.palette.surfaceMuted,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: isSel ? emeraldPrimary : borderColor,
@@ -97,7 +97,7 @@ class PharmacyQueueFilters extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: isSel ? FontWeight.bold : FontWeight.w600,
-                          color: isSel ? Colors.white : const Color(0xFF475569),
+                          color: isSel ? Colors.white : context.palette.textSecondary,
                         ),
                       ),
                     ),

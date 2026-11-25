@@ -1,5 +1,6 @@
 // features/fnb_customer/widgets/customer_cart_promo_card.dart
-import 'package:flutter/material.dart';
+import '../../../core/utils/currency_formatter.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../core/design/tokens.dart';
 import '../../fnb/billing.dart';
@@ -24,13 +25,6 @@ class CustomerCartPromoCard extends StatelessWidget {
   final int voucherDiscount;
   final ValueChanged<PromoApplicationResult> onApplyVoucher;
   final VoidCallback onRemoveVoucher;
-
-  static String _formatRupiah(num value) {
-    return value
-        .round()
-        .toString()
-        .replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,7 +99,7 @@ class CustomerCartPromoCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   voucherApplied
-                      ? 'Potongan Rp ${_formatRupiah(voucherDiscount)} diterapkan'
+                      ? 'Potongan ${voucherDiscount.toRupiah()} diterapkan'
                       : 'Gunakan promo diskon spesial toko',
                   style: TextStyle(
                     fontSize: 12,
@@ -133,7 +127,7 @@ class CustomerCartPromoCard extends StatelessWidget {
               }
             },
             style: OutlinedButton.styleFrom(
-              backgroundColor: Colors.white,
+              backgroundColor: p.surface,
               side: BorderSide(color: p.line),
               shape: const StadiumBorder(),
               padding: const EdgeInsets.symmetric(

@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../core/design/components.dart';
 import '../../../core/design/tokens.dart';
@@ -14,6 +15,8 @@ class FnbWarmLoginView extends StatelessWidget {
     required this.errorMessage,
     required this.isLoading,
     required this.isGoogleLoading,
+    this.isLoginSuccess = false,
+    this.greetingText = 'Selamat Datang',
     required this.onToggleObscurePassword,
     required this.onToggleRememberMe,
     required this.onLogin,
@@ -29,6 +32,8 @@ class FnbWarmLoginView extends StatelessWidget {
   final String? errorMessage;
   final bool isLoading;
   final bool isGoogleLoading;
+  final bool isLoginSuccess;
+  final String greetingText;
   final VoidCallback onToggleObscurePassword;
   final ValueChanged<bool> onToggleRememberMe;
   final VoidCallback onLogin;
@@ -76,7 +81,15 @@ class FnbWarmLoginView extends StatelessWidget {
                         borderRadius: 22,
                         withGlow: true,
                         useHeroImage: true,
-                      ),
+                      )
+                          .animate()
+                          .fadeIn(duration: 450.ms)
+                          .scale(
+                            begin: const Offset(0.84, 0.84),
+                            end: const Offset(1, 1),
+                            duration: 500.ms,
+                            curve: Curves.easeOutBack,
+                          ),
                       const SizedBox(height: 12),
                       const Text(
                         'Velora F&B',
@@ -87,7 +100,10 @@ class FnbWarmLoginView extends StatelessWidget {
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.5,
                         ),
-                      ),
+                      )
+                          .animate(delay: 90.ms)
+                          .fadeIn(duration: 380.ms)
+                          .slideY(begin: 0.25, end: 0, curve: Curves.easeOutCubic),
                       const SizedBox(height: 4),
                       Text(
                         'Solusi POS Kafe & Restoran',
@@ -95,8 +111,11 @@ class FnbWarmLoginView extends StatelessWidget {
                           color: Colors.white.withValues(alpha: 0.8),
                           fontSize: 14,
                         ),
-                      ),
-                      const SizedBox(height: 26),
+                      )
+                          .animate(delay: 140.ms)
+                          .fadeIn(duration: 380.ms)
+                          .slideY(begin: 0.2, end: 0, curve: Curves.easeOutCubic),
+                      const SizedBox(height: 24),
 
                       // Login Card
                       Container(
@@ -116,20 +135,46 @@ class FnbWarmLoginView extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: primaryColor.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.waving_hand_rounded, size: 14, color: primaryColor),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '$greetingText!',
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: primaryColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 10),
                             Text(
-                              'Masuk ke Velora',
+                              'Welcome Back!',
                               style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 22,
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontWeight: FontWeight.w900,
+                                fontSize: 24,
+                                letterSpacing: -0.5,
                                 color: p.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Masukkan email atau username dan kata sandi Anda',
+                              'Senang melihat Anda kembali. Masuk untuk melanjutkan shift kasir.',
                               style: TextStyle(
                                 fontSize: 13,
                                 color: p.textSecondary,
+                                height: 1.35,
                               ),
                             ),
                             const SizedBox(height: 20),
@@ -262,39 +307,78 @@ class FnbWarmLoginView extends StatelessWidget {
                                     ),
                                   ],
                                 ),
-                              ),
+                              )
+                                  .animate()
+                                  .fadeIn(duration: 200.ms)
+                                  .shakeX(hz: 4, amount: 4, duration: 320.ms),
                               const SizedBox(height: 14),
                             ],
 
-                            // Button Masuk Sekarang
+                            // Button Masuk Sekarang (3-state animated: idle -> loading -> success)
                             SizedBox(
                               width: double.infinity,
                               height: 50,
                               child: ElevatedButton(
-                                onPressed: (isLoading || isGoogleLoading) ? null : onLogin,
+                                onPressed: (isLoading || isGoogleLoading || isLoginSuccess) ? null : onLogin,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: primaryColor,
+                                  backgroundColor: isLoginSuccess ? const Color(0xFF059669) : primaryColor,
+                                  disabledBackgroundColor: isLoginSuccess
+                                      ? const Color(0xFF059669)
+                                      : primaryColor.withValues(alpha: 0.7),
                                   foregroundColor: Colors.white,
+                                  disabledForegroundColor: Colors.white,
                                   shape: const StadiumBorder(),
                                   elevation: 2,
                                 ),
-                                child: isLoading
-                                    ? const SizedBox(
-                                        width: 22,
-                                        height: 22,
-                                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
-                                      )
-                                    : const Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            'Masuk Sekarang',
-                                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                                          ),
-                                          SizedBox(width: 8),
-                                          Icon(Icons.arrow_forward_rounded, size: 18),
-                                        ],
-                                      ),
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 260),
+                                  switchInCurve: Curves.easeOutBack,
+                                  child: isLoginSuccess
+                                      ? const Row(
+                                          key: ValueKey('login_success'),
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.check_circle_rounded, size: 20, color: Colors.white),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              'Berhasil Masuk!',
+                                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                                            ),
+                                          ],
+                                        )
+                                      : isLoading
+                                          ? const Row(
+                                              key: ValueKey('login_loading'),
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                SizedBox(
+                                                  width: 18,
+                                                  height: 18,
+                                                  child: CircularProgressIndicator(
+                                                    color: Colors.white,
+                                                    strokeWidth: 2.2,
+                                                  ),
+                                                ),
+                                                SizedBox(width: 10),
+                                                Text(
+                                                  'Memverifikasi...',
+                                                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                                                ),
+                                              ],
+                                            )
+                                          : const Row(
+                                              key: ValueKey('login_idle'),
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Text(
+                                                  'Masuk Sekarang',
+                                                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                                                ),
+                                                SizedBox(width: 8),
+                                                Icon(Icons.arrow_forward_rounded, size: 18),
+                                              ],
+                                            ),
+                                ),
                               ),
                             ),
                             const SizedBox(height: 20),
@@ -355,12 +439,17 @@ class FnbWarmLoginView extends StatelessWidget {
                             ),
                           ],
                         ),
-                      ),
+                      )
+                          .animate(delay: 180.ms)
+                          .fadeIn(duration: 460.ms)
+                          .slideY(begin: 0.08, end: 0, curve: Curves.easeOutCubic),
                       const SizedBox(height: 20),
 
                       // Footer
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        runSpacing: 4,
                         children: [
                           Text(
                             'Toko belum terdaftar? ',

@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../core/design/components.dart';
@@ -22,6 +22,7 @@ class CustomerMembersTab extends StatefulWidget {
 class _CustomerMembersTabState extends State<CustomerMembersTab>
     with AutomaticKeepAliveClientMixin {
   static const _searchDelay = Duration(milliseconds: 400);
+  static final _decimalFmt = NumberFormat.decimalPattern('id_ID');
 
   late final PagedCubit<LoyaltyMember> _cubit;
   Timer? _debounce;
@@ -104,8 +105,7 @@ class _CustomerMembersTabState extends State<CustomerMembersTab>
                         Expanded(
                           child: StatTile(
                             label: 'Total anggota',
-                            value: NumberFormat.decimalPattern('id_ID')
-                                .format(stats.totalMembers),
+                            value: _decimalFmt.format(stats.totalMembers),
                             caption: '+${stats.newThisMonth} bulan ini',
                           ),
                         ),

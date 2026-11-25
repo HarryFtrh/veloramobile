@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../core/design/tokens.dart';
 import '../../../core/storage/session_storage.dart';
 import '../../../core/utils/audio_helper.dart';
@@ -48,7 +48,7 @@ class PharmacyCustomerFacingDisplay extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -64,8 +64,8 @@ class PharmacyCustomerFacingDisplay extends StatelessWidget {
           // Top Header Banner
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            decoration: const BoxDecoration(
-              color: Color(0xFF0F172A),
+            decoration: BoxDecoration(
+              color: context.palette.textPrimary,
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: Row(
@@ -95,12 +95,12 @@ class PharmacyCustomerFacingDisplay extends StatelessWidget {
                             letterSpacing: 0.5,
                           ),
                         ),
-                        const Text(
+                        Text(
                           'LAYAR PEMBAYARAN PASIEN',
                           style: TextStyle(
                             fontFamily: 'JetBrains Mono',
                             fontSize: 10,
-                            color: Color(0xFF94A3B8),
+                            color: context.palette.textTertiary,
                             letterSpacing: 1,
                           ),
                         ),
@@ -126,7 +126,7 @@ class PharmacyCustomerFacingDisplay extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
+                    color: context.palette.surfaceMuted,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -193,7 +193,7 @@ class PharmacyCustomerFacingDisplay extends StatelessWidget {
                   height: 220,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: context.palette.surface,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: ClinicalPalette.primary, width: 2.5),
                     boxShadow: [
@@ -207,11 +207,11 @@ class PharmacyCustomerFacingDisplay extends StatelessWidget {
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      const Icon(Icons.qr_code_2_rounded, size: 190, color: Color(0xFF0F172A)),
+                      Icon(Icons.qr_code_2_rounded, size: 190, color: context.palette.textPrimary),
                       Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: context.palette.surface,
                           borderRadius: BorderRadius.circular(8),
                           boxShadow: [
                             BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 6),
@@ -250,8 +250,8 @@ class PharmacyCustomerFacingDisplay extends StatelessWidget {
           // Bottom Action Confirm
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF8FAFC),
+            decoration: BoxDecoration(
+              color: context.palette.canvas,
               borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
               border: Border(top: BorderSide(color: ClinicalPalette.border)),
             ),

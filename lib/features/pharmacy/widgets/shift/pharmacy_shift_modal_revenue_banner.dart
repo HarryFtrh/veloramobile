@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../pharmacy_colors.dart';
 
 /// Hero revenue and basket average banner for shift report modal
 class ShiftModalRevenueBanner extends StatelessWidget {
@@ -16,16 +18,16 @@ class ShiftModalRevenueBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF059669);
-    const borderColor = Color(0xFFE2E8F0);
-    const textPrimary = Color(0xFF0F172A);
-    const textMuted = Color(0xFF6D7A72);
+    const emeraldPrimary = PharmacyColors.primary;
+    final borderColor = context.palette.line;
+    final textPrimary = context.palette.textPrimary;
+    final textMuted = context.palette.textSecondary;
     const tertiaryCyan = Color(0xFF0D9488);
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: borderColor),
       ),
@@ -35,14 +37,14 @@ class ShiftModalRevenueBanner extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Total Omzet Penjualan Shift',
                 style: TextStyle(fontSize: 11.5, color: textMuted),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD4F8E8),
+                  color: const Color(0xFF059669).withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -69,14 +71,14 @@ class ShiftModalRevenueBanner extends StatelessWidget {
           ),
           Text(
             'Rata-rata keranjang: ${CurrencyFormatter.format(avgTrx)} / trx',
-            style: const TextStyle(fontSize: 11, color: textMuted),
+            style: TextStyle(fontSize: 11, color: textMuted),
           ),
           const SizedBox(height: 12),
 
           // Revenue Split Bar (Farmasi vs Layanan)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
+            children: [
               Text('Breakdown Unit Penjualan', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: textPrimary)),
               Text('Farmasi 58.6% • Layanan 41.4%', style: TextStyle(fontSize: 10.5, color: textMuted)),
             ],
@@ -99,7 +101,7 @@ class ShiftModalRevenueBanner extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
+                    color: context.palette.canvas,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: borderColor),
                   ),
@@ -118,7 +120,7 @@ class ShiftModalRevenueBanner extends StatelessWidget {
                         CurrencyFormatter.format(totalRevenue * 0.586),
                         style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 12.5, fontWeight: FontWeight.bold),
                       ),
-                      const Text('22 Struk Obat / Resep', style: TextStyle(fontSize: 9.5, color: textMuted)),
+                      Text('22 Struk Obat / Resep', style: TextStyle(fontSize: 9.5, color: textMuted)),
                     ],
                   ),
                 ),
@@ -128,7 +130,7 @@ class ShiftModalRevenueBanner extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
+                    color: context.palette.canvas,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: borderColor),
                   ),
@@ -147,7 +149,7 @@ class ShiftModalRevenueBanner extends StatelessWidget {
                         CurrencyFormatter.format(totalRevenue * 0.414),
                         style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 12.5, fontWeight: FontWeight.bold),
                       ),
-                      const Text('12 Tindakan Medis', style: TextStyle(fontSize: 9.5, color: textMuted)),
+                      Text('12 Tindakan Medis', style: TextStyle(fontSize: 9.5, color: textMuted)),
                     ],
                   ),
                 ),

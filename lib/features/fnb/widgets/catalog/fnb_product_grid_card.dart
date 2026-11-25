@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/safe_json.dart';
 import '../../../../core/widgets/offline_cached_image.dart';
-import '../../../shared_pos/product_catalog_service.dart';
+import '../../../shared_pos/services/product_catalog_service.dart';
 
 /// Clean, responsive product grid card for FnB Catalog
 class FnbProductGridCard extends StatelessWidget {
@@ -57,22 +57,20 @@ class FnbProductGridCard extends StatelessWidget {
       badgeBg = p.secondary;
     }
 
-    return Opacity(
-      opacity: isOutOfStock ? 0.65 : 1.0,
-      child: Material(
-        color: p.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: p.line),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: isOutOfStock ? null : onAdd,
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+    return Material(
+      color: isOutOfStock ? p.surfaceMuted : p.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: p.line),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: isOutOfStock ? null : onAdd,
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
                 // Image Container with Badge
                 SizedBox(
                   height: 84,
@@ -284,7 +282,6 @@ class FnbProductGridCard extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 }

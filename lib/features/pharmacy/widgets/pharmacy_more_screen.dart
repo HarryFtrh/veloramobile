@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../core/design/tokens.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/storage/session_storage.dart';
 import '../../../core/utils/audio_helper.dart';
@@ -8,16 +9,16 @@ import '../../dashboard/dashboard_screen.dart';
 import '../../finance/expenses_screen.dart';
 import '../../finance/return_screen.dart';
 import '../../settings/settings_screen.dart';
-import '../../shared_pos/printer_settings_screen.dart';
-import '../../shared_pos/receipt_printer_service.dart';
-import '../../shared_pos/shift_badge.dart';
+import '../../shared_pos/widgets/printer_settings_screen.dart';
+import '../../shared_pos/services/receipt_printer_service.dart';
+import '../../shared_pos/widgets/shift_badge.dart';
 import '../../subscription/subscription_screen.dart';
-import '../pharmacy_calling_display_screen.dart';
-import '../pharmacy_compounding_screen.dart';
-import '../pharmacy_doctor_emr_screen.dart';
-import '../pharmacy_executive_analytics_screen.dart';
-import '../pharmacy_queue_screen.dart';
-import '../pharmacy_stock_opname_screen.dart';
+import '../screens/pharmacy_calling_display_screen.dart';
+import '../screens/pharmacy_compounding_screen.dart';
+import '../screens/pharmacy_doctor_emr_screen.dart';
+import '../screens/pharmacy_executive_analytics_screen.dart';
+import '../screens/pharmacy_queue_screen.dart';
+import '../screens/pharmacy_stock_opname_screen.dart';
 import 'pharmacy_medical_records_modal.dart';
 import 'pharmacy_pbf_order_modal.dart';
 import 'pharmacy_prescription_review_modal.dart';
@@ -37,7 +38,7 @@ class PharmacyMoreScreen extends StatelessWidget {
     showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: context.palette.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
@@ -124,8 +125,8 @@ class PharmacyMoreScreen extends StatelessWidget {
                               height: 52,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Colors.white.withValues(alpha: 0.15),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 2),
+                                color: context.palette.surface.withValues(alpha: 0.15),
+                                border: Border.all(color: context.palette.surface.withValues(alpha: 0.3), width: 2),
                               ),
                               child: Center(
                                 child: Text(
@@ -194,7 +195,7 @@ class PharmacyMoreScreen extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: Colors.black.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                            border: Border.all(color: context.palette.surface.withValues(alpha: 0.12)),
                           ),
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
@@ -292,12 +293,12 @@ class PharmacyMoreScreen extends StatelessWidget {
                       _buildModuleCard(
                         context: context,
                         icon: Icons.local_shipping_rounded,
-                        iconBg: const Color(0xFFE0F2FE),
+                        iconBg: const Color(0xFF0284C7).withValues(alpha: 0.14),
                         iconColor: const Color(0xFF0284C7),
                         title: 'Pengadaan Order PBF (Surat Pesanan)',
                         subtitle: 'SP Reguler, Prekursor, OOT, dan kontrol jatuh tempo faktur',
                         badgeText: 'SP PBF',
-                        badgeColor: const Color(0xFFE0F2FE),
+                        badgeColor: const Color(0xFF0284C7).withValues(alpha: 0.14),
                         badgeTextColor: const Color(0xFF0369A1),
                         destination: const PharmacyPbfOrderPage(),
                       ),
@@ -305,12 +306,12 @@ class PharmacyMoreScreen extends StatelessWidget {
                       _buildModuleCard(
                         context: context,
                         icon: Icons.qr_code_scanner_rounded,
-                        iconBg: const Color(0xFFEFF6FF),
+                        iconBg: const Color(0xFF0284C7).withValues(alpha: 0.14),
                         iconColor: const Color(0xFF2563EB),
                         title: 'Stock Opname Fisik & FEFO',
                         subtitle: 'Pencocokan stok nyata, nomor batch lot, dan berita acara',
                         badgeText: 'Audit FEFO',
-                        badgeColor: const Color(0xFFEFF6FF),
+                        badgeColor: const Color(0xFF0284C7).withValues(alpha: 0.14),
                         badgeTextColor: const Color(0xFF1D4ED8),
                         destination: const PharmacyStockOpnameScreen(),
                       ),
@@ -381,12 +382,12 @@ class PharmacyMoreScreen extends StatelessWidget {
                       const SizedBox(height: 24),
 
                       // Section 5: Perangkat & Hardware
-                      _buildSectionHeader('PERANGKAT KERAS & HARDWARE', Icons.print_rounded, const Color(0xFF475569)),
+                      _buildSectionHeader('PERANGKAT KERAS & HARDWARE', Icons.print_rounded, context.palette.textSecondary),
                       const SizedBox(height: 8),
                       _buildModuleCard(
                         context: context,
                         icon: Icons.print_rounded,
-                        iconBg: const Color(0xFFEFF6FF),
+                        iconBg: const Color(0xFF0284C7).withValues(alpha: 0.14),
                         iconColor: const Color(0xFF2563EB),
                         title: 'Printer Struk & Hardware Apotek',
                         subtitle: 'Konfigurasi Bluetooth, LAN port 9100, etiket, & laci kas',
@@ -396,12 +397,12 @@ class PharmacyMoreScreen extends StatelessWidget {
                       const SizedBox(height: 24),
 
                       // Section 6: Lisensi & Pengaturan
-                      _buildSectionHeader('LISENSI & PENGATURAN AKUN', Icons.settings_rounded, const Color(0xFF475569)),
+                      _buildSectionHeader('LISENSI & PENGATURAN AKUN', Icons.settings_rounded, context.palette.textSecondary),
                       const SizedBox(height: 8),
                       _buildModuleCard(
                         context: context,
                         icon: Icons.workspace_premium_rounded,
-                        iconBg: const Color(0xFFFEF3C7),
+                        iconBg: const Color(0xFFD97706).withValues(alpha: 0.14),
                         iconColor: const Color(0xFFD97706),
                         title: 'Paket & Langganan Apotek',
                         subtitle: 'Status paket Velora Pro, kuota transaksi, & masa aktif',
@@ -411,8 +412,8 @@ class PharmacyMoreScreen extends StatelessWidget {
                       _buildModuleCard(
                         context: context,
                         icon: Icons.tune_rounded,
-                        iconBg: const Color(0xFFF1F5F9),
-                        iconColor: const Color(0xFF334155),
+                        iconBg: context.palette.surfaceMuted,
+                        iconColor: context.palette.textSecondary,
                         title: 'Pengaturan Akun & Keamanan',
                         subtitle: 'Profil apoteker, PIN cepat kasir, & sesi perangkat',
                         destination: const SettingsScreen(),
@@ -461,7 +462,7 @@ class PharmacyMoreScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE1E4DF)),
         boxShadow: const [
@@ -589,11 +590,12 @@ class PharmacyMoreScreen extends StatelessWidget {
     Color? badgeColor,
     Color? badgeTextColor,
   }) {
+    final p = context.palette;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: p.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+        border: Border.all(color: p.line, width: 1),
         boxShadow: const [
           BoxShadow(
             color: Color(0x04000000),
@@ -637,10 +639,10 @@ class PharmacyMoreScreen extends StatelessWidget {
                           Flexible(
                             child: Text(
                               title,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF0F172A),
+                                color: p.textPrimary,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -651,7 +653,7 @@ class PharmacyMoreScreen extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: badgeColor ?? const Color(0xFFE2E8F0),
+                                color: badgeColor ?? p.surfaceMuted,
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
@@ -659,7 +661,7 @@ class PharmacyMoreScreen extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 9.5,
                                   fontWeight: FontWeight.bold,
-                                  color: badgeTextColor ?? const Color(0xFF334155),
+                                  color: badgeTextColor ?? p.textSecondary,
                                 ),
                               ),
                             ),
@@ -669,9 +671,9 @@ class PharmacyMoreScreen extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         subtitle,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11.5,
-                          color: Color(0xFF64748B),
+                          color: p.textSecondary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -679,7 +681,7 @@ class PharmacyMoreScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Color(0xFFCBD5E1)),
+                Icon(Icons.arrow_forward_ios_rounded, size: 14, color: p.textTertiary),
               ],
             ),
           ),

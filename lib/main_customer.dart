@@ -1,13 +1,15 @@
-import 'package:flutter/material.dart';
+// ignore: unnecessary_import
+import 'package:flutter/widgets.dart';
+import 'package:material_ui/material_ui.dart';
 import 'core/config/app_config.dart';
 import 'core/config/app_theme.dart';
 import 'core/storage/session_storage.dart';
 import 'core/network/api_client.dart';
 import 'core/services/app_update_service.dart';
 import 'core/utils/app_locale.dart';
-import 'features/fnb_customer/customer_login_screen.dart';
+import 'features/fnb_customer/screens/customer_login_screen.dart';
 import 'core/utils/fallback_localizations.dart';
-import 'features/fnb_customer/customer_home_screen.dart';
+import 'features/fnb_customer/screens/customer_home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -79,6 +81,8 @@ class _CustomerSelfOrderAppState extends State<CustomerSelfOrderApp> {
         child: child ?? const SizedBox.shrink(),
       ),
       theme: AppTheme.build(AppFlavor.customer, Brightness.light),
+      darkTheme: AppTheme.build(AppFlavor.customer, Brightness.dark),
+      themeMode: ThemeMode.system,
       home: _isChecking
           ? const Scaffold(
               body: Center(

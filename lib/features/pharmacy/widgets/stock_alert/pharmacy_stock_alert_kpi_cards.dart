@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../../../../core/design/tokens.dart';
 /// Top KPI metric cards for Pharmacy Stock & FEFO Expiry Alert screen
 class PharmacyStockAlertKpiCards extends StatelessWidget {
   final int criticalCount;
@@ -17,7 +18,7 @@ class PharmacyStockAlertKpiCards extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
-      color: Colors.white,
+      color: context.palette.surface,
       child: Row(
         children: [
           Expanded(
@@ -35,7 +36,7 @@ class PharmacyStockAlertKpiCards extends StatelessWidget {
               label: 'ED < 90 Hari',
               value: '$warningCount Batch',
               color: const Color(0xFFEA580C),
-              bg: const Color(0xFFFFF7ED),
+              bg: const Color(0xFFD97706).withValues(alpha: 0.14),
               icon: Icons.warning_amber_rounded,
             ),
           ),
@@ -45,7 +46,7 @@ class PharmacyStockAlertKpiCards extends StatelessWidget {
               label: 'Stok Menipis',
               value: '$lowStockCount Obat',
               color: const Color(0xFF0D9488),
-              bg: const Color(0xFFE0F2FE),
+              bg: const Color(0xFF0284C7).withValues(alpha: 0.14),
               icon: Icons.inventory_2_outlined,
             ),
           ),

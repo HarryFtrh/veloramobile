@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../../core/design/tokens.dart';
 
 /// Dialog to input a hold customer/tag name before parking an order
@@ -56,26 +56,28 @@ class _FnbHoldOrderDialogState extends State<FnbHoldOrderDialog> {
           ),
         ],
       ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Beri nama atau penanda pelanggan untuk antrean ini:',
-            style: TextStyle(fontSize: 13, color: context.palette.textSecondary),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _nameCtrl,
-            autofocus: true,
-            decoration: InputDecoration(
-              labelText: 'Nama Pelanggan / Penanda Antrean',
-              filled: true,
-              fillColor: context.palette.surfaceMuted,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: context.palette.line)),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Beri nama atau penanda pelanggan untuk antrean ini:',
+              style: TextStyle(fontSize: 13, color: context.palette.textSecondary),
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            TextField(
+              controller: _nameCtrl,
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: 'Nama Pelanggan / Penanda Antrean',
+                filled: true,
+                fillColor: context.palette.surfaceMuted,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: context.palette.line)),
+              ),
+            ),
+          ],
+        ),
       ),
       actions: [
         TextButton(

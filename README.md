@@ -150,22 +150,22 @@ flutter run
 ## 📦 Panduan Build Rilis (APK, AAB & iOS)
 
 ### 1. Build Sekaligus Seluruh Flavor (Otomatis)
-Gunakan skrip bash otomatis yang sudah disediakan di root proyek:
+Gunakan skrip bash otomatis yang sudah disediakan di folder `scripts/`:
 
 * **Build Semua APK Android**:
   ```bash
-  chmod +x build_all_flavors.sh
-  ./build_all_flavors.sh apk
+  chmod +x scripts/build_all_flavors.sh
+  ./scripts/build_all_flavors.sh apk
   ```
 
 * **Build Semua Google Play App Bundle (AAB)**:
   ```bash
-  ./build_all_flavors.sh aab
+  ./scripts/build_all_flavors.sh aab
   ```
 
 * **Build Semua Skema Apple iOS**:
   ```bash
-  ./build_all_flavors.sh ios
+  ./scripts/build_all_flavors.sh ios
   ```
 
 ---

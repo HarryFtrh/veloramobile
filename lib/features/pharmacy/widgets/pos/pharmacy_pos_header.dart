@@ -1,8 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/audio_helper.dart';
-import '../../../shared_pos/offline_sync_badge.dart';
-
+import '../../../shared_pos/widgets/offline_sync_badge.dart';
 /// Bilah Navigasi Atas & Kontrol Shift Kasir Apotek
 class PharmacyPosHeader extends StatelessWidget {
   final bool isMobile;
@@ -53,12 +52,12 @@ class PharmacyPosHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const emeraldPrimary = ClinicalPalette.primary;
-    const borderColor = Color(0xFFE2E8F0);
+    final borderColor = context.palette.line;
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 18, vertical: 8),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: context.palette.surface,
         border: Border(bottom: BorderSide(color: borderColor, width: 1)),
         boxShadow: [
           BoxShadow(
@@ -105,11 +104,11 @@ class PharmacyPosHeader extends StatelessWidget {
                         tenant,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Plus Jakarta Sans',
                           fontWeight: FontWeight.w800,
                           fontSize: 14.5,
-                          color: Color(0xFF0F172A),
+                          color: context.palette.textPrimary,
                           letterSpacing: -0.2,
                         ),
                       ),
@@ -117,18 +116,18 @@ class PharmacyPosHeader extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
+                          color: context.palette.surfaceMuted,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           location,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'JetBrains Mono',
                             fontSize: 9.5,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF475569),
+                            color: context.palette.textSecondary,
                           ),
                         ),
                       ),
@@ -151,7 +150,7 @@ class PharmacyPosHeader extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
+                      color: context.palette.canvas,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: borderColor),
                     ),
@@ -166,11 +165,11 @@ class PharmacyPosHeader extends StatelessWidget {
                         const SizedBox(width: 6),
                         Text(
                           cashier,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'JetBrains Mono',
                             fontSize: 10.5,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF0F172A),
+                            color: context.palette.textPrimary,
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -201,7 +200,7 @@ class PharmacyPosHeader extends StatelessWidget {
               // Segmented Action Bar
               Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: context.palette.canvas,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: borderColor),
                 ),
@@ -218,7 +217,7 @@ class PharmacyPosHeader extends StatelessWidget {
                       ),
                     ],
                     IconButton(
-                      icon: const Icon(Icons.receipt_long_rounded, size: 18, color: Color(0xFF64748B)),
+                      icon: Icon(Icons.receipt_long_rounded, size: 18, color: context.palette.textSecondary),
                       tooltip: 'Riwayat Transaksi',
                       constraints: const BoxConstraints(minWidth: 36, minHeight: 34),
                       padding: EdgeInsets.zero,
@@ -237,7 +236,7 @@ class PharmacyPosHeader extends StatelessWidget {
                     ),
                     PopupMenuButton<String>(
                       constraints: const BoxConstraints(minWidth: 200, maxWidth: 260),
-                      icon: const Icon(Icons.more_vert_rounded, size: 18, color: Color(0xFF64748B)),
+                      icon: Icon(Icons.more_vert_rounded, size: 18, color: context.palette.textSecondary),
                       tooltip: 'Menu Tambahan',
                       padding: EdgeInsets.zero,
                       onSelected: (val) {

@@ -31,22 +31,6 @@ class SalesVisit {
   }
 }
 
-class SalesAttendanceStatus {
-  final bool isClockedIn;
-  final DateTime? clockInAt;
-  final DateTime? clockOutAt;
-  final double? latitude;
-  final double? longitude;
-
-  SalesAttendanceStatus({
-    required this.isClockedIn,
-    this.clockInAt,
-    this.clockOutAt,
-    this.latitude,
-    this.longitude,
-  });
-}
-
 class SalesService {
   static final SalesService instance = SalesService._();
   SalesService._();
@@ -69,8 +53,8 @@ class SalesService {
     }
 
     final endpoints = [
-      '/v1/mobile/salesman/clock-in',
       '/mobile/salesman/clock-in',
+      '/v1/mobile/salesman/clock-in',
       '/v1/salesman/clock-in',
     ];
 
@@ -104,8 +88,8 @@ class SalesService {
     };
 
     final endpoints = [
-      '/v1/mobile/salesman/clock-out',
       '/mobile/salesman/clock-out',
+      '/v1/mobile/salesman/clock-out',
       '/v1/salesman/clock-out',
     ];
 
@@ -127,8 +111,8 @@ class SalesService {
 
   Future<List<SalesVisit>> getScheduledVisits() async {
     final endpoints = [
-      '/v1/mobile/salesman/schedule-visits',
       '/mobile/salesman/schedule-visits',
+      '/v1/mobile/salesman/schedule-visits',
       '/v1/salesman/visits',
     ];
 
@@ -177,8 +161,8 @@ class SalesService {
     };
 
     final endpoints = [
-      '/v1/mobile/salesman/visit-logs',
       '/mobile/salesman/visit-logs',
+      '/v1/mobile/salesman/visit-logs',
       '/v1/salesman/visit-logs',
     ];
 
@@ -213,8 +197,8 @@ class SalesService {
     };
 
     final endpoints = [
-      '/v1/mobile/salesman/order-taking',
       '/mobile/salesman/order-taking',
+      '/v1/mobile/salesman/order-taking',
       '/v1/salesman/orders',
     ];
 

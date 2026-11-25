@@ -1,6 +1,7 @@
+import '../../../core/utils/currency_formatter.dart';
 import '../../../core/design/tokens.dart';
-import 'package:flutter/material.dart';
-import '../customer_models.dart';
+import 'package:material_ui/material_ui.dart';
+import '../models/customer_models.dart';
 
 class CustomerCartItemCard extends StatelessWidget {
   const CustomerCartItemCard({
@@ -23,7 +24,7 @@ class CustomerCartItemCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: p.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: p.line),
       ),
@@ -41,6 +42,7 @@ class CustomerCartItemCard extends StatelessWidget {
                   fit: BoxFit.cover,
                   cacheWidth: 160,
                   cacheHeight: 160,
+                  gaplessPlayback: true,
                   errorBuilder: (_, _, _) => Container(
                     width: 72,
                     height: 72,
@@ -117,7 +119,7 @@ class CustomerCartItemCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        'Rp ${item.totalPrice.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}',
+                        item.totalPrice.toRupiah(),
                         style: TextStyle(
                           fontWeight: FontWeight.w800,
                           color: p.textPrimary,

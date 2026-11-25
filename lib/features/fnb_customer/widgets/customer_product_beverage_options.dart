@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../core/design/tokens.dart';
 
 /// Sweetness and ice level customization options for beverage items
@@ -26,7 +26,7 @@ class CustomerProductBeverageOptions extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSel ? primaryColor : Colors.white,
+            color: isSel ? primaryColor : p.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isSel ? Colors.transparent : p.line,
@@ -83,11 +83,12 @@ class CustomerProductBeverageOptions extends StatelessWidget {
           ].map((opt) {
             final isSel = selectedSweetness == opt;
             return ChoiceChip(
+              showCheckmark: false,
               label: Text(opt),
               selected: isSel,
               onSelected: (_) => onSweetnessChanged(opt),
               selectedColor: primaryColor,
-              backgroundColor: Colors.white,
+              backgroundColor: p.surface,
               labelStyle: TextStyle(
                 color: isSel ? Colors.white : p.textPrimary,
                 fontWeight: FontWeight.w600,

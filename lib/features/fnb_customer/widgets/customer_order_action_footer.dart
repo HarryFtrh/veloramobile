@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../core/design/tokens.dart';
 
 /// Bottom action buttons for assistance and placing new orders
@@ -20,7 +20,7 @@ class CustomerOrderActionFooter extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: p.surface,
         border: Border(top: BorderSide(color: p.line)),
         boxShadow: [
           BoxShadow(

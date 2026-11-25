@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
+import '../../../core/utils/currency_formatter.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../core/design/tokens.dart';
-import '../../shared_pos/product_catalog_service.dart';
-import '../customer_models.dart';
+import '../../shared_pos/services/product_catalog_service.dart';
+import '../models/customer_models.dart';
 
 /// Horizontal strip displaying the most popular menu items for patrons.
 class CustomerPopularItemsStrip extends StatelessWidget {
@@ -23,7 +24,7 @@ class CustomerPopularItemsStrip extends StatelessWidget {
 
     final palette = context.palette;
     final primaryColor = Theme.of(context).colorScheme.primary;
-    final cardWidth = (MediaQuery.of(context).size.width * 0.68).clamp(200.0, 260.0);
+    final cardWidth = (MediaQuery.sizeOf(context).width * 0.68).clamp(200.0, 260.0);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -79,7 +80,7 @@ class CustomerPopularItemsStrip extends StatelessWidget {
                   margin: const EdgeInsets.only(right: 12),
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: context.palette.surface,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: palette.line),
                   ),
@@ -98,6 +99,7 @@ class CustomerPopularItemsStrip extends StatelessWidget {
                                       fit: BoxFit.cover,
                                       cacheWidth: 160,
                                       cacheHeight: 160,
+                                      gaplessPlayback: true,
                                       errorBuilder: (_, _, _) => Container(
                                         color: palette.surfaceMuted,
                                         child: Icon(Icons.coffee, color: primaryColor),
@@ -114,7 +116,7 @@ class CustomerPopularItemsStrip extends StatelessWidget {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.92),
+                                  color: context.palette.surface.withValues(alpha: 0.92),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Row(
@@ -150,7 +152,7 @@ class CustomerPopularItemsStrip extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Rp ${item.basePrice.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
+                              item.basePrice.toRupiah(),
                               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: primaryColor),
                             ),
                           ],

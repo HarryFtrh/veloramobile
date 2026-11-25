@@ -1,4 +1,4 @@
-import '../../shared_pos/pos_checkout_service.dart';
+import '../../shared_pos/services/pos_checkout_service.dart';
 
 enum ClinicalSafetyLevel {
   safe,

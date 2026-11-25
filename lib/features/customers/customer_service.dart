@@ -28,8 +28,8 @@ class LoyaltyMember {
         id: json.getString('id'),
         name: json.getString('name', fallback: '-'),
         phone: json.getString('phone'),
-        points: json.getInt('total_points'),
-        totalSpend: json.getDouble('total_spend'),
+        points: json.getInt('total_points', fallback: json.getInt('points_balance', fallback: json.getInt('points'))),
+        totalSpend: json.getDouble('total_spend', fallback: json.getDouble('total_spent')),
         tier: json.getString('tier', fallback: json.getString('membership_tier', fallback: 'Reguler')),
       );
 }
@@ -212,15 +212,24 @@ class CustomerService {
         if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
       };
       dynamic rawData;
-      try {
-        final res = await ApiClient.instance.dio.get('/v1/pos/debts', queryParameters: query);
-        rawData = res.data;
-      } on DioException catch (e) {
-        if (e.response?.statusCode == 404) {
-          final res = await ApiClient.instance.dio.get('/cafe/pos/debts', queryParameters: query);
-          rawData = res.data;
-        } else {
-          rethrow;
+      final endpoints = [
+        '/v1/cafe/pos/debts',
+        '/v1/retail/pos/debts',
+        '/v1/pos/debts',
+        '/cafe/pos/debts',
+        '/retail/pos/debts',
+      ];
+      for (final ep in endpoints) {
+        try {
+          final res = await ApiClient.instance.dio.get(ep, queryParameters: query);
+          if (res.statusCode == 200 && res.data != null) {
+            rawData = res.data;
+            break;
+          }
+        } on DioException catch (e) {
+          if (e.response?.statusCode != 404 && e.response?.statusCode != 405) {
+            rethrow;
+          }
         }
       }
       return _paged(_data(rawData), Debt.fromJson);
@@ -235,13 +244,21 @@ class CustomerService {
         'payment_method': method.value,
         if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
       };
-      try {
-        await ApiClient.instance.dio.post('/v1/pos/debts/$debtId/settle', data: payload);
-      } on DioException catch (e) {
-        if (e.response?.statusCode == 404) {
-          await ApiClient.instance.dio.post('/cafe/pos/debts/$debtId/settle', data: payload);
-        } else {
-          rethrow;
+      final endpoints = [
+        '/v1/cafe/pos/debts/$debtId/settle',
+        '/v1/retail/pos/debts/$debtId/settle',
+        '/v1/pos/debts/$debtId/settle',
+        '/cafe/pos/debts/$debtId/settle',
+        '/retail/pos/debts/$debtId/settle',
+      ];
+      for (final ep in endpoints) {
+        try {
+          await ApiClient.instance.dio.post(ep, data: payload);
+          return;
+        } on DioException catch (e) {
+          if (e.response?.statusCode != 404 && e.response?.statusCode != 405) {
+            rethrow;
+          }
         }
       }
     } catch (e) {
@@ -251,13 +268,21 @@ class CustomerService {
 
   Future<void> writeOff(String debtId) async {
     try {
-      try {
-        await ApiClient.instance.dio.post('/v1/pos/debts/$debtId/write-off');
-      } on DioException catch (e) {
-        if (e.response?.statusCode == 404) {
-          await ApiClient.instance.dio.post('/cafe/pos/debts/$debtId/write-off');
-        } else {
-          rethrow;
+      final endpoints = [
+        '/v1/cafe/pos/debts/$debtId/write-off',
+        '/v1/retail/pos/debts/$debtId/write-off',
+        '/v1/pos/debts/$debtId/write-off',
+        '/cafe/pos/debts/$debtId/write-off',
+        '/retail/pos/debts/$debtId/write-off',
+      ];
+      for (final ep in endpoints) {
+        try {
+          await ApiClient.instance.dio.post(ep);
+          return;
+        } on DioException catch (e) {
+          if (e.response?.statusCode != 404 && e.response?.statusCode != 405) {
+            rethrow;
+          }
         }
       }
     } catch (e) {

@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../core/config/app_config.dart';
 import '../../../core/design/components.dart';
@@ -17,6 +18,8 @@ class StandardLoginView extends StatelessWidget {
     required this.errorMessage,
     required this.isLoading,
     required this.isGoogleLoading,
+    this.isLoginSuccess = false,
+    this.greetingText = 'Selamat Datang',
     required this.accentColor,
     required this.isWarm,
     required this.onToggleObscurePassword,
@@ -35,6 +38,8 @@ class StandardLoginView extends StatelessWidget {
   final String? errorMessage;
   final bool isLoading;
   final bool isGoogleLoading;
+  final bool isLoginSuccess;
+  final String greetingText;
   final Color accentColor;
   final bool isWarm;
   final VoidCallback onToggleObscurePassword;
@@ -81,7 +86,15 @@ class StandardLoginView extends StatelessWidget {
                       size: 76,
                       borderRadius: 22,
                       withGlow: true,
-                    ),
+                    )
+                        .animate()
+                        .fadeIn(duration: 450.ms)
+                        .scale(
+                          begin: const Offset(0.84, 0.84),
+                          end: const Offset(1, 1),
+                          duration: 500.ms,
+                          curve: Curves.easeOutBack,
+                        ),
                     const SizedBox(height: 14),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -95,34 +108,43 @@ class StandardLoginView extends StatelessWidget {
                           Icon(branding.icon, size: 14, color: accentColor),
                           const SizedBox(width: 6),
                           Text(
-                            branding.badge,
+                            '${branding.badge} • $greetingText',
                             style: TextStyle(
                               color: accentColor,
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5,
+                              letterSpacing: 0.4,
                             ),
                           ),
                         ],
                       ),
-                    ),
+                    )
+                        .animate(delay: 90.ms)
+                        .fadeIn(duration: 380.ms)
+                        .slideY(begin: 0.2, end: 0, curve: Curves.easeOutCubic),
                     const SizedBox(height: 10),
                     Text(
-                      config.appName,
+                      'Welcome Back!',
                       style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w900,
                         letterSpacing: -0.5,
                         color: palette.textPrimary,
                       ),
-                    ),
+                    )
+                        .animate(delay: 140.ms)
+                        .fadeIn(duration: 380.ms)
+                        .slideY(begin: 0.2, end: 0, curve: Curves.easeOutCubic),
                     const SizedBox(height: 4),
                     Text(
-                      branding.subtitle,
+                      '${config.appName} — ${branding.subtitle}',
+                      textAlign: TextAlign.center,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: palette.textSecondary,
                       ),
-                    ),
-                    const SizedBox(height: 28),
+                    )
+                        .animate(delay: 180.ms)
+                        .fadeIn(duration: 380.ms),
+                    const SizedBox(height: 24),
                     if (errorMessage != null) ...[
                       Container(
                         padding: const EdgeInsets.all(12),
@@ -143,7 +165,10 @@ class StandardLoginView extends StatelessWidget {
                             ),
                           ],
                         ),
-                      ),
+                      )
+                          .animate()
+                          .fadeIn(duration: 200.ms)
+                          .shakeX(hz: 4, amount: 4, duration: 320.ms),
                       const SizedBox(height: 16),
                     ],
                     TextField(
@@ -209,29 +234,60 @@ class StandardLoginView extends StatelessWidget {
                     const SizedBox(height: 16),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: accentColor,
-                        foregroundColor: accentColor.computeLuminance() > 0.4 ? Colors.black : Colors.white,
+                        backgroundColor: isLoginSuccess ? const Color(0xFF059669) : accentColor,
+                        disabledBackgroundColor: isLoginSuccess
+                            ? const Color(0xFF059669)
+                            : accentColor.withValues(alpha: 0.7),
+                        foregroundColor: isLoginSuccess
+                            ? Colors.white
+                            : (accentColor.computeLuminance() > 0.4 ? Colors.black : Colors.white),
+                        disabledForegroundColor: isLoginSuccess
+                            ? Colors.white
+                            : (accentColor.computeLuminance() > 0.4 ? Colors.black : Colors.white),
                         minimumSize: const Size.fromHeight(48),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      onPressed: (isLoading || isGoogleLoading) ? null : onLogin,
-                      child: isLoading
-                          ? SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                color: accentColor.computeLuminance() > 0.4 ? Colors.black : Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(branding.buttonLabel),
-                                const SizedBox(width: 8),
-                                const Icon(Icons.arrow_forward_rounded, size: 18),
-                              ],
-                            ),
+                      onPressed: (isLoading || isGoogleLoading || isLoginSuccess) ? null : onLogin,
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 260),
+                        switchInCurve: Curves.easeOutBack,
+                        child: isLoginSuccess
+                            ? const Row(
+                                key: ValueKey('std_login_success'),
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.check_circle_rounded, size: 20, color: Colors.white),
+                                  SizedBox(width: 8),
+                                  Text('Berhasil Masuk!', style: TextStyle(fontWeight: FontWeight.w800)),
+                                ],
+                              )
+                            : isLoading
+                                ? Row(
+                                    key: const ValueKey('std_login_loading'),
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          color: accentColor.computeLuminance() > 0.4 ? Colors.black : Colors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      const Text('Memverifikasi...'),
+                                    ],
+                                  )
+                                : Row(
+                                    key: const ValueKey('std_login_idle'),
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(branding.buttonLabel),
+                                      const SizedBox(width: 8),
+                                      const Icon(Icons.arrow_forward_rounded, size: 18),
+                                    ],
+                                  ),
+                      ),
                     ),
                     const SizedBox(height: 20),
                     Row(
@@ -286,8 +342,10 @@ class StandardLoginView extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     if (branding.showRegister)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        runSpacing: 4,
                         children: [
                           Text(
                             'Belum punya akun toko? ',
@@ -308,7 +366,10 @@ class StandardLoginView extends StatelessWidget {
                       ),
                   ],
                 ),
-              ),
+              )
+                  .animate()
+                  .fadeIn(duration: 420.ms)
+                  .slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic),
             ),
           ),
         ),

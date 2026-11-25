@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/storage/session_storage.dart';
+import '../../../core/utils/app_regex.dart';
 import '../../../core/utils/safe_json.dart';
 import '../../shared_pos/models/pos_catalog_models.dart';
 
@@ -62,69 +63,85 @@ class PharmacyCatalogService {
         },
       );
       if (res.statusCode == 200 && res.data != null) {
-        final raw = res.data;
-        List items = [];
-        if (raw is List) {
-          items = raw;
-        } else if (raw is Map) {
-          final d = raw['data'] ?? raw['batches'] ?? raw['items'];
-          if (d is List) {
-            items = d;
-          } else if (d is Map && d['data'] is List) {
-            items = d['data'] as List;
-          }
-        }
-        if (items.isNotEmpty) {
-          _cachedBatchMap.clear();
-          _cachedBatchByNameMap.clear();
-          for (final item in items) {
-            if (item is Map) {
-              final m = Map<String, dynamic>.from(item);
-              final prodId = (m['pharmacy_product_id'] ??
-                      m['product_id'] ??
-                      (m['product'] is Map ? m['product']['id'] : null))
-                  ?.toString();
-              final prodName = (m['product_name'] ??
-                      (m['product'] is Map
-                          ? (m['product']['custom_name'] ?? m['product']['name_main'])
-                          : null) ??
-                      m['name'])
-                  ?.toString()
-                  .trim()
-                  .toLowerCase();
-              final batch = PosProductBatch.fromJson(m);
-              if ((batch.batchNumber.isNotEmpty && batch.batchNumber != '-') ||
-                  (batch.expiryDate.isNotEmpty && batch.expiryDate != '-')) {
-                if (prodId != null && prodId.isNotEmpty) {
-                  _cachedBatchMap.putIfAbsent(prodId, () => []).add(batch);
-                }
-                if (prodName != null && prodName.isNotEmpty) {
-                  _cachedBatchByNameMap.putIfAbsent(prodName, () => []).add(batch);
-                  final norm = prodName.replaceAll(RegExp(r'\s+'), '');
-                  if (norm != prodName) {
-                    _cachedBatchByNameMap.putIfAbsent(norm, () => []).add(batch);
-                  }
-                }
-              }
-            }
-          }
-
-          void sortBatches(List<PosProductBatch> list) {
-            list.sort((a, b) {
-              if (a.expiryDate == '-' && b.expiryDate == '-') return 0;
-              if (a.expiryDate == '-') return 1;
-              if (b.expiryDate == '-') return -1;
-              return a.expiryDate.compareTo(b.expiryDate);
-            });
-          }
-
-          _cachedBatchMap.values.forEach(sortBatches);
-          _cachedBatchByNameMap.values.forEach(sortBatches);
+        final parsed = await compute(_parseAndSortBatchesInIsolate, res.data);
+        if (parsed.byId.isNotEmpty || parsed.byName.isNotEmpty) {
+          _cachedBatchMap
+            ..clear()
+            ..addAll(parsed.byId);
+          _cachedBatchByNameMap
+            ..clear()
+            ..addAll(parsed.byName);
         }
       }
     } catch (e) {
       debugPrint('ℹ️ [PHARMACY BATCHES] /v1/pharmacy/inventory/batches: $e');
     }
+  }
+
+  static ({
+    Map<String, List<PosProductBatch>> byId,
+    Map<String, List<PosProductBatch>> byName,
+  }) _parseAndSortBatchesInIsolate(dynamic raw) {
+    List items = const [];
+    if (raw is List) {
+      items = raw;
+    } else if (raw is Map) {
+      final d = raw['data'] ?? raw['batches'] ?? raw['items'];
+      if (d is List) {
+        items = d;
+      } else if (d is Map && d['data'] is List) {
+        items = d['data'] as List;
+      }
+    }
+
+    final byId = <String, List<PosProductBatch>>{};
+    final byName = <String, List<PosProductBatch>>{};
+    final whitespaceRe = AppRegex.whitespace;
+
+    for (final item in items) {
+      if (item is Map) {
+        final m = Map<String, dynamic>.from(item);
+        final prodId = (m['pharmacy_product_id'] ??
+                m['product_id'] ??
+                (m['product'] is Map ? m['product']['id'] : null))
+            ?.toString();
+        final prodName = (m['product_name'] ??
+                (m['product'] is Map
+                    ? (m['product']['custom_name'] ?? m['product']['name_main'])
+                    : null) ??
+                m['name'])
+            ?.toString()
+            .trim()
+            .toLowerCase();
+        final batch = PosProductBatch.fromJson(m);
+        if ((batch.batchNumber.isNotEmpty && batch.batchNumber != '-') ||
+            (batch.expiryDate.isNotEmpty && batch.expiryDate != '-')) {
+          if (prodId != null && prodId.isNotEmpty) {
+            byId.putIfAbsent(prodId, () => []).add(batch);
+          }
+          if (prodName != null && prodName.isNotEmpty) {
+            byName.putIfAbsent(prodName, () => []).add(batch);
+            final norm = prodName.replaceAll(whitespaceRe, '');
+            if (norm != prodName) {
+              byName.putIfAbsent(norm, () => []).add(batch);
+            }
+          }
+        }
+      }
+    }
+
+    void sortBatches(List<PosProductBatch> list) {
+      list.sort((a, b) {
+        if (a.expiryDate == '-' && b.expiryDate == '-') return 0;
+        if (a.expiryDate == '-') return 1;
+        if (b.expiryDate == '-') return -1;
+        return a.expiryDate.compareTo(b.expiryDate);
+      });
+    }
+
+    byId.values.forEach(sortBatches);
+    byName.values.forEach(sortBatches);
+    return (byId: byId, byName: byName);
   }
 
   /// Sisipkan data batch & ED FEFO ke dalam daftar produk yang belum memiliki batch
@@ -136,7 +153,7 @@ class PharmacyCatalogService {
       if (p.batches.isNotEmpty && p.batches.any((b) => b.batchNumber != '-')) {
         return p;
       }
-      final norm = p.name.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '');
+      final norm = p.name.trim().toLowerCase().replaceAll(AppRegex.whitespace, '');
       final bList = _cachedBatchMap[p.id] ??
           _cachedBatchByNameMap[p.name.trim().toLowerCase()] ??
           _cachedBatchByNameMap[norm];
@@ -196,7 +213,7 @@ class PharmacyCatalogService {
     if (_pharmacyAbbreviations.containsKey(trimmed)) {
       return _pharmacyAbbreviations[trimmed]!;
     }
-    final words = trimmed.split(RegExp(r'\s+'));
+    final words = trimmed.split(AppRegex.whitespace);
     final replaced = words.map((w) => _pharmacyAbbreviations[w] ?? w).toList();
     return replaced.join(' ');
   }
@@ -249,7 +266,7 @@ class PharmacyCatalogService {
       );
       if (res.statusCode == 200 && res.data != null) {
         response = res;
-        parsedCatalog = _parsePharmacyCatalogData(res.data);
+        parsedCatalog = await compute(parseCatalogData, res.data);
       }
     } catch (e) {
       debugPrint('⚠️ [PHARMACY CATALOG] /v1/pos/products-sync gagal: $e');
@@ -262,8 +279,7 @@ class PharmacyCatalogService {
       final diskJson = SessionStorage.instance.getCatalogCache(scopeKey);
       if (diskJson != null && diskJson.isNotEmpty) {
         try {
-          final decoded = jsonDecode(diskJson);
-          final diskData = _parsePharmacyCatalogData(decoded);
+          final diskData = await compute(decodeAndParseCatalogData, diskJson);
           if (diskData.products.isNotEmpty) {
             _rebuildIndex(diskData.products);
             _cachedCatalog = diskData;
@@ -303,7 +319,8 @@ class PharmacyCatalogService {
     _cachedCatalog = finalCatalog;
 
     try {
-      unawaited(SessionStorage.instance.saveCatalogCache(scopeKey, jsonEncode(response.data)));
+      final encoded = await compute(jsonEncode, response.data);
+      unawaited(SessionStorage.instance.saveCatalogCache(scopeKey, encoded));
     } catch (_) {}
 
     return finalCatalog;
@@ -333,7 +350,7 @@ class PharmacyCatalogService {
         queryParameters: queryParams,
       );
       if (res.statusCode == 200 && res.data != null) {
-        final parsed = _parsePharmacyCatalogData(res.data);
+        final parsed = await compute(parseCatalogData, res.data);
         if (parsed.products.isNotEmpty) {
           final enriched = enrichProductsWithBatches(parsed.products);
           for (final p in enriched) {
@@ -355,7 +372,7 @@ class PharmacyCatalogService {
         queryParameters: queryParams,
       );
       if (res.statusCode == 200 && res.data != null) {
-        final parsed = _parsePharmacyCatalogData(res.data);
+        final parsed = await compute(parseCatalogData, res.data);
         if (parsed.products.isNotEmpty) {
           final enriched = enrichProductsWithBatches(parsed.products);
           for (final p in enriched) {
@@ -755,7 +772,10 @@ class PharmacyCatalogService {
     );
   }
 
-  PosCatalogData _parsePharmacyCatalogData(dynamic rawData) {
+  static PosCatalogData decodeAndParseCatalogData(String diskJson) =>
+      parseCatalogData(jsonDecode(diskJson));
+
+  static PosCatalogData parseCatalogData(dynamic rawData) {
     Map<String, dynamic> data = {};
     List<dynamic> productList = const [];
     List<dynamic> categoryList = const [];

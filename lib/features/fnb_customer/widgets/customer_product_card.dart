@@ -1,6 +1,7 @@
+import '../../../core/utils/currency_formatter.dart';
 import '../../../core/design/tokens.dart';
-import 'package:flutter/material.dart';
-import '../customer_models.dart';
+import 'package:material_ui/material_ui.dart';
+import '../models/customer_models.dart';
 
 class CustomerProductCard extends StatelessWidget {
   const CustomerProductCard({
@@ -21,7 +22,7 @@ class CustomerProductCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: p.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: p.line),
           boxShadow: [
@@ -44,6 +45,7 @@ class CustomerProductCard extends StatelessWidget {
                     item.imageUrl,
                     fit: BoxFit.cover,
                     cacheWidth: 360,
+                    gaplessPlayback: true,
                     errorBuilder: (_, _, _) => Container(
                       color: p.surfaceMuted,
                       child: Icon(
@@ -62,7 +64,7 @@ class CustomerProductCard extends StatelessWidget {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.92),
+                      color: p.surface.withValues(alpha: 0.92),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
@@ -143,7 +145,7 @@ class CustomerProductCard extends StatelessWidget {
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            'Rp ${item.basePrice.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
+                            item.basePrice.toRupiah(),
                             style: TextStyle(
                               fontWeight: FontWeight.w800,
                               fontSize: 13,

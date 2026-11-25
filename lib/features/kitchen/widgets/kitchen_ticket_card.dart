@@ -1,11 +1,33 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/design/tokens.dart';
-import '../../shared_pos/receipt_printer_service.dart';
+import '../../shared_pos/services/receipt_printer_service.dart';
 import '../kitchen_cubit.dart';
 import '../kitchen_service.dart';
+
+/// Ticker tunggal bersama untuk semua kartu KDS agar hanya ada 1 Timer aktif.
+class _KdsSharedTicker {
+  static final ValueNotifier<DateTime> now = ValueNotifier<DateTime>(DateTime.now());
+  static Timer? _timer;
+  static int _listeners = 0;
+
+  static void attach() {
+    _listeners++;
+    _timer ??= Timer.periodic(const Duration(seconds: 1), (_) {
+      now.value = DateTime.now();
+    });
+  }
+
+  static void detach() {
+    _listeners = (_listeners - 1).clamp(0, 100000);
+    if (_listeners == 0) {
+      _timer?.cancel();
+      _timer = null;
+    }
+  }
+}
 
 class KitchenTicketCard extends StatefulWidget {
   const KitchenTicketCard({
@@ -24,19 +46,38 @@ class KitchenTicketCard extends StatefulWidget {
 }
 
 class _KitchenTicketCardState extends State<KitchenTicketCard> {
-  Timer? _timer;
+  bool _wasLate = false;
+
+  bool _computeIsLate(DateTime now) =>
+      widget.order.stage != KitchenStage.ready &&
+      now.difference(widget.order.createdAt).inMinutes >= kLateAfterMinutes;
+
+  void _onTick() {
+    if (!mounted) return;
+    final nowLate = _computeIsLate(_KdsSharedTicker.now.value);
+    if (nowLate != _wasLate) {
+      setState(() => _wasLate = nowLate);
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() {});
-    });
+    _wasLate = _computeIsLate(DateTime.now());
+    _KdsSharedTicker.attach();
+    _KdsSharedTicker.now.addListener(_onTick);
+  }
+
+  @override
+  void didUpdateWidget(covariant KitchenTicketCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _wasLate = _computeIsLate(_KdsSharedTicker.now.value);
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _KdsSharedTicker.now.removeListener(_onTick);
+    _KdsSharedTicker.detach();
     super.dispose();
   }
 
@@ -95,24 +136,20 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     final p = context.palette;
     final primaryColor = Theme.of(context).colorScheme.primary;
     final order = widget.order;
     final cubit = context.read<KitchenCubit>();
-
-    final diff = DateTime.now().difference(order.createdAt);
-    final mins = diff.inMinutes;
-    final secs = (diff.inSeconds % 60).toString().padLeft(2, '0');
-    final isLate = order.stage != KitchenStage.ready && mins >= kLateAfterMinutes;
+    final isLate = _wasLate;
 
     final items = widget.station == null
         ? order.items
         : order.items.where((i) => i.station == widget.station).toList();
 
-    // Order type badge configuration
     final (typeLabel, typeColor, typeBg, typeIcon) = switch (order.isTakeaway) {
-      true => ('Takeaway', const Color(0xFFD97706), const Color(0xFFFEF3C7), Icons.takeout_dining_rounded),
+      true => ('Takeaway', const Color(0xFFD97706), const Color(0xFFD97706).withValues(alpha: 0.14), Icons.takeout_dining_rounded),
       false when order.isOnline => ('Online', const Color(0xFF2563EB), const Color(0xFFDBEAFE), Icons.delivery_dining_rounded),
       _ => ('Dine In', const Color(0xFF059669), const Color(0xFFD1FAE5), Icons.restaurant_rounded),
     };
@@ -141,8 +178,128 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Row 1: Header Ticket Number, Type Badge, Timer & Menu
-          Row(
+          _buildHeaderRow(
+            context: context,
+            p: p,
+            primaryColor: primaryColor,
+            order: order,
+            cubit: cubit,
+            typeLabel: typeLabel,
+            typeColor: typeColor,
+            typeBg: typeBg,
+            typeIcon: typeIcon,
+            isLate: isLate,
+          ),
+          if (order.customerName != null || order.serverName != null) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                if (order.customerName != null) ...[
+                  Icon(Icons.person_outline_rounded, size: 13, color: p.textSecondary),
+                  const SizedBox(width: 3),
+                  Flexible(
+                    child: Text(
+                      order.customerName!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: p.textPrimary),
+                    ),
+                  ),
+                ],
+                if (order.customerName != null && order.serverName != null)
+                  Text(' • ', style: TextStyle(color: p.textSecondary, fontSize: 11)),
+                if (order.serverName != null) ...[
+                  Flexible(
+                    child: Text(
+                      'Kasir: ${order.serverName!}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 10, color: p.textSecondary),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+          if (isLate) ...[
+            const SizedBox(height: 6),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: p.danger,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, size: 13, color: Colors.white),
+                  SizedBox(width: 5),
+                  Text(
+                    'PRIORITAS TINGGI (MELEBIHI TARGET SEDUH > 7 MENIT)',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
+          Divider(height: 1, color: p.line),
+          const SizedBox(height: 8),
+          ..._buildItemsList(p, primaryColor, order, cubit, items, isLate),
+          if (order.notes != null && order.notes!.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFD97706).withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFFDE68A)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.notes_rounded, size: 15, color: Color(0xFFB45309)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      order.notes!,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFFB45309),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+          ..._buildFooterAction(p, primaryColor, order, cubit, allDone),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeaderRow({
+    required BuildContext context,
+    required AppPalette p,
+    required Color primaryColor,
+    required KitchenOrder order,
+    required KitchenCubit cubit,
+    required String typeLabel,
+    required Color typeColor,
+    required Color typeBg,
+    required IconData typeIcon,
+    required bool isLate,
+  }) {
+    return Row(
             children: [
               // Ticket Number
               Text(
@@ -202,45 +359,54 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
               ),
               const Spacer(),
 
-              // Timer Pill
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                decoration: BoxDecoration(
-                  color: isLate
-                      ? p.danger.withValues(alpha: 0.12)
-                      : (mins >= 5
-                          ? const Color(0xFFFEF3C7)
-                          : p.surfaceMuted),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: isLate
-                        ? p.danger.withValues(alpha: 0.5)
-                        : (mins >= 5 ? const Color(0xFFF59E0B) : p.line),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.timer_outlined,
-                      size: 13,
-                      color: isLate
-                          ? p.danger
-                          : (mins >= 5 ? const Color(0xFFD97706) : p.textSecondary),
-                    ),
-                    const SizedBox(width: 3),
-                    Text(
-                      '$mins:$secs',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: isLate
-                            ? p.danger
-                            : (mins >= 5 ? const Color(0xFFB45309) : p.textPrimary),
+              // Timer Pill (hanya widget ini yang rebuild tiap detik)
+              ValueListenableBuilder<DateTime>(
+                valueListenable: _KdsSharedTicker.now,
+                builder: (_, now, _) {
+                  final diff = now.difference(order.createdAt);
+                  final mins = diff.inMinutes;
+                  final secs = (diff.inSeconds % 60).toString().padLeft(2, '0');
+                  final pillLate = order.stage != KitchenStage.ready && mins >= kLateAfterMinutes;
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                    decoration: BoxDecoration(
+                      color: pillLate
+                          ? p.danger.withValues(alpha: 0.12)
+                          : (mins >= 5
+                              ? const Color(0xFFD97706).withValues(alpha: 0.14)
+                              : p.surfaceMuted),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: pillLate
+                            ? p.danger.withValues(alpha: 0.5)
+                            : (mins >= 5 ? const Color(0xFFF59E0B) : p.line),
                       ),
                     ),
-                  ],
-                ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.timer_outlined,
+                          size: 13,
+                          color: pillLate
+                              ? p.danger
+                              : (mins >= 5 ? const Color(0xFFD97706) : p.textSecondary),
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          '$mins:$secs',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: pillLate
+                                ? p.danger
+                                : (mins >= 5 ? const Color(0xFFB45309) : p.textPrimary),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
 
               // More Actions Menu
@@ -288,74 +454,18 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
                 ],
               ),
             ],
-          ),
+          );
+  }
 
-          // Customer and Server Subtitle
-          if (order.customerName != null || order.serverName != null) ...[
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                if (order.customerName != null) ...[
-                  Icon(Icons.person_outline_rounded, size: 13, color: p.textSecondary),
-                  const SizedBox(width: 3),
-                  Flexible(
-                    child: Text(
-                      order.customerName!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: p.textPrimary),
-                    ),
-                  ),
-                ],
-                if (order.customerName != null && order.serverName != null)
-                  Text(' • ', style: TextStyle(color: p.textSecondary, fontSize: 11)),
-                if (order.serverName != null) ...[
-                  Flexible(
-                    child: Text(
-                      'Kasir: ${order.serverName!}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 10, color: p.textSecondary),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ],
-
-          // Late warning banner
-          if (isLate) ...[
-            const SizedBox(height: 6),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: p.danger,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.warning_amber_rounded, size: 13, color: Colors.white),
-                  SizedBox(width: 5),
-                  Text(
-                    'PRIORITAS TINGGI (MELEBIHI TARGET SEDUH > 7 MENIT)',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-
-          const SizedBox(height: 8),
-          Divider(height: 1, color: p.line),
-          const SizedBox(height: 8),
-
-          // Items List
+  List<Widget> _buildItemsList(
+    AppPalette p,
+    Color primaryColor,
+    KitchenOrder order,
+    KitchenCubit cubit,
+    List<KitchenItem> items,
+    bool isLate,
+  ) {
+    return [
           for (final item in items)
             InkWell(
               borderRadius: BorderRadius.circular(8),
@@ -435,7 +545,7 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFEF3C7),
+                                color: const Color(0xFFD97706).withValues(alpha: 0.14),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Row(
@@ -475,40 +585,17 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
                 ),
               ),
             ),
+    ];
+  }
 
-          // Order-level Notes
-          if (order.notes != null && order.notes!.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFEF3C7),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFFDE68A)),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.notes_rounded, size: 15, color: Color(0xFFB45309)),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      order.notes!,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFFB45309),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-          const SizedBox(height: 10),
-
-          // Ready notification indicator
+  List<Widget> _buildFooterAction(
+    AppPalette p,
+    Color primaryColor,
+    KitchenOrder order,
+    KitchenCubit cubit,
+    bool allDone,
+  ) {
+    return [
           if (allDone && order.stage != KitchenStage.ready) ...[
             Container(
               margin: const EdgeInsets.only(bottom: 8),
@@ -569,8 +656,6 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
               ),
             ),
           ),
-        ],
-      ),
-    );
+    ];
   }
 }

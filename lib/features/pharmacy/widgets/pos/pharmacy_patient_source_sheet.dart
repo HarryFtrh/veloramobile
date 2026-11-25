@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/audio_helper.dart';
 
 /// Modal bottom sheet for choosing patient data source (Clinic queue vs manual input vs walk-in)
@@ -26,6 +27,7 @@ class PharmacyPatientSourceSheet extends StatelessWidget {
     AudioHelper.tapFeedback();
     return showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -42,7 +44,7 @@ class PharmacyPatientSourceSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -53,19 +55,19 @@ class PharmacyPatientSourceSheet extends StatelessWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE2E8F0),
+                  color: context.palette.line,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Pilih Sumber Data Pasien',
               style: TextStyle(
                 fontFamily: 'Plus Jakarta Sans',
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
-                color: Color(0xFF0F172A),
+                color: context.palette.textPrimary,
               ),
             ),
             const SizedBox(height: 4),
@@ -78,7 +80,7 @@ class PharmacyPatientSourceSheet extends StatelessWidget {
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(color: Color(0xFFE2E8F0)),
+                side: BorderSide(color: context.palette.line),
               ),
               leading: Container(
                 width: 40,
@@ -108,7 +110,7 @@ class PharmacyPatientSourceSheet extends StatelessWidget {
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(color: Color(0xFFE2E8F0)),
+                side: BorderSide(color: context.palette.line),
               ),
               leading: Container(
                 width: 40,
@@ -139,7 +141,7 @@ class PharmacyPatientSourceSheet extends StatelessWidget {
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(color: Color(0xFFE2E8F0)),
+                  side: BorderSide(color: context.palette.line),
                 ),
                 leading: Container(
                   width: 40,

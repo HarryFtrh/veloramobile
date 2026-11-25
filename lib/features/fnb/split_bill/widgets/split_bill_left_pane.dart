@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import '../../../../core/utils/currency_formatter.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../core/design/tokens.dart';
 import '../../billing.dart';
@@ -72,16 +73,45 @@ class SplitBillLeftPane extends StatelessWidget {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     final p = context.palette;
     final primaryColor = Theme.of(context).colorScheme.primary;
-    final isWide = MediaQuery.of(context).size.width >= 860;
+    final isWide = MediaQuery.sizeOf(context).width >= 860;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Toggle Bayar Penuh vs Split Bill
+        _buildModeToggle(p, primaryColor, isWide),
+        const SizedBox(height: 14),
+        if (isSplitBill) ...[
+          _buildSplitSubToggle(p, primaryColor),
+          const SizedBox(height: 14),
+        ],
         Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: p.surface,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: p.line),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (isSplitBill && splitMode == 'equal')
+                ..._buildEqualSplitControl(p, primaryColor)
+              else
+                ..._buildItemListSection(context, p, primaryColor),
+              ..._buildSummaryFooter(context, p, primaryColor),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildModeToggle(AppPalette p, Color primaryColor, bool isWide) {
+    return Container(
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
             color: p.surfaceMuted,
@@ -181,15 +211,14 @@ class SplitBillLeftPane extends StatelessWidget {
               ),
             ],
           ),
-        ),
-        const SizedBox(height: 14),
+        );
+  }
 
-        if (isSplitBill) ...[
-          // Sub-toggle Split Mode: Per Item vs Bagi Rata
-          Container(
+  Widget _buildSplitSubToggle(AppPalette p, Color primaryColor) {
+    return Container(
             padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: p.surface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: p.line),
             ),
@@ -251,23 +280,11 @@ class SplitBillLeftPane extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 14),
-        ],
+          );
+  }
 
-        // Bill Content Container
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: p.line),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (isSplitBill && splitMode == 'equal') ...[
-                // Equal Split Control Card
+  List<Widget> _buildEqualSplitControl(AppPalette p, Color primaryColor) {
+    return [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -315,7 +332,7 @@ class SplitBillLeftPane extends StatelessWidget {
                         children: [
                           Text('Total Seluruh Tagihan', style: TextStyle(fontSize: 12, color: p.textSecondary)),
                           Text(
-                            'Rp ${totalBillAmount.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
+                            totalBillAmount.toRupiah(),
                             style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
                           ),
                         ],
@@ -326,7 +343,7 @@ class SplitBillLeftPane extends StatelessWidget {
                         children: [
                           Text('Bagian per 1 Orang', style: TextStyle(fontSize: 12, color: p.textSecondary)),
                           Text(
-                            'Rp ${(totalBillAmount / (paxCount > 0 ? paxCount : 1)).ceil().toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
+                            (totalBillAmount / (paxCount > 0 ? paxCount : 1)).ceil().toRupiah(),
                             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: p.secondary),
                           ),
                         ],
@@ -369,8 +386,11 @@ class SplitBillLeftPane extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-              ] else ...[
-                // Item List Header with Quick Actions
+    ];
+  }
+
+  List<Widget> _buildItemListSection(BuildContext context, AppPalette p, Color primaryColor) {
+    return [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -541,7 +561,7 @@ class SplitBillLeftPane extends StatelessWidget {
                                   ),
                                 ),
                                 Text(
-                                  'Rp ${(itemPrice * effectiveCount).round().toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
+                                  (itemPrice * effectiveCount).round().toRupiah(),
                                   style: TextStyle(
                                     fontWeight: FontWeight.w800,
                                     fontSize: 13,
@@ -558,14 +578,17 @@ class SplitBillLeftPane extends StatelessWidget {
                     },
                   ),
                 ],
-              ],
+    ];
+  }
 
+  List<Widget> _buildSummaryFooter(BuildContext context, AppPalette p, Color primaryColor) {
+    return [
               Divider(color: p.line),
               const SizedBox(height: 6),
               _buildPriceRow(
                 context,
                 'Subtotal Item',
-                'Rp ${selectedItemsTotal.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
+                selectedItemsTotal.toRupiah(),
               ),
               _buildPriceRow(
                 context,
@@ -593,7 +616,7 @@ class SplitBillLeftPane extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    'Rp ${selectedItemsTotal.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
+                    selectedItemsTotal.toRupiah(),
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 16,
@@ -602,10 +625,6 @@ class SplitBillLeftPane extends StatelessWidget {
                   ),
                 ],
               ),
-            ],
-          ),
-        ),
-      ],
-    );
+    ];
   }
 }

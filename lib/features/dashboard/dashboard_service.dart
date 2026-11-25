@@ -5,7 +5,7 @@ import '../../core/network/api_client.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/storage/session_storage.dart';
 import '../../core/utils/safe_json.dart';
-import '../shared_pos/sale_record.dart';
+import '../shared_pos/models/sale_record.dart';
 
 class BranchSales {
   const BranchSales({required this.name, required this.total});
@@ -163,19 +163,20 @@ class DashboardService {
   Future<DashboardSummary> _cafe(DateTime start, DateTime end) async {
     final query = _query(start, end);
     dynamic raw;
-    try {
-      final res = await ApiClient.instance.dio.get('/v1/pos/dashboard/overview', queryParameters: query);
-      raw = res.data;
-    } catch (_) {
+    final endpoints = [
+      '/v1/cafe/dashboard/overview',
+      '/v1/pos/dashboard/overview',
+      '/cafe/dashboard/overview',
+      '/pos/dashboard/overview',
+    ];
+    for (final ep in endpoints) {
       try {
-        final res = await ApiClient.instance.dio.get('/cafe/dashboard/overview', queryParameters: query);
-        raw = res.data;
-      } catch (_) {
-        try {
-          final res = await ApiClient.instance.dio.get('/pos/dashboard/overview', queryParameters: query);
+        final res = await ApiClient.instance.dio.get(ep, queryParameters: query);
+        if (res.statusCode == 200 && res.data != null) {
           raw = res.data;
-        } catch (_) {}
-      }
+          break;
+        }
+      } catch (_) {}
     }
     final data = _unwrap(raw);
     final status = data.getMap('status_breakdown');
@@ -209,26 +210,44 @@ class DashboardService {
     double other = data.getDouble('other_total',
         fallback: data.getDouble('other_sales', fallback: 0.0));
 
-    // Augment with local sales from ShiftSalesStorage if active
+    // Augment with local sales from ShiftSalesStorage if active (single pass)
     final isToday = start.year == end.year && start.month == end.month && start.day == end.day;
     if (isToday) {
-      final localSales = ShiftSalesStorage.activeShiftSales.where((s) => !s.isVoided).toList();
-      if (localSales.isNotEmpty) {
-        final double lCash = localSales.where((s) => s.paymentMethod.toLowerCase() == 'cash').fold(0.0, (sum, s) => sum + s.total);
-        final double lQris = localSales.where((s) => s.paymentMethod.toLowerCase() == 'qris').fold(0.0, (sum, s) => sum + s.total);
-        final double lTf = localSales.where((s) => s.paymentMethod.toLowerCase().contains('transfer')).fold(0.0, (sum, s) => sum + s.total);
-        final double lDebit = localSales.where((s) => s.paymentMethod.toLowerCase().contains('card') || s.paymentMethod.toLowerCase().contains('edc') || s.paymentMethod.toLowerCase().contains('debit')).fold(0.0, (sum, s) => sum + s.total);
-        final double lOther = localSales.where((s) => !['cash', 'qris'].contains(s.paymentMethod.toLowerCase()) && !s.paymentMethod.toLowerCase().contains('transfer') && !s.paymentMethod.toLowerCase().contains('card') && !s.paymentMethod.toLowerCase().contains('edc') && !s.paymentMethod.toLowerCase().contains('debit')).fold(0.0, (sum, s) => sum + s.total);
+      double lCash = 0.0;
+      double lQris = 0.0;
+      double lTf = 0.0;
+      double lDebit = 0.0;
+      double lOther = 0.0;
+      double localTotal = 0.0;
+      int localCount = 0;
 
+      for (final s in ShiftSalesStorage.activeShiftSales) {
+        if (s.isVoided) continue;
+        final total = s.total.toDouble();
+        localTotal += total;
+        localCount++;
+        final method = s.paymentMethod.toLowerCase();
+        if (method == 'cash') {
+          lCash += total;
+        } else if (method == 'qris') {
+          lQris += total;
+        } else if (method.contains('transfer')) {
+          lTf += total;
+        } else if (method.contains('card') || method.contains('edc') || method.contains('debit')) {
+          lDebit += total;
+        } else {
+          lOther += total;
+        }
+      }
+
+      if (localCount > 0) {
         if (cash == 0 && lCash > 0) cash = lCash;
         if (qris == 0 && lQris > 0) qris = lQris;
         if (transfer == 0 && lTf > 0) transfer = lTf;
         if (debit == 0 && lDebit > 0) debit = lDebit;
         if (other == 0 && lOther > 0) other = lOther;
-
-        final double localTotal = localSales.fold(0.0, (sum, s) => sum + s.total);
         if (rev == 0 && localTotal > 0) rev = localTotal;
-        if (tx == 0 && localSales.isNotEmpty) tx = localSales.length;
+        if (tx == 0) tx = localCount;
       }
     }
 

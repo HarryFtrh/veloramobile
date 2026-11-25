@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../core/design/tokens.dart';
 import '../../../core/network/api_exception.dart';
 import '../customer_service.dart';
@@ -86,7 +86,13 @@ class _CustomerAddDialogState extends State<CustomerAddDialog> {
         children: [
           Icon(Icons.person_add_rounded, color: primaryColor),
           const SizedBox(width: 10),
-          const Text('Tambah Pelanggan Baru', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+          const Expanded(
+            child: Text(
+              'Tambah Pelanggan Baru',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
       content: SingleChildScrollView(

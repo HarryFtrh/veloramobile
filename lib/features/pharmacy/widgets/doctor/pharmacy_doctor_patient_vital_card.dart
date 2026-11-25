@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
 import '../queue/pharmacy_queue_modal_card.dart';
+import '../../pharmacy_colors.dart';
 
 /// Active patient context card, live queue switcher, and vital signs monitoring
 class DoctorPatientVitalCard extends StatelessWidget {
@@ -30,15 +32,15 @@ class DoctorPatientVitalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF059669);
-    const textPrimary = Color(0xFF0F172A);
-    const textMuted = Color(0xFF6D7A72);
-    const borderColor = Color(0xFFE2E8F0);
+    const emeraldPrimary = PharmacyColors.primary;
+    final textPrimary = context.palette.textPrimary;
+    final textMuted = context.palette.textSecondary;
+    final borderColor = context.palette.line;
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: borderColor),
       ),
@@ -76,7 +78,7 @@ class DoctorPatientVitalCard extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
-                          color: isSelected ? emeraldPrimary : const Color(0xFFF1F5F9),
+                          color: isSelected ? emeraldPrimary : context.palette.surfaceMuted,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: isSelected ? emeraldPrimary : borderColor),
                         ),
@@ -109,7 +111,7 @@ class DoctorPatientVitalCard extends StatelessWidget {
                 }).toList(),
               ),
             ),
-            const Divider(height: 16, color: Color(0xFFF1F5F9)),
+            Divider(height: 16, color: context.palette.surfaceMuted),
           ],
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -134,10 +136,10 @@ class DoctorPatientVitalCard extends StatelessWidget {
                   ),
                 ],
               ),
-              Text('No. RM: $medicalRecordNumber', style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11.5, color: textMuted)),
+              Text('No. RM: $medicalRecordNumber', style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11.5, color: textMuted)),
             ],
           ),
-          const Divider(height: 16, color: Color(0xFFF1F5F9)),
+          Divider(height: 16, color: context.palette.surfaceMuted),
 
           // Vital signs
           Row(
@@ -176,30 +178,35 @@ class DoctorPatientVitalCard extends StatelessWidget {
   }
 
   Widget _buildVitalPill(String label, String value, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Builder(
+      builder: (context) {
+        final p = context.palette;
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: p.surfaceMuted,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: p.line),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, size: 13, color: const Color(0xFF6D7A72)),
-              const SizedBox(width: 4),
-              Text(label, style: const TextStyle(fontSize: 9.5, color: Color(0xFF6D7A72))),
+              Row(
+                children: [
+                  Icon(icon, size: 13, color: p.textSecondary),
+                  const SizedBox(width: 4),
+                  Text(label, style: TextStyle(fontSize: 9.5, color: p.textSecondary)),
+                ],
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.bold, fontSize: 11.5, color: p.textPrimary),
+              ),
             ],
           ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            style: const TextStyle(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.bold, fontSize: 11.5, color: Color(0xFF0F172A)),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

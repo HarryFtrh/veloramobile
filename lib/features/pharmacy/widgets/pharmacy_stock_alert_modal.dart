@@ -1,5 +1,8 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
+import '../../../core/design/tokens.dart';
+import 'package:material_ui/material_ui.dart';
 import 'stock_alert/pharmacy_stock_alert_modal_card.dart';
+import '../pharmacy_colors.dart';
 
 export 'stock_alert/pharmacy_stock_alert_modal_card.dart';
 
@@ -24,7 +27,7 @@ class PharmacyStockAlertModal extends StatefulWidget {
       backgroundColor: Colors.transparent,
       builder: (ctx) => ConstrainedBox(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.88,
+          maxHeight: MediaQuery.sizeOf(context).height * 0.88,
           maxWidth: 620,
         ),
         child: PharmacyStockAlertModal(
@@ -42,13 +45,26 @@ class PharmacyStockAlertModal extends StatefulWidget {
 class _PharmacyStockAlertModalState extends State<PharmacyStockAlertModal> {
   String _filter = 'all'; // 'all', 'near_ed', 'critical', 'rx'
   String _search = '';
+  Timer? _searchDebounce;
+  List<PharmacyStockAlertItem> _allItems = const [];
+  List<PharmacyStockAlertItem> _filteredItems = const [];
 
   @override
-  Widget build(BuildContext context) {
-    const primaryColor = Color(0xFF059669);
-    const canvasColor = Color(0xFFFAF8FF);
+  void initState() {
+    super.initState();
+    _rebuildItems();
+  }
 
-    // Olah data stok & batch dari katalog aktif
+  @override
+  void didUpdateWidget(covariant PharmacyStockAlertModal oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.catalogItems != widget.catalogItems) {
+      _rebuildItems();
+    }
+  }
+
+  void _rebuildItems() {
+    final now = DateTime.now();
     final List<PharmacyStockAlertItem> items = [];
     for (final it in widget.catalogItems) {
       final name = it['name']?.toString() ?? 'Obat';
@@ -63,13 +79,13 @@ class _PharmacyStockAlertModalState extends State<PharmacyStockAlertModal> {
       int days = 999;
       final parsedDate = ed != '-' ? DateTime.tryParse(ed) : null;
       if (parsedDate != null) {
-        days = parsedDate.difference(DateTime.now()).inDays;
+        days = parsedDate.difference(now).inDays;
       } else if (ed != '-' && ed.contains('/') && ed.split('/').length == 2) {
         final parts = ed.split('/');
         final m = int.tryParse(parts[0]) ?? 1;
         final y = (int.tryParse(parts[1]) ?? 26) + 2000;
         final d = DateTime(y, m, 28);
-        days = d.difference(DateTime.now()).inDays;
+        days = d.difference(now).inDays;
       }
 
       items.add(
@@ -86,22 +102,61 @@ class _PharmacyStockAlertModalState extends State<PharmacyStockAlertModal> {
         ),
       );
     }
+    _allItems = items;
+    _recomputeFiltered();
+  }
 
-    final filtered = items.where((it) {
+  void _recomputeFiltered() {
+    final q = _search.toLowerCase();
+    _filteredItems = _allItems.where((it) {
       if (_filter == 'near_ed' && it.daysToExpiry > 90) return false;
       if (_filter == 'critical' && it.stock > 10) return false;
       if (_filter == 'rx' && !it.isHardDrug) return false;
-      if (_search.isNotEmpty) {
-        final q = _search.toLowerCase();
+      if (q.isNotEmpty) {
         return it.name.toLowerCase().contains(q) ||
             it.batchNumber.toLowerCase().contains(q) ||
             it.category.toLowerCase().contains(q);
       }
       return true;
     }).toList();
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String val) {
+    final trimmed = val.trim();
+    _searchDebounce?.cancel();
+    if (trimmed.isEmpty) {
+      setState(() {
+        _search = '';
+        _recomputeFiltered();
+      });
+      return;
+    }
+    _searchDebounce = Timer(const Duration(milliseconds: 220), () {
+      if (mounted) {
+        setState(() {
+          _search = trimmed;
+          _recomputeFiltered();
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const primaryColor = PharmacyColors.primary;
+    final canvasColor = context.palette.canvas;
+
+    final items = _allItems;
+    final filtered = _filteredItems;
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: canvasColor,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -125,38 +180,44 @@ class _PharmacyStockAlertModalState extends State<PharmacyStockAlertModal> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF7ED),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFFED7AA), width: 0.8),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD97706).withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFFED7AA), width: 0.8),
+                        ),
+                        child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFEA580C), size: 24),
                       ),
-                      child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFEA580C), size: 24),
-                    ),
-                    const SizedBox(width: 12),
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Stok Obat & Alert ED (FEFO)',
-                          style: TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontWeight: FontWeight.w800,
-                            fontSize: 17,
-                            color: Color(0xFF0F172A),
-                          ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Stok Obat & Alert ED (FEFO)',
+                              style: TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontWeight: FontWeight.w800,
+                                fontSize: 17,
+                                color: context.palette.textPrimary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              'First-Expired First-Out Control System',
+                              style: TextStyle(fontSize: 12, color: Color(0xFF6D7A72)),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
-                        Text(
-                          'First-Expired First-Out Control System',
-                          style: TextStyle(fontSize: 12, color: Color(0xFF6D7A72)),
-                        ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close_rounded, color: Color(0xFF6D7A72)),
@@ -173,11 +234,11 @@ class _PharmacyStockAlertModalState extends State<PharmacyStockAlertModal> {
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFF7ED),
+                color: const Color(0xFFD97706).withValues(alpha: 0.14),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: const Color(0xFFFED7AA)),
               ),
-              child: const Row(
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(Icons.notification_important_rounded, color: Color(0xFFEA580C), size: 20),
@@ -197,7 +258,7 @@ class _PharmacyStockAlertModalState extends State<PharmacyStockAlertModal> {
                         SizedBox(height: 2),
                         Text(
                           'Pastikan sediaan dengan tanggal kadaluarsa (ED) terdekat ditempatkan di rak depan dan didahulukan penjualannya.',
-                          style: TextStyle(fontSize: 11.5, color: Color(0xFF334155), height: 1.3),
+                          style: TextStyle(fontSize: 11.5, color: context.palette.textSecondary, height: 1.3),
                         ),
                       ],
                     ),
@@ -212,17 +273,17 @@ class _PharmacyStockAlertModalState extends State<PharmacyStockAlertModal> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: TextField(
-              onChanged: (val) => setState(() => _search = val.trim()),
+              onChanged: _onSearchChanged,
               decoration: InputDecoration(
                 hintText: 'Cari obat, no batch, atau zat aktif...',
                 hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF6D7A72)),
                 prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF6D7A72), size: 20),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: context.palette.surface,
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  borderSide: BorderSide(color: context.palette.line),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -279,14 +340,17 @@ class _PharmacyStockAlertModalState extends State<PharmacyStockAlertModal> {
     final active = _filter == key;
     return InkWell(
       borderRadius: BorderRadius.circular(20),
-      onTap: () => setState(() => _filter = key),
+      onTap: () => setState(() {
+        _filter = key;
+        _recomputeFiltered();
+      }),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
           color: active ? primaryColor : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: active ? primaryColor : const Color(0xFFE2E8F0),
+            color: active ? primaryColor : context.palette.line,
           ),
         ),
         child: Text(

@@ -1,4 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+
+export 'app_confirm_dialog.dart';
+export '../utils/app_regex.dart';
+export '../utils/app_toast.dart';
+export '../utils/date_time_formatter.dart';
+export '../widgets/app_qr_view.dart';
 
 /// Skala jarak dan radius yang dipakai seluruh aplikasi.
 /// Pakai konstanta ini, jangan menulis angka langsung di widget.
@@ -22,27 +28,6 @@ abstract final class Corner {
   static BorderRadius get medium => BorderRadius.circular(md);
   static BorderRadius get large => BorderRadius.circular(lg);
   static BorderRadius get full => BorderRadius.circular(pill);
-}
-
-/// Token warna paten "Warm Roasted Modernity" sesuai gambar referensi.
-abstract final class WarmPalette {
-  static const Color primary = Color(0xFF7A431D); // Rich Espresso
-  static const Color secondary = Color(0xFFD9822B); // Warm Ochre
-  static const Color tertiary = Color(0xFF4D6B53); // Forest Sage
-  static const Color canvas = Color(0xFFFBF7F2); // Creamy Oat
-  static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceMuted = Color(0xFFF3EDE2);
-  static const Color line = Color(0xFFE8DDD1);
-  static const Color textPrimary = Color(0xFF1E1510);
-  static const Color textSecondary = Color(0xFF70655E);
-  static const Color textTertiary = Color(0xFFA09389);
-  static const Color danger = Color(0xFFBA1A1A);
-  static const Color error = danger;
-  static const Color success = Color(0xFF2E7D32);
-
-  /// Alias semantik untuk surfaceMuted dan line
-  static const Color surfaceDim = surfaceMuted;
-  static const Color border = line;
 }
 
 /// Token warna paten "Clinical Precision" untuk Pharmacy sesuai panduan desain:
@@ -69,8 +54,6 @@ abstract final class ClinicalPalette {
   static const Color surfaceDim = Color(0xFFD2D9F4);
   static const Color border = line;
 }
-
-typedef RadiusToken = Corner;
 
 /// Warna semantik di luar `ColorScheme` (status, teks sekunder, dsb).
 /// Diakses lewat `context.palette`.
@@ -171,10 +154,46 @@ class AppPalette extends ThemeExtension<AppPalette> {
     info: Color(0xFF7A431D),
   );
 
+  /// "Clinical Precision Dark" — khusus Pharmacy / Healthcare (mode gelap) dengan kontras tinggi.
+  static const clinicalDark = AppPalette(
+    primary: Color(0xFF10B981),
+    secondary: Color(0xFF14B8A6),
+    tertiary: Color(0xFF22D3EE),
+    canvas: Color(0xFF0B1215),
+    surface: Color(0xFF131E22),
+    surfaceMuted: Color(0xFF1B2A30),
+    line: Color(0xFF283B42),
+    textPrimary: Color(0xFFF1F5F9),
+    textSecondary: Color(0xFF94A3B8),
+    textTertiary: Color(0xFF64748B),
+    success: Color(0xFF34D399),
+    warning: Color(0xFFFBBF24),
+    danger: Color(0xFFF87171),
+    info: Color(0xFF38BDF8),
+  );
+
+  /// "Warm Roasted Dark" — khusus F&B / Cafe (mode gelap) dengan kontras tinggi.
+  static const warmDark = AppPalette(
+    primary: Color(0xFFD9822B),
+    secondary: Color(0xFFE8A864),
+    tertiary: Color(0xFF7CB889),
+    canvas: Color(0xFF14100E),
+    surface: Color(0xFF1E1815),
+    surfaceMuted: Color(0xFF2A221E),
+    line: Color(0xFF3A302A),
+    textPrimary: Color(0xFFF7F2EC),
+    textSecondary: Color(0xFFB8ACA3),
+    textTertiary: Color(0xFF867A71),
+    success: Color(0xFF4ADE80),
+    warning: Color(0xFFFBBF24),
+    danger: Color(0xFFF87171),
+    info: Color(0xFF60A5FA),
+  );
+
   static const dark = AppPalette(
-    primary: Color(0xFFFFDBC8),
-    secondary: Color(0xFFFFB77B),
-    tertiary: Color(0xFFA2D3AC),
+    primary: Color(0xFF60A5FA),
+    secondary: Color(0xFF94A3B8),
+    tertiary: Color(0xFF2DD4BF),
     canvas: Color(0xFF0E1116),
     surface: Color(0xFF171B22),
     surfaceMuted: Color(0xFF1F242D),

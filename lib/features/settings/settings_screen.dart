@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../core/config/app_config.dart';
@@ -166,6 +166,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     final primary = Theme.of(context).colorScheme.primary;
     final state = context.watch<AuthCubit>().state;
     final user = state is Authenticated ? state.user : null;
@@ -173,29 +174,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final canPop = ModalRoute.of(context)?.canPop ?? false;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: p.canvas,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Pengaturan Akun',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF0F172A),
+            color: p.textPrimary,
             letterSpacing: -0.3,
           ),
         ),
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF0F172A),
-        iconTheme: const IconThemeData(color: Color(0xFF0F172A)),
+        backgroundColor: p.surface,
+        foregroundColor: p.textPrimary,
+        iconTheme: IconThemeData(color: p.textPrimary),
         elevation: 0,
         scrolledUnderElevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(color: const Color(0xFFE2E8F0), height: 1),
+          child: Container(color: p.line, height: 1),
         ),
         leading: canPop
             ? IconButton(
-                icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF0F172A)),
+                icon: Icon(Icons.arrow_back_rounded, color: p.textPrimary),
                 onPressed: () => Navigator.maybePop(context),
               )
             : null,
@@ -211,9 +212,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Container(
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: p.surface,
                     borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+                    border: Border.all(color: p.line, width: 1.2),
                     boxShadow: const [
                       BoxShadow(
                         color: Color(0x06000000),
@@ -259,10 +260,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 Flexible(
                                   child: Text(
                                     user.name,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w800,
-                                      color: Color(0xFF0F172A),
+                                      color: p.textPrimary,
                                       letterSpacing: -0.2,
                                     ),
                                     maxLines: 1,
@@ -290,13 +291,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                             if (user.email.isNotEmpty) ...[
                               const SizedBox(height: 3),
-                              Text(user.email, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                              Text(user.email, style: TextStyle(fontSize: 12, color: p.textSecondary)),
                             ],
                             if (user.tenantName.isNotEmpty) ...[
                               const SizedBox(height: 2),
                               Text(
                                 '${user.tenantName} • ${branch ?? "Outlet Utama"}',
-                                style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF94A3B8)),
+                                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: p.textTertiary),
                               ),
                             ],
                           ],
@@ -317,7 +318,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     SettingsTile(
                       icon: Icons.store_rounded,
                       iconColor: const Color(0xFFD97706),
-                      iconBgColor: const Color(0xFFFEF3C7),
+                      iconBgColor: const Color(0xFFD97706).withValues(alpha: 0.14),
                       title: 'Cabang Bertugas',
                       subtitle: branch,
                       trailing: user.can(AppPermission.changeBranch) && user.locations.length > 1
@@ -335,17 +336,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           : Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF1F5F9),
+                                color: p.surfaceMuted,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.lock_outline_rounded, size: 12, color: Color(0xFF94A3B8)),
+                                  Icon(Icons.lock_outline_rounded, size: 12, color: p.textTertiary),
                                   const SizedBox(width: 4),
                                   Text(
                                     user.can(AppPermission.changeBranch) ? '1 Cabang' : 'Terkunci (${user.roleDisplayName})',
-                                    style: const TextStyle(color: Color(0xFF64748B), fontSize: 11, fontWeight: FontWeight.w600),
+                                    style: TextStyle(color: p.textSecondary, fontSize: 11, fontWeight: FontWeight.w600),
                                   ),
                                 ],
                               ),
@@ -405,7 +406,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   SettingsTile(
                     icon: _keepScreenOn ? Icons.wb_sunny_rounded : Icons.bedtime_rounded,
                     iconColor: const Color(0xFFD97706),
-                    iconBgColor: const Color(0xFFFEF3C7),
+                    iconBgColor: const Color(0xFFD97706).withValues(alpha: 0.14),
                     title: 'Layar Selalu Menyala (Wakelock)',
                     subtitle: 'Cegah layar tablet KDS dapur & kasir mati otomatis',
                     trailing: Switch.adaptive(
@@ -440,7 +441,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   SettingsTile(
                     icon: Icons.system_update_rounded,
                     iconColor: const Color(0xFF0284C7),
-                    iconBgColor: const Color(0xFFE0F2FE),
+                    iconBgColor: const Color(0xFF0284C7).withValues(alpha: 0.14),
                     title: 'Versi Aplikasi',
                     subtitle: _versionInfo != null
                         ? '${AppConfig.instance.appName} v${_versionInfo!.versionName} (Build ${_versionInfo!.versionCode})'
@@ -475,11 +476,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: OutlinedButton.icon(
                   onPressed: _confirmLogout,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red.shade700,
-                    side: BorderSide(color: Colors.red.withValues(alpha: 0.3)),
+                    foregroundColor: p.danger,
+                    side: BorderSide(color: p.danger.withValues(alpha: 0.35)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    backgroundColor: Colors.white,
+                    backgroundColor: p.surface,
                   ),
                   icon: const Icon(Icons.logout_rounded, size: 20),
                   label: const Text('Keluar dari Akun Kasir', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),

@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/design/tokens.dart';
 import '../../core/storage/session_storage.dart';
-import '../shared_pos/receipt_printer_service.dart';
+import '../shared_pos/services/receipt_printer_service.dart';
 import 'kitchen_cubit.dart';
 import 'kitchen_service.dart';
 import 'widgets/kitchen_ticket_card.dart';
@@ -414,26 +414,40 @@ class _Board extends StatelessWidget {
           height: 48,
           color: p.surface,
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            children: [
-              _buildStationChip(
-                context,
-                'Semua Station',
-                allOrders.length,
-                state.station == null,
-                () => cubit.filterStation(null),
-              ),
-              for (final s in allStations)
-                _buildStationChip(
-                  context,
-                  s,
-                  allOrders.where((o) => o.items.any((i) => i.station == s)).length,
-                  state.station == s,
-                  () => cubit.filterStation(s),
-                ),
-            ],
+          child: Builder(
+            builder: (context) {
+              final stationCounts = <String, int>{};
+              for (final order in allOrders) {
+                final seen = <String>{};
+                for (final item in order.items) {
+                  final st = item.station;
+                  if (st.isNotEmpty && seen.add(st)) {
+                    stationCounts[st] = (stationCounts[st] ?? 0) + 1;
+                  }
+                }
+              }
+              return ListView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                children: [
+                  _buildStationChip(
+                    context,
+                    'Semua Station',
+                    allOrders.length,
+                    state.station == null,
+                    () => cubit.filterStation(null),
+                  ),
+                  for (final s in allStations)
+                    _buildStationChip(
+                      context,
+                      s,
+                      stationCounts[s] ?? 0,
+                      state.station == s,
+                      () => cubit.filterStation(s),
+                    ),
+                ],
+              );
+            },
           ),
         ),
         Divider(height: 1, color: p.line),
@@ -635,8 +649,8 @@ class _KanbanColumn extends StatelessWidget {
     final p = context.palette;
     final (tintColor, dotColor, badgeBg) = switch (stage) {
       KitchenStage.fresh => (p.surfaceMuted.withValues(alpha: 0.5), p.textSecondary, p.surface),
-      KitchenStage.preparing => (const Color(0xFFFFFBEB), const Color(0xFFD97706), const Color(0xFFFEF3C7)),
-      KitchenStage.ready => (const Color(0xFFF0FDF4), const Color(0xFF059669), const Color(0xFFD1FAE5)),
+      KitchenStage.preparing => (const Color(0xFFD97706).withValues(alpha: 0.14), const Color(0xFFD97706), const Color(0xFFD97706).withValues(alpha: 0.14)),
+      KitchenStage.ready => (const Color(0xFF059669).withValues(alpha: 0.14), const Color(0xFF059669), const Color(0xFFD1FAE5)),
     };
 
     return Container(

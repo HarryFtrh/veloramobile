@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import '../../../core/config/app_theme.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../core/design/tokens.dart';
 import '../sales_service.dart';
 
 class SalesVisitCard extends StatelessWidget {
@@ -14,13 +14,14 @@ class SalesVisitCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF11141D),
+        color: p.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFF23293B)),
+        border: Border.all(color: p.line),
       ),
       child: Row(
         children: [
@@ -46,8 +47,8 @@ class SalesVisitCard extends StatelessWidget {
                   visit.customerName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: p.textPrimary,
                     fontWeight: FontWeight.w800,
                     fontSize: 13,
                   ),
@@ -55,9 +56,9 @@ class SalesVisitCard extends StatelessWidget {
                 const SizedBox(height: 5),
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.location_on_outlined,
-                      color: AppTheme.textTertiary,
+                      color: p.textTertiary,
                       size: 13,
                     ),
                     const SizedBox(width: 3),
@@ -66,8 +67,8 @@ class SalesVisitCard extends StatelessWidget {
                         visit.customerAddress ?? 'Alamat belum tersedia',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppTheme.textSecondary,
+                        style: TextStyle(
+                          color: p.textSecondary,
                           fontSize: 11,
                         ),
                       ),

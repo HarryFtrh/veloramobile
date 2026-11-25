@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
-
 /// Drug revenue contribution by category with multi-segment bar
 class PharmacyExecutiveCategoryBreakdown extends StatelessWidget {
   final List<Map<String, dynamic>> categoryShare;
@@ -12,20 +12,20 @@ class PharmacyExecutiveCategoryBreakdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const textMuted = Color(0xFF6D7A72);
-    const borderColor = Color(0xFFE2E8F0);
+    final textMuted = context.palette.textSecondary;
+    final borderColor = context.palette.line;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
@@ -75,7 +75,7 @@ class PharmacyExecutiveCategoryBreakdown extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               alignment: Alignment.center,
-              child: const Text('Belum ada data penjualan obat per kategori pada periode ini.', style: TextStyle(color: textMuted, fontSize: 12)),
+              child: Text('Belum ada data penjualan obat per kategori pada periode ini.', style: TextStyle(color: textMuted, fontSize: 12)),
             ),
         ],
       ),

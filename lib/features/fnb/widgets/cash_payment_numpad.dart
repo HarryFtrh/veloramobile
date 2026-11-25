@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import '../../../core/utils/currency_formatter.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../core/design/tokens.dart';
 
 class CashPaymentNumpad extends StatelessWidget {
@@ -56,7 +57,7 @@ class CashPaymentNumpad extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(isMobile ? 10 : 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: p.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: p.line),
       ),
@@ -82,7 +83,7 @@ class CashPaymentNumpad extends StatelessWidget {
                 const SizedBox(width: 6),
                 Flexible(
                   child: Text(
-                    'Rp ${cashReceived.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
+                    cashReceived.toRupiah(),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(

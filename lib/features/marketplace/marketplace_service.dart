@@ -72,9 +72,9 @@ class MarketplaceService {
     };
 
     final endpoints = [
+      '/mobile/customer/catalog',
       '/v1/mobile/customer/catalog',
       '/v1/marketplace/catalog',
-      '/mobile/customer/catalog',
     ];
 
     dynamic rawData;
@@ -108,9 +108,9 @@ class MarketplaceService {
 
   Future<List<MarketplaceOrderHistoryItem>> getOrderHistory() async {
     final endpoints = [
+      '/mobile/customer/order-history',
       '/v1/mobile/customer/order-history',
       '/v1/marketplace/order-history',
-      '/mobile/customer/order-history',
     ];
 
     dynamic rawData;
@@ -141,9 +141,9 @@ class MarketplaceService {
 
   Future<num> getPointsBalance() async {
     final endpoints = [
+      '/mobile/customer/points-balance',
       '/v1/mobile/customer/points-balance',
       '/v1/pos/customer/points-balance',
-      '/mobile/customer/points-balance',
     ];
 
     for (final ep in endpoints) {
@@ -167,9 +167,9 @@ class MarketplaceService {
     String? notes,
   }) async {
     final endpoints = [
+      '/mobile/customer/checkout',
       '/v1/mobile/customer/checkout',
       '/v1/marketplace/checkout',
-      '/mobile/customer/checkout',
     ];
 
     final payload = {

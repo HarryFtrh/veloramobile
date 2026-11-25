@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+import '../../../../core/utils/currency_formatter.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../core/design/tokens.dart';
-import '../../../shared_pos/qris_payment_service.dart';
+import '../../../shared_pos/services/qris_payment_service.dart';
 import '../../widgets/cash_payment_numpad.dart';
 import 'split_bill_cash_pane.dart';
 
@@ -136,7 +137,7 @@ class SplitBillPaymentPane extends StatelessWidget {
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                'Rp ${amount.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
+                amount.toRupiah(),
                 maxLines: 1,
                 style: TextStyle(
                   fontSize: 12,
@@ -284,7 +285,7 @@ class SplitBillPaymentPane extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: p.surface,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: p.line),
             ),
@@ -307,11 +308,15 @@ class SplitBillPaymentPane extends StatelessWidget {
                     ),
                     const SizedBox(height: 30),
                   ] else ...[
-                    Icon(
-                      Icons.qr_code_2_rounded,
+                    AppQrView(
+                      data: qrisInvoice?.qrString ??
+                          qrisInvoice?.transactionId ??
+                          '00020101021126670014ID.LINKAJA.WWW01189360001400000000000215${qrisInvoice?.nmid ?? "VELORA"}5204581253033605802ID5915VELORA6007JAKARTA6304',
                       size: 160,
-                      color: p.textPrimary,
+                      foregroundColor: p.textPrimary,
+                      backgroundColor: p.canvas,
                     ),
+                    const SizedBox(height: 12),
                     if (qrisInvoice?.transactionId != null) ...[
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -334,7 +339,7 @@ class SplitBillPaymentPane extends StatelessWidget {
                       const SizedBox(height: 8),
                     ],
                     Text(
-                      'Total Tagihan: Rp ${selectedItemsTotal.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
+                      'Total Tagihan: ${selectedItemsTotal.toRupiah()}',
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 18,

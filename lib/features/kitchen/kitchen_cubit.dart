@@ -52,16 +52,29 @@ class KitchenLoaded extends KitchenState {
 
   int countByStage(KitchenStage stage) => byStage(stage).length;
 
-  int get delayedCount => orders.where((o) {
-        final mins = DateTime.now().difference(o.createdAt).inMinutes;
-        return o.stage != KitchenStage.ready && mins >= kLateAfterMinutes;
-      }).length;
+  int get delayedCount {
+    final now = DateTime.now();
+    int count = 0;
+    for (final o in orders) {
+      if (o.stage != KitchenStage.ready &&
+          now.difference(o.createdAt).inMinutes >= kLateAfterMinutes) {
+        count++;
+      }
+    }
+    return count;
+  }
 
   double get avgWaitMinutes {
-    final active = orders.where((o) => o.stage != KitchenStage.ready).toList();
-    if (active.isEmpty) return 0.0;
-    final totalMins = active.map((o) => DateTime.now().difference(o.createdAt).inSeconds / 60.0).reduce((a, b) => a + b);
-    return totalMins / active.length;
+    final now = DateTime.now();
+    int activeCount = 0;
+    double totalMins = 0.0;
+    for (final o in orders) {
+      if (o.stage != KitchenStage.ready) {
+        activeCount++;
+        totalMins += now.difference(o.createdAt).inSeconds / 60.0;
+      }
+    }
+    return activeCount == 0 ? 0.0 : totalMins / activeCount;
   }
 
   KitchenLoaded copyWith({
@@ -146,7 +159,9 @@ class KitchenCubit extends Cubit<KitchenState> {
   }
 
   void _onRealtimeOrderEvent(Map<String, dynamic> data) {
-    debugPrint('🔔 [KDS REALTIME] Menerima sinyal pesanan dapur via Reverb: $data');
+    if (kDebugMode) {
+      debugPrint('🔔 [KDS REALTIME] Menerima sinyal pesanan dapur via Reverb: $data');
+    }
     _realtimeDebounce?.cancel();
     _realtimeDebounce = Timer(const Duration(milliseconds: 300), () {
       if (isClosed) return;

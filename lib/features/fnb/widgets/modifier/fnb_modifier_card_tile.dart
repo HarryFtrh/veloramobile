@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
-import '../../modifiers.dart';
+import '../../models/modifiers.dart';
 
 /// Single interactive modifier option tile with radio/check indicator and price pill
 class FnbModifierCardTile extends StatelessWidget {

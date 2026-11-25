@@ -1,6 +1,9 @@
-import 'package:flutter/material.dart';
-import '../pharmacy_service.dart';
+import 'dart:async';
+import '../../../core/design/tokens.dart';
+import 'package:material_ui/material_ui.dart';
+import '../services/pharmacy_service.dart';
 import 'queue/pharmacy_queue_modal_card.dart';
+import '../pharmacy_colors.dart';
 
 export 'queue/pharmacy_queue_modal_card.dart';
 
@@ -23,7 +26,7 @@ class PharmacyQueueModal extends StatefulWidget {
       backgroundColor: Colors.transparent,
       builder: (ctx) => ConstrainedBox(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.88,
+          maxHeight: MediaQuery.sizeOf(context).height * 0.88,
           maxWidth: 620,
         ),
         child: PharmacyQueueModal(onSelectPatient: onSelectPatient),
@@ -38,7 +41,52 @@ class PharmacyQueueModal extends StatefulWidget {
 class _PharmacyQueueModalState extends State<PharmacyQueueModal> {
   String _selectedFilter = 'all';
   String _searchQuery = '';
+  Timer? _searchDebounce;
   List<ClinicPatientQueueItem> _queueItems = [];
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
+  }
+
+  List<ClinicPatientQueueItem> _filteredItems = const [];
+
+  void _recomputeFiltered() {
+    final q = _searchQuery.toLowerCase();
+    _filteredItems = _queueItems.where((item) {
+      if (_selectedFilter == 'ready' && item.status != 'ready') return false;
+      if (_selectedFilter == 'pending' && item.status != 'pending') return false;
+      if (_selectedFilter == 'done' && item.status != 'done') return false;
+      if (q.isNotEmpty) {
+        return item.patientName.toLowerCase().contains(q) ||
+            item.medicalRecordNumber.toLowerCase().contains(q) ||
+            item.doctorName.toLowerCase().contains(q) ||
+            item.queueNumber.toLowerCase().contains(q);
+      }
+      return true;
+    }).toList();
+  }
+
+  void _onSearchChanged(String val) {
+    final trimmed = val.trim();
+    _searchDebounce?.cancel();
+    if (trimmed.isEmpty) {
+      setState(() {
+        _searchQuery = '';
+        _recomputeFiltered();
+      });
+      return;
+    }
+    _searchDebounce = Timer(const Duration(milliseconds: 220), () {
+      if (mounted) {
+        setState(() {
+          _searchQuery = trimmed;
+          _recomputeFiltered();
+        });
+      }
+    });
+  }
 
   @override
   void initState() {
@@ -51,32 +99,20 @@ class _PharmacyQueueModalState extends State<PharmacyQueueModal> {
     if (mounted) {
       setState(() {
         _queueItems = items;
+        _recomputeFiltered();
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFF059669); // Clinical Emerald
-    const canvasColor = Color(0xFFFAF8FF);
+    const primaryColor = PharmacyColors.primary; // Clinical Emerald
+    final canvasColor = context.palette.canvas;
 
-    final filtered = _queueItems.where((item) {
-      if (_selectedFilter == 'ready' && item.status != 'ready') return false;
-      if (_selectedFilter == 'pending' && item.status != 'pending') return false;
-      if (_selectedFilter == 'done' && item.status != 'done') return false;
-      if (_searchQuery.isNotEmpty) {
-        final q = _searchQuery.toLowerCase();
-        final matchName = item.patientName.toLowerCase().contains(q);
-        final matchRm = item.medicalRecordNumber.toLowerCase().contains(q);
-        final matchDoc = item.doctorName.toLowerCase().contains(q);
-        final matchQ = item.queueNumber.toLowerCase().contains(q);
-        return matchName || matchRm || matchDoc || matchQ;
-      }
-      return true;
-    }).toList();
+    final filtered = _filteredItems;
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: canvasColor,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -100,37 +136,43 @@ class _PharmacyQueueModalState extends State<PharmacyQueueModal> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE2E7FF),
-                        borderRadius: BorderRadius.circular(12),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE2E7FF),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.receipt_long_rounded, color: primaryColor, size: 22),
                       ),
-                      child: const Icon(Icons.receipt_long_rounded, color: primaryColor, size: 22),
-                    ),
-                    const SizedBox(width: 12),
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Antrean & Billing Pasien',
-                          style: TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontWeight: FontWeight.w800,
-                            fontSize: 17,
-                            color: Color(0xFF0F172A),
-                          ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Antrean & Billing Pasien',
+                              style: TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontWeight: FontWeight.w800,
+                                fontSize: 17,
+                                color: context.palette.textPrimary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              'Klinik & Loket Apotek Farmasi',
+                              style: TextStyle(fontSize: 12, color: Color(0xFF6D7A72)),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
-                        Text(
-                          'Klinik & Loket Apotek Farmasi',
-                          style: TextStyle(fontSize: 12, color: Color(0xFF6D7A72)),
-                        ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close_rounded, color: Color(0xFF6D7A72)),
@@ -145,17 +187,17 @@ class _PharmacyQueueModalState extends State<PharmacyQueueModal> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: TextField(
-              onChanged: (val) => setState(() => _searchQuery = val.trim()),
+              onChanged: _onSearchChanged,
               decoration: InputDecoration(
                 hintText: 'Cari No. RM, Nama Pasien, atau Dokter...',
                 hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF6D7A72)),
                 prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF6D7A72), size: 20),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: context.palette.surface,
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  borderSide: BorderSide(color: context.palette.line),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -219,14 +261,17 @@ class _PharmacyQueueModalState extends State<PharmacyQueueModal> {
     final isSelected = _selectedFilter == key;
     return InkWell(
       borderRadius: BorderRadius.circular(20),
-      onTap: () => setState(() => _selectedFilter = key),
+      onTap: () => setState(() {
+        _selectedFilter = key;
+        _recomputeFiltered();
+      }),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: isSelected ? primaryColor : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? primaryColor : const Color(0xFFE2E8F0),
+            color: isSelected ? primaryColor : context.palette.line,
           ),
         ),
         child: Text(

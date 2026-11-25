@@ -1,5 +1,5 @@
-import '../../../shared_pos/pos_checkout_service.dart';
-import '../../../shared_pos/product_catalog_service.dart';
+import '../../../shared_pos/services/pos_checkout_service.dart';
+import '../../../shared_pos/services/product_catalog_service.dart';
 import '../../services/pharmacy_catalog_service.dart';
 
 /// Helper utilities for cart items, unit resolution, and catalog mapping in Pharmacy POS

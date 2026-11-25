@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
+import '../../pharmacy_colors.dart';
 
 /// Patient context and recipe banner for compounding workstation
 class CompoundingPatientRecipeCard extends StatelessWidget {
@@ -19,15 +21,15 @@ class CompoundingPatientRecipeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF059669);
-    const textPrimary = Color(0xFF0F172A);
-    const textMuted = Color(0xFF6D7A72);
-    const borderColor = Color(0xFFE2E8F0);
+    const emeraldPrimary = PharmacyColors.primary;
+    final textPrimary = context.palette.textPrimary;
+    final textMuted = context.palette.textSecondary;
+    final borderColor = context.palette.line;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: borderColor),
       ),
@@ -40,10 +42,10 @@ class CompoundingPatientRecipeCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Pasien Tujuan:', style: TextStyle(fontSize: 11, color: textMuted)),
+                  Text('Pasien Tujuan:', style: TextStyle(fontSize: 11, color: textMuted)),
                   Text(
                     selectedPatient,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Plus Jakarta Sans',
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
@@ -70,7 +72,7 @@ class CompoundingPatientRecipeCard extends StatelessWidget {
               ),
             ],
           ),
-          const Divider(height: 18, color: Color(0xFFF1F5F9)),
+          Divider(height: 18, color: context.palette.surfaceMuted),
 
           Row(
             children: [
@@ -78,11 +80,11 @@ class CompoundingPatientRecipeCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Jumlah Sediaan Racik:', style: TextStyle(fontSize: 11, color: textMuted)),
+                    Text('Jumlah Sediaan Racik:', style: TextStyle(fontSize: 11, color: textMuted)),
                     const SizedBox(height: 2),
                     Text(
                       '$packageCount Bungkus (da in pulv no. XV)',
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: textPrimary),
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: textPrimary),
                     ),
                   ],
                 ),

@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/audio_helper.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../billing.dart';
-import '../../fnb_register_controller.dart';
+import '../../register/fnb_register_controller.dart';
 
 typedef PromoAndVoucherSheet = FnbDiscountSheet;
 
@@ -161,6 +161,8 @@ class _FnbDiscountSheetState extends State<FnbDiscountSheet> {
   }
 
   @override
+
+  @override
   Widget build(BuildContext context) {
     final p = context.palette;
     final primaryColor = Theme.of(context).colorScheme.primary;
@@ -182,8 +184,23 @@ class _FnbDiscountSheetState extends State<FnbDiscountSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 1. Header Sheet
-            Row(
+            _buildHeader(p, subtotal),
+            const SizedBox(height: 14),
+            _buildTabSwitcher(p, primaryColor, promos.length),
+            const SizedBox(height: 14),
+            if (_errorMsg != null) _buildErrorBanner(p),
+            if (_activeTabIndex == 0)
+              ..._buildStorePromosTab(p, primaryColor, subtotal, promos, activePromo)
+            else
+              ..._buildManualDiscountTab(p, primaryColor, subtotal, hasActiveManual),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(AppPalette p, double subtotal) {
+    return Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(8),
@@ -227,12 +244,11 @@ class _FnbDiscountSheetState extends State<FnbDiscountSheet> {
                   tooltip: 'Tutup',
                 ),
               ],
-            ),
+            );
+  }
 
-            const SizedBox(height: 14),
-
-            // 2. Tab Navigasi Utama: [Promosi Toko (API)] vs [Diskon Manual (Kasir)]
-            Container(
+  Widget _buildTabSwitcher(AppPalette p, Color primaryColor, int promoCount) {
+    return Container(
               decoration: BoxDecoration(
                 color: p.surfaceMuted,
                 borderRadius: BorderRadius.circular(14),
@@ -273,7 +289,7 @@ class _FnbDiscountSheetState extends State<FnbDiscountSheet> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'Promo Toko (${promos.length})',
+                              'Promo Toko ($promoCount)',
                               style: TextStyle(
                                 fontSize: 12.5,
                                 fontWeight: _activeTabIndex == 0 ? FontWeight.w800 : FontWeight.w600,
@@ -331,12 +347,11 @@ class _FnbDiscountSheetState extends State<FnbDiscountSheet> {
                   ),
                 ],
               ),
-            ),
+            );
+  }
 
-            const SizedBox(height: 14),
-
-            if (_errorMsg != null) ...[
-              Container(
+  Widget _buildErrorBanner(AppPalette p) {
+    return Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
@@ -351,11 +366,17 @@ class _FnbDiscountSheetState extends State<FnbDiscountSheet> {
                     Expanded(child: Text(_errorMsg!, style: TextStyle(color: p.danger, fontSize: 12, fontWeight: FontWeight.w600))),
                   ],
                 ),
-              ),
-            ],
+              );
+  }
 
-            // 3. KONTEN TAB 0: DAFTAR PROMO TOKO (DARI API)
-            if (_activeTabIndex == 0) ...[
+  List<Widget> _buildStorePromosTab(
+    AppPalette p,
+    Color primaryColor,
+    double subtotal,
+    List<StorePromotion> promos,
+    StorePromotion? activePromo,
+  ) {
+    return [
               if (_isLoadingPromos && promos.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 28),
@@ -522,9 +543,16 @@ class _FnbDiscountSheetState extends State<FnbDiscountSheet> {
                   ),
                 ),
               ],
-            ]
-            // 4. KONTEN TAB 1: DISKON MANUAL (KASIR)
-            else ...[
+    ];
+  }
+
+  List<Widget> _buildManualDiscountTab(
+    AppPalette p,
+    Color primaryColor,
+    double subtotal,
+    bool hasActiveManual,
+  ) {
+    return [
               // Sub-selector Persen vs Nominal
               Container(
                 decoration: BoxDecoration(
@@ -775,10 +803,6 @@ class _FnbDiscountSheetState extends State<FnbDiscountSheet> {
                   ),
                 ],
               ),
-            ],
-          ],
-        ),
-      ),
-    );
+    ];
   }
 }

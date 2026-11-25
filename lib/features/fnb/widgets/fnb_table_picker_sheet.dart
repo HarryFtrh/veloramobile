@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
+import 'package:material_ui/material_ui.dart';
 import '../../../core/design/tokens.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/audio_helper.dart';
@@ -39,14 +40,17 @@ class FnbTablePickerSheet extends StatefulWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (sheetContext) => SizedBox(
-        height: MediaQuery.sizeOf(sheetContext).height * (isMobile ? 0.88 : 0.82),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: isMobile ? double.infinity : 760),
-            child: FnbTablePickerSheet(
-              tables: tables,
-              currentTable: currentTable,
+      builder: (sheetContext) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(sheetContext).bottom),
+        child: SizedBox(
+          height: MediaQuery.sizeOf(sheetContext).height * (isMobile ? 0.88 : 0.82),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: isMobile ? double.infinity : 760),
+              child: FnbTablePickerSheet(
+                tables: tables,
+                currentTable: currentTable,
+              ),
             ),
           ),
         ),
@@ -66,6 +70,7 @@ class _FnbTablePickerSheetState extends State<FnbTablePickerSheet> {
   String? _errorMessage;
   String _selectedFilter = 'all'; // 'all', 'available', 'occupied', 'reserved'
   String _query = '';
+  Timer? _searchDebounce;
 
   @override
   void initState() {
@@ -78,14 +83,21 @@ class _FnbTablePickerSheetState extends State<FnbTablePickerSheet> {
 
     _searchCtrl.addListener(() {
       final val = _searchCtrl.text.trim().toLowerCase();
-      if (val != _query) {
+      if (val == _query) return;
+      _searchDebounce?.cancel();
+      if (val.isEmpty) {
         setState(() => _query = val);
+        return;
       }
+      _searchDebounce = Timer(const Duration(milliseconds: 220), () {
+        if (mounted) setState(() => _query = val);
+      });
     });
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchCtrl.dispose();
     super.dispose();
   }

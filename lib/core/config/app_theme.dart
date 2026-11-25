@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../design/tokens.dart';
 import 'app_config.dart';
@@ -31,18 +31,38 @@ class AppTheme {
     }
   }
 
+  static Color getDarkAccentColor(AppFlavor flavor) {
+    switch (flavor) {
+      case AppFlavor.fnb:
+      case AppFlavor.customer:
+        return const Color(0xFFD9822B);
+      case AppFlavor.pharmacy:
+        return const Color(0xFF10B981);
+      case AppFlavor.sales:
+        return const Color(0xFF818CF8);
+      case AppFlavor.marketplace:
+        return const Color(0xFF38BDF8);
+    }
+  }
+
   /// Tema baru. Satu aksen per flavor, permukaan solid, tanpa blur/gradient.
   static ThemeData build(AppFlavor flavor, Brightness brightness) {
     final isDark = brightness == Brightness.dark;
-    final isWarm = (flavor == AppFlavor.fnb || flavor == AppFlavor.customer) && !isDark;
-    final isPharmacy = flavor == AppFlavor.pharmacy && !isDark;
+    final isFnbFlavor = flavor == AppFlavor.fnb || flavor == AppFlavor.customer;
+    final isPharmacyFlavor = flavor == AppFlavor.pharmacy;
+    final isWarm = isFnbFlavor && !isDark;
+    final isPharmacy = isPharmacyFlavor && !isDark;
     final basePalette = isDark
-        ? AppPalette.dark
+        ? (isFnbFlavor
+            ? AppPalette.warmDark
+            : (isPharmacyFlavor ? AppPalette.clinicalDark : AppPalette.dark))
         : (isWarm ? AppPalette.warm : (isPharmacy ? AppPalette.clinical : AppPalette.light));
-    final accent = isWarm ? basePalette.primary : (isPharmacy ? ClinicalPalette.primary : getAccentColor(flavor));
+    final accent = isDark
+        ? getDarkAccentColor(flavor)
+        : (isWarm ? basePalette.primary : (isPharmacy ? ClinicalPalette.primary : getAccentColor(flavor)));
     final palette = (isWarm || isPharmacy) ? basePalette : basePalette.copyWith(primary: accent);
-    final onAccent = accent.computeLuminance() > 0.4 ? Colors.black : Colors.white;
-    final buttonShape = isWarm ? const StadiumBorder() : RoundedRectangleBorder(borderRadius: Corner.medium);
+    final onAccent = accent.computeLuminance() > 0.45 ? const Color(0xFF14100E) : Colors.white;
+    final buttonShape = isFnbFlavor ? const StadiumBorder() : RoundedRectangleBorder(borderRadius: Corner.medium);
     final base = isDark ? ThemeData.dark() : ThemeData.light();
     final headlineFont = GoogleFonts.plusJakartaSans().fontFamily;
     final bodyFont = isPharmacy ? GoogleFonts.inter().fontFamily : headlineFont;
@@ -177,6 +197,22 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(Corner.lg)),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: palette.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: palette.line),
+        ),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: palette.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: Corner.medium,
+          side: BorderSide(color: palette.line),
         ),
       ),
     );

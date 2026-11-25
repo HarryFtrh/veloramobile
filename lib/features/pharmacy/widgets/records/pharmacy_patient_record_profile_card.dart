@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
+import '../../pharmacy_colors.dart';
 
 /// Patient profile card with clinical allergy alert ribbon
 class PharmacyPatientRecordProfileCard extends StatelessWidget {
@@ -17,15 +19,15 @@ class PharmacyPatientRecordProfileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF059669);
-    const borderColor = Color(0xFFE2E8F0);
-    const textPrimary = Color(0xFF0F172A);
-    const textMuted = Color(0xFF6D7A72);
+    const emeraldPrimary = PharmacyColors.primary;
+    final borderColor = context.palette.line;
+    final textPrimary = context.palette.textPrimary;
+    final textMuted = context.palette.textSecondary;
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: borderColor),
       ),
@@ -54,7 +56,7 @@ class PharmacyPatientRecordProfileCard extends StatelessWidget {
                       children: [
                         Text(
                           patientName,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'Plus Jakarta Sans',
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -83,7 +85,7 @@ class PharmacyPatientRecordProfileCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       'Kategori: $category • No. RM: $rmNumber',
-                      style: const TextStyle(fontSize: 11, color: textMuted),
+                      style: TextStyle(fontSize: 11, color: textMuted),
                     ),
                   ],
                 ),

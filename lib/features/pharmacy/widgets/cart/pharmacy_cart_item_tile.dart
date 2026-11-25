@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/audio_helper.dart';
-
 /// Tile Item Obat di Keranjang Kasir Apotek
 class PharmacyCartItemTile extends StatelessWidget {
   final String cartKey;
@@ -40,14 +40,14 @@ class PharmacyCartItemTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const primaryEmerald = Color(0xFF059669);
-    const borderColor = Color(0xFFE2E8F0);
-    const textPrimary = Color(0xFF0F172A);
-    const textMuted = Color(0xFF64748B);
+    final borderColor = context.palette.line;
+    final textPrimary = context.palette.textPrimary;
+    final textMuted = context.palette.textSecondary;
 
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: borderColor),
         boxShadow: const [
@@ -77,7 +77,10 @@ class PharmacyCartItemTile extends StatelessWidget {
                               imgUrl!,
                               width: 26,
                               height: 26,
+                              cacheWidth: 80,
+                              cacheHeight: 80,
                               fit: BoxFit.cover,
+                              gaplessPlayback: true,
                               errorBuilder: (_, _, _) => const SizedBox.shrink(),
                             ),
                           ),
@@ -87,10 +90,10 @@ class PharmacyCartItemTile extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                           decoration: BoxDecoration(
                             color: isRx
-                                ? const Color(0xFFFEE2E2)
+                                ? const Color(0xFFDC2626).withValues(alpha: 0.14)
                                 : isAlkes
-                                    ? const Color(0xFFE0F2FE)
-                                    : const Color(0xFFECFDF5),
+                                    ? const Color(0xFF0284C7).withValues(alpha: 0.14)
+                                    : const Color(0xFF059669).withValues(alpha: 0.14),
                             borderRadius: BorderRadius.circular(4),
                             border: Border.all(
                               color: isRx
@@ -118,7 +121,7 @@ class PharmacyCartItemTile extends StatelessWidget {
                         Flexible(
                           child: Text(
                             item['name'] ?? '',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontFamily: 'Plus Jakarta Sans',
                               fontWeight: FontWeight.bold,
                               fontSize: 12.5,
@@ -137,7 +140,7 @@ class PharmacyCartItemTile extends StatelessWidget {
                       children: [
                         Text(
                           'Batch: $batch • ${CurrencyFormatter.format(price)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'JetBrains Mono',
                             fontSize: 10,
                             color: textMuted,
@@ -183,9 +186,9 @@ class PharmacyCartItemTile extends StatelessWidget {
               InkWell(
                 onTap: onRemoveFromCart,
                 borderRadius: BorderRadius.circular(4),
-                child: const Padding(
+                child: Padding(
                   padding: EdgeInsets.all(3),
-                  child: Icon(Icons.close_rounded, size: 16, color: Color(0xFF94A3B8)),
+                  child: Icon(Icons.close_rounded, size: 16, color: context.palette.textTertiary),
                 ),
               ),
             ],
@@ -197,7 +200,7 @@ class PharmacyCartItemTile extends StatelessWidget {
               Container(
                 height: 28,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: context.palette.canvas,
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(color: borderColor),
                 ),
@@ -222,7 +225,7 @@ class PharmacyCartItemTile extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 6),
                       child: Text(
                         '$qty',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'JetBrains Mono',
                           fontWeight: FontWeight.bold,
                           fontSize: 12,

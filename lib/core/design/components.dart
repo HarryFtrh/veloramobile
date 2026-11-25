@@ -1,8 +1,13 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shimmer/shimmer.dart';
 import 'tokens.dart';
 
 export '../components/velora_logo.dart';
+export 'app_confirm_dialog.dart';
+export '../utils/app_regex.dart';
+export '../utils/app_toast.dart';
+export '../utils/date_time_formatter.dart';
+export '../widgets/app_qr_view.dart';
 
 /// Kartu datar dengan border 1px. Dipakai sebagai pembungkus konten utama.
 class AppCard extends StatelessWidget {
@@ -350,125 +355,6 @@ class AppButton extends StatelessWidget {
   }
 }
 
-/// Search Input Bar bentuk rounded capsule sesuai gambar referensi.
-class AppSearchBar extends StatelessWidget {
-  const AppSearchBar({
-    super.key,
-    required this.controller,
-    this.hintText = 'Search',
-    this.onChanged,
-    this.onClear,
-    this.prefixIcon,
-  });
-
-  final TextEditingController controller;
-  final String hintText;
-  final ValueChanged<String>? onChanged;
-  final VoidCallback? onClear;
-  final Widget? prefixIcon;
-
-  @override
-  Widget build(BuildContext context) {
-    final p = context.palette;
-    return Container(
-      height: 48,
-      decoration: BoxDecoration(
-        color: p.surfaceMuted,
-        borderRadius: Corner.full,
-        border: Border.all(color: p.line, width: 1),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: Gap.md),
-      child: Row(
-        children: [
-          prefixIcon ??
-              Icon(
-                Icons.search_rounded,
-                size: 20,
-                color: p.textSecondary,
-              ),
-          const SizedBox(width: Gap.sm),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              onChanged: onChanged,
-              style: TextStyle(
-                fontSize: 14,
-                color: p.textPrimary,
-                fontWeight: FontWeight.w500,
-              ),
-              decoration: InputDecoration(
-                hintText: hintText,
-                hintStyle: TextStyle(
-                  fontSize: 14,
-                  color: p.textTertiary,
-                ),
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-          ),
-          if (controller.text.isNotEmpty)
-            GestureDetector(
-              onTap: () {
-                controller.clear();
-                onChanged?.call('');
-                onClear?.call();
-              },
-              child: Icon(
-                Icons.close_rounded,
-                size: 18,
-                color: p.textSecondary,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Circular Action Badges (4 lingkaran di kanan bawah gambar referensi).
-class CircularActionBadge extends StatelessWidget {
-  const CircularActionBadge({
-    super.key,
-    required this.icon,
-    required this.color,
-    this.onTap,
-    this.size = 40,
-    this.iconSize = 20,
-    this.tooltip,
-  });
-
-  final IconData icon;
-  final Color color;
-  final VoidCallback? onTap;
-  final double size;
-  final double iconSize;
-  final String? tooltip;
-
-  @override
-  Widget build(BuildContext context) {
-    Widget badge = Material(
-      color: color,
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: SizedBox(
-          width: size,
-          height: size,
-          child: Icon(icon, size: iconSize, color: Colors.white),
-        ),
-      ),
-    );
-
-    if (tooltip != null) {
-      return Tooltip(message: tooltip!, child: badge);
-    }
-    return badge;
-  }
-}
-
 /// Floating Pill Navigation Bar (Navigasi melayang bentuk kapsul lonjong di tengah bawah).
 class FloatingPillNavItem {
   const FloatingPillNavItem({
@@ -556,61 +442,6 @@ class FloatingPillNavBar extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// 3 Garis Metric / Progress Horizontal sesuai gambar referensi:
-/// Garis 1: Espresso (#7A431D)
-/// Garis 2: Ochre (#D9822B)
-/// Garis 3: Sage (#4D6B53)
-class MetricHorizontalBars extends StatelessWidget {
-  const MetricHorizontalBars({
-    super.key,
-    this.val1 = 0.85,
-    this.val2 = 0.60,
-    this.val3 = 0.40,
-    this.height = 8,
-  });
-
-  final double val1;
-  final double val2;
-  final double val3;
-  final double height;
-
-  Widget _buildBar(Color color, double progress) {
-    return Container(
-      height: height,
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.2),
-        borderRadius: Corner.full,
-      ),
-      child: FractionallySizedBox(
-        alignment: Alignment.centerLeft,
-        widthFactor: progress.clamp(0.0, 1.0),
-        child: Container(
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: Corner.full,
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final p = context.palette;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildBar(p.primary, val1),
-        const SizedBox(height: Gap.xs),
-        _buildBar(p.secondary, val2),
-        const SizedBox(height: Gap.xs),
-        _buildBar(p.tertiary, val3),
-      ],
     );
   }
 }

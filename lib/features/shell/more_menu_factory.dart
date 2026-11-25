@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../core/config/business_vertical.dart';
 import '../finance/expenses_screen.dart';
 import '../finance/return_screen.dart';
-import '../fnb_customer/customer_home_screen.dart';
+import '../fnb_customer/screens/customer_home_screen.dart';
 import '../settings/settings_screen.dart';
-import '../shared_pos/printer_settings_screen.dart';
+import '../shared_pos/widgets/printer_settings_screen.dart';
 import '../subscription/subscription_screen.dart';
 import 'more_entry.dart';
 
@@ -28,13 +28,13 @@ class MoreMenuFactory {
             subtitle: 'Layar eksplorasi menu meja & live tracking pesanan tamu',
             builder: _buildCustomerHome,
           ),
-          const MoreEntry(
+          MoreEntry(
             category: 'Operasional Kasir',
             icon: Icons.payments_outlined,
             iconColor: Color(0xFFD97706),
-            iconBg: Color(0xFFFEF3C7),
+            iconBg: const Color(0xFFD97706).withValues(alpha: 0.14),
             badge: 'Petty Cash',
-            badgeColor: Color(0xFFFEF3C7),
+            badgeColor: const Color(0xFFD97706).withValues(alpha: 0.14),
             badgeTextColor: Color(0xFFB45309),
             title: 'Pengeluaran Kasir (Petty Cash)',
             subtitle: 'Pencatatan kas kecil operasional harian (es, galon, dsb)',
@@ -100,13 +100,13 @@ class MoreMenuFactory {
             subtitle: 'Retur barang invoice transaksi atau ke supplier',
             builder: _buildReturn,
           ),
-          const MoreEntry(
+          MoreEntry(
             category: 'Operasional Kasir',
             icon: Icons.payments_outlined,
             iconColor: Color(0xFFD97706),
-            iconBg: Color(0xFFFEF3C7),
+            iconBg: const Color(0xFFD97706).withValues(alpha: 0.14),
             badge: 'Petty Cash',
-            badgeColor: Color(0xFFFEF3C7),
+            badgeColor: const Color(0xFFD97706).withValues(alpha: 0.14),
             badgeTextColor: Color(0xFFB45309),
             title: 'Pengeluaran Kasir (Petty Cash)',
             subtitle: 'Pencatatan kas operasional toko harian',

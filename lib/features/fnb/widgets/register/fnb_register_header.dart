@@ -1,11 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../../core/design/tokens.dart';
 import '../../../../core/storage/session_storage.dart';
 import '../../../../core/widgets/store_logo_avatar.dart';
-import '../../../shared_pos/offline_sync_badge.dart';
-import '../../../shared_pos/receipt_printer_service.dart';
-import '../../../shared_pos/shift_badge.dart';
-import '../../fnb_register_controller.dart';
+import '../../../shared_pos/widgets/offline_sync_badge.dart';
+import '../../../shared_pos/services/receipt_printer_service.dart';
+import '../../../shared_pos/widgets/shift_badge.dart';
+import '../../register/fnb_register_controller.dart';
 
 /// Top AppBar Header for FnB Register Screen
 class FnbRegisterHeader extends StatelessWidget implements PreferredSizeWidget {
@@ -111,10 +111,13 @@ class FnbRegisterHeader extends StatelessWidget implements PreferredSizeWidget {
               visualDensity: VisualDensity.compact,
             ),
           ),
-          IconButton(
-            tooltip: 'Split Bill',
-            icon: const Icon(Icons.call_split_rounded, size: 19),
-            onPressed: ctrl.lines.isEmpty ? null : onOpenSplitBill,
+          ListenableBuilder(
+            listenable: ctrl.shellRevision,
+            builder: (_, _) => IconButton(
+              tooltip: 'Split Bill',
+              icon: const Icon(Icons.call_split_rounded, size: 19),
+              onPressed: ctrl.lines.isEmpty ? null : onOpenSplitBill,
+            ),
           ),
           IconButton(
             tooltip: 'Pengaturan Printer',

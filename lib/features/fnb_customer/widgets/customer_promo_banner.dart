@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../core/design/tokens.dart';
 import '../../fnb/billing.dart';
@@ -57,17 +57,14 @@ class CustomerPromoBanner extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          Positioned(
+          const Positioned(
             right: 12,
             top: 0,
             bottom: 0,
-            child: Opacity(
-              opacity: 0.2,
-              child: const Icon(
-                Icons.coffee_rounded,
-                size: 140,
-                color: Colors.white,
-              ),
+            child: Icon(
+              Icons.coffee_rounded,
+              size: 140,
+              color: Color(0x33FFFFFF),
             ),
           ),
           Padding(

@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/audio_helper.dart';
-import '../../../shared_pos/pos_checkout_service.dart';
+import '../../../shared_pos/services/pos_checkout_service.dart';
 import '../../services/pharmacy_clinical_safety_service.dart';
+import '../../pharmacy_colors.dart';
 
 /// View Tender Pembayaran In-Place di Sisi Keranjang Apotek
 class PharmacyCartTenderView extends StatefulWidget {
@@ -49,8 +50,8 @@ class PharmacyCartTenderView extends StatefulWidget {
 class _PharmacyCartTenderViewState extends State<PharmacyCartTenderView> {
   static const primaryEmerald = Color(0xFF059669);
   static const secondaryTeal = Color(0xFF0D9488);
-  static const borderColor = Color(0xFFE2E8F0);
-  static const textPrimary = Color(0xFF0F172A);
+  static const borderColor = PharmacyColors.border;
+  static const textPrimary = PharmacyColors.textPrimary;
   static const textMuted = Color(0xFF64748B);
   static const canvasColor = Colors.white;
 
@@ -97,9 +98,7 @@ class _PharmacyCartTenderViewState extends State<PharmacyCartTenderView> {
   }
 
   void _onCashTextChanged(String val) {
-    final clean = val.replaceAll(RegExp(r'[^0-9]'), '');
-    final num amt = num.tryParse(clean) ?? 0;
-    setState(() => _tenderAmount = amt);
+    setState(() => _tenderAmount = val.parseRupiah());
   }
 
   void _onCashPresetSelected(num amt) {
@@ -172,8 +171,38 @@ class _PharmacyCartTenderViewState extends State<PharmacyCartTenderView> {
       key: const ValueKey('TenderPaymentView'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header with Back to Cart Arrow & Fast Actions
-        Container(
+        _buildHeader(),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildGrandTotalBanner(grandTotal),
+                const SizedBox(height: 10),
+                if (safetyAlerts.isNotEmpty) ...[
+                  _buildClinicalSafetyAlert(safetyAlerts.first.message),
+                  const SizedBox(height: 10),
+                ],
+                ..._buildPaymentMethodTabs(grandTotal),
+                ..._buildPaymentMethodForm(
+                  grandTotal: grandTotal,
+                  changeAmount: changeAmount,
+                  shortAmount: shortAmount,
+                  secondarySplitAmount: secondarySplitAmount,
+                  cashPresets: cashPresets,
+                ),
+              ],
+            ),
+          ),
+        ),
+        _buildActionFooter(grandTotal, safetyAlerts.isNotEmpty),
+      ],
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: const BoxDecoration(
             color: canvasColor,
@@ -235,7 +264,7 @@ class _PharmacyCartTenderViewState extends State<PharmacyCartTenderView> {
                   IconButton(
                     icon: const Icon(Icons.tv_rounded, size: 18, color: secondaryTeal),
                     tooltip: 'Layar Pasien QRIS',
-                    onPressed: () => widget.onOpenCustomerDisplay(grandTotal),
+                    onPressed: () => widget.onOpenCustomerDisplay(widget.grandTotal),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                   ),
@@ -251,17 +280,11 @@ class _PharmacyCartTenderViewState extends State<PharmacyCartTenderView> {
               ),
             ],
           ),
-        ),
+        );
+  }
 
-        // Scrollable Tender Form
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Grand Total Mini Banner
-                Container(
+  Widget _buildGrandTotalBanner(num grandTotal) {
+    return Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
                     color: primaryEmerald.withValues(alpha: 0.08),
@@ -287,7 +310,7 @@ class _PharmacyCartTenderViewState extends State<PharmacyCartTenderView> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: context.palette.surface,
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(color: borderColor),
                         ),
@@ -298,15 +321,14 @@ class _PharmacyCartTenderViewState extends State<PharmacyCartTenderView> {
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 10),
+                );
+  }
 
-                // Clinical Safety Alert (if any)
-                if (safetyAlerts.isNotEmpty) ...[
-                  Container(
+  Widget _buildClinicalSafetyAlert(String alertMessage) {
+    return Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFEF2F2),
+                      color: const Color(0xFFDC2626).withValues(alpha: 0.14),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: const Color(0xFFFECACA)),
                     ),
@@ -325,7 +347,7 @@ class _PharmacyCartTenderViewState extends State<PharmacyCartTenderView> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          safetyAlerts.first.message,
+                          alertMessage,
                           style: const TextStyle(fontSize: 10, color: Color(0xFF7F1D1D)),
                         ),
                         const SizedBox(height: 6),
@@ -350,11 +372,11 @@ class _PharmacyCartTenderViewState extends State<PharmacyCartTenderView> {
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                ],
+                  );
+  }
 
-                // Payment Method Selector Tabs
+  List<Widget> _buildPaymentMethodTabs(num grandTotal) {
+    return [
                 const Text('Pilih Metode Pembayaran:', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: textPrimary)),
                 const SizedBox(height: 6),
                 Wrap(
@@ -374,7 +396,7 @@ class _PharmacyCartTenderViewState extends State<PharmacyCartTenderView> {
                       ),
                       selected: isSel,
                       selectedColor: primaryEmerald,
-                      backgroundColor: const Color(0xFFF1F5F9),
+                      backgroundColor: context.palette.surfaceMuted,
                       labelStyle: TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
                         fontWeight: FontWeight.bold,
@@ -394,8 +416,17 @@ class _PharmacyCartTenderViewState extends State<PharmacyCartTenderView> {
                   }),
                 ),
                 const SizedBox(height: 12),
+    ];
+  }
 
-                // Form Section per Payment Method
+  List<Widget> _buildPaymentMethodForm({
+    required num grandTotal,
+    required num changeAmount,
+    required num shortAmount,
+    required num secondarySplitAmount,
+    required List<num> cashPresets,
+  }) {
+    return [
                 if (_selectedPaymentMethod == 0) ...[
                   // TUNAI
                   const Text('Uang Tunai Diterima:', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: textPrimary)),
@@ -407,7 +438,7 @@ class _PharmacyCartTenderViewState extends State<PharmacyCartTenderView> {
                     decoration: InputDecoration(
                       prefixText: 'Rp ',
                       filled: true,
-                      fillColor: const Color(0xFFF8FAFC),
+                      fillColor: context.palette.canvas,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                     ),
@@ -426,7 +457,7 @@ class _PharmacyCartTenderViewState extends State<PharmacyCartTenderView> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: isSel ? primaryEmerald : (isExact ? primaryEmerald.withValues(alpha: 0.1) : const Color(0xFFF1F5F9)),
+                            color: isSel ? primaryEmerald : (isExact ? primaryEmerald.withValues(alpha: 0.1) : context.palette.surfaceMuted),
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(color: isSel ? primaryEmerald : borderColor),
                           ),
@@ -448,7 +479,7 @@ class _PharmacyCartTenderViewState extends State<PharmacyCartTenderView> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: shortAmount > 0 ? const Color(0xFFFEF2F2) : const Color(0xFFF0FDF4),
+                      color: shortAmount > 0 ? const Color(0xFFDC2626).withValues(alpha: 0.14) : const Color(0xFF059669).withValues(alpha: 0.14),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: shortAmount > 0 ? const Color(0xFFFECACA) : const Color(0xFFBBF7D0)),
                     ),
@@ -481,7 +512,7 @@ class _PharmacyCartTenderViewState extends State<PharmacyCartTenderView> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
+                      color: context.palette.canvas,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: borderColor),
                     ),
@@ -492,7 +523,7 @@ class _PharmacyCartTenderViewState extends State<PharmacyCartTenderView> {
                         const Text('Pindai QRIS dengan e-wallet/m-banking', style: TextStyle(fontSize: 10.5, color: textMuted)),
                         const SizedBox(height: 8),
                         OutlinedButton.icon(
-                          onPressed: () => widget.onOpenCustomerDisplay(grandTotal),
+                          onPressed: () => widget.onOpenCustomerDisplay(widget.grandTotal),
                           icon: const Icon(Icons.tv_rounded, size: 14),
                           label: const Text('Tampilkan ke Pasien'),
                           style: OutlinedButton.styleFrom(
@@ -515,7 +546,7 @@ class _PharmacyCartTenderViewState extends State<PharmacyCartTenderView> {
                         label: Text(b),
                         selected: isSel,
                         selectedColor: primaryEmerald,
-                        backgroundColor: const Color(0xFFF1F5F9),
+                        backgroundColor: context.palette.surfaceMuted,
                         labelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isSel ? Colors.white : textPrimary),
                         onSelected: (val) {
                           if (val) setState(() => _selectedBank = b);
@@ -529,7 +560,7 @@ class _PharmacyCartTenderViewState extends State<PharmacyCartTenderView> {
                     decoration: InputDecoration(
                       hintText: 'Approval / Ref Code EDC',
                       filled: true,
-                      fillColor: const Color(0xFFF8FAFC),
+                      fillColor: context.palette.canvas,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                     ),
@@ -546,7 +577,7 @@ class _PharmacyCartTenderViewState extends State<PharmacyCartTenderView> {
                         label: Text(ins),
                         selected: isSel,
                         selectedColor: primaryEmerald,
-                        backgroundColor: const Color(0xFFF1F5F9),
+                        backgroundColor: context.palette.surfaceMuted,
                         labelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isSel ? Colors.white : textPrimary),
                         onSelected: (val) {
                           if (val) setState(() => _selectedInsurance = ins);
@@ -560,7 +591,7 @@ class _PharmacyCartTenderViewState extends State<PharmacyCartTenderView> {
                     decoration: InputDecoration(
                       hintText: 'Nomor Kartu / No. SEP',
                       filled: true,
-                      fillColor: const Color(0xFFF8FAFC),
+                      fillColor: context.palette.canvas,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                     ),
@@ -575,20 +606,18 @@ class _PharmacyCartTenderViewState extends State<PharmacyCartTenderView> {
                     decoration: InputDecoration(
                       prefixText: 'Rp ',
                       filled: true,
-                      fillColor: const Color(0xFFF8FAFC),
+                      fillColor: context.palette.canvas,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                     ),
                     onChanged: (v) {
-                      final clean = v.replaceAll(RegExp(r'[^0-9]'), '');
-                      final num p = num.tryParse(clean) ?? 0;
-                      setState(() => _splitCashAmount = p);
+                      setState(() => _splitCashAmount = v.parseRupiah());
                     },
                   ),
                   const SizedBox(height: 6),
                   Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: const Color(0xFFF0FDF4), borderRadius: BorderRadius.circular(6)),
+                    decoration: BoxDecoration(color: const Color(0xFF059669).withValues(alpha: 0.14), borderRadius: BorderRadius.circular(6)),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -609,7 +638,7 @@ class _PharmacyCartTenderViewState extends State<PharmacyCartTenderView> {
                         label: Text(m),
                         selected: isSel,
                         selectedColor: primaryEmerald,
-                        backgroundColor: const Color(0xFFF1F5F9),
+                        backgroundColor: context.palette.surfaceMuted,
                         labelStyle: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isSel ? Colors.white : textPrimary),
                         onSelected: (val) {
                           if (val) setState(() => _splitSecondaryMethod = m);
@@ -618,13 +647,11 @@ class _PharmacyCartTenderViewState extends State<PharmacyCartTenderView> {
                     }).toList(),
                   ),
                 ],
-              ],
-            ),
-          ),
-        ),
+    ];
+  }
 
-        // Action CTA Footer
-        Container(
+  Widget _buildActionFooter(num grandTotal, bool hasSafetyAlerts) {
+    return Container(
           padding: const EdgeInsets.all(12),
           decoration: const BoxDecoration(
             color: canvasColor,
@@ -688,8 +715,6 @@ class _PharmacyCartTenderViewState extends State<PharmacyCartTenderView> {
               ),
             ],
           ),
-        ),
-      ],
-    );
+        );
   }
 }

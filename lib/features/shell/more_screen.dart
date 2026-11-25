@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../core/design/tokens.dart';
 import '../../core/storage/session_storage.dart';
-import '../shared_pos/receipt_printer_service.dart';
-import '../shared_pos/shift_badge.dart';
+import '../shared_pos/services/receipt_printer_service.dart';
+import '../shared_pos/widgets/shift_badge.dart';
 import 'menu_service.dart';
 import 'more_entry.dart';
 
@@ -50,51 +51,13 @@ class _MoreScreenState extends State<MoreScreen> {
   }
 
   Future<void> _confirmLogout(BuildContext context) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFDC2626).withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.logout_rounded, color: Color(0xFFDC2626), size: 22),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'Keluar dari Akun Kasir?',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
-              ),
-            ),
-          ],
-        ),
-        content: const Text(
-          'Pastikan seluruh pesanan dan transaksi telah tersimpan sebelum keluar dari aplikasi.',
-          style: TextStyle(fontSize: 13, color: Color(0xFF475569), height: 1.4),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Batal', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w700)),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFDC2626),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              elevation: 0,
-            ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Keluar', style: TextStyle(fontWeight: FontWeight.w800)),
-          ),
-        ],
-      ),
+    final ok = await AppConfirmDialog.show(
+      context,
+      title: 'Keluar dari Akun Kasir?',
+      message: 'Pastikan seluruh pesanan dan transaksi telah tersimpan sebelum keluar dari aplikasi.',
+      confirmLabel: 'Keluar',
+      isDestructive: true,
+      icon: Icons.logout_rounded,
     );
     if (ok == true) widget.onLogout?.call();
   }
@@ -200,18 +163,20 @@ class _MoreScreenState extends State<MoreScreen> {
       effectiveEntries = widget.entries.where((e) => !_isPrimaryTab(e)).toList();
     }
 
+    final p = context.palette;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: p.canvas,
       appBar: (!isTablet || canPop)
           ? AppBar(
-              backgroundColor: Colors.white,
+              backgroundColor: p.surface,
               elevation: 0,
               scrolledUnderElevation: 0,
-              foregroundColor: const Color(0xFF0F172A),
-              iconTheme: const IconThemeData(color: Color(0xFF0F172A)),
-              title: const Text(
+              foregroundColor: p.textPrimary,
+              iconTheme: IconThemeData(color: p.textPrimary),
+              title: Text(
                 'Menu & Lainnya',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: Color(0xFF0F172A), letterSpacing: -0.3),
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: p.textPrimary, letterSpacing: -0.3),
               ),
               actions: [
                 IconButton(
@@ -224,8 +189,8 @@ class _MoreScreenState extends State<MoreScreen> {
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(1),
                 child: _isLoading
-                    ? LinearProgressIndicator(minHeight: 2, color: brandPrimary, backgroundColor: const Color(0xFFE2E8F0))
-                    : Container(color: const Color(0xFFE2E8F0), height: 1),
+                    ? LinearProgressIndicator(minHeight: 2, color: brandPrimary, backgroundColor: p.line)
+                    : Container(color: p.line, height: 1),
               ),
             )
           : null,
@@ -270,9 +235,9 @@ class _MoreScreenState extends State<MoreScreen> {
                   OutlinedButton.icon(
                     onPressed: () => _confirmLogout(context),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFFDC2626),
-                      side: const BorderSide(color: Color(0xFFFECACA), width: 1.2),
-                      backgroundColor: Colors.white,
+                      foregroundColor: p.danger,
+                      side: BorderSide(color: p.danger.withValues(alpha: 0.35), width: 1.2),
+                      backgroundColor: p.surface,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       elevation: 0,
@@ -287,10 +252,10 @@ class _MoreScreenState extends State<MoreScreen> {
                 ],
 
                 // Versi Aplikasi
-                const Center(
+                Center(
                   child: Text(
                     'Velora POS • v2.0 Enterprise Cloud',
-                    style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8), fontWeight: FontWeight.w600),
+                    style: TextStyle(fontSize: 11, color: p.textTertiary, fontWeight: FontWeight.w600),
                   ),
                 ),
                 const SizedBox(height: 28),
@@ -311,12 +276,13 @@ class _MoreScreenState extends State<MoreScreen> {
     required Color brandPrimary,
     required bool isTablet,
   }) {
+    final p = context.palette;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: p.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+        border: Border.all(color: p.line, width: 1.2),
         boxShadow: const [
           BoxShadow(
             color: Color(0x06000000),
@@ -366,10 +332,10 @@ class _MoreScreenState extends State<MoreScreen> {
                     Flexible(
                       child: Text(
                         userName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF0F172A),
+                          color: p.textPrimary,
                           letterSpacing: -0.2,
                         ),
                         maxLines: 1,
@@ -380,9 +346,9 @@ class _MoreScreenState extends State<MoreScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: brandPrimary.withValues(alpha: 0.1),
+                        color: brandPrimary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: brandPrimary.withValues(alpha: 0.2)),
+                        border: Border.all(color: brandPrimary.withValues(alpha: 0.24)),
                       ),
                       child: Text(
                         roleName.toUpperCase(),
@@ -398,9 +364,9 @@ class _MoreScreenState extends State<MoreScreen> {
                 const SizedBox(height: 3),
                 Text(
                   '$tenantName • $locationName',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12.5,
-                    color: Color(0xFF64748B),
+                    color: p.textSecondary,
                     fontWeight: FontWeight.w600,
                   ),
                   maxLines: 1,
@@ -413,7 +379,7 @@ class _MoreScreenState extends State<MoreScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: const Color(0xFFECFDF5),
+              color: const Color(0xFF059669).withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: const Color(0xFFA7F3D0)),
             ),
@@ -441,12 +407,13 @@ class _MoreScreenState extends State<MoreScreen> {
 
   /// Quick Shift & Cash Register Operation Card
   Widget _buildQuickOperationalCard(Color brandPrimary) {
+    final p = context.palette;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: p.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+        border: Border.all(color: p.line, width: 1.2),
         boxShadow: const [
           BoxShadow(
             color: Color(0x04000000),
@@ -458,39 +425,47 @@ class _MoreScreenState extends State<MoreScreen> {
       child: Column(
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(7),
-                    decoration: BoxDecoration(
-                      color: brandPrimary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        color: brandPrimary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(Icons.point_of_sale_rounded, size: 18, color: brandPrimary),
                     ),
-                    child: Icon(Icons.point_of_sale_rounded, size: 18, color: brandPrimary),
-                  ),
-                  const SizedBox(width: 10),
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Shift Kasir Register',
-                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: Color(0xFF0F172A)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Shift Kasir Register',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: p.textPrimary),
+                          ),
+                          Text(
+                            'Status pencatatan transaksi & uang laci kasir',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 11, color: p.textSecondary, fontWeight: FontWeight.w500),
+                          ),
+                        ],
                       ),
-                      Text(
-                        'Status pencatatan transaksi & uang laci kasir',
-                        style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               const CashierShiftBadge(),
             ],
           ),
           const SizedBox(height: 14),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          Divider(height: 1, color: p.line),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -499,13 +474,7 @@ class _MoreScreenState extends State<MoreScreen> {
                   onPressed: () async {
                     await ReceiptPrinterService.instance.openCashDrawer();
                     if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text('Perintah buka laci kasir berhasil dikirim'),
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                      );
+                      context.showSuccessToast('Perintah buka laci kasir berhasil dikirim');
                     }
                   },
                   icon: Icon(Icons.lock_open_rounded, size: 17, color: brandPrimary),
@@ -514,8 +483,8 @@ class _MoreScreenState extends State<MoreScreen> {
                     style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: brandPrimary),
                   ),
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: brandPrimary.withValues(alpha: 0.25)),
-                    backgroundColor: brandPrimary.withValues(alpha: 0.04),
+                    side: BorderSide(color: brandPrimary.withValues(alpha: 0.3)),
+                    backgroundColor: brandPrimary.withValues(alpha: 0.06),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
@@ -525,14 +494,14 @@ class _MoreScreenState extends State<MoreScreen> {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () => ReceiptPrinterService.instance.openSettings(context),
-                  icon: const Icon(Icons.print_outlined, size: 17, color: Color(0xFF334155)),
-                  label: const Text(
+                  icon: Icon(Icons.print_outlined, size: 17, color: p.textPrimary),
+                  label: Text(
                     'Pengaturan Printer',
-                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: Color(0xFF334155)),
+                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: p.textPrimary),
                   ),
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFFCBD5E1)),
-                    backgroundColor: const Color(0xFFF8FAFC),
+                    side: BorderSide(color: p.line),
+                    backgroundColor: p.surfaceMuted,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
@@ -647,6 +616,7 @@ class _MoreScreenState extends State<MoreScreen> {
   Widget _buildCategoryGroup(String categoryName, List<MoreEntry> groupEntries, Color brandPrimary) {
     final headerIcon = _resolveCategoryIcon(categoryName);
 
+    final p = context.palette;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -654,15 +624,15 @@ class _MoreScreenState extends State<MoreScreen> {
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Row(
             children: [
-              Icon(headerIcon, size: 16, color: const Color(0xFF64748B)),
+              Icon(headerIcon, size: 16, color: p.textSecondary),
               const SizedBox(width: 6),
               Text(
                 categoryName.toUpperCase(),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.8,
-                  color: Color(0xFF64748B),
+                  color: p.textSecondary,
                 ),
               ),
             ],
@@ -670,9 +640,9 @@ class _MoreScreenState extends State<MoreScreen> {
         ),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: p.surface,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+            border: Border.all(color: p.line, width: 1.2),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x04000000),
@@ -688,7 +658,7 @@ class _MoreScreenState extends State<MoreScreen> {
                 for (var i = 0; i < groupEntries.length; i++) ...[
                   _buildMenuItemTile(groupEntries[i], brandPrimary),
                   if (i < groupEntries.length - 1)
-                    const Divider(height: 1, indent: 64, endIndent: 16, color: Color(0xFFF1F5F9)),
+                    Divider(height: 1, indent: 64, endIndent: 16, color: p.line),
                 ],
               ],
             ),
@@ -699,8 +669,9 @@ class _MoreScreenState extends State<MoreScreen> {
   }
 
   Widget _buildMenuItemTile(MoreEntry entry, Color brandPrimary) {
+    final p = context.palette;
     final iconColor = entry.iconColor ?? brandPrimary;
-    final iconBg = entry.iconBg ?? brandPrimary.withValues(alpha: 0.1);
+    final iconBg = entry.iconBg ?? brandPrimary.withValues(alpha: 0.12);
 
     return Material(
       color: Colors.transparent,
@@ -728,10 +699,10 @@ class _MoreScreenState extends State<MoreScreen> {
                   children: [
                     Text(
                       entry.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 13.5,
-                        color: Color(0xFF0F172A),
+                        color: p.textPrimary,
                         letterSpacing: -0.1,
                       ),
                       maxLines: 1,
@@ -740,9 +711,9 @@ class _MoreScreenState extends State<MoreScreen> {
                     const SizedBox(height: 2),
                     Text(
                       entry.subtitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11.5,
-                        color: Color(0xFF64748B),
+                        color: p.textSecondary,
                         fontWeight: FontWeight.w500,
                         height: 1.3,
                       ),
@@ -757,10 +728,10 @@ class _MoreScreenState extends State<MoreScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
                   decoration: BoxDecoration(
-                    color: entry.badgeColor ?? const Color(0xFFF1F5F9),
+                    color: entry.badgeColor ?? p.surfaceMuted,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: (entry.badgeColor ?? const Color(0xFFE2E8F0)).withValues(alpha: 0.8),
+                      color: (entry.badgeColor ?? p.line).withValues(alpha: 0.8),
                     ),
                   ),
                   child: Text(
@@ -768,13 +739,13 @@ class _MoreScreenState extends State<MoreScreen> {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w800,
-                      color: entry.badgeTextColor ?? const Color(0xFF475569),
+                      color: entry.badgeTextColor ?? p.textSecondary,
                     ),
                   ),
                 ),
               ],
               const SizedBox(width: 6),
-              const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8), size: 18),
+              Icon(Icons.chevron_right_rounded, color: p.textTertiary, size: 18),
             ],
           ),
         ),

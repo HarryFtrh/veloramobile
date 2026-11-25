@@ -1,6 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
-import '../../../shared_pos/pos_checkout_service.dart';
+import '../../../shared_pos/services/pos_checkout_service.dart';
+import '../../pharmacy_colors.dart';
 
 /// Itemized prescription medicines list with batch and Tuslah fee
 class PharmacyReceiptItemList extends StatelessWidget {
@@ -15,14 +17,14 @@ class PharmacyReceiptItemList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF059669);
-    const borderColor = Color(0xFFE2E8F0);
-    const textPrimary = Color(0xFF0F172A);
-    const textMuted = Color(0xFF6D7A72);
+    const emeraldPrimary = PharmacyColors.primary;
+    final borderColor = context.palette.line;
+    final textPrimary = context.palette.textPrimary;
+    final textMuted = context.palette.textSecondary;
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: borderColor),
       ),
@@ -31,8 +33,8 @@ class PharmacyReceiptItemList extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF8FAFC),
+            decoration: BoxDecoration(
+              color: context.palette.canvas,
               borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
               border: Border(bottom: BorderSide(color: borderColor)),
             ),
@@ -51,7 +53,7 @@ class PharmacyReceiptItemList extends StatelessWidget {
                 ),
                 Text(
                   '${items.length} Item',
-                  style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 10.5, color: textMuted),
+                  style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 10.5, color: textMuted),
                 ),
               ],
             ),
@@ -61,7 +63,7 @@ class PharmacyReceiptItemList extends StatelessWidget {
             physics: const NeverScrollableScrollPhysics(),
             padding: const EdgeInsets.all(12),
             itemCount: items.length,
-            separatorBuilder: (_, _) => const Divider(height: 12, color: borderColor),
+            separatorBuilder: (_, _) => Divider(height: 12, color: borderColor),
             itemBuilder: (context, idx) {
               final item = items[idx];
               return Row(
@@ -73,31 +75,31 @@ class PharmacyReceiptItemList extends StatelessWidget {
                       children: [
                         Text(
                           item.name,
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textPrimary),
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textPrimary),
                         ),
                         Text(
                           'Qty: ${item.quantity} • Batch: ${item.batchNumber ?? "-"}',
-                          style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 10, color: textMuted),
+                          style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 10, color: textMuted),
                         ),
                       ],
                     ),
                   ),
                   Text(
                     CurrencyFormatter.format(item.price * item.quantity),
-                    style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 12, fontWeight: FontWeight.bold, color: textPrimary),
+                    style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 12, fontWeight: FontWeight.bold, color: textPrimary),
                   ),
                 ],
               );
             },
           ),
           if (tuslahFee > 0) ...[
-            const Divider(height: 1, color: borderColor),
+            Divider(height: 1, color: borderColor),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Jasa Resep & Embalase (Tuslah)',
                     style: TextStyle(fontSize: 11, color: textMuted),
                   ),

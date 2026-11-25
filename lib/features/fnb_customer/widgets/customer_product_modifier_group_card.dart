@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+import '../../../core/utils/currency_formatter.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../core/design/tokens.dart';
-import '../../fnb/modifiers.dart';
+import '../../fnb/models/modifiers.dart';
 
 /// Group card with option checkboxes for customer detail sheet
 class CustomerProductModifierGroupCard extends StatelessWidget {
@@ -69,7 +70,7 @@ class CustomerProductModifierGroupCard extends StatelessWidget {
                 vertical: 10,
               ),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: p.surface,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: isChecked ? primaryColor : p.line,
@@ -98,7 +99,7 @@ class CustomerProductModifierGroupCard extends StatelessWidget {
                   ),
                   Text(
                     opt.price > 0
-                        ? '+Rp ${opt.price.round().toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}'
+                        ? '+${opt.price.round().toRupiah()}'
                         : 'Gratis',
                     style: TextStyle(
                       fontWeight: FontWeight.w700,

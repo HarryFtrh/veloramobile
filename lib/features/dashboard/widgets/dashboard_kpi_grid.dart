@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/design/tokens.dart';
@@ -7,6 +7,8 @@ import '../dashboard_service.dart';
 
 /// Grid 4 Metrik KPI Utama (Omzet, Transaksi, Rata-rata Order, Laba Bersih)
 class DashboardKpiGrid extends StatelessWidget {
+  static final _decimalFmt = NumberFormat.decimalPattern('id_ID');
+
   final DashboardSummary summary;
 
   const DashboardKpiGrid({super.key, required this.summary});
@@ -42,7 +44,7 @@ class DashboardKpiGrid extends StatelessWidget {
               Expanded(
                 child: DashboardKpiCard(
                   label: 'TOTAL TRANSAKSI',
-                  value: NumberFormat.decimalPattern('id_ID').format(summary.transactions),
+                  value: _decimalFmt.format(summary.transactions),
                   icon: Icons.receipt_long_rounded,
                   color: const Color(0xFF6366F1),
                   caption: '${summary.transactions} nota berhasil',
@@ -99,7 +101,7 @@ class DashboardKpiGrid extends StatelessWidget {
                 Expanded(
                   child: DashboardKpiCard(
                     label: 'TRANSAKSI',
-                    value: NumberFormat.decimalPattern('id_ID').format(summary.transactions),
+                    value: _decimalFmt.format(summary.transactions),
                     icon: Icons.receipt_long_rounded,
                     color: const Color(0xFF6366F1),
                     caption: '${summary.transactions} nota selesai',

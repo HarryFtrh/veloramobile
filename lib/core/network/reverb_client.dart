@@ -14,10 +14,13 @@ class ReverbClient {
   ReverbClient._internal();
 
   WebSocketChannel? _channel;
+  StreamSubscription<dynamic>? _channelSub;
   Timer? _pingTimer;
   Timer? _reconnectTimer;
   bool _isConnected = false;
+  bool _isConnecting = false;
   bool _isDisposed = false;
+  int _reconnectAttempts = 0;
   String? _socketId;
 
   final Map<String, List<ReverbEventListener>> _eventListeners = {};
@@ -38,7 +41,8 @@ class ReverbClient {
       return;
     }
 
-    if (_isConnected) return;
+    if (_isConnected || _isConnecting) return;
+    _isConnecting = true;
     _isDisposed = false;
 
     try {
@@ -49,9 +53,11 @@ class ReverbClient {
       await _channel?.ready;
 
       _isConnected = true;
+      _reconnectAttempts = 0;
       _startPing();
 
-      _channel?.stream.listen(
+      _channelSub?.cancel();
+      _channelSub = _channel?.stream.listen(
         _onMessage,
         onError: _onError,
         onDone: _onDone,
@@ -59,14 +65,11 @@ class ReverbClient {
       );
 
       debugPrint('[ReverbClient] Terhubung ke Reverb ($scheme://$host:$port)');
-
-      // Resubscribe channel jika sebelumnya terputus
-      for (final chan in _subscribedChannels) {
-        _sendSubscribe(chan);
-      }
     } catch (e) {
       debugPrint('[ReverbClient] Gagal terhubung ke Reverb: $e');
       _scheduleReconnect();
+    } finally {
+      _isConnecting = false;
     }
   }
 
@@ -146,8 +149,11 @@ class ReverbClient {
 
   void _cleanup() {
     _isConnected = false;
+    _socketId = null;
     _pingTimer?.cancel();
     _pingTimer = null;
+    _channelSub?.cancel();
+    _channelSub = null;
     try {
       _channel?.sink.close();
     } catch (e) {
@@ -168,8 +174,10 @@ class ReverbClient {
   void _scheduleReconnect() {
     if (_isDisposed) return;
     _reconnectTimer?.cancel();
-    _reconnectTimer = Timer(const Duration(seconds: 5), () {
-      if (!_isConnected) {
+    final delaySecs = (5 * (1 << _reconnectAttempts.clamp(0, 4))).clamp(5, 60);
+    _reconnectAttempts++;
+    _reconnectTimer = Timer(Duration(seconds: delaySecs), () {
+      if (!_isConnected && !_isConnecting) {
         connect();
       }
     });

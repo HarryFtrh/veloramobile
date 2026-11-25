@@ -1,17 +1,15 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../core/config/app_config.dart';
-import '../../core/config/app_theme.dart';
 import '../../core/storage/session_storage.dart';
 import '../../core/utils/audio_helper.dart';
 import 'auth_service.dart';
 import 'widgets/branch_selector_dialog.dart';
-import 'widgets/fnb_warm_login_view.dart';
 import 'widgets/forgot_password_dialog.dart';
 import 'widgets/login_branding.dart';
 import 'widgets/register_tenant_dialog.dart';
-import 'widgets/standard_login_view.dart';
+import 'widgets/velora_animated_login_view.dart';
 
 export 'widgets/branch_selector_dialog.dart';
 export 'widgets/forgot_password_dialog.dart';
@@ -35,11 +33,20 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _isGoogleLoading = false;
+  bool _isLoginSuccess = false;
   bool _obscurePassword = true;
   bool _rememberMe = true;
   String? _errorMessage;
 
   LoginBranding get _branding => LoginBranding.of(AppConfig.instance.flavor);
+
+  String _greetingText() {
+    final hour = DateTime.now().hour;
+    if (hour >= 4 && hour < 11) return 'Selamat Pagi';
+    if (hour >= 11 && hour < 15) return 'Selamat Siang';
+    if (hour >= 15 && hour < 18) return 'Selamat Sore';
+    return 'Selamat Malam';
+  }
 
   @override
   void initState() {
@@ -95,7 +102,14 @@ class _LoginScreenState extends State<LoginScreen> {
       AudioHelper.successFeedback();
 
       if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isLoginSuccess = true;
+        });
+        await Future<void>.delayed(const Duration(milliseconds: 480));
+        if (!mounted) return;
         if (user.locations.length > 1) {
+          setState(() => _isLoginSuccess = false);
           _showBranchSelectorDialog(user.locations);
         } else {
           widget.onLoginSuccess();
@@ -137,7 +151,14 @@ class _LoginScreenState extends State<LoginScreen> {
       AudioHelper.successFeedback();
 
       if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isLoginSuccess = true;
+        });
+        await Future<void>.delayed(const Duration(milliseconds: 480));
+        if (!mounted) return;
         if (user.locations.length > 1) {
+          setState(() => _isLoginSuccess = false);
           _showBranchSelectorDialog(user.locations);
         } else {
           widget.onLoginSuccess();
@@ -203,30 +224,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final config = AppConfig.instance;
-    final accentColor = AppTheme.getAccentColor(config.flavor);
-    final isWarm = config.flavor == AppFlavor.fnb && theme.brightness == Brightness.light;
-
-    if (isWarm) {
-      return FnbWarmLoginView(
-        emailController: _emailController,
-        passwordController: _passwordController,
-        obscurePassword: _obscurePassword,
-        rememberMe: _rememberMe,
-        errorMessage: _errorMessage,
-        isLoading: _isLoading,
-        isGoogleLoading: _isGoogleLoading,
-        onToggleObscurePassword: () => setState(() => _obscurePassword = !_obscurePassword),
-        onToggleRememberMe: (v) => setState(() => _rememberMe = v),
-        onLogin: _handleLogin,
-        onGoogleLogin: _handleGoogleLogin,
-        onForgotPassword: _showForgotPasswordDialog,
-        onRegister: _showRegisterDialog,
-      );
-    }
-
-    return StandardLoginView(
+    return VeloraAnimatedLoginView(
       branding: _branding,
       emailController: _emailController,
       passwordController: _passwordController,
@@ -235,8 +233,8 @@ class _LoginScreenState extends State<LoginScreen> {
       errorMessage: _errorMessage,
       isLoading: _isLoading,
       isGoogleLoading: _isGoogleLoading,
-      accentColor: accentColor,
-      isWarm: isWarm,
+      isLoginSuccess: _isLoginSuccess,
+      greetingText: _greetingText(),
       onToggleObscurePassword: () => setState(() => _obscurePassword = !_obscurePassword),
       onToggleRememberMe: (v) => setState(() => _rememberMe = v),
       onLogin: _handleLogin,

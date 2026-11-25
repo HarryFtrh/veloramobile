@@ -610,44 +610,24 @@ class BillingSettings {
 
     if (flavor == AppFlavor.pharmacy) {
       endpoints.addAll([
+        '/v1/pos/promos',
         '/v1/pharmacy/promotions',
         '/pharmacy/promotions',
-        '/v1/pos/promotions',
       ]);
     } else if (flavor == AppFlavor.sales) {
       endpoints.addAll([
+        '/v1/pos/promos',
         '/v1/retail/promotions',
         '/retail/promotions',
-        '/v1/pos/promotions',
       ]);
     } else {
-      // Default FnB / Cafe
+      // Default FnB / Cafe (sesuai rute Scribe)
       endpoints.addAll([
+        '/v1/pos/promos',
         '/v1/cafe/marketing/promos',
         '/cafe/marketing/promos',
-        '/v1/retail/promotions',
-        '/v1/pharmacy/promotions',
       ]);
     }
-
-    // Comprehensive fallbacks
-    endpoints.addAll([
-      '/v1/cafe/marketing/promos',
-      '/cafe/marketing/promos',
-      '/v1/retail/promotions',
-      '/retail/promotions',
-      '/v1/pharmacy/promotions',
-      '/pharmacy/promotions',
-      '/cafe/promotions',
-      '/v1/pos/promotions',
-      '/v1/pos/discounts',
-      '/v1/discounts',
-      '/v1/promotions',
-      '/cafe/pos/discounts',
-      '/cafe/discounts',
-      '/pos/discounts',
-      '/pos/promotions',
-    ]);
 
     final triedUrls = <String>{};
 

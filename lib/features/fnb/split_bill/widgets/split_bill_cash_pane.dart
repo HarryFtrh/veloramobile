@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import '../../../../core/utils/currency_formatter.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../core/design/tokens.dart';
 
@@ -58,7 +59,7 @@ class SplitBillCashPane extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: p.surface,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: p.line),
           ),
@@ -116,7 +117,7 @@ class SplitBillCashPane extends StatelessWidget {
                     FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(
-                        'Rp ${changeAmount.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
+                        changeAmount.toRupiah(),
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w900,
@@ -161,12 +162,12 @@ class SplitBillCashPane extends StatelessWidget {
               _buildPriceRow(
                 context,
                 'Tagihan Bersih:',
-                'Rp ${selectedItemsTotal.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
+                selectedItemsTotal.toRupiah(),
               ),
               _buildPriceRow(
                 context,
                 'Uang Fisik Diterima:',
-                'Rp ${cashReceived.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
+                cashReceived.toRupiah(),
               ),
               _buildPriceRow(
                 context,

@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
+import '../../pharmacy_colors.dart';
 
 /// The 7 Benar clinical pharmacy screening checklist
 class PrescriptionReviewChecklist extends StatelessWidget {
@@ -13,17 +15,17 @@ class PrescriptionReviewChecklist extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF059669);
-    const borderColor = Color(0xFFE2E8F0);
-    const textPrimary = Color(0xFF0F172A);
-    const textMuted = Color(0xFF6D7A72);
+    const emeraldPrimary = PharmacyColors.primary;
+    final borderColor = context.palette.line;
+    final textPrimary = context.palette.textPrimary;
+    final textMuted = context.palette.textSecondary;
 
     final passedCount = screenings.values.where((v) => v).length;
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: borderColor),
       ),
@@ -33,7 +35,7 @@ class PrescriptionReviewChecklist extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Telaah Resep Klinis (Standar 7 Benar)',
                 style: TextStyle(
                   fontFamily: 'Plus Jakarta Sans',
@@ -46,8 +48,8 @@ class PrescriptionReviewChecklist extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
                   color: passedCount == screenings.length
-                      ? const Color(0xFFD4F8E8)
-                      : const Color(0xFFEFF6FF),
+                      ? const Color(0xFF059669).withValues(alpha: 0.14)
+                      : const Color(0xFF0284C7).withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -63,7 +65,7 @@ class PrescriptionReviewChecklist extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Lakukan verifikasi klinis farmasetis sebelum obat disiapkan.',
             style: TextStyle(fontSize: 11, color: textMuted),
           ),

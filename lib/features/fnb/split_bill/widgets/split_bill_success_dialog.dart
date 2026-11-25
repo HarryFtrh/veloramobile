@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+import '../../../../core/utils/currency_formatter.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../core/design/tokens.dart';
-import '../../../shared_pos/receipt_printer_service.dart';
+import '../../../shared_pos/services/receipt_printer_service.dart';
 
-class SplitBillSuccessDialog extends StatelessWidget {
+class SplitBillSuccessDialog extends StatefulWidget {
   const SplitBillSuccessDialog({
     super.key,
     required this.hasRemainingSplit,
@@ -32,6 +33,26 @@ class SplitBillSuccessDialog extends StatelessWidget {
   final ReceiptData receiptData;
   final VoidCallback onContinueSplit;
   final VoidCallback onDone;
+
+  @override
+  State<SplitBillSuccessDialog> createState() => _SplitBillSuccessDialogState();
+}
+
+class _SplitBillSuccessDialogState extends State<SplitBillSuccessDialog> {
+  bool _isPrinting = false;
+
+  bool get hasRemainingSplit => widget.hasRemainingSplit;
+  String get invoiceNumber => widget.invoiceNumber;
+  String get selectedMethod => widget.selectedMethod;
+  int get selectedItemsTotal => widget.selectedItemsTotal;
+  int get changeAmount => widget.changeAmount;
+  String get splitMode => widget.splitMode;
+  int get remainingItemsCount => widget.remainingItemsCount;
+  int get paxToPay => widget.paxToPay;
+  int get paxCount => widget.paxCount;
+  ReceiptData get receiptData => widget.receiptData;
+  VoidCallback get onContinueSplit => widget.onContinueSplit;
+  VoidCallback get onDone => widget.onDone;
 
   @override
   Widget build(BuildContext context) {
@@ -74,13 +95,13 @@ class SplitBillSuccessDialog extends StatelessWidget {
               Text('Metode: ${selectedMethod.toUpperCase()}', style: TextStyle(color: p.textSecondary)),
               const SizedBox(height: 4),
               Text(
-                'Total Sesi Ini: Rp ${selectedItemsTotal.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
+                'Total Sesi Ini: ${selectedItemsTotal.toRupiah()}',
                 style: TextStyle(fontWeight: FontWeight.w700, color: primaryColor),
               ),
               if (selectedMethod == 'cash') ...[
                 const SizedBox(height: 4),
                 Text(
-                  'Kembalian: Rp ${changeAmount.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")}',
+                  'Kembalian: ${changeAmount.toRupiah()}',
                   style: TextStyle(fontWeight: FontWeight.w600, color: p.tertiary),
                 ),
               ],
@@ -153,16 +174,27 @@ class SplitBillSuccessDialog extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () async {
-                  await ReceiptPrinterService.instance.printReceipt(receiptData);
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Perintah cetak dikirim ke thermal printer')),
-                    );
-                  }
-                },
+                onPressed: _isPrinting
+                    ? null
+                    : () async {
+                        if (_isPrinting) return;
+                        setState(() => _isPrinting = true);
+                        try {
+                          await ReceiptPrinterService.instance.printReceipt(receiptData);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Perintah cetak dikirim ke thermal printer')),
+                            );
+                          }
+                        } finally {
+                          if (mounted) setState(() => _isPrinting = false);
+                        }
+                      },
                 icon: const Icon(Icons.print_rounded, size: 16),
-                label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Cetak Struk')),
+                label: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(_isPrinting ? 'Mencetak...' : 'Cetak Struk'),
+                ),
                 style: OutlinedButton.styleFrom(
                   visualDensity: VisualDensity.compact,
                   shape: const StadiumBorder(),

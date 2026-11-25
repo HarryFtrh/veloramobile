@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
-
 /// Breakdown of sales revenue per payment method for shift report
 class PharmacyShiftRevenueBreakdown extends StatelessWidget {
   final num cashRevenue;
@@ -18,21 +18,21 @@ class PharmacyShiftRevenueBreakdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const textPrimary = Color(0xFF0F172A);
-    const textMuted = Color(0xFF6D7A72);
-    const borderColor = Color(0xFFE2E8F0);
+    final textPrimary = context.palette.textPrimary;
+    final textMuted = context.palette.textSecondary;
+    final borderColor = context.palette.line;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
@@ -49,11 +49,11 @@ class PharmacyShiftRevenueBreakdown extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           _buildMethodRow('Tunai (Cash)', cashRevenue, Icons.money_rounded, const Color(0xFF059669)),
-          const Divider(height: 16, color: Color(0xFFF1F5F9)),
+          Divider(height: 16, color: context.palette.surfaceMuted),
           _buildMethodRow('QRIS (Statis / Dinamis)', qrisRevenue, Icons.qr_code_2_rounded, const Color(0xFF0284C7)),
-          const Divider(height: 16, color: Color(0xFFF1F5F9)),
+          Divider(height: 16, color: context.palette.surfaceMuted),
           _buildMethodRow('Kartu Debit / EDC', debitRevenue, Icons.credit_card_rounded, const Color(0xFF7C3AED)),
-          const Divider(height: 16, color: Color(0xFFF1F5F9)),
+          Divider(height: 16, color: context.palette.surfaceMuted),
           _buildMethodRow('BPJS / Asuransi Rekanan', insuranceRevenue, Icons.verified_user_rounded, const Color(0xFF0D9488)),
         ],
       ),

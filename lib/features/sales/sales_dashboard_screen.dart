@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import '../../core/config/app_theme.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../core/design/tokens.dart';
 import '../../core/storage/session_storage.dart';
 import '../../core/utils/audio_helper.dart';
 import 'sales_service.dart';
@@ -8,7 +8,7 @@ import 'widgets/sales_visit_card.dart';
 import 'widgets/sales_attendance_card.dart';
 import 'widgets/sales_record_visit_dialog.dart';
 import 'widgets/sales_create_order_dialog.dart';
-import '../shared_pos/offline_sync_badge.dart';
+import '../shared_pos/widgets/offline_sync_badge.dart';
 
 export 'widgets/sales_action_card.dart';
 export 'widgets/sales_visit_card.dart';
@@ -247,6 +247,7 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
   }
 
   Widget _buildSectionTitle(String title, String subtitle, {Widget? trailing}) {
+    final p = context.palette;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
@@ -256,8 +257,8 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: p.textPrimary,
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.3,
@@ -266,8 +267,8 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
               const SizedBox(height: 4),
               Text(
                 subtitle,
-                style: const TextStyle(
-                  color: AppTheme.textSecondary,
+                style: TextStyle(
+                  color: p.textSecondary,
                   fontSize: 12,
                 ),
               ),
@@ -281,22 +282,23 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const accent = Color(0xFF818CF8);
+    final p = context.palette;
+    final accent = Theme.of(context).colorScheme.primary;
     return Scaffold(
-      backgroundColor: const Color(0xFF090A0F),
+      backgroundColor: p.canvas,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF090A0F),
+        backgroundColor: p.canvas,
         surfaceTintColor: Colors.transparent,
         titleSpacing: 20,
         title: Row(
           children: [
-            const Icon(Icons.bolt_rounded, color: accent, size: 23),
+            Icon(Icons.bolt_rounded, color: accent, size: 23),
             const SizedBox(width: 9),
             Flexible(
               child: Text(
                 _tenantName.isNotEmpty ? _tenantName.toUpperCase() : 'POS',
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: p.textPrimary,
                   fontSize: 15,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1.2,
@@ -306,7 +308,7 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
               ),
             ),
             const SizedBox(width: 7),
-            const Text(
+            Text(
               'SALES',
               style: TextStyle(
                 color: accent,
@@ -322,55 +324,55 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
           const SizedBox(width: 4),
           IconButton(
             tooltip: 'Muat ulang',
-            icon: const Icon(Icons.refresh_rounded, color: Colors.white70),
+            icon: Icon(Icons.refresh_rounded, color: p.textSecondary),
             onPressed: _isLoading ? null : _loadProfileAndData,
           ),
           IconButton(
             tooltip: 'Keluar',
-            icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
+            icon: Icon(Icons.logout_rounded, color: p.danger),
             onPressed: () {
               showDialog(
                 context: context,
                 builder: (ctx) => AlertDialog(
-                  backgroundColor: const Color(0xFF131722),
+                  backgroundColor: p.surface,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
-                    side: const BorderSide(color: Color(0xFF23293B)),
+                    side: BorderSide(color: p.line),
                   ),
                   title: Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.redAccent.withValues(alpha: 0.15),
+                          color: p.danger.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 20),
+                        child: Icon(Icons.logout_rounded, color: p.danger, size: 20),
                       ),
                       const SizedBox(width: 10),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           'Keluar Aplikasi?',
-                          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
+                          style: TextStyle(color: p.textPrimary, fontSize: 16, fontWeight: FontWeight.w800),
                         ),
                       ),
                     ],
                   ),
-                  content: const Text(
+                  content: Text(
                     'Apakah Anda yakin ingin mengakhiri sesi sales lapangan?',
-                    style: TextStyle(color: Colors.white70, fontSize: 13),
+                    style: TextStyle(color: p.textSecondary, fontSize: 13),
                   ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(ctx),
-                      child: const Text(
+                      child: Text(
                         'Batal',
-                        style: TextStyle(color: Colors.grey),
+                        style: TextStyle(color: p.textSecondary),
                       ),
                     ),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.redAccent,
+                        backgroundColor: p.danger,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
@@ -390,13 +392,16 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 860),
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-            children: [
+          child: CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                sliver: SliverList.list(
+                  children: [
               Text(
                 _todayLabel.toUpperCase(),
-            style: const TextStyle(
-              color: AppTheme.textTertiary,
+            style: TextStyle(
+              color: p.textTertiary,
               fontSize: 10,
               fontWeight: FontWeight.w800,
               letterSpacing: 1.5,
@@ -407,8 +412,8 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
             '$_greeting, ${_salesmanName.isEmpty ? 'Sales Rep' : _salesmanName.split(' ').first} 👋',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: p.textPrimary,
               fontSize: 25,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.8,
@@ -417,7 +422,7 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
           const SizedBox(height: 5),
           Text(
             _tenantName.isEmpty ? (SessionStorage.instance.getLocationName() ?? 'Sales Dashboard') : _tenantName,
-            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+            style: TextStyle(color: p.textSecondary, fontSize: 13),
           ),
           const SizedBox(height: 22),
           SalesAttendanceCard(
@@ -475,65 +480,84 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
             ),
           ),
           const SizedBox(height: 13),
-          if (_isLoading && _visits.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 30),
-              child: Center(child: CircularProgressIndicator(color: accent)),
-            )
-          else if (_visits.isEmpty)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(20, 25, 20, 23),
-              decoration: BoxDecoration(
-                color: const Color(0xFF11141D),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFF23293B)),
+                  ],
+                ),
               ),
-              child: const Column(
-                children: [
-                  CircleAvatar(
-                    radius: 25,
-                    backgroundColor: Color(0xFF1B2030),
-                    child: Icon(
-                      Icons.event_available_rounded,
-                      color: Color(0xFFA5B4FC),
-                      size: 24,
+              if (_isLoading && _visits.isEmpty)
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
+                  sliver: SliverToBoxAdapter(
+                    child: Center(child: CircularProgressIndicator(color: accent)),
+                  ),
+                )
+              else if (_visits.isEmpty)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+                  sliver: SliverToBoxAdapter(
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(20, 25, 20, 23),
+                      decoration: BoxDecoration(
+                        color: p.surface,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: p.line),
+                      ),
+                      child: Column(
+                        children: [
+                          CircleAvatar(
+                            radius: 25,
+                            backgroundColor: accent.withValues(alpha: 0.14),
+                            child: Icon(
+                              Icons.event_available_rounded,
+                              color: accent,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Jadwal masih kosong',
+                            style: TextStyle(
+                              color: p.textPrimary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            'Belum ada rute kunjungan yang dijadwalkan hari ini.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: p.textSecondary,
+                              fontSize: 12,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  SizedBox(height: 12),
-                  Text(
-                    'Jadwal masih kosong',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (ctx, i) {
+                        final visit = _visits[i];
+                        return SalesVisitCard(
+                          visit: visit,
+                          onCheckIn: () => _showRecordVisitDialog(visit),
+                        );
+                      },
+                      childCount: _visits.length,
                     ),
                   ),
-                  SizedBox(height: 5),
-                  Text(
-                    'Belum ada rute kunjungan yang dijadwalkan hari ini.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppTheme.textSecondary,
-                      fontSize: 12,
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else
-            ..._visits.map(
-              (visit) => SalesVisitCard(
-                visit: visit,
-                onCheckIn: () => _showRecordVisitDialog(visit),
-              ),
-            ),
-        ],
+                ),
+            ],
+          ),
+        ),
       ),
-    ),
-  ),
-);
+    );
   }
 }
 

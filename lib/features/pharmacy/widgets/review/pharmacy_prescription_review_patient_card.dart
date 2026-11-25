@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
+import '../../pharmacy_colors.dart';
 
 /// Patient context, initials avatar, doctor perujuk, and allergy warning banner for prescription review
 class PrescriptionReviewPatientCard extends StatelessWidget {
@@ -21,15 +23,15 @@ class PrescriptionReviewPatientCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF059669);
-    const borderColor = Color(0xFFE2E8F0);
-    const textPrimary = Color(0xFF0F172A);
-    const textMuted = Color(0xFF6D7A72);
+    const emeraldPrimary = PharmacyColors.primary;
+    final borderColor = context.palette.line;
+    final textPrimary = context.palette.textPrimary;
+    final textMuted = context.palette.textSecondary;
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: borderColor),
       ),
@@ -63,7 +65,7 @@ class PrescriptionReviewPatientCard extends StatelessWidget {
                   children: [
                     Text(
                       patientName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
                         fontSize: 13.5,
                         fontWeight: FontWeight.bold,
@@ -72,7 +74,7 @@ class PrescriptionReviewPatientCard extends StatelessWidget {
                     ),
                     Text(
                       'No. Rekam Medis: $rmNumber • $category',
-                      style: const TextStyle(fontSize: 11, color: textMuted),
+                      style: TextStyle(fontSize: 11, color: textMuted),
                     ),
                   ],
                 ),
@@ -83,12 +85,12 @@ class PrescriptionReviewPatientCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
+              color: context.palette.canvas,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Column(
               children: [
-                const Row(
+                Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Layanan:', style: TextStyle(fontSize: 11, color: textMuted)),
@@ -99,8 +101,8 @@ class PrescriptionReviewPatientCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Dokter Perujuk:', style: TextStyle(fontSize: 11, color: textMuted)),
-                    Text(doctorName, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textPrimary)),
+                    Text('Dokter Perujuk:', style: TextStyle(fontSize: 11, color: textMuted)),
+                    Text(doctorName, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textPrimary)),
                   ],
                 ),
               ],
@@ -149,7 +151,7 @@ class PrescriptionReviewPatientCard extends StatelessWidget {
                         allergies.isNotEmpty
                             ? 'Pemeriksaan keamanan: Verifikasi interaksi & kontraindikasi obat sebelum penyerahan.'
                             : 'Pemeriksaan keamanan: Pasien tidak memiliki riwayat alergi obat terdaftar.',
-                        style: const TextStyle(fontSize: 10.5, color: textMuted),
+                        style: TextStyle(fontSize: 10.5, color: textMuted),
                       ),
                     ],
                   ),

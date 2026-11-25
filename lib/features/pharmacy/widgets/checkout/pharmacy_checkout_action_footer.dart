@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../models/pharmacy_payment_mode.dart';
@@ -29,11 +29,11 @@ class PharmacyCheckoutActionFooter extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         border: const Border(top: BorderSide(color: ClinicalPalette.border)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.05),
+            color: context.palette.textPrimary.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -3),
           ),
@@ -72,7 +72,7 @@ class PharmacyCheckoutActionFooter extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF0FDF4),
+                    color: const Color(0xFF059669).withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(color: const Color(0xFFBBF7D0)),
                   ),
@@ -151,7 +151,7 @@ class PharmacyCheckoutMobileStickyBottomBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         border: const Border(top: BorderSide(color: ClinicalPalette.border)),
         boxShadow: [
           BoxShadow(

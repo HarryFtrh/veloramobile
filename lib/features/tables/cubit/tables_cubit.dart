@@ -50,7 +50,9 @@ class TablesCubit extends Cubit<TablesState> {
   }
 
   void _onRealtimeTableEvent(Map<String, dynamic> data) {
-    debugPrint('🍽️ [TABLES REALTIME] Menerima update status meja via Reverb: $data');
+    if (kDebugMode) {
+      debugPrint('🍽️ [TABLES REALTIME] Menerima update status meja via Reverb: $data');
+    }
     _realtimeDebounce?.cancel();
     _realtimeDebounce = Timer(const Duration(milliseconds: 300), () {
       if (!isClosed) loadTables(silent: true);

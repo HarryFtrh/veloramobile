@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../../core/design/tokens.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../customers/customer_service.dart';
@@ -51,7 +51,13 @@ class _FnbCreateMemberDialogState extends State<FnbCreateMemberDialog> {
             child: Icon(Icons.person_add_alt_1_rounded, color: p.primary, size: 20),
           ),
           const SizedBox(width: 10),
-          const Text('Daftar Member Baru', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+          const Expanded(
+            child: Text(
+              'Daftar Member Baru',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
       content: SingleChildScrollView(

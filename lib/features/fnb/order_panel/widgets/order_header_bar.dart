@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/safe_json.dart';
-import '../../fnb_register_controller.dart';
+import '../../register/fnb_register_controller.dart';
 
 /// Top section of the FnB order panel: Order type (Dine-In/Takeaway/Online),
 /// Customer / Member selection, and Table indicator.
@@ -125,7 +125,7 @@ class OrderHeaderBar extends StatelessWidget {
                           CircleAvatar(
                             radius: 15,
                             backgroundColor: ctrl.memberTier != null
-                                ? const Color(0xFFFEF3C7)
+                                ? const Color(0xFFD97706).withValues(alpha: 0.14)
                                 : (ctrl.customerName.isNotEmpty
                                     ? const Color(0xFFE0E7FF)
                                     : p.surfaceMuted),
@@ -160,7 +160,7 @@ class OrderHeaderBar extends StatelessWidget {
                                     margin: const EdgeInsets.only(top: 2),
                                     padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFFEF3C7),
+                                      color: const Color(0xFFD97706).withValues(alpha: 0.14),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Text(
@@ -220,7 +220,7 @@ class OrderHeaderBar extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: ctrl.table == null
-                            ? const Color(0xFFFEF3C7)
+                            ? const Color(0xFFD97706).withValues(alpha: 0.14)
                             : const Color(0xFF059669).withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(

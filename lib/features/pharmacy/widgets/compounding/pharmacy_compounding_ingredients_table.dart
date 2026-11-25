@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
+import '../../pharmacy_colors.dart';
 
 /// Active ingredients list and weighting calculator table
 class CompoundingIngredientsTable extends StatelessWidget {
@@ -15,15 +17,15 @@ class CompoundingIngredientsTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF059669);
-    const textPrimary = Color(0xFF0F172A);
-    const textMuted = Color(0xFF6D7A72);
-    const borderColor = Color(0xFFE2E8F0);
+    const emeraldPrimary = PharmacyColors.primary;
+    final textPrimary = context.palette.textPrimary;
+    final textMuted = context.palette.textSecondary;
+    final borderColor = context.palette.line;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: borderColor),
       ),
@@ -33,7 +35,7 @@ class CompoundingIngredientsTable extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Komposisi Bahan & Kalkulasi Penimbangan',
                 style: TextStyle(
                   fontFamily: 'Plus Jakarta Sans',
@@ -74,9 +76,9 @@ class CompoundingIngredientsTable extends StatelessWidget {
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: context.palette.canvas,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  border: Border.all(color: context.palette.line),
                 ),
                 child: Row(
                   children: [
@@ -88,11 +90,11 @@ class CompoundingIngredientsTable extends StatelessWidget {
                         children: [
                           Text(
                             ing['name'],
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary),
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary),
                           ),
                           Text(
                             'Dosis / bungkus: ${ing['dosePerPack']}',
-                            style: const TextStyle(fontSize: 11, color: textMuted),
+                            style: TextStyle(fontSize: 11, color: textMuted),
                           ),
                         ],
                       ),
@@ -102,7 +104,7 @@ class CompoundingIngredientsTable extends StatelessWidget {
                       children: [
                         Text(
                           ing['totalNeeded'],
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'JetBrains Mono',
                             fontWeight: FontWeight.w800,
                             fontSize: 12.5,
@@ -111,7 +113,7 @@ class CompoundingIngredientsTable extends StatelessWidget {
                         ),
                         Text(
                           'Ambil dari stok ${ing['stockUnit']}',
-                          style: const TextStyle(fontSize: 10, color: textMuted),
+                          style: TextStyle(fontSize: 10, color: textMuted),
                         ),
                       ],
                     ),
@@ -133,7 +135,7 @@ class CompoundingIngredientsTable extends StatelessWidget {
                 children: [
                   Icon(Icons.medication_liquid_outlined, size: 36, color: Colors.grey.shade400),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Belum ada bahan obat racikan.',
                     style: TextStyle(color: textMuted, fontSize: 12),
                   ),

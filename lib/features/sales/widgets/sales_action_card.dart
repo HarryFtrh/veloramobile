@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import '../../../core/config/app_theme.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../core/design/tokens.dart';
 
 class SalesActionCard extends StatelessWidget {
   final IconData icon;
@@ -19,8 +19,9 @@ class SalesActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     return Material(
-      color: const Color(0xFF11141D),
+      color: p.surface,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         onTap: onTap,
@@ -29,7 +30,7 @@ class SalesActionCard extends StatelessWidget {
           padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFF23293B)),
+            border: Border.all(color: p.line),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,8 +47,8 @@ class SalesActionCard extends StatelessWidget {
               const SizedBox(height: 14),
               Text(
                 title,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: p.textPrimary,
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
                 ),
@@ -55,8 +56,8 @@ class SalesActionCard extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 subtitle,
-                style: const TextStyle(
-                  color: AppTheme.textSecondary,
+                style: TextStyle(
+                  color: p.textSecondary,
                   fontSize: 11,
                 ),
               ),

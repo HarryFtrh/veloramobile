@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
-import '../../../shared_pos/pos_checkout_service.dart';
+import '../../../shared_pos/services/pos_checkout_service.dart';
 
 /// Mobile order summary card on checkout screen
 class PharmacyCheckoutMobileSummary extends StatelessWidget {
@@ -23,7 +23,7 @@ class PharmacyCheckoutMobileSummary extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: ClinicalPalette.border),
       ),

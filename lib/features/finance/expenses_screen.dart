@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -65,10 +65,12 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     if (saved == true) _cubit.reload();
   }
 
+  static final _monthFmt = DateFormat('MMMM yyyy', 'id_ID');
+
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    final label = DateFormat('MMMM yyyy', 'id_ID').format(_period);
+    final label = _monthFmt.format(_period);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Pengeluaran')),
@@ -226,8 +228,7 @@ class _ExpenseFormState extends State<_ExpenseForm> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    final clean = _amount.text.replaceAll(RegExp(r'[^0-9.]'), '');
-    final amount = double.tryParse(clean) ?? 0.0;
+    final amount = _amount.text.parseRupiah().toDouble();
     if (amount <= 0) return;
     final month = widget.expense?.month ?? widget.defaultPeriod.month;
     final year = widget.expense?.year ?? widget.defaultPeriod.year;
@@ -252,43 +253,13 @@ class _ExpenseFormState extends State<_ExpenseForm> {
   }
 
   Future<void> _delete() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Theme.of(ctx).colorScheme.error.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(Icons.delete_outline_rounded, color: Theme.of(ctx).colorScheme.error, size: 22),
-            ),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: Text('Hapus Pengeluaran?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-            ),
-          ],
-        ),
-        content: Text(
-          '${widget.expense!.category.label} sebesar '
-          '${CurrencyFormatter.format(widget.expense!.amount)} akan dihapus dari catatan keuangan.',
-          style: const TextStyle(fontSize: 13),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Batal'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Hapus'),
-          ),
-        ],
-      ),
+    final ok = await AppConfirmDialog.show(
+      context,
+      title: 'Hapus Pengeluaran?',
+      message: '${widget.expense!.category.label} sebesar ${CurrencyFormatter.format(widget.expense!.amount)} akan dihapus dari catatan keuangan.',
+      confirmLabel: 'Hapus',
+      isDestructive: true,
+      icon: Icons.delete_outline_rounded,
     );
     if (ok == true) {
       await _run(() => FinanceService.instance.deleteExpense(widget.expense!.id));

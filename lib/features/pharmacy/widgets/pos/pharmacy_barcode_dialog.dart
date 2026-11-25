@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../../core/utils/audio_helper.dart';
 
 /// Modal dialog for Barcode / SKU scanning and lookup
@@ -66,9 +66,12 @@ class _PharmacyBarcodeDialogState extends State<PharmacyBarcodeDialog> {
         children: [
           Icon(Icons.qr_code_scanner_rounded, color: Color(0xFF059669)),
           SizedBox(width: 10),
-          Text(
-            'Pindai Barcode / SKU Obat',
-            style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 16, fontWeight: FontWeight.bold),
+          Expanded(
+            child: Text(
+              'Pindai Barcode / SKU Obat',
+              style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 16, fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),

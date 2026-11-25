@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../config/business_vertical.dart';
 import '../storage/session_storage.dart';
 import '../../features/shared_pos/models/pos_catalog_models.dart';
@@ -47,6 +47,7 @@ class StoreLogoAvatar extends StatelessWidget {
                 bytes,
                 width: size,
                 height: size,
+                cacheWidth: (size * 2).toInt(),
                 fit: BoxFit.contain,
                 errorBuilder: (_, _, _) => _buildFallback(effectiveBrand, radius),
               ),
@@ -69,7 +70,9 @@ class StoreLogoAvatar extends StatelessWidget {
             resolvedUrl,
             width: size,
             height: size,
+            cacheWidth: (size * 2).toInt(),
             fit: BoxFit.contain,
+            gaplessPlayback: true,
             errorBuilder: (_, _, _) {
               final fallback = PosProduct.resolveImageFallbackUrl(resolvedUrl);
               if (fallback != null) {
@@ -77,7 +80,9 @@ class StoreLogoAvatar extends StatelessWidget {
                   fallback,
                   width: size,
                   height: size,
+                  cacheWidth: (size * 2).toInt(),
                   fit: BoxFit.contain,
+                  gaplessPlayback: true,
                   errorBuilder: (_, _, _) => _buildFallback(effectiveBrand, radius),
                 );
               }

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../../core/design/tokens.dart';
 import '../../../customers/customer_service.dart';
 
@@ -27,7 +27,7 @@ class FnbLoyaltyMemberTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFFFEF3C7) : p.surface,
+            color: isSelected ? const Color(0xFFD97706).withValues(alpha: 0.14) : p.surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: isSelected ? const Color(0xFFD97706) : p.line,
@@ -38,7 +38,7 @@ class FnbLoyaltyMemberTile extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: const Color(0xFFFEF3C7),
+                backgroundColor: const Color(0xFFD97706).withValues(alpha: 0.14),
                 child: Text(
                   member.name.isNotEmpty ? member.name[0].toUpperCase() : 'M',
                   style: const TextStyle(
@@ -74,7 +74,7 @@ class FnbLoyaltyMemberTile extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFEF3C7),
+                            color: const Color(0xFFD97706).withValues(alpha: 0.14),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(

@@ -191,18 +191,29 @@ class TableService {
       'capacity': capacity,
       'position': ?position,
     };
-    Response res;
-    try {
-      res = await ApiClient.instance.dio.post('/v1/pos/tables', data: payload);
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
-        res = await ApiClient.instance.dio.post('/cafe/tables', data: payload);
-      } else {
+    Response? res;
+    final endpoints = [
+      '/v1/cafe/tables',
+      '/cafe/tables',
+      '/v1/pos/tables',
+      '/pos/tables',
+    ];
+    for (final ep in endpoints) {
+      try {
+        final r = await ApiClient.instance.dio.post(ep, data: payload);
+        if (r.statusCode == 200 || r.statusCode == 201) {
+          res = r;
+          break;
+        }
+      } on DioException catch (e) {
+        if (e.response?.statusCode != 404 && e.response?.statusCode != 405) {
+          throw ApiException.from(e);
+        }
+      } catch (e) {
         throw ApiException.from(e);
       }
-    } catch (e) {
-      throw ApiException.from(e);
     }
+    if (res == null) return null;
     final body = res.data;
     final raw = body is Map ? (body['data'] ?? body) : body;
     if (raw is Map) {

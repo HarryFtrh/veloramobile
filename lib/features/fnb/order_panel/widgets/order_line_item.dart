@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../core/design/components.dart';
 import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/safe_json.dart';
-import '../../fnb_register_controller.dart';
+import '../../register/fnb_register_controller.dart';
 
 /// Circular button for increasing or decreasing item quantities in cart.
 class QtyButton extends StatelessWidget {

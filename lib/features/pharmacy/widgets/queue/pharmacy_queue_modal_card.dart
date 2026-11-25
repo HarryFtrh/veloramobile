@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../models/pharmacy_domain_models.dart';
 import '../pharmacy_patient_dialog.dart';
@@ -26,10 +27,10 @@ class PharmacyQueueModalCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isReady ? primaryColor : const Color(0xFFE2E8F0),
+          color: isReady ? primaryColor : context.palette.line,
           width: isReady ? 1.5 : 1,
         ),
         boxShadow: const [
@@ -67,11 +68,11 @@ class PharmacyQueueModalCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     item.patientName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Plus Jakarta Sans',
                       fontWeight: FontWeight.w700,
                       fontSize: 14.5,
-                      color: Color(0xFF0F172A),
+                      color: context.palette.textPrimary,
                     ),
                   ),
                 ],
@@ -80,8 +81,8 @@ class PharmacyQueueModalCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: isReady
-                      ? const Color(0xFFD4F8E8)
-                      : (isDone ? const Color(0xFFF1F5F9) : const Color(0xFFEFF6FF)),
+                      ? const Color(0xFF059669).withValues(alpha: 0.14)
+                      : (isDone ? context.palette.surfaceMuted : const Color(0xFF0284C7).withValues(alpha: 0.14)),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -91,7 +92,7 @@ class PharmacyQueueModalCard extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     color: isReady
                         ? const Color(0xFF059669)
-                        : (isDone ? const Color(0xFF64748B) : const Color(0xFF1D4ED8)),
+                        : (isDone ? context.palette.textSecondary : const Color(0xFF1D4ED8)),
                   ),
                 ),
               ),

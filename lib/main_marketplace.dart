@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+// ignore: unnecessary_import
+import 'package:flutter/widgets.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/config/app_config.dart';
 import 'core/config/app_theme.dart';
@@ -63,6 +65,8 @@ class VeloraMarketplaceApp extends StatelessWidget {
         child: child ?? const SizedBox.shrink(),
       ),
       theme: AppTheme.build(AppFlavor.marketplace, Brightness.light),
+      darkTheme: AppTheme.build(AppFlavor.marketplace, Brightness.dark),
+      themeMode: ThemeMode.system,
       home: BlocBuilder<AuthCubit, AuthState>(
         builder: (context, state) {
           if (state is AuthInitial || (state is AuthLoading && state.message != null)) {

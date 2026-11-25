@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/config/business_vertical.dart';
@@ -8,6 +8,8 @@ import '../../../core/widgets/store_logo_avatar.dart';
 
 /// Header Kartu Informasi Toko, Lokasi, dan Status Kasir
 class DashboardHeaderCard extends StatelessWidget {
+  static final _dateFmt = DateFormat('EEEE, d MMMM yyyy', 'id_ID');
+
   final bool isRefreshing;
   final VoidCallback onRefresh;
 
@@ -30,7 +32,7 @@ class DashboardHeaderCard extends StatelessWidget {
     final role = SessionStorage.instance.getUserRole() ?? 'Kasir';
 
     final now = DateTime.now();
-    final dateStr = DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(now);
+    final dateStr = _dateFmt.format(now);
 
     return Container(
       padding: const EdgeInsets.all(16),

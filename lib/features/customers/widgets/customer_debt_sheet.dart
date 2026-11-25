@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/design/tokens.dart';
 import '../../../core/network/api_exception.dart';
@@ -45,44 +45,12 @@ class _CustomerDebtSheetState extends State<CustomerDebtSheet> {
   }
 
   Future<void> _confirmWriteOff() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Theme.of(ctx).colorScheme.error.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(Icons.warning_amber_rounded, color: Theme.of(ctx).colorScheme.error, size: 22),
-            ),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: Text('Hapus Buku Hutang?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-            ),
-          ],
-        ),
-        content: Text(
-          'Sisa ${CurrencyFormatter.format(widget.debt.balance)} dari '
-          '${widget.debt.customerName} akan dianggap tidak tertagih. '
-          'Tindakan ini tidak bisa dibatalkan.',
-          style: const TextStyle(fontSize: 13),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Batal'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Hapus Buku'),
-          ),
-        ],
-      ),
+    final ok = await AppConfirmDialog.show(
+      context,
+      title: 'Hapus Buku Hutang?',
+      message: 'Sisa ${CurrencyFormatter.format(widget.debt.balance)} dari ${widget.debt.customerName} akan dianggap tidak tertagih. Tindakan ini tidak bisa dibatalkan.',
+      confirmLabel: 'Hapus Buku',
+      isDestructive: true,
     );
     if (ok == true) {
       await _run(() => CustomerService.instance.writeOff(widget.debt.id));

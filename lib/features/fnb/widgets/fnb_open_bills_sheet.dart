@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../core/design/components.dart';
 import '../../../core/design/tokens.dart';
 import '../../../core/network/api_exception.dart';
@@ -22,6 +22,24 @@ class _FnbOpenBillsSheetState extends State<FnbOpenBillsSheet>
   bool _loading = true;
   String? _error;
   List<KitchenOrder> _orders = [];
+  List<KitchenOrder> _walkIns = const [];
+  List<KitchenOrder> _dineIns = const [];
+  String? _cancellingOrderId;
+  bool _isSelectingOrder = false;
+
+  void _recomputeOrderBuckets() {
+    final walkIns = <KitchenOrder>[];
+    final dineIns = <KitchenOrder>[];
+    for (final o in _orders) {
+      if (_isWalkIn(o)) {
+        walkIns.add(o);
+      } else {
+        dineIns.add(o);
+      }
+    }
+    _walkIns = walkIns;
+    _dineIns = dineIns;
+  }
 
   @override
   void initState() {
@@ -49,6 +67,7 @@ class _FnbOpenBillsSheetState extends State<FnbOpenBillsSheet>
       if (mounted) {
         setState(() {
           _orders = unpaidList;
+          _recomputeOrderBuckets();
           _loading = false;
         });
       }
@@ -64,7 +83,7 @@ class _FnbOpenBillsSheetState extends State<FnbOpenBillsSheet>
 
   bool _isWalkIn(KitchenOrder o) {
     final lbl = o.tableLabel.toLowerCase().trim();
-    if (lbl.contains('meja') || lbl.contains('table') || RegExp(r'^[a-z]?\d+$').hasMatch(lbl)) {
+    if (lbl.contains('meja') || lbl.contains('table') || AppRegex.tableCode.hasMatch(lbl)) {
       return false;
     }
     if (o.isHeld) return true;
@@ -84,8 +103,8 @@ class _FnbOpenBillsSheetState extends State<FnbOpenBillsSheet>
     final isMobile = context.isMobile;
     final paddingHoriz = isMobile ? 12.0 : 16.0;
 
-    final walkIns = _orders.where(_isWalkIn).toList();
-    final dineIns = _orders.where((o) => !_isWalkIn(o)).toList();
+    final walkIns = _walkIns;
+    final dineIns = _dineIns;
 
     return Column(
       children: [
@@ -267,7 +286,7 @@ class _FnbOpenBillsSheetState extends State<FnbOpenBillsSheet>
                   ),
                   const Spacer(),
                   Text(
-                    '${order.createdAt.hour.toString().padLeft(2, '0')}:${order.createdAt.minute.toString().padLeft(2, '0')}',
+                    order.createdAt.toTimeString(),
                     style: TextStyle(
                       fontSize: 11,
                       color: p.textTertiary,
@@ -409,67 +428,57 @@ class _FnbOpenBillsSheetState extends State<FnbOpenBillsSheet>
                   ),
                   IconButton(
                     tooltip: 'Batalkan Pesanan',
-                    icon: Icon(Icons.delete_outline_rounded, color: p.danger, size: 20),
+                    icon: _cancellingOrderId == order.id
+                        ? SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: p.danger),
+                          )
+                        : Icon(Icons.delete_outline_rounded, color: p.danger, size: 20),
                     style: IconButton.styleFrom(
                       side: BorderSide(color: p.line),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       minimumSize: const Size(38, 38),
                     ),
-                    onPressed: () async {
-                      final confirm = await showDialog<bool>(
-                        context: context,
-                        builder: (dCtx) => AlertDialog(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                          title: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: p.danger.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Icon(Icons.delete_outline_rounded, color: p.danger, size: 22),
-                              ),
-                              const SizedBox(width: 10),
-                              const Expanded(
-                                child: Text('Batalkan Antrean?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-                              ),
-                            ],
-                          ),
-                          content: Text('Apakah Anda yakin ingin membatalkan tiket ${order.number}?', style: const TextStyle(fontSize: 13)),
-                          actions: [
-                            TextButton(onPressed: () => Navigator.pop(dCtx, false), child: const Text('Tidak')),
-                            FilledButton(
-                              style: FilledButton.styleFrom(backgroundColor: p.danger),
-                              onPressed: () => Navigator.pop(dCtx, true),
-                              child: const Text('Ya, Batalkan'),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (confirm == true) {
-                        try {
-                          await KitchenService.instance.cancelOrder(order.id);
-                          _load();
-                        } catch (e) {
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(ApiException.from(e).message)),
+                    onPressed: (_cancellingOrderId != null || _isSelectingOrder)
+                        ? null
+                        : () async {
+                            final confirm = await AppConfirmDialog.show(
+                              context,
+                              title: 'Batalkan Antrean?',
+                              message: 'Apakah Anda yakin ingin membatalkan tiket ${order.number}?',
+                              confirmLabel: 'Ya, Batalkan',
+                              isDestructive: true,
                             );
-                          }
-                        }
-                      }
-                    },
+                            if (confirm == true) {
+                              if (!mounted || _cancellingOrderId != null) return;
+                              setState(() => _cancellingOrderId = order.id);
+                              try {
+                                await KitchenService.instance.cancelOrder(order.id);
+                                if (mounted) await _load();
+                              } catch (e) {
+                                if (mounted) {
+                                  context.showApiError(e);
+                                }
+                              } finally {
+                                if (mounted) setState(() => _cancellingOrderId = null);
+                              }
+                            }
+                          },
                   ),
                   const SizedBox(width: Gap.xs + 2),
                   AppButton(
                     label: isMobile ? 'Bayar Kasir' : 'Buka di Kasir & Bayar',
                     variant: AppButtonVariant.primary,
                     height: 38,
-                    onPressed: () async {
-                      Navigator.pop(context);
-                      await widget.onSelectOrder(order);
-                    },
+                    onPressed: (_cancellingOrderId != null || _isSelectingOrder)
+                        ? null
+                        : () async {
+                            if (_cancellingOrderId != null || _isSelectingOrder) return;
+                            setState(() => _isSelectingOrder = true);
+                            Navigator.pop(context);
+                            await widget.onSelectOrder(order);
+                          },
                   ),
                 ],
               ),

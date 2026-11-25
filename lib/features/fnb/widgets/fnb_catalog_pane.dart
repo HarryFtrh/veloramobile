@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../core/design/tokens.dart';
-import '../../shared_pos/product_catalog_service.dart';
-import '../fnb_register_controller.dart';
+import '../../shared_pos/services/product_catalog_service.dart';
+import '../register/fnb_register_controller.dart';
 import 'catalog/fnb_catalog_category_chips.dart';
 import 'catalog/fnb_catalog_search_bar.dart';
 import 'catalog/fnb_catalog_status_footer.dart';
@@ -31,13 +31,16 @@ class FnbCatalogPane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final p = context.palette;
-    final primaryColor = Theme.of(context).colorScheme.primary;
-    final text = Theme.of(context).textTheme;
-    final items = ctrl.visibleProducts;
-    final isMobile = context.isMobile;
+    return ListenableBuilder(
+      listenable: ctrl.catalogRevision,
+      builder: (context, _) {
+        final p = context.palette;
+        final primaryColor = Theme.of(context).colorScheme.primary;
+        final text = Theme.of(context).textTheme;
+        final items = ctrl.visibleProducts;
+        final isMobile = context.isMobile;
 
-    final content = Column(
+        final content = Column(
       children: [
         // Search & Action Bar
         FnbCatalogSearchBar(
@@ -145,7 +148,7 @@ class FnbCatalogPane extends StatelessWidget {
                   itemCount: items.length,
                   itemBuilder: (_, i) {
                     final item = items[i];
-                    final hasVariants = ctrl.groupsFor(item).isNotEmpty;
+                    final hasVariants = ctrl.hasVariantsFor(item);
                     return FnbProductGridCard(
                       item: item,
                       hasVariants: hasVariants,
@@ -164,9 +167,11 @@ class FnbCatalogPane extends StatelessWidget {
       ],
     );
 
-    return Directionality(
-      textDirection: TextDirection.ltr,
-      child: content,
+        return Directionality(
+          textDirection: TextDirection.ltr,
+          child: content,
+        );
+      },
     );
   }
 }

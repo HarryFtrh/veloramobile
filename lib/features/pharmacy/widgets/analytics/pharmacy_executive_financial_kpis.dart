@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../pharmacy_colors.dart';
 
 /// 4 Financial KPI metric cards for executive pharmacy dashboard
 class PharmacyExecutiveFinancialKpis extends StatelessWidget {
@@ -22,7 +24,7 @@ class PharmacyExecutiveFinancialKpis extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF059669);
+    const emeraldPrimary = PharmacyColors.primary;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -84,40 +86,45 @@ class PharmacyExecutiveFinancialKpis extends StatelessWidget {
     required Color accentColor,
     required IconData icon,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Builder(
+      builder: (context) {
+        final p = context.palette;
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: p.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: p.line),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(fontSize: 11, color: Color(0xFF6D7A72))),
-              Icon(icon, color: accentColor, size: 18),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(title, style: TextStyle(fontSize: 11, color: p.textSecondary)),
+                  Icon(icon, color: accentColor, size: 18),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                value,
+                style: TextStyle(
+                  fontFamily: 'JetBrains Mono',
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14.5,
+                  color: p.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: accentColor),
+              ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              fontFamily: 'JetBrains Mono',
-              fontWeight: FontWeight.w800,
-              fontSize: 14.5,
-              color: Color(0xFF0F172A),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: accentColor),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

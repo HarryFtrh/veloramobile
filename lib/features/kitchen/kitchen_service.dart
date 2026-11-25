@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/storage/session_storage.dart';
+import '../../core/utils/app_regex.dart';
 import '../../core/utils/safe_json.dart';
 
 enum KitchenStage { fresh, preparing, ready }
@@ -348,7 +349,7 @@ class KitchenService {
   /// Menandai pesanan telah lunas agar tidak muncul kembali di Open Bills kasir
   void markOrderPaid(String? orderId) {
     if (orderId == null || orderId.trim().isEmpty) return;
-    final clean = orderId.trim().replaceFirst(RegExp(r'^#'), '');
+    final clean = orderId.stripHashPrefix();
     _localHeldOrders.remove(orderId);
     _localHeldOrders.remove(clean);
     _paidOrderIds.add(orderId.trim());
@@ -358,7 +359,7 @@ class KitchenService {
   /// Memeriksa apakah pesanan sudah ditandai lunas pada sesi kasir ini
   bool isOrderPaid(String? orderId) {
     if (orderId == null || orderId.trim().isEmpty) return false;
-    final clean = orderId.trim().replaceFirst(RegExp(r'^#'), '');
+    final clean = orderId.stripHashPrefix();
     return _paidOrderIds.contains(orderId.trim()) || _paidOrderIds.contains(clean);
   }
 
@@ -512,16 +513,16 @@ class KitchenService {
     };
 
     final attempts = [
-      // 1. Route Action v1
-      () => ApiClient.instance.dio.post('/v1/pos/orders/$orderId/$action', queryParameters: query),
-      // 2. Status payload v1
-      () => ApiClient.instance.dio.post('/v1/pos/orders/$orderId/status', queryParameters: query, data: body),
-      // 3. Patch v1
-      () => ApiClient.instance.dio.patch('/v1/pos/orders/$orderId/status', queryParameters: query, data: body),
-      // 4. Cafe Kitchen Action v1
+      // 1. Cafe Kitchen Canonical Action v1 (/prepare, /ready, /served, /bump)
       () => ApiClient.instance.dio.post('/v1/cafe/kitchen/orders/$orderId/$action', queryParameters: query),
-      // 5. Cafe Kitchen Status v1
+      // 2. Cafe Kitchen Canonical Status PATCH v1
+      () => ApiClient.instance.dio.patch('/v1/cafe/kitchen/orders/$orderId/status', queryParameters: query, data: body),
+      // 3. Cafe Kitchen Status POST v1
       () => ApiClient.instance.dio.post('/v1/cafe/kitchen/orders/$orderId/status', queryParameters: query, data: body),
+      // 4. POS Canonical Action v1
+      () => ApiClient.instance.dio.post('/v1/pos/orders/$orderId/$action', queryParameters: query),
+      // 5. POS Canonical Status v1
+      () => ApiClient.instance.dio.patch('/v1/pos/orders/$orderId/status', queryParameters: query, data: body),
       // 6. Legacy Cafe Kitchen Action
       () => ApiClient.instance.dio.post('/cafe/kitchen/orders/$orderId/$action', queryParameters: query),
       // 7. Legacy Cafe Kitchen Status

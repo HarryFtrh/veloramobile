@@ -1,5 +1,5 @@
 // features/settings/widgets/active_sessions_modal.dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../core/design/tokens.dart';
 import '../settings_service.dart';
@@ -15,6 +15,7 @@ class _ActiveSessionsModalState extends State<ActiveSessionsModal> {
   bool _loading = true;
   String? _error;
   List<ActiveSession> _sessions = [];
+  String? _revokingId;
 
   @override
   void initState() {
@@ -38,6 +39,8 @@ class _ActiveSessionsModalState extends State<ActiveSessionsModal> {
   }
 
   Future<void> _revoke(ActiveSession s) async {
+    if (_revokingId != null) return;
+    setState(() => _revokingId = s.id);
     try {
       await SettingsService.instance.revoke(s.id);
       await _load();
@@ -52,6 +55,8 @@ class _ActiveSessionsModalState extends State<ActiveSessionsModal> {
           SnackBar(content: Text('Gagal mencabut sesi: $e')),
         );
       }
+    } finally {
+      if (mounted) setState(() => _revokingId = null);
     }
   }
 
@@ -90,56 +95,75 @@ class _ActiveSessionsModalState extends State<ActiveSessionsModal> {
                 ),
               )
             else
-              for (final s in _sessions)
-                ListTile(
-                  leading: Icon(
-                    s.isCurrent
-                        ? Icons.phone_android_rounded
-                        : Icons.laptop_rounded,
-                    color: s.isCurrent ? p.primary : p.textSecondary,
-                  ),
-                  title: Row(
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(s.deviceName,
-                          style: const TextStyle(fontWeight: FontWeight.w700)),
-                      if (s.isCurrent) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
+                      for (final s in _sessions)
+                        ListTile(
+                          leading: Icon(
+                            s.isCurrent
+                                ? Icons.phone_android_rounded
+                                : Icons.laptop_rounded,
+                            color: s.isCurrent ? p.primary : p.textSecondary,
                           ),
-                          decoration: BoxDecoration(
-                            color: p.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(4),
+                          title: Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  s.deviceName,
+                                  style: const TextStyle(fontWeight: FontWeight.w700),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (s.isCurrent) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: p.primary.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    'Perangkat Ini',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: p.primary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
-                          child: Text(
-                            'Perangkat Ini',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: p.primary,
-                              fontWeight: FontWeight.w700,
-                            ),
+                          subtitle: Text(
+                            s.lastUsedAt != null
+                                ? 'Terakhir aktif: ${s.lastUsedAt!.day}/${s.lastUsedAt!.month}/${s.lastUsedAt!.year} ${s.lastUsedAt!.hour}:${s.lastUsedAt!.minute.toString().padLeft(2, '0')}'
+                                : 'Sesi aktif',
+                            style: TextStyle(fontSize: 11, color: p.textSecondary),
                           ),
+                          trailing: s.isCurrent
+                              ? null
+                              : IconButton(
+                                  icon: _revokingId == s.id
+                                      ? SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(strokeWidth: 2, color: p.danger),
+                                        )
+                                      : Icon(Icons.logout_rounded, color: p.danger, size: 20),
+                                  tooltip: 'Cabut sesi',
+                                  onPressed: _revokingId != null ? null : () => _revoke(s),
+                                ),
                         ),
-                      ],
                     ],
                   ),
-                  subtitle: Text(
-                    s.lastUsedAt != null
-                        ? 'Terakhir aktif: ${s.lastUsedAt!.day}/${s.lastUsedAt!.month}/${s.lastUsedAt!.year} ${s.lastUsedAt!.hour}:${s.lastUsedAt!.minute.toString().padLeft(2, '0')}'
-                        : 'Sesi aktif',
-                    style: TextStyle(fontSize: 11, color: p.textSecondary),
-                  ),
-                  trailing: s.isCurrent
-                      ? null
-                      : IconButton(
-                          icon: Icon(Icons.logout_rounded,
-                              color: p.danger, size: 20),
-                          tooltip: 'Cabut sesi',
-                          onPressed: () => _revoke(s),
-                        ),
                 ),
+              ),
           ],
         ),
       ),

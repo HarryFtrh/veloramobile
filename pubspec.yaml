@@ -8,8 +8,10 @@ environment:
   sdk: ^3.13.5
 
 dependencies:
+  cupertino_ui: ^1.1.1
   flutter:
     sdk: flutter
+  material_ui: ^1.5.0
 
   # State management
   equatable: ^3.0.0
@@ -21,17 +23,22 @@ dependencies:
   web_socket_channel: ^3.0.3
 
   # Storage & security
-  crypto: ^3.0.7
+  crypto: ^3.0.8
   flutter_secure_storage: ^11.2.0
   path_provider: ^2.1.6
-  shared_preferences: ^2.5.5
+  shared_preferences: ^2.5.6
   uuid: ^4.6.0
 
-  # UI & assets
+  # UI, animation & assets
   flutter_animate: ^4.5.2
-  flutter_svg: ^2.3.0
+  flutter_svg: ^2.4.0
   google_fonts: ^9.0.0
   shimmer: ^4.0.0
+
+  # Hardware, Peripherals & Sync
+  connectivity_plus: ^7.3.2
+  flutter_tts: ^4.2.2
+  wakelock_plus: ^1.8.2
 
   # Utilities
   intl: ^0.20.3

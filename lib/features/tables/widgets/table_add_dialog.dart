@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../core/design/tokens.dart';
 import '../table_service.dart';
@@ -26,52 +26,61 @@ Future<void> showAddTableDialog(
           children: [
             Icon(Icons.table_restaurant_rounded, color: primaryColor),
             const SizedBox(width: 8),
-            Text('Tambah Meja Baru', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: p.textPrimary)),
+            Expanded(
+              child: Text(
+                'Tambah Meja Baru',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: p.textPrimary),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(
-                labelText: 'Nama Meja',
-                hintText: 'Contoh: Meja 09, VIP 1',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(
+                  labelText: 'Nama Meja',
+                  hintText: 'Contoh: Meja 09, VIP 1',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: capacityCtrl,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: 'Kapasitas (Kursi / Pax)',
-                hintText: '4',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              const SizedBox(height: 12),
+              TextField(
+                controller: capacityCtrl,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Kapasitas (Kursi / Pax)',
+                  hintText: '4',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              initialValue: position,
-              decoration: InputDecoration(
-                labelText: 'Posisi Ruangan',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: position,
+                isExpanded: true,
+                decoration: InputDecoration(
+                  labelText: 'Posisi Ruangan',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'indoor', child: Text('Indoor / Ruang Utama')),
+                  DropdownMenuItem(value: 'outdoor', child: Text('Outdoor / Teras')),
+                  DropdownMenuItem(value: 'smoking', child: Text('Smoking Area')),
+                  DropdownMenuItem(value: 'vip', child: Text('Ruang VIP / Meeting')),
+                ],
+                onChanged: (val) {
+                  if (val != null) setDialogState(() => position = val);
+                },
               ),
-              items: const [
-                DropdownMenuItem(value: 'indoor', child: Text('Indoor / Ruang Utama')),
-                DropdownMenuItem(value: 'outdoor', child: Text('Outdoor / Teras')),
-                DropdownMenuItem(value: 'smoking', child: Text('Smoking Area')),
-                DropdownMenuItem(value: 'vip', child: Text('Ruang VIP / Meeting')),
-              ],
-              onChanged: (val) {
-                if (val != null) setDialogState(() => position = val);
-              },
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
           TextButton(

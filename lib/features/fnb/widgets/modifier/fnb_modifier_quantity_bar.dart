@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../../core/design/tokens.dart';
 
 /// Portion quantity stepper and barista/kitchen note input section
@@ -86,7 +86,7 @@ class FnbModifierQuantityBar extends StatelessWidget {
                     ),
                   ),
                   Material(
-                    color: Colors.white,
+                    color: p.surface,
                     borderRadius: BorderRadius.circular(7),
                     child: InkWell(
                       onTap: onIncrement,

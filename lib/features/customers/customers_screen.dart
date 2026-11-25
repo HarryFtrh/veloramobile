@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../core/design/tokens.dart';
 import 'widgets/customer_debts_tab.dart';
 import 'widgets/customer_members_tab.dart';
 
@@ -19,19 +20,20 @@ class CustomersScreen extends StatelessWidget {
     final isWide = MediaQuery.sizeOf(context).width >= 600;
     final canPop = ModalRoute.of(context)?.canPop ?? false;
     final theme = Theme.of(context);
+    final p = context.palette;
     final primary = theme.colorScheme.primary;
 
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8FAFC),
+        backgroundColor: p.canvas,
         appBar: (!isWide || canPop)
             ? AppBar(
-                backgroundColor: Colors.white,
+                backgroundColor: p.surface,
                 elevation: 0,
                 scrolledUnderElevation: 0,
-                foregroundColor: const Color(0xFF0F172A),
-                iconTheme: const IconThemeData(color: Color(0xFF0F172A)),
+                foregroundColor: p.textPrimary,
+                iconTheme: IconThemeData(color: p.textPrimary),
                 title: Row(
                   children: [
                     Container(
@@ -43,17 +45,17 @@ class CustomersScreen extends StatelessWidget {
                       child: Icon(Icons.people_alt_rounded, color: primary, size: 20),
                     ),
                     const SizedBox(width: 10),
-                    const Column(
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           'Manajemen Pelanggan',
-                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF0F172A)),
+                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: p.textPrimary),
                         ),
                         Text(
                           'Loyalitas Anggota & Buku Hutang',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.normal, color: Color(0xFF64748B)),
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.normal, color: p.textSecondary),
                         ),
                       ],
                     ),
@@ -65,7 +67,7 @@ class CustomersScreen extends StatelessWidget {
                   labelColor: primary,
                   labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
                   unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                  unselectedLabelColor: const Color(0xFF64748B),
+                  unselectedLabelColor: p.textSecondary,
                   tabs: const [
                     Tab(
                       icon: Icon(Icons.card_membership_rounded, size: 18),
@@ -88,9 +90,9 @@ class CustomersScreen extends StatelessWidget {
                   Container(
                     margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: p.surface,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      border: Border.all(color: p.line),
                     ),
                     child: TabBar(
                       indicatorColor: primary,
@@ -98,7 +100,7 @@ class CustomersScreen extends StatelessWidget {
                       labelColor: primary,
                       labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
                       unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
-                      unselectedLabelColor: const Color(0xFF64748B),
+                      unselectedLabelColor: p.textSecondary,
                       tabs: const [
                         Tab(
                           icon: Icon(Icons.card_membership_rounded, size: 18),

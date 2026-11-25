@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
 import 'pharmacy_stock_alert_modal_card.dart';
 
 /// Card for an alert batch showing FEFO status, days to expiry, batch number, and Quarantine / Restock action
@@ -26,17 +27,17 @@ class PharmacyStockAlertCard extends StatelessWidget {
         : (isWarning ? const Color(0xFFEA580C) : const Color(0xFF059669));
     final badgeBg = isCritical
         ? const Color(0xFFFFDAD6)
-        : (isWarning ? const Color(0xFFFFF7ED) : const Color(0xFFD4F8E8));
+        : (isWarning ? const Color(0xFFD97706).withValues(alpha: 0.14) : const Color(0xFF059669).withValues(alpha: 0.14));
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isCritical
               ? const Color(0xFFBA1A1A).withValues(alpha: 0.5)
-              : const Color(0xFFE2E8F0),
+              : context.palette.line,
           width: isCritical ? 1.4 : 1,
         ),
         boxShadow: const [
@@ -69,11 +70,11 @@ class PharmacyStockAlertCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         item.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Plus Jakarta Sans',
                           fontWeight: FontWeight.bold,
                           fontSize: 13.5,
-                          color: Color(0xFF0F172A),
+                          color: context.palette.textPrimary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -113,12 +114,12 @@ class PharmacyStockAlertCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
+                  color: context.palette.surfaceMuted,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   item.category,
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF475569)),
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: context.palette.textSecondary),
                 ),
               ),
               const SizedBox(width: 8),
@@ -127,14 +128,14 @@ class PharmacyStockAlertCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
-                  color: item.stock <= 10 ? const Color(0xFFBA1A1A) : const Color(0xFF0F172A),
+                  color: item.stock <= 10 ? const Color(0xFFBA1A1A) : context.palette.textPrimary,
                 ),
               ),
             ],
           ),
 
           const Spacer(),
-          const Divider(height: 10, color: Color(0xFFF1F5F9)),
+          Divider(height: 10, color: context.palette.surfaceMuted),
 
           Row(
             mainAxisAlignment: MainAxisAlignment.end,

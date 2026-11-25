@@ -1,5 +1,6 @@
+import '../../../core/utils/currency_formatter.dart';
 import '../../../core/design/tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class CustomerProductPriceSummaryBar extends StatelessWidget {
   const CustomerProductPriceSummaryBar({
@@ -16,18 +17,13 @@ class CustomerProductPriceSummaryBar extends StatelessWidget {
     final p = context.palette;
     final primaryColor = Theme.of(context).colorScheme.primary;
 
-    final formattedPrice = totalPrice.toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]}.',
-    );
-
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     return SafeArea(
       top: false,
       child: Container(
         padding: EdgeInsets.fromLTRB(20, 14, 20, 14 + bottomInset),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: p.surface,
         border: Border(
           top: BorderSide(color: p.line),
         ),
@@ -59,7 +55,7 @@ class CustomerProductPriceSummaryBar extends StatelessWidget {
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'Rp $formattedPrice',
+                    totalPrice.toRupiah(),
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,

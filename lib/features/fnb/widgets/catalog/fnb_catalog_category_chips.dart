@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/safe_json.dart';
-import '../../fnb_register_controller.dart';
+import '../../register/fnb_register_controller.dart';
 
 /// Horizontal scrollable category pill chips for FnB Catalog
 class FnbCatalogCategoryChips extends StatelessWidget {
@@ -30,44 +30,42 @@ class FnbCatalogCategoryChips extends StatelessWidget {
 
     return SizedBox(
       height: 44,
-      child: ListView(
+      child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : Gap.lg),
-        children: [
-          for (final c in ctrl.categories)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Builder(builder: (context) {
-                final p = context.palette;
-                final primaryColor = Theme.of(context).colorScheme.primary;
-                final isSelected = ctrl.category == c;
-                final isPromoCategory = c.toLowerCase() == 'promo' || c.toLowerCase().contains('diskon');
-                final count = c == 'Semua'
-                    ? ctrl.products.length
-                    : (isPromoCategory
-                        ? ctrl.products.where((p) => p.isOnPromo).length
-                        : ctrl.products.where((p) => p.category == c).length);
+        itemCount: ctrl.categories.length,
+        itemBuilder: (context, index) {
+          final c = ctrl.categories[index];
+          final p = context.palette;
+          final primaryColor = Theme.of(context).colorScheme.primary;
+          final isSelected = ctrl.category == c;
+          final isPromoCategory = c.toLowerCase() == 'promo' || c.toLowerCase().contains('diskon');
+          final count = c == 'Semua'
+              ? ctrl.products.length
+              : (isPromoCategory ? ctrl.promoCount : (ctrl.categoryCounts[c] ?? 0));
 
-                final activeColor = isPromoCategory ? const Color(0xFFDC2626) : primaryColor;
-                final labelText = c == 'Semua'
-                    ? 'Semua Menu ($count)'
-                    : (count > 0 ? '$c ($count)' : c);
+          final activeColor = isPromoCategory ? const Color(0xFFDC2626) : primaryColor;
+          final labelText = c == 'Semua'
+              ? 'Semua Menu ($count)'
+              : (count > 0 ? '$c ($count)' : c);
 
-                return InkWell(
-                  onTap: () => ctrl.setCategory(c),
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: InkWell(
+              onTap: () => ctrl.setCategory(c),
+              borderRadius: BorderRadius.circular(20),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? activeColor
+                      : (isPromoCategory
+                          ? const Color(0xFFEF4444).withValues(alpha: 0.08)
+                          : p.surface),
                   borderRadius: BorderRadius.circular(20),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? activeColor
-                          : (isPromoCategory
-                              ? const Color(0xFFEF4444).withValues(alpha: 0.08)
-                              : p.surface),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: isSelected
+                  border: Border.all(
+                    color: isSelected
                             ? activeColor
                             : (isPromoCategory
                                 ? const Color(0xFFEF4444).withValues(alpha: 0.3)
@@ -108,10 +106,9 @@ class FnbCatalogCategoryChips extends StatelessWidget {
                       ],
                     ),
                   ),
-                );
-              }),
-            ),
-        ],
+                ),
+              );
+        },
       ),
     );
   }

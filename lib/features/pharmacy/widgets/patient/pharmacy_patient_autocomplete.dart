@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
 import '../../models/pharmacy_patient_data.dart';
 
 /// Autocomplete suggestions dropdown container for patient search
@@ -20,9 +21,9 @@ class PharmacyPatientAutocompleteList extends StatelessWidget {
       margin: const EdgeInsets.only(top: 4, bottom: 8),
       constraints: const BoxConstraints(maxHeight: 180),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: context.palette.line),
         boxShadow: const [
           BoxShadow(
             color: Color(0x14000000),
@@ -71,9 +72,9 @@ class PharmacyDoctorAutocompleteList extends StatelessWidget {
       margin: const EdgeInsets.only(top: 4, bottom: 8),
       constraints: const BoxConstraints(maxHeight: 180),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: context.palette.line),
         boxShadow: const [
           BoxShadow(
             color: Color(0x14000000),

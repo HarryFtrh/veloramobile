@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'tokens.dart';
 
 /// Grafik garis sederhana untuk tren harian. Tanpa dependency eksternal.

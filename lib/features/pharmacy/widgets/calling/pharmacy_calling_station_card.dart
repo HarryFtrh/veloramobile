@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../../../../core/design/tokens.dart';
 /// Counter station card on the calling display with recall button
 class PharmacyCallingStationCard extends StatelessWidget {
   final Map<String, String> station;
@@ -18,7 +19,7 @@ class PharmacyCallingStationCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
+        color: context.palette.textPrimary,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFF283044)),
       ),
@@ -46,10 +47,10 @@ class PharmacyCallingStationCard extends StatelessWidget {
           Text(
             station['title'] ?? '',
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11.5,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF94A3B8),
+              color: context.palette.textTertiary,
             ),
           ),
           const SizedBox(height: 14),
@@ -64,11 +65,11 @@ class PharmacyCallingStationCard extends StatelessWidget {
           ),
           Text(
             station['patient'] ?? '',
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Plus Jakarta Sans',
               fontWeight: FontWeight.w700,
               fontSize: 14,
-              color: Color(0xFFCBD5E1),
+              color: context.palette.line,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

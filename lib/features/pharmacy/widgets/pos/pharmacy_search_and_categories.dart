@@ -1,7 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/audio_helper.dart';
-
 /// Bilah Pencarian & Filter Kategori Obat di POS Apotek
 class PharmacySearchAndCategories extends StatelessWidget {
   final TextEditingController searchController;
@@ -32,7 +31,7 @@ class PharmacySearchAndCategories extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const emeraldPrimary = ClinicalPalette.primary;
-    const borderColor = Color(0xFFE2E8F0);
+    final borderColor = context.palette.line;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -44,7 +43,7 @@ class PharmacySearchAndCategories extends StatelessWidget {
           child: Container(
             height: 42,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.palette.surface,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: borderColor),
               boxShadow: const [
@@ -59,11 +58,11 @@ class PharmacySearchAndCategories extends StatelessWidget {
               controller: searchController,
               onChanged: onSearchChanged,
               onSubmitted: onSearchSubmitted,
-              style: const TextStyle(fontSize: 12.5, color: Color(0xFF0F172A), fontWeight: FontWeight.w500),
+              style: TextStyle(fontSize: 12.5, color: context.palette.textPrimary, fontWeight: FontWeight.w500),
               decoration: InputDecoration(
                 hintText: 'Cari obat, SKU, kandungan zat aktif, atau scan barcode...',
-                hintStyle: const TextStyle(fontSize: 11.5, color: Color(0xFF94A3B8)),
-                prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Color(0xFF94A3B8)),
+                hintStyle: TextStyle(fontSize: 11.5, color: context.palette.textTertiary),
+                prefixIcon: Icon(Icons.search_rounded, size: 18, color: context.palette.textTertiary),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(vertical: 10),
                 suffixIcon: Row(
@@ -83,7 +82,7 @@ class PharmacySearchAndCategories extends StatelessWidget {
                       ),
                     if (searchQuery.isNotEmpty)
                       IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 15, color: Color(0xFF94A3B8)),
+                        icon: Icon(Icons.close_rounded, size: 15, color: context.palette.textTertiary),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                         onPressed: onClearSearch,
@@ -95,13 +94,13 @@ class PharmacySearchAndCategories extends StatelessWidget {
                         margin: const EdgeInsets.only(right: 6),
                         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
+                          color: context.palette.surfaceMuted,
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.qr_code_scanner_rounded, size: 14, color: Color(0xFF475569)),
+                            Icon(Icons.qr_code_scanner_rounded, size: 14, color: context.palette.textSecondary),
                             SizedBox(width: 4),
                             Text(
                               'Scan',
@@ -109,7 +108,7 @@ class PharmacySearchAndCategories extends StatelessWidget {
                                 fontFamily: 'Plus Jakarta Sans',
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF475569),
+                                color: context.palette.textSecondary,
                               ),
                             ),
                           ],
@@ -215,7 +214,7 @@ class PharmacySearchAndCategories extends StatelessWidget {
                             fontFamily: 'Plus Jakarta Sans',
                             fontSize: 11,
                             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                            color: isSelected ? Colors.white : const Color(0xFF475569),
+                            color: isSelected ? Colors.white : context.palette.textSecondary,
                           ),
                         ),
                       ],

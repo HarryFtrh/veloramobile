@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+// ignore: unnecessary_import
+import 'package:flutter/widgets.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/config/app_config.dart';
 import 'core/config/app_theme.dart';
@@ -13,7 +15,7 @@ import 'features/auth/cubit/auth_state.dart';
 import 'features/auth/login_screen.dart';
 import 'features/dashboard/dashboard_screen.dart';
 import 'features/customers/customers_screen.dart';
-import 'features/fnb/fnb_register_screen.dart';
+import 'features/fnb/screens/fnb_register_screen.dart';
 import 'features/tables/tables_screen.dart';
 import 'features/kitchen/kitchen_screen.dart';
 import 'features/pharmacy/pharmacy.dart';
@@ -22,10 +24,10 @@ import 'features/marketplace/marketplace_screen.dart';
 import 'features/shell/app_shell.dart';
 import 'features/shell/more_screen.dart';
 import 'features/shell/more_menu_factory.dart';
-import 'features/fnb_customer/customer_home_screen.dart';
-import 'features/shared_pos/offline_sync_manager.dart';
-import 'features/shared_pos/printer_settings_modal.dart';
-import 'features/shared_pos/receipt_printer_service.dart';
+import 'features/fnb_customer/screens/customer_home_screen.dart';
+import 'features/shared_pos/services/offline_sync_manager.dart';
+import 'features/shared_pos/widgets/printer_settings_modal.dart';
+import 'features/shared_pos/services/receipt_printer_service.dart';
 import 'core/services/app_update_service.dart';
 import 'core/utils/fallback_localizations.dart';
 
@@ -40,8 +42,10 @@ void main() async {
   debugPrint('🚀 [ENTRY] main.dart flavor=${AppConfig.instance.flavor.name} app=${AppConfig.instance.appName}');
 
   try {
-    await initAppLocale();
-    await SessionStorage.init();
+    await Future.wait([
+      initAppLocale(),
+      SessionStorage.init(),
+    ]);
     ApiClient.init();
     AppUpdateService.init();
     ReceiptPrinterService.onOpenSettings = PrinterSettingsModal.show;
@@ -60,6 +64,9 @@ void main() async {
 
 class VeloraApp extends StatelessWidget {
   const VeloraApp({super.key});
+
+  static final ThemeData _lightTheme = AppTheme.build(AppFlavor.fnb, Brightness.light);
+  static final ThemeData _darkTheme = AppTheme.build(AppFlavor.fnb, Brightness.dark);
 
   @override
   Widget build(BuildContext context) {
@@ -81,8 +88,8 @@ class VeloraApp extends StatelessWidget {
         textDirection: TextDirection.ltr,
         child: child ?? const SizedBox.shrink(),
       ),
-      theme: AppTheme.build(AppFlavor.fnb, Brightness.light),
-      darkTheme: AppTheme.build(AppFlavor.fnb, Brightness.dark),
+      theme: _lightTheme,
+      darkTheme: _darkTheme,
       themeMode: ThemeMode.system,
       home: BlocBuilder<AuthCubit, AuthState>(
         builder: (context, state) {

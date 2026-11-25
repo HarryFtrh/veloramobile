@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../pharmacy_drug_card.dart';
 
 /// Catalog View for Pharmacy POS Screen: handles loading, remote searching, empty states, and Grid/List switching

@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../pharmacy_colors.dart';
 
 /// Top metric KPI cards and handover pair banner for shift report screen
 class PharmacyShiftMetricCards extends StatelessWidget {
@@ -24,9 +26,9 @@ class PharmacyShiftMetricCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF059669);
-    const textMuted = Color(0xFF6D7A72);
-    const borderColor = Color(0xFFE2E8F0);
+    const emeraldPrimary = PharmacyColors.primary;
+    final textMuted = context.palette.textSecondary;
+    final borderColor = context.palette.line;
 
     return Column(
       children: [
@@ -35,7 +37,7 @@ class PharmacyShiftMetricCards extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.palette.surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: borderColor),
           ),
@@ -65,24 +67,24 @@ class PharmacyShiftMetricCards extends StatelessWidget {
                   ),
                 ],
               ),
-              const Divider(height: 16, color: Color(0xFFF1F5F9)),
+              Divider(height: 16, color: context.palette.surfaceMuted),
               Row(
                 children: [
                   Expanded(
                     child: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
+                        color: context.palette.canvas,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(color: borderColor),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('KASIR BERTUGAS', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: textMuted)),
+                          Text('KASIR BERTUGAS', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: textMuted)),
                           const SizedBox(height: 3),
                           Text(cashierName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
-                          Text('Shift Aktif • $branchName', style: const TextStyle(fontSize: 10, color: textMuted)),
+                          Text('Shift Aktif • $branchName', style: TextStyle(fontSize: 10, color: textMuted)),
                         ],
                       ),
                     ),
@@ -92,11 +94,11 @@ class PharmacyShiftMetricCards extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
+                        color: context.palette.canvas,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(color: borderColor),
                       ),
-                      child: const Column(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('SERAH TERIMA SHIFT', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: textMuted)),
@@ -154,7 +156,7 @@ class PharmacyShiftMetricCards extends StatelessWidget {
                     title: 'Jumlah Transaksi',
                     value: '$transactionCount Resep',
                     icon: Icons.receipt_long_rounded,
-                    accentColor: const Color(0xFF475569),
+                    accentColor: context.palette.textSecondary,
                   ),
                 ),
               ],
@@ -171,35 +173,40 @@ class PharmacyShiftMetricCards extends StatelessWidget {
     required IconData icon,
     required Color accentColor,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Builder(
+      builder: (context) {
+        final p = context.palette;
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: p.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: p.line),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(fontSize: 11, color: Color(0xFF6D7A72))),
-              Icon(icon, size: 16, color: accentColor),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(title, style: TextStyle(fontSize: 11, color: p.textSecondary)),
+                  Icon(icon, size: 16, color: accentColor),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                value,
+                style: TextStyle(
+                  fontFamily: 'JetBrains Mono',
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15,
+                  color: accentColor,
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontFamily: 'JetBrains Mono',
-              fontWeight: FontWeight.w800,
-              fontSize: 15,
-              color: accentColor,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

@@ -1,12 +1,12 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../core/config/business_vertical.dart';
 import '../../core/design/tokens.dart';
 import '../../core/storage/session_storage.dart';
 import '../../core/utils/audio_helper.dart';
 import '../../core/widgets/store_logo_avatar.dart';
-import '../shared_pos/offline_sync_badge.dart';
-import '../shared_pos/receipt_printer_service.dart';
-import '../shared_pos/shift_badge.dart';
+import '../shared_pos/widgets/offline_sync_badge.dart';
+import '../shared_pos/services/receipt_printer_service.dart';
+import '../shared_pos/widgets/shift_badge.dart';
 
 class ShellTab {
   const ShellTab({
@@ -272,18 +272,19 @@ class _AppShellState extends State<AppShell> {
   }
 
   Widget _buildPharmacyLeftDock(BuildContext context) {
-    const dockBg = Color(0xFFFFFFFF);
-    const borderColor = Color(0xFFE2E8F0);
-    const emeraldPrimary = ClinicalPalette.primary;
-    const activeBg = Color(0xFF86F2E4);
-    const activeFg = Color(0xFF006F66);
-    const inactiveFg = Color(0xFF6D7A72);
+    final p = context.palette;
+    final dockBg = p.surface;
+    final borderColor = p.line;
+    final emeraldPrimary = Theme.of(context).colorScheme.primary;
+    final activeBg = emeraldPrimary.withValues(alpha: 0.16);
+    final activeFg = emeraldPrimary;
+    final inactiveFg = p.textSecondary;
     final user = SessionStorage.instance.getUserName() ?? 'Siti Rahma';
     final initials = user.trim().split(' ').map((s) => s.isNotEmpty ? s[0].toUpperCase() : '').take(2).join();
 
     return Container(
       width: 76,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: dockBg,
         border: Border(right: BorderSide(color: borderColor, width: 1)),
       ),
@@ -501,9 +502,9 @@ class _AppShellState extends State<AppShell> {
       body: body,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: p.surface,
           border: Border(
-            top: BorderSide(color: isPharmacy ? const Color(0xFFE2E8F0) : p.line, width: 1.2),
+            top: BorderSide(color: p.line, width: 1.2),
           ),
           boxShadow: const [
             BoxShadow(
@@ -516,9 +517,9 @@ class _AppShellState extends State<AppShell> {
         child: NavigationBarTheme(
           data: NavigationBarThemeData(
             height: 62,
-            backgroundColor: Colors.white,
+            backgroundColor: p.surface,
             elevation: 0,
-            indicatorColor: isPharmacy ? pharmacyIndicator : brandPrimary.withValues(alpha: 0.12),
+            indicatorColor: isPharmacy ? pharmacyIndicator : brandPrimary.withValues(alpha: 0.14),
             indicatorShape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),

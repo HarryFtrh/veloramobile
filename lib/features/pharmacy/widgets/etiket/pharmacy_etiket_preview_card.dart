@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../../core/design/tokens.dart';
 import '../../../../core/storage/session_storage.dart';
 import '../../models/pharmacy_etiket_item.dart';
@@ -32,7 +32,7 @@ class PharmacyEtiketPreviewCard extends StatelessWidget {
         color: isLuar ? const Color(0xFFF0F9FF) : Colors.white,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: isLuar ? const Color(0xFF0284C7) : const Color(0xFF64748B),
+          color: isLuar ? const Color(0xFF0284C7) : context.palette.textSecondary,
           width: 2,
         ),
         boxShadow: [
@@ -84,7 +84,7 @@ class PharmacyEtiketPreviewCard extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
             decoration: BoxDecoration(
-              color: isLuar ? const Color(0xFFE0F2FE) : const Color(0xFFF1F5F9),
+              color: isLuar ? const Color(0xFF0284C7).withValues(alpha: 0.14) : context.palette.surfaceMuted,
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(

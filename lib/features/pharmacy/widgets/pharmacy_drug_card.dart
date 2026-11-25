@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../core/design/tokens.dart';
 import '../../../core/utils/currency_formatter.dart';
 import 'drug_card_components.dart';
-
 export 'drug_card_components.dart';
 export 'pharmacy_drug_row.dart';
 
@@ -26,9 +26,9 @@ class PharmacyDrugCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const primaryEmerald = Color(0xFF059669);
-    const borderColor = Color(0xFFE2E8F0);
-    const textPrimary = Color(0xFF0F172A);
-    const textMuted = Color(0xFF64748B);
+    final borderColor = context.palette.line;
+    final textPrimary = context.palette.textPrimary;
+    final textMuted = context.palette.textSecondary;
 
     final classification = DrugClassification.fromItem(item);
 
@@ -68,13 +68,13 @@ class PharmacyDrugCard extends StatelessWidget {
           padding: const EdgeInsets.all(9),
           decoration: BoxDecoration(
             color: isOutOfStock
-                ? const Color(0xFFF8FAFC)
+                ? context.palette.canvas
                 : (quantity > 0 ? const Color(0xFFF9FDFB) : Colors.white),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isOutOfStock
                   ? borderColor
-                  : (quantity > 0 ? primaryEmerald : const Color(0xFFE2E8F0)),
+                  : (quantity > 0 ? primaryEmerald : context.palette.line),
               width: quantity > 0 && !isOutOfStock ? 1.5 : 1,
             ),
             boxShadow: const [
@@ -85,9 +85,7 @@ class PharmacyDrugCard extends StatelessWidget {
               ),
             ],
           ),
-          child: Opacity(
-            opacity: isOutOfStock ? 0.62 : 1.0,
-            child: Column(
+          child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 1. Gambar Produk Proporsional (Anti-Lonjong dengan AspectRatio seimbang)
@@ -97,7 +95,7 @@ class PharmacyDrugCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
                       width: double.infinity,
-                      color: const Color(0xFFF1F5F9),
+                      color: context.palette.surfaceMuted,
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
@@ -138,7 +136,7 @@ class PharmacyDrugCard extends StatelessWidget {
                   item['name'] ?? '',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Plus Jakarta Sans',
                     fontWeight: FontWeight.w800,
                     fontSize: 12.5,
@@ -155,7 +153,7 @@ class PharmacyDrugCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0F172A),
+                        color: context.palette.textPrimary,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -177,7 +175,7 @@ class PharmacyDrugCard extends StatelessWidget {
                             : subInfo,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'JetBrains Mono',
                           fontSize: 9.5,
                           color: textMuted,
@@ -221,7 +219,6 @@ class PharmacyDrugCard extends StatelessWidget {
                 ),
               ],
             ),
-          ),
         ),
       ),
     );

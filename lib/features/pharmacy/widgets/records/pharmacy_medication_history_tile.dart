@@ -1,6 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
-import '../../pharmacy_service.dart';
+import '../../services/pharmacy_service.dart';
+import '../../pharmacy_colors.dart';
 
 /// Tile displaying an individual patient medication visit history and repeat prescription action
 class PharmacyMedicationHistoryTile extends StatelessWidget {
@@ -15,16 +17,16 @@ class PharmacyMedicationHistoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF059669);
-    const borderColor = Color(0xFFE2E8F0);
-    const textPrimary = Color(0xFF0F172A);
-    const textMuted = Color(0xFF6D7A72);
+    const emeraldPrimary = PharmacyColors.primary;
+    final borderColor = context.palette.line;
+    final textPrimary = context.palette.textPrimary;
+    final textMuted = context.palette.textSecondary;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: borderColor),
       ),
@@ -36,7 +38,7 @@ class PharmacyMedicationHistoryTile extends StatelessWidget {
             children: [
               Text(
                 history.visitDate,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Plus Jakarta Sans',
                   fontSize: 12.5,
                   fontWeight: FontWeight.bold,
@@ -57,13 +59,13 @@ class PharmacyMedicationHistoryTile extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             'Dokter: ${history.doctorName} • Diagnosis: ${history.diagnosis}',
-            style: const TextStyle(fontSize: 11, color: textMuted),
+            style: TextStyle(fontSize: 11, color: textMuted),
           ),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
+              color: context.palette.canvas,
               borderRadius: BorderRadius.circular(6),
             ),
             child: Column(
@@ -75,7 +77,7 @@ class PharmacyMedicationHistoryTile extends StatelessWidget {
                           children: [
                             const Icon(Icons.circle, size: 5, color: emeraldPrimary),
                             const SizedBox(width: 6),
-                            Text(m, style: const TextStyle(fontSize: 11, color: textPrimary)),
+                            Text(m, style: TextStyle(fontSize: 11, color: textPrimary)),
                           ],
                         ),
                       ))
@@ -88,7 +90,7 @@ class PharmacyMedicationHistoryTile extends StatelessWidget {
             children: [
               Text(
                 'Total Tebus: ${CurrencyFormatter.format(history.total)}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'JetBrains Mono',
                   fontSize: 11.5,
                   fontWeight: FontWeight.bold,
@@ -102,7 +104,7 @@ class PharmacyMedicationHistoryTile extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF0FDF4),
+                      color: const Color(0xFF059669).withValues(alpha: 0.14),
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(color: const Color(0xFFBBF7D0)),
                     ),

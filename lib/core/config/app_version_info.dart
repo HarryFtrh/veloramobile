@@ -28,7 +28,7 @@ class AppVersionHelper {
   static Future<AppVersionInfo> getAppVersion() async {
     if (_cachedVersion != null) return _cachedVersion!;
 
-    if (!kIsWeb && Platform.isAndroid) {
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
       try {
         final res = await _channel.invokeMapMethod<String, dynamic>('getAppVersion');
         if (res != null) {

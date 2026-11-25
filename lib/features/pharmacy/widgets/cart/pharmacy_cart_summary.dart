@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
-
 /// Ringkasan Finansial & CTA Pembayaran di Bagian Bawah Keranjang Apotek
 class PharmacyCartSummary extends StatelessWidget {
   final int totalQty;
@@ -33,14 +33,14 @@ class PharmacyCartSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const primaryEmerald = Color(0xFF059669);
-    const borderColor = Color(0xFFE2E8F0);
-    const textPrimary = Color(0xFF0F172A);
-    const textMuted = Color(0xFF64748B);
+    final borderColor = context.palette.line;
+    final textPrimary = context.palette.textPrimary;
+    final textMuted = context.palette.textSecondary;
 
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: context.palette.surface,
         border: Border(top: BorderSide(color: borderColor, width: 1)),
       ),
       child: Column(
@@ -49,10 +49,10 @@ class PharmacyCartSummary extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Subtotal ($totalQty item)', style: const TextStyle(color: textMuted, fontSize: 11.5)),
+              Text('Subtotal ($totalQty item)', style: TextStyle(color: textMuted, fontSize: 11.5)),
               Text(
                 CurrencyFormatter.format(subtotal),
-                style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 12, fontWeight: FontWeight.w600, color: textPrimary),
+                style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 12, fontWeight: FontWeight.w600, color: textPrimary),
               ),
             ],
           ),
@@ -61,10 +61,10 @@ class PharmacyCartSummary extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Tuslah & Embalase Resep', style: TextStyle(color: textMuted, fontSize: 11.5)),
+                Text('Tuslah & Embalase Resep', style: TextStyle(color: textMuted, fontSize: 11.5)),
                 Text(
                   CurrencyFormatter.format(effectiveTuslah),
-                  style: const TextStyle(fontFamily: 'JetBrains Mono', fontSize: 12, fontWeight: FontWeight.w600, color: textPrimary),
+                  style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 12, fontWeight: FontWeight.w600, color: textPrimary),
                 ),
               ],
             ),
@@ -76,7 +76,7 @@ class PharmacyCartSummary extends StatelessWidget {
               children: [
                 Text(
                   '$taxName (${(taxRate * 100).toStringAsFixed(0)}%${taxInclusive ? " Termasuk" : ""})',
-                  style: const TextStyle(color: textMuted, fontSize: 11),
+                  style: TextStyle(color: textMuted, fontSize: 11),
                 ),
                 Text(
                   CurrencyFormatter.format(taxAmount),
@@ -137,7 +137,7 @@ class PharmacyCartSummary extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
+                    color: context.palette.surface.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -176,10 +176,10 @@ class PharmacyCartSummary extends StatelessWidget {
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0F172A),
+                  backgroundColor: context.palette.textPrimary,
                   foregroundColor: Colors.white,
-                  disabledBackgroundColor: const Color(0xFFE2E8F0),
-                  disabledForegroundColor: const Color(0xFF94A3B8),
+                  disabledBackgroundColor: context.palette.line,
+                  disabledForegroundColor: context.palette.textTertiary,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: hasItems ? 2 : 0,
                 ),

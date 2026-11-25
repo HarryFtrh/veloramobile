@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
-import '../../fnb_register_controller.dart';
+import '../../register/fnb_register_controller.dart';
 
 /// Floating mobile bottom bar showing current cart count, grand total, and open trigger.
 class FnbCartBar extends StatelessWidget {

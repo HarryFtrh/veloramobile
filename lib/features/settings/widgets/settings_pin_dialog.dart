@@ -1,5 +1,5 @@
 // features/settings/widgets/settings_pin_dialog.dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/design/tokens.dart';
@@ -18,6 +18,7 @@ class _SettingsPinDialogState extends State<SettingsPinDialog> {
   final _pin = TextEditingController();
   final _confirm = TextEditingController();
   String? _error;
+  bool _saving = false;
 
   @override
   void dispose() {
@@ -27,6 +28,7 @@ class _SettingsPinDialogState extends State<SettingsPinDialog> {
   }
 
   Future<void> _save() async {
+    if (_saving) return;
     if (_pin.text.length != _length) {
       setState(() => _error = 'PIN harus $_length digit');
       return;
@@ -35,8 +37,16 @@ class _SettingsPinDialogState extends State<SettingsPinDialog> {
       setState(() => _error = 'Konfirmasi PIN tidak sama');
       return;
     }
-    await AuthService.instance.setQuickPin(_pin.text);
-    if (mounted) Navigator.pop(context, true);
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      await AuthService.instance.setQuickPin(_pin.text);
+      if (mounted) Navigator.pop(context, true);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   Widget _field(TextEditingController c, String label) => TextField(
@@ -99,12 +109,12 @@ class _SettingsPinDialogState extends State<SettingsPinDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context, false),
+          onPressed: _saving ? null : () => Navigator.pop(context, false),
           child: const Text('Batal'),
         ),
         FilledButton(
-          onPressed: _save,
-          child: const Text('Simpan PIN'),
+          onPressed: _saving ? null : _save,
+          child: Text(_saving ? 'Menyimpan...' : 'Simpan PIN'),
         ),
       ],
     );

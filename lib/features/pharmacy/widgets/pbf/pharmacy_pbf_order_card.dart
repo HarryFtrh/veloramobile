@@ -1,6 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
-import '../../pharmacy_service.dart';
+import '../../services/pharmacy_service.dart';
+import '../../pharmacy_colors.dart';
 
 /// Card for individual PBF purchase order
 class PharmacyPbfOrderCard extends StatelessWidget {
@@ -13,10 +15,10 @@ class PharmacyPbfOrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldPrimary = Color(0xFF059669);
-    const borderColor = Color(0xFFE2E8F0);
-    const textPrimary = Color(0xFF0F172A);
-    const textMuted = Color(0xFF6D7A72);
+    const emeraldPrimary = PharmacyColors.primary;
+    final borderColor = context.palette.line;
+    final textPrimary = context.palette.textPrimary;
+    final textMuted = context.palette.textSecondary;
 
     final isDueSoon = order.status == 'due_soon';
 
@@ -24,7 +26,7 @@ class PharmacyPbfOrderCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: isDueSoon ? const Color(0xFFBA1A1A).withValues(alpha: 0.4) : borderColor),
       ),
@@ -36,7 +38,7 @@ class PharmacyPbfOrderCard extends StatelessWidget {
             children: [
               Text(
                 order.poNumber,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'JetBrains Mono',
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
@@ -64,7 +66,7 @@ class PharmacyPbfOrderCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             order.pbfName,
-            style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 12.5, fontWeight: FontWeight.bold, color: textPrimary),
+            style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 12.5, fontWeight: FontWeight.bold, color: textPrimary),
           ),
           const SizedBox(height: 2),
           Text(
@@ -81,7 +83,7 @@ class PharmacyPbfOrderCard extends StatelessWidget {
             children: [
               Text(
                 '${order.itemCount} Item Obat',
-                style: const TextStyle(fontSize: 11, color: textMuted),
+                style: TextStyle(fontSize: 11, color: textMuted),
               ),
               Text(
                 CurrencyFormatter.format(order.totalAmount),

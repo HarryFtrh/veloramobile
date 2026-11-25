@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../models/pharmacy_payment_mode.dart';
@@ -30,7 +30,7 @@ class PharmacyPaymentTab extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
           decoration: BoxDecoration(
-            color: isSelected ? ClinicalPalette.primary : const Color(0xFFF1F5F9),
+            color: isSelected ? ClinicalPalette.primary : context.palette.surfaceMuted,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: isSelected ? ClinicalPalette.primary : ClinicalPalette.border,
@@ -135,7 +135,7 @@ class PharmacyCashPaymentForm extends StatelessWidget {
               },
             ),
             filled: true,
-            fillColor: const Color(0xFFF8FAFC),
+            fillColor: context.palette.canvas,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
@@ -175,7 +175,7 @@ class PharmacyCashPaymentForm extends StatelessWidget {
                       ? ClinicalPalette.primary
                       : isExact
                           ? ClinicalPalette.primary.withValues(alpha: 0.1)
-                          : const Color(0xFFF1F5F9),
+                          : context.palette.surfaceMuted,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: isSelected ? ClinicalPalette.primary : ClinicalPalette.border,
@@ -205,7 +205,7 @@ class PharmacyCashPaymentForm extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: shortAmount > 0 ? const Color(0xFFFEF2F2) : const Color(0xFFF0FDF4),
+            color: shortAmount > 0 ? const Color(0xFFDC2626).withValues(alpha: 0.14) : const Color(0xFF059669).withValues(alpha: 0.14),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: shortAmount > 0 ? const Color(0xFFFECACA) : const Color(0xFFBBF7D0),
@@ -288,7 +288,7 @@ class PharmacySplitPaymentForm extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: context.palette.canvas,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: ClinicalPalette.border),
       ),
@@ -325,13 +325,11 @@ class PharmacySplitPaymentForm extends StatelessWidget {
             decoration: InputDecoration(
               prefixText: 'Rp ',
               filled: true,
-              fillColor: Colors.white,
+              fillColor: context.palette.surface,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             ),
             onChanged: (val) {
-              final clean = val.replaceAll(RegExp(r'[^0-9]'), '');
-              final num parsed = num.tryParse(clean) ?? 0;
-              onSplitCashChanged(parsed);
+              onSplitCashChanged(val.parseRupiah());
             },
           ),
           const SizedBox(height: 14),
@@ -345,7 +343,7 @@ class PharmacySplitPaymentForm extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFFF0FDF4),
+              color: const Color(0xFF059669).withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: const Color(0xFFBBF7D0)),
             ),
@@ -383,7 +381,7 @@ class PharmacySplitPaymentForm extends StatelessWidget {
                 label: Text(m),
                 selected: isSel,
                 selectedColor: ClinicalPalette.primary,
-                backgroundColor: Colors.white,
+                backgroundColor: context.palette.surface,
                 labelStyle: TextStyle(
                   fontFamily: 'Plus Jakarta Sans',
                   fontWeight: FontWeight.bold,
@@ -416,7 +414,7 @@ class PharmacyQrisPaymentForm extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: context.palette.canvas,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: ClinicalPalette.border),
       ),
@@ -461,7 +459,7 @@ class PharmacyQrisPaymentForm extends StatelessWidget {
             height: 180,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.palette.surface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: ClinicalPalette.border),
             ),
@@ -473,7 +471,7 @@ class PharmacyQrisPaymentForm extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.palette.surface,
                       borderRadius: BorderRadius.circular(6),
                       boxShadow: [
                         BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4),
@@ -497,7 +495,7 @@ class PharmacyQrisPaymentForm extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFFF0FDF4),
+              color: const Color(0xFF059669).withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: const Color(0xFFBBF7D0)),
             ),
@@ -562,7 +560,7 @@ class PharmacyDebitPaymentForm extends StatelessWidget {
               label: Text(bank),
               selected: isSelected,
               selectedColor: ClinicalPalette.primary,
-              backgroundColor: const Color(0xFFF1F5F9),
+              backgroundColor: context.palette.surfaceMuted,
               labelStyle: TextStyle(
                 fontFamily: 'JetBrains Mono',
                 fontWeight: FontWeight.bold,
@@ -591,7 +589,7 @@ class PharmacyDebitPaymentForm extends StatelessWidget {
           decoration: InputDecoration(
             hintText: 'Contoh: REF#8892019 / 009210',
             filled: true,
-            fillColor: const Color(0xFFF8FAFC),
+            fillColor: context.palette.canvas,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(color: ClinicalPalette.border),
@@ -644,7 +642,7 @@ class PharmacyInsurancePaymentForm extends StatelessWidget {
               label: Text(ins),
               selected: isSelected,
               selectedColor: ClinicalPalette.primary,
-              backgroundColor: const Color(0xFFF1F5F9),
+              backgroundColor: context.palette.surfaceMuted,
               labelStyle: TextStyle(
                 fontFamily: 'Plus Jakarta Sans',
                 fontWeight: FontWeight.bold,
@@ -669,7 +667,7 @@ class PharmacyInsurancePaymentForm extends StatelessWidget {
           decoration: InputDecoration(
             hintText: '0001293849102',
             filled: true,
-            fillColor: const Color(0xFFF8FAFC),
+            fillColor: context.palette.canvas,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(color: ClinicalPalette.border),
@@ -688,7 +686,7 @@ class PharmacyInsurancePaymentForm extends StatelessWidget {
           decoration: InputDecoration(
             hintText: 'SEP-20241024-009182',
             filled: true,
-            fillColor: const Color(0xFFF8FAFC),
+            fillColor: context.palette.canvas,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(color: ClinicalPalette.border),

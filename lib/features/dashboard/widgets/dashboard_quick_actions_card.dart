@@ -1,13 +1,13 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/design/tokens.dart';
 import '../../../core/storage/session_storage.dart';
 import '../../../core/utils/audio_helper.dart';
-import '../../shared_pos/printer_settings_modal.dart';
-import '../../shared_pos/sales_history_drawer.dart';
-import '../../shared_pos/shift_modal.dart';
-import '../../shared_pos/shift_service.dart';
+import '../../shared_pos/widgets/printer_settings_modal.dart';
+import '../../shared_pos/widgets/sales_history_drawer.dart';
+import '../../shared_pos/widgets/shift_modal.dart';
+import '../../shared_pos/services/shift_service.dart';
 import '../dashboard_cubit.dart';
 
 /// Aksi Cepat Kasir: Buka Kasir, Riwayat Penjualan, Laporan Shift, Petty Cash, Printer
