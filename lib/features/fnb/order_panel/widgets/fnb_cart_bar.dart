@@ -43,14 +43,33 @@ class FnbCartBar extends StatelessWidget {
                         child: Icon(Icons.shopping_bag_outlined, color: scheme.onPrimary, size: 18),
                       ),
                       const SizedBox(width: Gap.sm),
-                      Text(
-                        '${ctrl.itemCount} Item',
-                        style: TextStyle(color: scheme.onPrimary, fontWeight: FontWeight.w700, fontSize: 13),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 220),
+                        transitionBuilder: (child, anim) => ScaleTransition(
+                          scale: CurvedAnimation(parent: anim, curve: Curves.easeOutBack),
+                          child: FadeTransition(opacity: anim, child: child),
+                        ),
+                        child: Text(
+                          '${ctrl.itemCount} Item',
+                          key: ValueKey<int>(ctrl.itemCount),
+                          style: TextStyle(color: scheme.onPrimary, fontWeight: FontWeight.w700, fontSize: 13),
+                        ),
                       ),
                       const Spacer(),
-                      Text(
-                        CurrencyFormatter.format(total),
-                        style: TextStyle(color: scheme.onPrimary, fontWeight: FontWeight.w800, fontSize: 15),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 220),
+                        transitionBuilder: (child, anim) => SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0, 0.25),
+                            end: Offset.zero,
+                          ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
+                          child: FadeTransition(opacity: anim, child: child),
+                        ),
+                        child: Text(
+                          CurrencyFormatter.format(total),
+                          key: ValueKey<num>(total),
+                          style: TextStyle(color: scheme.onPrimary, fontWeight: FontWeight.w800, fontSize: 15),
+                        ),
                       ),
                       const SizedBox(width: Gap.xs),
                       Icon(Icons.keyboard_arrow_up, color: scheme.onPrimary),

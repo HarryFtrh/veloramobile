@@ -10,6 +10,7 @@ import '../../kitchen/kitchen_service.dart';
 import '../models/customer_models.dart';
 import '../widgets/customer_order_action_footer.dart';
 import '../widgets/customer_order_estimate_banner.dart';
+import '../widgets/customer_order_horizontal_stepper.dart';
 import '../widgets/customer_order_summary_card.dart';
 import '../widgets/customer_order_table_card.dart';
 import '../widgets/customer_order_timeline_step.dart';
@@ -362,6 +363,13 @@ class _CustomerOrderTrackingScreenState
         children: [
           // Hero Brewing Banner
           const CustomerOrderEstimateBanner(),
+          const SizedBox(height: 12),
+
+          // 4-Node Horizontal Order Progress Stepper + Copyable Order ID
+          CustomerOrderHorizontalStepper(
+            orderNumber: widget.orderNumber,
+            activeStepIndex: isReady ? 2 : (isPreparing ? 1 : 0),
+          ),
           const SizedBox(height: 12),
 
           // Station & Origin Tags

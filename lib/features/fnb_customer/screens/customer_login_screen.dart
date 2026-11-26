@@ -81,7 +81,11 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
       _errorMessage = null;
     });
     try {
-      await AuthService.instance.loginWithGoogle();
+      final user = await AuthService.instance.loginWithGoogle();
+      if (user == null) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
       if (mounted) {
         if (widget.onLoginSuccess != null) {
           widget.onLoginSuccess!();

@@ -4,6 +4,9 @@ import '../../core/storage/session_storage.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/audio_helper.dart';
 import '../../core/components/dynamic_island_pill.dart';
+import '../../core/widgets/velora_empty_state.dart';
+import '../../core/widgets/velora_floating_nav_bar.dart';
+import '../../core/widgets/velora_shimmer_skeleton.dart';
 import 'marketplace_service.dart';
 
 class MarketplaceScreen extends StatefulWidget {
@@ -30,10 +33,17 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
 
   final Map<String, int> _cart = {};
 
+  int _currentTab = 0;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging && _currentTab != _tabController.index && mounted) {
+        setState(() => _currentTab = _tabController.index);
+      }
+    });
     _loadInitialData();
   }
 
@@ -273,25 +283,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(49),
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: pal.line)),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              indicatorColor: primary,
-              indicatorWeight: 3,
-              labelColor: primary,
-              unselectedLabelColor: pal.textSecondary,
-              labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
-              unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-              tabs: const [
-                Tab(icon: Icon(Icons.store_mall_directory_rounded, size: 18), text: 'Katalog PBF'),
-                Tab(icon: Icon(Icons.receipt_long_rounded, size: 18), text: 'Riwayat Pesanan'),
-              ],
-            ),
-          ),
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 1, color: pal.line),
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -396,7 +389,12 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
         ],
       ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator(color: primary))
+          ? SingleChildScrollView(
+              child: VeloraShimmerSkeleton.list(
+                itemCount: 6,
+                padding: const EdgeInsets.all(16),
+              ),
+            )
           : Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 860),
@@ -452,25 +450,13 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                         ),
                         Expanded(
                           child: _products.isEmpty
-                              ? Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(16),
-                                        decoration: BoxDecoration(
-                                          color: pal.surfaceMuted,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(Icons.inventory_2_outlined, size: 36, color: pal.textTertiary),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        'Tidak ada produk katalog ditemukan dari PBF rekanan.',
-                                        style: TextStyle(color: pal.textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
-                                      ),
-                                    ],
-                                  ),
+                              ? VeloraEmptyState(
+                                  icon: Icons.inventory_2_outlined,
+                                  title: 'Katalog PBF Kosong',
+                                  subtitle: 'Tidak ada produk katalog ditemukan dari PBF rekanan.',
+                                  actionLabel: 'Muat Ulang',
+                                  onAction: _loadInitialData,
+                                  accentColor: primary,
                                 )
                               : ListView.builder(
                                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -555,25 +541,17 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
 
                     // Tab 2: Riwayat Pesanan
                     _orderHistory.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: pal.surfaceMuted,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(Icons.receipt_long_outlined, size: 36, color: pal.textTertiary),
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'Belum ada riwayat pesanan faktur B2B.',
-                                  style: TextStyle(color: pal.textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
-                                ),
-                              ],
-                            ),
+                        ? VeloraEmptyState(
+                            icon: Icons.receipt_long_outlined,
+                            title: 'Belum Ada Riwayat Pesanan',
+                            subtitle: 'Pesanan faktur B2B Anda akan muncul otomatis di sini.',
+                            actionLabel: 'Lihat Katalog PBF',
+                            actionIcon: Icons.store_mall_directory_rounded,
+                            onAction: () {
+                              setState(() => _currentTab = 0);
+                              _tabController.animateTo(0);
+                            },
+                            accentColor: primary,
                           )
                         : ListView.builder(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -643,6 +621,38 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                 ),
               ),
             ),
+      bottomNavigationBar: VeloraFloatingNavBar(
+        currentIndex: _currentTab == 0 ? 0 : 2,
+        onTap: (index) {
+          if (index == 0) {
+            setState(() => _currentTab = 0);
+            _tabController.animateTo(0);
+          } else if (index == 1) {
+            _showCartDialog();
+          } else if (index == 2) {
+            setState(() => _currentTab = 1);
+            _tabController.animateTo(1);
+          }
+        },
+        items: [
+          const VeloraFloatingNavItem(
+            label: 'Katalog PBF',
+            icon: Icons.store_mall_directory_outlined,
+            selectedIcon: Icons.store_mall_directory_rounded,
+          ),
+          VeloraFloatingNavItem(
+            label: 'Keranjang',
+            icon: Icons.shopping_cart_outlined,
+            selectedIcon: Icons.shopping_cart_rounded,
+            badgeCount: _cartItemCount,
+          ),
+          const VeloraFloatingNavItem(
+            label: 'Riwayat',
+            icon: Icons.receipt_long_outlined,
+            selectedIcon: Icons.receipt_long_rounded,
+          ),
+        ],
+      ),
     );
   }
 }

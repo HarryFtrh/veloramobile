@@ -2,6 +2,9 @@ import 'package:material_ui/material_ui.dart';
 import '../../core/design/tokens.dart';
 import '../../core/storage/session_storage.dart';
 import '../../core/utils/audio_helper.dart';
+import '../../core/widgets/velora_empty_state.dart';
+import '../../core/widgets/velora_floating_nav_bar.dart';
+import '../../core/widgets/velora_shimmer_skeleton.dart';
 import 'sales_service.dart';
 import 'widgets/sales_action_card.dart';
 import 'widgets/sales_visit_card.dart';
@@ -485,9 +488,12 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
               ),
               if (_isLoading && _visits.isEmpty)
                 SliverPadding(
-                  padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 20),
                   sliver: SliverToBoxAdapter(
-                    child: Center(child: CircularProgressIndicator(color: accent)),
+                    child: VeloraShimmerSkeleton.list(
+                      itemCount: 4,
+                      padding: EdgeInsets.zero,
+                    ),
                   ),
                 )
               else if (_visits.isEmpty)
@@ -496,43 +502,19 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                   sliver: SliverToBoxAdapter(
                     child: Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(20, 25, 20, 23),
                       decoration: BoxDecoration(
                         color: p.surface,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: p.line),
                       ),
-                      child: Column(
-                        children: [
-                          CircleAvatar(
-                            radius: 25,
-                            backgroundColor: accent.withValues(alpha: 0.14),
-                            child: Icon(
-                              Icons.event_available_rounded,
-                              color: accent,
-                              size: 24,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Jadwal masih kosong',
-                            style: TextStyle(
-                              color: p.textPrimary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 5),
-                          Text(
-                            'Belum ada rute kunjungan yang dijadwalkan hari ini.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: p.textSecondary,
-                              fontSize: 12,
-                              height: 1.4,
-                            ),
-                          ),
-                        ],
+                      child: VeloraEmptyState(
+                        icon: Icons.event_available_rounded,
+                        title: 'Jadwal masih kosong',
+                        subtitle: 'Belum ada rute kunjungan yang dijadwalkan hari ini.',
+                        actionLabel: 'Catat Kunjungan',
+                        actionIcon: Icons.add_location_alt_rounded,
+                        onAction: () => _showRecordVisitDialog(),
+                        accentColor: accent,
                       ),
                     ),
                   ),
@@ -556,6 +538,33 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
             ],
           ),
         ),
+      ),
+      bottomNavigationBar: VeloraFloatingNavBar(
+        currentIndex: 0,
+        onTap: (index) {
+          if (index == 1) {
+            _showRecordVisitDialog();
+          } else if (index == 2) {
+            _showCreateOrderDialog();
+          }
+        },
+        items: const [
+          VeloraFloatingNavItem(
+            label: 'Beranda',
+            icon: Icons.dashboard_outlined,
+            selectedIcon: Icons.dashboard_rounded,
+          ),
+          VeloraFloatingNavItem(
+            label: 'Kunjungan',
+            icon: Icons.edit_location_alt_outlined,
+            selectedIcon: Icons.edit_location_alt_rounded,
+          ),
+          VeloraFloatingNavItem(
+            label: 'Order TO',
+            icon: Icons.add_shopping_cart_outlined,
+            selectedIcon: Icons.add_shopping_cart_rounded,
+          ),
+        ],
       ),
     );
   }

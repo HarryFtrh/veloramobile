@@ -56,14 +56,26 @@ class SplitBillPaymentPane extends StatelessWidget {
     final isSel = selectedMethod == key;
     return GestureDetector(
       onTap: () => onSelectMethod(key),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
         decoration: BoxDecoration(
-          color: isSel ? primaryColor : Colors.white,
+          color: isSel ? primaryColor : p.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSel ? Colors.transparent : p.line,
+            color: isSel ? primaryColor : p.line,
+            width: isSel ? 1.5 : 1.0,
           ),
+          boxShadow: isSel
+              ? [
+                  BoxShadow(
+                    color: primaryColor.withValues(alpha: 0.24),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

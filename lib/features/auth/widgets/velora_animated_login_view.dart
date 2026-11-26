@@ -456,105 +456,123 @@ class _VeloraAnimatedLoginViewState extends State<VeloraAnimatedLoginView>
     required double heroHeight,
     required String appName,
   }) {
-    final topColor = isDark
-        ? Color.lerp(p.canvas, primaryColor, 0.22)!
-        : Color.lerp(primaryColor, const Color(0xFF0F172A), 0.35)!;
-    final bottomColor = isDark
-        ? Color.lerp(p.canvas, primaryColor, 0.08)!
-        : primaryColor;
-
-    return Container(
+    return SizedBox(
       height: heroHeight,
       width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [topColor, bottomColor],
-        ),
-      ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Subtle animated sweeping brand arc & layered horizon silhouettes
-          AnimatedBuilder(
-            animation: _arcCtrl,
-            builder: (_, _) => CustomPaint(
-              painter: _VeloraHeroBackdropPainter(
-                progress: _arcCtrl.value,
-                accentColor: Colors.white,
+      child: ClipRect(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // 1. Living 3D-parallax breathing Velora POS hero illustration
+            AnimatedBuilder(
+              animation: _arcCtrl,
+              builder: (_, child) {
+                final t = _arcCtrl.value * 2 * math.pi;
+                final dx = math.sin(t) * 6.0;
+                final dy = math.cos(t) * 4.0;
+                final scale = 1.06 + (math.sin(t) * 0.025);
+                final matrix = Matrix4.identity()
+                  ..setEntry(3, 2, 0.0008)
+                  ..rotateY(math.sin(t) * 0.035)
+                  ..rotateX(math.cos(t) * 0.02);
+                return Transform.translate(
+                  offset: Offset(dx, dy),
+                  child: Transform.scale(
+                    scale: scale,
+                    child: Transform(
+                      alignment: Alignment.center,
+                      transform: matrix,
+                      child: child,
+                    ),
+                  ),
+                );
+              },
+              child: Image.asset(
+                'assets/images/velora_login_hero.jpg',
+                fit: BoxFit.cover,
+                alignment: Alignment.bottomCenter,
               ),
             ),
-          ),
 
-          // Centered Velora Logo & Wordmark
-          SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const VeloraLogo(
-                    size: 74,
-                    borderRadius: 22,
-                    withGlow: true,
-                  )
-                      .animate()
-                      .fadeIn(duration: 450.ms)
-                      .scale(
-                        begin: const Offset(0.84, 0.84),
-                        end: const Offset(1, 1),
-                        duration: 520.ms,
-                        curve: Curves.easeOutBack,
-                      ),
-                  const SizedBox(height: 14),
-                  Text(
-                    appName,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                      letterSpacing: -0.3,
-                    ),
-                  )
-                      .animate(delay: 100.ms)
-                      .fadeIn(duration: 400.ms)
-                      .slideY(begin: 0.16, end: 0, curve: Curves.easeOutCubic),
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            // 2. Subtle atmospheric tint in Dark Mode & soft bottom blend into sheet
+            if (isDark)
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      p.canvas.withValues(alpha: 0.30),
+                      p.canvas.withValues(alpha: 0.56),
+                    ],
+                  ),
+                ),
+              )
+            else
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.04),
+                    ],
+                  ),
+                ),
+              ),
+
+            // 3. Clean floating Velora Brand Pill in the top negative space (no duplicate badge)
+            SafeArea(
+              bottom: false,
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.16),
-                      borderRadius: BorderRadius.circular(20),
+                      color: (isDark ? p.surface : Colors.white).withValues(alpha: isDark ? 0.86 : 0.90),
+                      borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.25),
+                        color: (isDark ? p.line : Colors.white).withValues(alpha: 0.9),
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(widget.branding.icon, size: 13, color: Colors.white),
-                        const SizedBox(width: 6),
+                        const VeloraLogo(
+                          size: 24,
+                          withGlow: false,
+                        ),
+                        const SizedBox(width: 8),
                         Text(
-                          widget.branding.badge,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            letterSpacing: 0.4,
+                          appName,
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w800,
+                            color: p.textPrimary,
+                            letterSpacing: -0.2,
                           ),
                         ),
                       ],
                     ),
                   )
-                      .animate(delay: 160.ms)
-                      .fadeIn(duration: 380.ms),
-                ],
+                      .animate()
+                      .fadeIn(duration: 420.ms)
+                      .slideY(begin: -0.18, end: 0, curve: Curves.easeOutCubic),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -628,75 +646,4 @@ class _VeloraAnimatedLoginViewState extends State<VeloraAnimatedLoginView>
       ),
     );
   }
-}
-
-class _VeloraHeroBackdropPainter extends CustomPainter {
-  const _VeloraHeroBackdropPainter({
-    required this.progress,
-    required this.accentColor,
-  });
-
-  final double progress;
-  final Color accentColor;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // 1. Soft layered horizon curves at the bottom of the hero
-    final wavePaint1 = Paint()
-      ..color = accentColor.withValues(alpha: 0.08)
-      ..style = PaintingStyle.fill;
-    final path1 = Path()
-      ..moveTo(0, size.height * 0.72)
-      ..quadraticBezierTo(size.width * 0.28, size.height * 0.56, size.width * 0.6, size.height * 0.70)
-      ..quadraticBezierTo(size.width * 0.85, size.height * 0.80, size.width, size.height * 0.64)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-    canvas.drawPath(path1, wavePaint1);
-
-    final wavePaint2 = Paint()
-      ..color = accentColor.withValues(alpha: 0.06)
-      ..style = PaintingStyle.fill;
-    final path2 = Path()
-      ..moveTo(0, size.height * 0.84)
-      ..quadraticBezierTo(size.width * 0.36, size.height * 0.70, size.width * 0.72, size.height * 0.82)
-      ..quadraticBezierTo(size.width * 0.90, size.height * 0.88, size.width, size.height * 0.76)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-    canvas.drawPath(path2, wavePaint2);
-
-    // 2. Subtle sweeping orbital arc with moving sparkle
-    final arcCenter = Offset(size.width * 0.5, size.height * 0.46);
-    final arcRadius = math.min(size.width, size.height) * 0.42;
-    final arcPaint = Paint()
-      ..color = accentColor.withValues(alpha: 0.14)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-    canvas.drawArc(
-      Rect.fromCircle(center: arcCenter, radius: arcRadius),
-      -math.pi * 0.82,
-      math.pi * 0.64,
-      false,
-      arcPaint,
-    );
-
-    final sparkAngle = -math.pi * 0.82 + (math.pi * 0.64 * ((math.sin(progress * 2 * math.pi) + 1) / 2));
-    final sx = arcCenter.dx + arcRadius * math.cos(sparkAngle);
-    final sy = arcCenter.dy + arcRadius * math.sin(sparkAngle);
-    canvas.drawCircle(
-      Offset(sx, sy),
-      3.0,
-      Paint()..color = accentColor.withValues(alpha: 0.75),
-    );
-    canvas.drawCircle(
-      Offset(sx, sy),
-      8.0,
-      Paint()..color = accentColor.withValues(alpha: 0.20),
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _VeloraHeroBackdropPainter oldDelegate) =>
-      oldDelegate.progress != progress;
 }

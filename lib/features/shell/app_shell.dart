@@ -4,6 +4,7 @@ import '../../core/design/tokens.dart';
 import '../../core/storage/session_storage.dart';
 import '../../core/utils/audio_helper.dart';
 import '../../core/widgets/store_logo_avatar.dart';
+import '../../core/widgets/velora_floating_nav_bar.dart';
 import '../shared_pos/widgets/offline_sync_badge.dart';
 import '../shared_pos/services/receipt_printer_service.dart';
 import '../shared_pos/widgets/shift_badge.dart';
@@ -399,7 +400,7 @@ class _AppShellState extends State<AppShell> {
           Tooltip(
             message: 'Buka Laci Kasir (Ctrl+O)',
             child: IconButton(
-              icon: const Icon(Icons.savings_outlined, size: 22, color: inactiveFg),
+              icon: Icon(Icons.savings_outlined, size: 22, color: inactiveFg),
               onPressed: () async {
                 await ReceiptPrinterService.instance.openCashDrawer();
                 if (context.mounted) {
@@ -413,7 +414,7 @@ class _AppShellState extends State<AppShell> {
           Tooltip(
             message: 'Pengaturan Workstation',
             child: IconButton(
-              icon: const Icon(Icons.settings_outlined, size: 22, color: inactiveFg),
+              icon: Icon(Icons.settings_outlined, size: 22, color: inactiveFg),
               onPressed: () => ReceiptPrinterService.instance.openSettings(context),
             ),
           ),
@@ -492,76 +493,23 @@ class _AppShellState extends State<AppShell> {
     }
 
     final p = context.palette;
-    final brandPrimary = Theme.of(context).colorScheme.primary;
-    final pharmacyIndicator = const Color(0xFF86F2E4);
-    final pharmacyActive = const Color(0xFF006F66);
-    final pharmacyInactive = const Color(0xFF6D7A72);
 
     return Scaffold(
+      backgroundColor: p.canvas,
       resizeToAvoidBottomInset: false,
       body: body,
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: p.surface,
-          border: Border(
-            top: BorderSide(color: p.line, width: 1.2),
-          ),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x0A000000),
-              blurRadius: 10,
-              offset: Offset(0, -2),
+      bottomNavigationBar: VeloraFloatingNavBar(
+        currentIndex: _index,
+        useMonoLabels: isPharmacy,
+        onTap: _select,
+        items: [
+          for (final t in widget.tabs)
+            VeloraFloatingNavItem(
+              label: t.label,
+              icon: t.icon,
+              selectedIcon: t.selectedIcon,
             ),
-          ],
-        ),
-        child: NavigationBarTheme(
-          data: NavigationBarThemeData(
-            height: 62,
-            backgroundColor: p.surface,
-            elevation: 0,
-            indicatorColor: isPharmacy ? pharmacyIndicator : brandPrimary.withValues(alpha: 0.14),
-            indicatorShape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-            iconTheme: WidgetStateProperty.resolveWith((states) {
-              if (states.contains(WidgetState.selected)) {
-                return IconThemeData(color: isPharmacy ? pharmacyActive : brandPrimary, size: 22);
-              }
-              return IconThemeData(color: isPharmacy ? pharmacyInactive : p.textSecondary, size: 22);
-            }),
-            labelTextStyle: WidgetStateProperty.resolveWith((states) {
-              if (states.contains(WidgetState.selected)) {
-                return TextStyle(
-                  fontFamily: isPharmacy ? 'JetBrains Mono' : null,
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w700,
-                  color: isPharmacy ? pharmacyActive : brandPrimary,
-                  letterSpacing: -0.2,
-                );
-              }
-              return TextStyle(
-                fontFamily: isPharmacy ? 'JetBrains Mono' : null,
-                fontSize: 10.5,
-                fontWeight: FontWeight.w500,
-                color: isPharmacy ? pharmacyInactive : p.textSecondary,
-                letterSpacing: -0.2,
-              );
-            }),
-          ),
-          child: NavigationBar(
-            selectedIndex: _index,
-            onDestinationSelected: _select,
-            destinations: [
-              for (final t in widget.tabs)
-                NavigationDestination(
-                  icon: Icon(t.icon),
-                  selectedIcon: Icon(t.selectedIcon),
-                  label: t.label,
-                ),
-            ],
-          ),
-        ),
+        ],
       ),
     );
   }

@@ -9,6 +9,7 @@ import 'auth_state.dart';
 
 class AuthCubit extends Cubit<AuthState> {
   final AuthService _authService;
+  bool _hasShownIntroSplash = false;
 
   AuthCubit({AuthService? authService})
       : _authService = authService ?? AuthService.instance,
@@ -20,10 +21,17 @@ class AuthCubit extends Cubit<AuthState> {
 
   /// Checks stored credentials on startup with safe fallback
   Future<void> checkAuthStatus() async {
+    final showIntro = !_hasShownIntroSplash;
+    _hasShownIntroSplash = true;
+    final minSplashFuture = showIntro
+        ? Future<void>.delayed(const Duration(milliseconds: 1100))
+        : Future<void>.value();
+
     emit(const AuthLoading(message: 'Memverifikasi sesi kasir...'));
     try {
       final token = await SessionStorage.instance.getAuthToken();
       if (token == null || token.isEmpty) {
+        await minSplashFuture;
         emit(const Unauthenticated());
         return;
       }

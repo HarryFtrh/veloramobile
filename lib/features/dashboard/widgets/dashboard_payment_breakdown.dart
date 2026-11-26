@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../core/design/tokens.dart';
 import '../../../core/utils/currency_formatter.dart';
+import '../../../core/widgets/velora_analytics_widgets.dart';
 import '../dashboard_service.dart';
 
 /// Rincian Penerimaan Kasir berdasarkan Metode Pembayaran
@@ -20,8 +21,6 @@ class DashboardPaymentBreakdownCard extends StatelessWidget {
     final transfer = summary.transferTotal;
     final other = summary.otherTotal;
     final total = cash + qris + debit + transfer + other;
-
-    final effectiveTotal = total > 0 ? total : (summary.revenue > 0 ? summary.revenue : 1.0);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -46,8 +45,9 @@ class DashboardPaymentBreakdownCard extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              Text(
-                'Total: ${CurrencyFormatter.format(total > 0 ? total : summary.revenue)}',
+              VeloraRollingCounter(
+                value: total > 0 ? total : summary.revenue,
+                formatter: (v) => 'Total: ${CurrencyFormatter.format(v)}',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -58,37 +58,32 @@ class DashboardPaymentBreakdownCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
 
-          // Multi-Segment Proportion Bar
+          // Multi-Segment Proportion Bar with synced percentage legend
           if (total > 0) ...[
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: SizedBox(
-                height: 8,
-                child: Row(
-                  children: [
-                    if (cash > 0)
-                      Expanded(
-                        flex: ((cash / effectiveTotal) * 100).round().clamp(1, 100),
-                        child: Container(color: const Color(0xFF10B981)),
-                      ),
-                    if (qris > 0)
-                      Expanded(
-                        flex: ((qris / effectiveTotal) * 100).round().clamp(1, 100),
-                        child: Container(color: const Color(0xFF6366F1)),
-                      ),
-                    if (debit > 0)
-                      Expanded(
-                        flex: ((debit / effectiveTotal) * 100).round().clamp(1, 100),
-                        child: Container(color: const Color(0xFFF59E0B)),
-                      ),
-                    if (transfer > 0)
-                      Expanded(
-                        flex: ((transfer / effectiveTotal) * 100).round().clamp(1, 100),
-                        child: Container(color: const Color(0xFF0EA5E9)),
-                      ),
-                  ],
+            VeloraSegmentedBar(
+              height: 10,
+              segments: [
+                VeloraSegmentItem(
+                  label: 'Tunai',
+                  value: cash.toDouble(),
+                  color: const Color(0xFF10B981),
                 ),
-              ),
+                VeloraSegmentItem(
+                  label: 'QRIS',
+                  value: qris.toDouble(),
+                  color: const Color(0xFF6366F1),
+                ),
+                VeloraSegmentItem(
+                  label: 'Kartu',
+                  value: debit.toDouble(),
+                  color: const Color(0xFFF59E0B),
+                ),
+                VeloraSegmentItem(
+                  label: 'Transfer',
+                  value: transfer.toDouble(),
+                  color: const Color(0xFF0EA5E9),
+                ),
+              ],
             ),
             const SizedBox(height: 14),
           ],

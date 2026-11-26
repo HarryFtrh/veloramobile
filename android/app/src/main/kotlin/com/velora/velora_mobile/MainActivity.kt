@@ -1,7 +1,6 @@
 package com.velora.velora_mobile
 
 import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothSocket
 import android.content.ActivityNotFoundException
@@ -20,7 +19,6 @@ import android.view.WindowManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
-import java.io.IOException
 import java.util.Locale
 import java.util.UUID
 
@@ -236,6 +234,22 @@ class MainActivity : FlutterActivity() {
                         } catch (e2: Exception) {
                             result.error("STORE_ERROR", e2.message, null)
                         }
+                    }
+                }
+                "openUrl" -> {
+                    val targetUrl = call.argument<String>("url")
+                    if (targetUrl.isNullOrBlank()) {
+                        result.error("INVALID_URL", "URL kosong", null)
+                        return@setMethodCallHandler
+                    }
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(targetUrl)).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        startActivity(intent)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("URL_ERROR", e.message, null)
                     }
                 }
                 else -> result.notImplemented()

@@ -25,6 +25,7 @@ dependencies:
   # Storage & security
   crypto: ^3.0.8
   flutter_secure_storage: ^11.2.0
+  google_sign_in: ^7.1.0
   path_provider: ^2.1.6
   shared_preferences: ^2.5.6
   uuid: ^4.6.0

@@ -13,6 +13,7 @@ class AppConfig {
   final String reverbHost;
   final int reverbPort;
   final String reverbAppKey;
+  final String googleServerClientId;
 
   static late AppConfig instance;
 
@@ -34,6 +35,10 @@ class AppConfig {
     this.reverbAppKey = const String.fromEnvironment(
       'REVERB_APP_KEY',
       defaultValue: '',
+    ),
+    this.googleServerClientId = const String.fromEnvironment(
+      'GOOGLE_SERVER_CLIENT_ID',
+      defaultValue: '419229913372-jraa988aqc0fd0a9flvifp64sl1e39r4.apps.googleusercontent.com',
     ),
   });
 

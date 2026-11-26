@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/design/tokens.dart';
 import '../../../core/utils/currency_formatter.dart';
+import '../../../core/widgets/velora_analytics_widgets.dart';
 import '../dashboard_service.dart';
 
 /// Grid 4 Metrik KPI Utama (Omzet, Transaksi, Rata-rata Order, Laba Bersih)
@@ -30,6 +31,8 @@ class DashboardKpiGrid extends StatelessWidget {
                 child: DashboardKpiCard(
                   label: 'TOTAL OMZET',
                   value: CurrencyFormatter.format(summary.revenue),
+                  numericValue: summary.revenue,
+                  valueFormatter: CurrencyFormatter.format,
                   icon: Icons.payments_rounded,
                   color: const Color(0xFF10B981),
                   caption: growth != null
@@ -45,6 +48,8 @@ class DashboardKpiGrid extends StatelessWidget {
                 child: DashboardKpiCard(
                   label: 'TOTAL TRANSAKSI',
                   value: _decimalFmt.format(summary.transactions),
+                  numericValue: summary.transactions,
+                  valueFormatter: (v) => _decimalFmt.format(v.round()),
                   icon: Icons.receipt_long_rounded,
                   color: const Color(0xFF6366F1),
                   caption: '${summary.transactions} nota berhasil',
@@ -55,6 +60,8 @@ class DashboardKpiGrid extends StatelessWidget {
                 child: DashboardKpiCard(
                   label: 'RATA-RATA ORDER',
                   value: CurrencyFormatter.format(aov),
+                  numericValue: aov,
+                  valueFormatter: CurrencyFormatter.format,
                   icon: Icons.trending_up_rounded,
                   color: const Color(0xFFF59E0B),
                   caption: 'Nilai per struk',
@@ -67,6 +74,8 @@ class DashboardKpiGrid extends StatelessWidget {
                   value: CurrencyFormatter.format(
                     summary.netProfit ?? (summary.revenue - (summary.expenses ?? 0)),
                   ),
+                  numericValue: summary.netProfit ?? (summary.revenue - (summary.expenses ?? 0)),
+                  valueFormatter: CurrencyFormatter.format,
                   icon: Icons.account_balance_wallet_rounded,
                   color: const Color(0xFF0EA5E9),
                   caption: summary.expenses != null && summary.expenses! > 0
@@ -87,6 +96,8 @@ class DashboardKpiGrid extends StatelessWidget {
                   child: DashboardKpiCard(
                     label: 'TOTAL OMZET',
                     value: CurrencyFormatter.format(summary.revenue),
+                    numericValue: summary.revenue,
+                    valueFormatter: CurrencyFormatter.format,
                     icon: Icons.payments_rounded,
                     color: const Color(0xFF10B981),
                     caption: growth != null
@@ -102,6 +113,8 @@ class DashboardKpiGrid extends StatelessWidget {
                   child: DashboardKpiCard(
                     label: 'TRANSAKSI',
                     value: _decimalFmt.format(summary.transactions),
+                    numericValue: summary.transactions,
+                    valueFormatter: (v) => _decimalFmt.format(v.round()),
                     icon: Icons.receipt_long_rounded,
                     color: const Color(0xFF6366F1),
                     caption: '${summary.transactions} nota selesai',
@@ -116,6 +129,8 @@ class DashboardKpiGrid extends StatelessWidget {
                   child: DashboardKpiCard(
                     label: 'RATA-RATA / STRUK',
                     value: CurrencyFormatter.format(aov),
+                    numericValue: aov,
+                    valueFormatter: CurrencyFormatter.format,
                     icon: Icons.trending_up_rounded,
                     color: const Color(0xFFF59E0B),
                     caption: 'AOV rata-rata',
@@ -148,6 +163,8 @@ class DashboardKpiGrid extends StatelessWidget {
 class DashboardKpiCard extends StatelessWidget {
   final String label;
   final String value;
+  final num? numericValue;
+  final String Function(num)? valueFormatter;
   final IconData icon;
   final Color color;
   final String? caption;
@@ -157,6 +174,8 @@ class DashboardKpiCard extends StatelessWidget {
     super.key,
     required this.label,
     required this.value,
+    this.numericValue,
+    this.valueFormatter,
     required this.icon,
     required this.color,
     this.caption,
@@ -212,15 +231,26 @@ class DashboardKpiCard extends StatelessWidget {
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-                color: p.textPrimary,
-                letterSpacing: -0.5,
-              ),
-            ),
+            child: numericValue != null && valueFormatter != null
+                ? VeloraRollingCounter(
+                    value: numericValue!,
+                    formatter: valueFormatter!,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: p.textPrimary,
+                      letterSpacing: -0.5,
+                    ),
+                  )
+                : Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: p.textPrimary,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
           ),
           if (caption != null) ...[
             const SizedBox(height: 4),

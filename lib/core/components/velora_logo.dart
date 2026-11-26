@@ -13,12 +13,13 @@ class VeloraLogo extends StatelessWidget {
     this.size = 48,
     this.color,
     this.withGlow = false,
-    this.useHeroImage = true,
+    this.useHeroImage = false,
     this.borderRadius = 16,
   });
 
   @override
   Widget build(BuildContext context) {
+    final glowColor = color ?? Theme.of(context).colorScheme.primary;
     if (useHeroImage) {
       final imageWidget = ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius),
@@ -39,7 +40,7 @@ class VeloraLogo extends StatelessWidget {
           borderRadius: BorderRadius.circular(borderRadius),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF14B8A6).withValues(alpha: 0.3),
+              color: glowColor.withValues(alpha: 0.28),
               blurRadius: size * 0.3,
               spreadRadius: 2,
             ),
@@ -65,9 +66,9 @@ class VeloraLogo extends StatelessWidget {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: (color ?? const Color(0xFF14B8A6)).withValues(alpha: 0.35),
-            blurRadius: size * 0.4,
-            spreadRadius: 2,
+            color: glowColor.withValues(alpha: 0.30),
+            blurRadius: size * 0.38,
+            spreadRadius: 1,
           ),
         ],
       ),

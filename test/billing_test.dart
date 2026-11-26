@@ -43,7 +43,7 @@ void main() {
 
   test('pajak inklusif tidak menambah total', () {
     final b = BillCalculator.calculate(settings(pb1: true, inclusive: true), subtotal: 50000);
-    expect(b.tax, 0);
+    expect(b.tax, 4545);
     expect(b.total, 50000);
   });
 

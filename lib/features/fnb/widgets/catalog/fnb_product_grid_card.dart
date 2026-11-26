@@ -57,15 +57,17 @@ class FnbProductGridCard extends StatelessWidget {
       badgeBg = p.secondary;
     }
 
-    return Material(
-      color: isOutOfStock ? p.surfaceMuted : p.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: p.line),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: isOutOfStock ? null : onAdd,
+    return _TactileScaleCard(
+      enabled: !isOutOfStock,
+      child: Material(
+        color: isOutOfStock ? p.surfaceMuted : p.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: p.line),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: isOutOfStock ? null : onAdd,
         child: Padding(
           padding: const EdgeInsets.all(8),
           child: Column(
@@ -282,6 +284,44 @@ class FnbProductGridCard extends StatelessWidget {
             ),
           ),
         ),
-      );
+      ),
+    );
+  }
+}
+
+class _TactileScaleCard extends StatefulWidget {
+  const _TactileScaleCard({
+    required this.enabled,
+    required this.child,
+  });
+
+  final bool enabled;
+  final Widget child;
+
+  @override
+  State<_TactileScaleCard> createState() => _TactileScaleCardState();
+}
+
+class _TactileScaleCardState extends State<_TactileScaleCard> {
+  bool _pressed = false;
+
+  void _setPressed(bool value) {
+    if (!widget.enabled || _pressed == value) return;
+    setState(() => _pressed = value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      onPointerDown: (_) => _setPressed(true),
+      onPointerUp: (_) => _setPressed(false),
+      onPointerCancel: (_) => _setPressed(false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.965 : 1.0,
+        duration: const Duration(milliseconds: 95),
+        curve: Curves.easeOutCubic,
+        child: widget.child,
+      ),
+    );
   }
 }

@@ -470,46 +470,122 @@ class _MoreScreenState extends State<MoreScreen> {
           Row(
             children: [
               Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () async {
+                child: _buildQuickActionTile(
+                  p: p,
+                  icon: Icons.lock_open_rounded,
+                  label: 'Buka Laci',
+                  color: brandPrimary,
+                  onTap: () async {
                     await ReceiptPrinterService.instance.openCashDrawer();
                     if (mounted) {
                       context.showSuccessToast('Perintah buka laci kasir berhasil dikirim');
                     }
                   },
-                  icon: Icon(Icons.lock_open_rounded, size: 17, color: brandPrimary),
-                  label: Text(
-                    'Buka Laci Kasir',
-                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: brandPrimary),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: brandPrimary.withValues(alpha: 0.3)),
-                    backgroundColor: brandPrimary.withValues(alpha: 0.06),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => ReceiptPrinterService.instance.openSettings(context),
-                  icon: Icon(Icons.print_outlined, size: 17, color: p.textPrimary),
-                  label: Text(
-                    'Pengaturan Printer',
-                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: p.textPrimary),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: p.line),
-                    backgroundColor: p.surfaceMuted,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
+                child: _buildQuickActionTile(
+                  p: p,
+                  icon: Icons.print_outlined,
+                  label: 'Printer',
+                  color: const Color(0xFF0284C7),
+                  onTap: () => ReceiptPrinterService.instance.openSettings(context),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildQuickActionTile(
+                  p: p,
+                  icon: Icons.sync_rounded,
+                  label: 'Sinkron',
+                  color: const Color(0xFF059669),
+                  onTap: () => _fetchServerMenu(force: true),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildQuickActionTile(
+                  p: p,
+                  icon: Icons.receipt_long_rounded,
+                  label: 'Test Print',
+                  color: const Color(0xFFD97706),
+                  onTap: () async {
+                    final ok = await ReceiptPrinterService.instance.printReceipt(
+                      ReceiptData(
+                        storeName: SessionStorage.instance.getTenantName() ?? 'Velora POS',
+                        invoiceNumber: 'TEST-PRINT',
+                        cashierName: SessionStorage.instance.getUserName() ?? 'Kasir',
+                        timestamp: DateTime.now(),
+                        items: const [],
+                        subtotal: 0,
+                        grandTotal: 0,
+                        paidAmount: 0,
+                        changeAmount: 0,
+                        paymentMethod: 'TEST',
+                        note: 'Tes koneksi printer berhasil',
+                      ),
+                    );
+                    if (mounted) {
+                      context.showSuccessToast(
+                        ok ? 'Tes cetak struk berhasil dikirim' : 'Printer belum terhubung — buka Pengaturan Printer',
+                      );
+                    }
+                  },
                 ),
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActionTile({
+    required AppPalette p,
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: p.surfaceMuted,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 6),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: p.line),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 18, color: color),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: p.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

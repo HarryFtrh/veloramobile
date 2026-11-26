@@ -148,11 +148,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final user = await AuthService.instance.loginWithGoogle();
+      if (user == null) {
+        // Pengguna membatalkan dialog pemilihan akun Google
+        return;
+      }
+
       AudioHelper.successFeedback();
 
       if (mounted) {
         setState(() {
-          _isLoading = false;
+          _isGoogleLoading = false;
           _isLoginSuccess = true;
         });
         await Future<void>.delayed(const Duration(milliseconds: 480));
@@ -174,13 +179,13 @@ class _LoginScreenState extends State<LoginScreen> {
         msg = resData;
       }
       if (mounted) {
-        setState(() => _errorMessage = msg ?? 'Login Google gagal. Hubungi administrator toko.');
+        setState(() => _errorMessage = msg ?? 'Login Google gagal. Periksa koneksi internet Anda.');
       }
     } catch (e) {
       AudioHelper.errorFeedback();
       final errText = e.toString().replaceFirst('Exception: ', '');
       if (mounted) {
-        setState(() => _errorMessage = errText.isNotEmpty ? errText : 'Terjadi kesalahan saat otentikasi Google.');
+        setState(() => _errorMessage = errText.isNotEmpty ? errText : 'Login Google gagal. Gunakan email & kata sandi.');
       }
     } finally {
       if (mounted) {

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../../../core/design/tokens.dart';
 import '../../../../core/utils/audio_helper.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../core/widgets/velora_thermal_receipt_card.dart';
 import '../../../shared_pos/services/receipt_printer_service.dart';
 
 /// Success dialog after settlement in FnB POS with receipt printing and drawer trigger
@@ -150,15 +151,24 @@ class _FnbPaymentSuccessDialogState extends State<FnbPaymentSuccessDialog> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _buildSuccessHeader(p),
-              const SizedBox(height: 16),
-              _buildInvoiceCard(p, primaryColor, timeStr, hasCustomerOrTable),
-              const SizedBox(height: 12),
-              _buildPaymentBreakdown(p, primaryColor),
-              if (widget.changeAmount > 0) ...[
-                const SizedBox(height: 10),
-                _buildChangeBox(p),
-              ],
-              const SizedBox(height: 18),
+              const SizedBox(height: 14),
+              VeloraThermalReceiptCard(
+                stampText: 'LUNAS',
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildInvoiceCard(p, primaryColor, timeStr, hasCustomerOrTable),
+                    const SizedBox(height: 12),
+                    _buildPaymentBreakdown(p, primaryColor),
+                    if (widget.changeAmount > 0) ...[
+                      const SizedBox(height: 10),
+                      _buildChangeBox(p),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
               _buildActionButtons(p, primaryColor),
               const SizedBox(height: 10),
             ],

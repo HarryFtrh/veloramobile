@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../../core/config/app_config.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exception.dart';
@@ -58,79 +60,78 @@ class AuthService {
     return await _processAuthResponse(response.data);
   }
 
-  /// Initiates or completes Google OAuth flow matching Velora backend specification
-  Future<AuthUser> loginWithGoogle({String? code, String? state}) async {
-    // 1. Jika authorization code sudah tersedia dari callback OAuth
-    if (code != null && code.isNotEmpty) {
-      final flavor = AppConfig.instance.flavor;
-      final deviceName = switch (flavor) {
-        AppFlavor.customer => 'Velora Customer Self-Order',
-        AppFlavor.pharmacy => 'Velora Pharmacy POS Terminal',
-        AppFlavor.sales => 'Velora Sales Mobile Terminal',
-        AppFlavor.marketplace => 'Velora Marketplace Terminal',
-        _ => 'Velora Mobile POS Terminal',
-      };
+  bool _googleSignInInitialized = false;
 
-      final payload = <String, dynamic>{
-        'code': code,
-        'device_name': deviceName,
-      };
-      if (state != null) {
-        payload['state'] = state;
+  Future<void> _ensureGoogleSignInInitialized() async {
+    if (_googleSignInInitialized) return;
+    final serverClientId = AppConfig.instance.googleServerClientId.trim();
+    await GoogleSignIn.instance.initialize(
+      serverClientId: serverClientId.isNotEmpty ? serverClientId : null,
+    );
+    _googleSignInInitialized = true;
+  }
+
+  /// Native Google Sign-In flow: ambil Google ID Token (JWT) lalu kirim ke POST /api/v1/auth/google.
+  /// Mengembalikan `null` jika pengguna membatalkan pemilihan akun Google.
+  Future<AuthUser?> loginWithGoogle({String action = 'login'}) async {
+    await _ensureGoogleSignInInitialized();
+
+    final GoogleSignInAccount googleUser;
+    try {
+      googleUser = await GoogleSignIn.instance.authenticate();
+    } on GoogleSignInException catch (e) {
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        return null;
       }
-
-      Response response;
-      try {
-        response = await ApiClient.instance.dio.post(
-          '/v1/auth/google/callback',
-          data: payload,
+      final detail = e.description ?? e.code.name;
+      if (e.code == GoogleSignInExceptionCode.clientConfigurationError ||
+          detail.contains('28444') ||
+          detail.contains('serverClientId')) {
+        throw Exception(
+          'Konfigurasi Google Sign-In belum lengkap. Pastikan GOOGLE_SERVER_CLIENT_ID (Web Client ID) dan SHA-1 sudah terdaftar.',
         );
-      } on DioException catch (e) {
-        if (e.response?.statusCode == 404 || e.response?.statusCode == 405) {
-          response = await ApiClient.instance.dio.post(
-            '/auth/google/callback',
-            data: payload,
-          );
-        } else {
-          rethrow;
-        }
       }
-      return await _processAuthResponse(response.data);
+      throw Exception('Login Google dibatalkan atau gagal: $detail');
     }
 
-    // 2. Jika belum ada code, verifikasi status Google Auth di backend
-    Response redirectRes;
+    final idToken = googleUser.authentication.idToken;
+    if (idToken == null || idToken.isEmpty) {
+      throw Exception(
+        'ID Token Google tidak tersedia. Pastikan GOOGLE_SERVER_CLIENT_ID (Web Client ID) sudah dikonfigurasi.',
+      );
+    }
+
+    final flavor = AppConfig.instance.flavor;
+    final deviceName = switch (flavor) {
+      AppFlavor.customer => 'Velora Customer Self-Order',
+      AppFlavor.pharmacy => 'Velora Pharmacy POS Terminal',
+      AppFlavor.sales => 'Velora Sales Mobile Terminal',
+      AppFlavor.marketplace => 'Velora Marketplace Terminal',
+      _ => 'Velora Mobile POS Terminal',
+    };
+
+    final clientType = kIsWeb
+        ? 'pos'
+        : (Platform.isIOS ? 'ios' : 'android');
+
+    final payload = <String, dynamic>{
+      'id_token': idToken,
+      'action': action,
+      'device_name': deviceName,
+      'client_type': clientType,
+    };
+
+    Response response;
     try {
-      redirectRes = await ApiClient.instance.dio.get(
-        '/v1/auth/google/redirect',
-        queryParameters: {'action': 'login'},
+      response = await ApiClient.instance.dio.post(
+        '/v1/auth/google',
+        data: payload,
       );
     } on DioException catch (e) {
-      if (e.response?.statusCode == 404 || e.response?.statusCode == 405) {
-        redirectRes = await ApiClient.instance.dio.get(
-          '/auth/google/redirect',
-          queryParameters: {'action': 'login'},
-        );
-      } else {
-        rethrow;
-      }
+      _extractAndThrowAuthError(e);
     }
 
-    final rawData = redirectRes.data;
-    Map<String, dynamic> data = {};
-    if (rawData is Map) {
-      final inner = rawData['data'];
-      data = inner is Map
-          ? Map<String, dynamic>.from(inner)
-          : Map<String, dynamic>.from(rawData);
-    }
-
-    final url = data['url']?.toString();
-    if (url == null || url.isEmpty) {
-      throw Exception('URL otentikasi Google tidak tersedia.');
-    }
-
-    throw Exception('Login Google aktif. Silakan lanjutkan otentikasi melalui URL: $url');
+    return await _processAuthResponse(response.data);
   }
 
   /// Internal helper to parse login response, save secure session, and configure active branch
@@ -295,6 +296,13 @@ class AuthService {
       await ApiClient.instance.dio.post('/v1/auth/logout');
     } catch (e) {
       debugPrint('[AuthService] Logout API notification failed (session will still clear): $e');
+    }
+    if (_googleSignInInitialized) {
+      try {
+        await GoogleSignIn.instance.signOut();
+      } catch (e) {
+        debugPrint('[AuthService] Google sign-out ignored: $e');
+      }
     }
     // Bersihkan sesi kasir secara tuntas sambil tetap mengamankan antrean transaksi offline
     await SessionStorage.instance.clearUserSession(preserveOfflineQueue: true);
