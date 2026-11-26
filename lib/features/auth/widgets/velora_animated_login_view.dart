@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -8,6 +6,7 @@ import '../../../core/design/components.dart';
 import '../../../core/design/tokens.dart';
 import 'login_branding.dart';
 import 'velora_login_overlay.dart';
+import 'velora_real_3d_hero.dart';
 
 /// Clean split-header + overlapping rounded sheet login view with Velora branding,
 /// smooth focus-state field transitions, and a frosted-glass orbiting loading overlay.
@@ -53,34 +52,14 @@ class VeloraAnimatedLoginView extends StatefulWidget {
   State<VeloraAnimatedLoginView> createState() => _VeloraAnimatedLoginViewState();
 }
 
-class _VeloraAnimatedLoginViewState extends State<VeloraAnimatedLoginView>
-    with SingleTickerProviderStateMixin {
+class _VeloraAnimatedLoginViewState extends State<VeloraAnimatedLoginView> {
   final _emailFocus = FocusNode();
   final _passwordFocus = FocusNode();
-  late final AnimationController _arcCtrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _arcCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 7),
-    )..repeat();
-    _emailFocus.addListener(_onFocusChange);
-    _passwordFocus.addListener(_onFocusChange);
-  }
-
-  void _onFocusChange() {
-    if (mounted) setState(() {});
-  }
 
   @override
   void dispose() {
-    _emailFocus.removeListener(_onFocusChange);
-    _passwordFocus.removeListener(_onFocusChange);
     _emailFocus.dispose();
     _passwordFocus.dispose();
-    _arcCtrl.dispose();
     super.dispose();
   }
 
@@ -463,35 +442,10 @@ class _VeloraAnimatedLoginViewState extends State<VeloraAnimatedLoginView>
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // 1. Living 3D-parallax breathing Velora POS hero illustration
-            AnimatedBuilder(
-              animation: _arcCtrl,
-              builder: (_, child) {
-                final t = _arcCtrl.value * 2 * math.pi;
-                final dx = math.sin(t) * 6.0;
-                final dy = math.cos(t) * 4.0;
-                final scale = 1.06 + (math.sin(t) * 0.025);
-                final matrix = Matrix4.identity()
-                  ..setEntry(3, 2, 0.0008)
-                  ..rotateY(math.sin(t) * 0.035)
-                  ..rotateX(math.cos(t) * 0.02);
-                return Transform.translate(
-                  offset: Offset(dx, dy),
-                  child: Transform.scale(
-                    scale: scale,
-                    child: Transform(
-                      alignment: Alignment.center,
-                      transform: matrix,
-                      child: child,
-                    ),
-                  ),
-                );
-              },
-              child: Image.asset(
-                'assets/images/velora_login_hero.jpg',
-                fit: BoxFit.cover,
-                alignment: Alignment.bottomCenter,
-              ),
+            // 1. Real-time interactive 3D Velora POS Terminal & Orbiting Card stage
+            VeloraReal3DHero(
+              primaryColor: primaryColor,
+              paused: widget.isLoading || widget.isGoogleLoading || widget.isLoginSuccess,
             ),
 
             // 2. Subtle atmospheric tint in Dark Mode & soft bottom blend into sheet
@@ -590,60 +544,65 @@ class _VeloraAnimatedLoginViewState extends State<VeloraAnimatedLoginView>
     ValueChanged<String>? onSubmitted,
     Widget? suffixIcon,
   }) {
-    final isFocused = focusNode.hasFocus;
+    return ListenableBuilder(
+      listenable: focusNode,
+      builder: (_, _) {
+        final isFocused = focusNode.hasFocus;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeOutCubic,
-      decoration: BoxDecoration(
-        color: isFocused ? p.surface : p.surfaceMuted,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isFocused ? primaryColor : Colors.transparent,
-          width: 1.6,
-        ),
-        boxShadow: isFocused
-            ? [
-                BoxShadow(
-                  color: primaryColor.withValues(alpha: 0.12),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : null,
-      ),
-      child: TextField(
-        controller: controller,
-        focusNode: focusNode,
-        obscureText: obscureText,
-        keyboardType: keyboardType,
-        textInputAction: textInputAction,
-        onSubmitted: onSubmitted,
-        style: TextStyle(
-          fontSize: 14.5,
-          fontWeight: FontWeight.w500,
-          color: p.textPrimary,
-        ),
-        decoration: InputDecoration(
-          filled: false,
-          hintText: hintText,
-          hintStyle: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            color: p.textTertiary,
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          decoration: BoxDecoration(
+            color: isFocused ? p.surface : p.surfaceMuted,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isFocused ? primaryColor : Colors.transparent,
+              width: 1.6,
+            ),
+            boxShadow: isFocused
+                ? [
+                    BoxShadow(
+                      color: primaryColor.withValues(alpha: 0.12),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
           ),
-          prefixIcon: Icon(
-            prefixIcon,
-            size: 20,
-            color: isFocused ? primaryColor : p.textTertiary,
+          child: TextField(
+            controller: controller,
+            focusNode: focusNode,
+            obscureText: obscureText,
+            keyboardType: keyboardType,
+            textInputAction: textInputAction,
+            onSubmitted: onSubmitted,
+            style: TextStyle(
+              fontSize: 14.5,
+              fontWeight: FontWeight.w500,
+              color: p.textPrimary,
+            ),
+            decoration: InputDecoration(
+              filled: false,
+              hintText: hintText,
+              hintStyle: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                color: p.textTertiary,
+              ),
+              prefixIcon: Icon(
+                prefixIcon,
+                size: 20,
+                color: isFocused ? primaryColor : p.textTertiary,
+              ),
+              suffixIcon: suffixIcon,
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            ),
           ),
-          suffixIcon: suffixIcon,
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        ),
-      ),
+        );
+      },
     );
   }
 }

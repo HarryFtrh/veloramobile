@@ -52,7 +52,7 @@ class PharmacyEtiketPreviewCard extends StatelessWidget {
             ),
           ),
           Text(
-            'Apotek & Klinik Terpadu • SIA: 442/089/SIA/2023',
+            'Apotek & Klinik • SIA: 442/089/SIA/2023',
             style: TextStyle(
               fontSize: 9.5,
               color: isLuar ? const Color(0xFF0284C7) : ClinicalPalette.textTertiary,

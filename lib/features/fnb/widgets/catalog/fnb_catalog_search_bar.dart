@@ -1,10 +1,12 @@
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 import '../../../../core/design/tokens.dart';
 import '../../../shared_pos/services/product_catalog_service.dart';
 import '../../register/fnb_register_controller.dart';
 
-/// Top search bar with barcode scan and hold action buttons for FnB Catalog
-class FnbCatalogSearchBar extends StatelessWidget {
+/// Top search bar with barcode scan, debounced search, and hold action buttons for FnB Catalog
+class FnbCatalogSearchBar extends StatefulWidget {
   final RegisterController ctrl;
   final void Function(PosProduct) onAdd;
   final VoidCallback? onHold;
@@ -17,6 +19,35 @@ class FnbCatalogSearchBar extends StatelessWidget {
     this.onHold,
     this.onOpenBills,
   });
+
+  @override
+  State<FnbCatalogSearchBar> createState() => _FnbCatalogSearchBarState();
+}
+
+class _FnbCatalogSearchBarState extends State<FnbCatalogSearchBar> {
+  Timer? _debounce;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    _debounce?.cancel();
+    if (value.isEmpty) {
+      widget.ctrl.setSearch('');
+      return;
+    }
+    _debounce = Timer(const Duration(milliseconds: 120), () {
+      if (mounted) widget.ctrl.setSearch(value);
+    });
+  }
+
+  RegisterController get ctrl => widget.ctrl;
+  void Function(PosProduct) get onAdd => widget.onAdd;
+  VoidCallback? get onHold => widget.onHold;
+  VoidCallback? get onOpenBills => widget.onOpenBills;
 
   void _openBarcodeScanner(BuildContext context) {
     final barcodeCtrl = TextEditingController();
@@ -130,7 +161,7 @@ class FnbCatalogSearchBar extends StatelessWidget {
         children: [
           Expanded(
             child: TextField(
-              onChanged: ctrl.setSearch,
+              onChanged: _onSearchChanged,
               onSubmitted: (code) {
                 final trimmed = code.trim();
                 if (trimmed.isEmpty) return;

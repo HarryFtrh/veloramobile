@@ -1,8 +1,9 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../../core/design/tokens.dart';
+import '../../../core/utils/audio_helper.dart';
 
-/// Horizontal ribbon displaying table filter tabs and live occupancy status pill.
+/// Smooth stadium-pill horizontal filter ribbon for the Tables screen.
 class TableFilterRibbon extends StatelessWidget {
   const TableFilterRibbon({
     super.key,
@@ -21,53 +22,88 @@ class TableFilterRibbon extends StatelessWidget {
   final int occupiedCount;
   final int reservedCount;
 
-  Widget _buildFilterTab(
-    BuildContext context,
-    String key,
-    String title,
-    int count,
-    IconData icon,
-    Color? badgeColor,
-  ) {
+  Widget _buildFilterPill(
+    BuildContext context, {
+    required String filterKey,
+    required String title,
+    required int count,
+    Color? dotColor,
+  }) {
     final p = context.palette;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryColor = Theme.of(context).colorScheme.primary;
-    final isSel = selectedFilter == key;
+    final isSel = selectedFilter == filterKey;
 
     return GestureDetector(
-      onTap: () => onFilterSelected(key),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 12),
+      onTap: () {
+        if (!isSel) AudioHelper.tapFeedback();
+        onFilterSelected(filterKey);
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
         decoration: BoxDecoration(
           color: isSel ? primaryColor : p.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: isSel ? Colors.transparent : p.line,
+            color: isSel
+                ? Colors.transparent
+                : (isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : p.line.withValues(alpha: 0.65)),
           ),
-          boxShadow: isSel
-              ? [
-                  BoxShadow(
-                    color: primaryColor.withValues(alpha: 0.2),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
+          boxShadow: [
+            BoxShadow(
+              color: isSel
+                  ? primaryColor.withValues(alpha: 0.25)
+                  : Colors.black.withValues(alpha: isDark ? 0.20 : 0.03),
+              blurRadius: isSel ? 10 : 6,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 15,
-              color: isSel ? Colors.white : (badgeColor ?? p.textSecondary),
+            if (dotColor != null) ...[
+              Container(
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  color: isSel ? Colors.white : dotColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 7),
+            ],
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSel ? FontWeight.w700 : FontWeight.w600,
+                color: isSel ? Colors.white : p.textPrimary,
+                letterSpacing: -0.1,
+              ),
+              child: Text(title),
             ),
             const SizedBox(width: 6),
-            Text(
-              '$title ($count)',
-              style: TextStyle(
-                fontSize: 11.5,
-                fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
-                color: isSel ? Colors.white : p.textPrimary,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+              decoration: BoxDecoration(
+                color: isSel
+                    ? Colors.white.withValues(alpha: 0.22)
+                    : p.surfaceMuted,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                '$count',
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  color: isSel ? Colors.white : p.textSecondary,
+                ),
               ),
             ),
           ],
@@ -78,77 +114,40 @@ class TableFilterRibbon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final p = context.palette;
-
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
       child: Row(
         children: [
-          _buildFilterTab(
+          _buildFilterPill(
             context,
-            'all',
-            'Semua',
-            allCount,
-            Icons.grid_view_rounded,
-            null,
+            filterKey: 'all',
+            title: 'Semua',
+            count: allCount,
           ),
           const SizedBox(width: 8),
-          _buildFilterTab(
+          _buildFilterPill(
             context,
-            'available',
-            'Kosong',
-            availableCount,
-            Icons.check_circle_outline_rounded,
-            const Color(0xFF059669),
+            filterKey: 'available',
+            title: 'Kosong',
+            count: availableCount,
+            dotColor: const Color(0xFF059669),
           ),
           const SizedBox(width: 8),
-          _buildFilterTab(
+          _buildFilterPill(
             context,
-            'occupied',
-            'Terisi',
-            occupiedCount,
-            Icons.restaurant_rounded,
-            const Color(0xFF2563EB),
+            filterKey: 'occupied',
+            title: 'Terisi',
+            count: occupiedCount,
+            dotColor: const Color(0xFF2563EB),
           ),
           const SizedBox(width: 8),
-          _buildFilterTab(
+          _buildFilterPill(
             context,
-            'reserved',
-            'Booking',
-            reservedCount,
-            Icons.bookmark_outline_rounded,
-            const Color(0xFF7C3AED),
-          ),
-          const SizedBox(width: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-            decoration: BoxDecoration(
-              color: p.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: p.line),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.pie_chart_rounded,
-                  size: 13,
-                  color: Color(0xFFD97706),
-                ),
-                const SizedBox(width: 5),
-                Text(
-                  allCount == 0
-                      ? '0 Meja'
-                      : '${((occupiedCount / allCount) * 100).round()}% Terpakai',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: p.textPrimary,
-                  ),
-                ),
-              ],
-            ),
+            filterKey: 'reserved',
+            title: 'Booking',
+            count: reservedCount,
+            dotColor: const Color(0xFF7C3AED),
           ),
         ],
       ),

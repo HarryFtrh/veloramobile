@@ -108,10 +108,10 @@ Future<CafeTableInfo?> showCustomerTablePickerSheet(
                 const SizedBox(height: 14),
                 Divider(height: 1, color: p.line),
 
-                // Table Grid
+                // Table Grid (lazy builder without shrinkWrap stutter)
                 Flexible(
                   child: GridView.builder(
-                    shrinkWrap: true,
+                    physics: const BouncingScrollPhysics(),
                     padding: const EdgeInsets.all(16),
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: isMobile ? 3 : 4,
@@ -123,7 +123,8 @@ Future<CafeTableInfo?> showCustomerTablePickerSheet(
                     itemBuilder: (_, i) {
                       final t = tables[i];
                       final isSelected = selectedTable?.id == t.id;
-                      return Material(
+                      return RepaintBoundary(
+                        child: Material(
                         color: isSelected
                             ? primaryColor.withValues(alpha: 0.08)
                             : p.canvas,
@@ -192,6 +193,7 @@ Future<CafeTableInfo?> showCustomerTablePickerSheet(
                               ],
                             ),
                           ),
+                        ),
                         ),
                       );
                     },

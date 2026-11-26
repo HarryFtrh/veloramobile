@@ -301,7 +301,10 @@ class TableDetailPane extends StatelessWidget {
           // Order Items List
           Expanded(
             child: isLoadingActiveOrder
-                ? const Center(child: CircularProgressIndicator())
+                ? VeloraOrbitLoader.page(
+                    size: 72,
+                    label: 'Memuat pesanan meja...',
+                  )
                 : items.isNotEmpty
                     ? ListView.builder(
                         itemCount: items.length,

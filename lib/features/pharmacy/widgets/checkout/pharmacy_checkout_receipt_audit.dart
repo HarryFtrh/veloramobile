@@ -247,7 +247,7 @@ class PharmacyCheckoutReceiptAudit extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  SessionStorage.instance.getLocationName() ?? 'Cabang Utama • Apotek & Klinik Terpadu',
+                                  SessionStorage.instance.getLocationName() ?? 'Cabang Utama • Apotek & Klinik',
                                   style: const TextStyle(fontSize: 10.5, color: ClinicalPalette.textTertiary),
                                 ),
                                 Text(

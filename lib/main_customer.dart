@@ -7,6 +7,7 @@ import 'core/storage/session_storage.dart';
 import 'core/network/api_client.dart';
 import 'core/services/app_update_service.dart';
 import 'core/utils/app_locale.dart';
+import 'core/widgets/velora_loading.dart';
 import 'features/fnb_customer/screens/customer_login_screen.dart';
 import 'core/utils/fallback_localizations.dart';
 import 'features/fnb_customer/screens/customer_home_screen.dart';
@@ -84,9 +85,9 @@ class _CustomerSelfOrderAppState extends State<CustomerSelfOrderApp> {
       darkTheme: AppTheme.build(AppFlavor.customer, Brightness.dark),
       themeMode: ThemeMode.system,
       home: _isChecking
-          ? const Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(),
+          ? Scaffold(
+              body: VeloraOrbitLoader.page(
+                label: 'Menyiapkan Velora Self-Order...',
               ),
             )
           : (_isLoggedIn

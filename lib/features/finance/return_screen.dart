@@ -174,9 +174,12 @@ class _ReturnScreenState extends State<ReturnScreen> {
           ),
           const SizedBox(height: Gap.lg),
           if (_searching)
-            const Padding(
-              padding: EdgeInsets.all(Gap.xl),
-              child: Center(child: CircularProgressIndicator()),
+            Padding(
+              padding: const EdgeInsets.all(Gap.xl),
+              child: VeloraOrbitLoader.page(
+                size: 72,
+                label: 'Mencari invoice...',
+              ),
             ),
           if (_notFound)
             const EmptyState(

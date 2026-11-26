@@ -287,8 +287,9 @@ class _PharmacyQueueScreenState extends State<PharmacyQueueScreen> {
             // Queue List / Grid
             Expanded(
               child: _isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(color: emeraldPrimary),
+                  ? VeloraOrbitLoader.page(
+                      color: emeraldPrimary,
+                      label: 'Memuat antrean resep...',
                     )
                   : filtered.isEmpty
                       ? Center(

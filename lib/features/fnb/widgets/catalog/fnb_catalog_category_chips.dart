@@ -32,6 +32,7 @@ class FnbCatalogCategoryChips extends StatelessWidget {
       height: 44,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
         padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : Gap.lg),
         itemCount: ctrl.categories.length,
         itemBuilder: (context, index) {
@@ -55,7 +56,8 @@ class FnbCatalogCategoryChips extends StatelessWidget {
               onTap: () => ctrl.setCategory(c),
               borderRadius: BorderRadius.circular(20),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                 decoration: BoxDecoration(
                   color: isSelected
@@ -93,8 +95,9 @@ class FnbCatalogCategoryChips extends StatelessWidget {
                               : (isPromoCategory ? const Color(0xFFDC2626) : p.textSecondary),
                         ),
                         const SizedBox(width: 6),
-                        Text(
-                          sanitizeDisplayName(labelText),
+                        AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeOutCubic,
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
@@ -102,6 +105,7 @@ class FnbCatalogCategoryChips extends StatelessWidget {
                                 ? Colors.white
                                 : (isPromoCategory ? const Color(0xFFDC2626) : p.textPrimary),
                           ),
+                          child: Text(sanitizeDisplayName(labelText)),
                         ),
                       ],
                     ),

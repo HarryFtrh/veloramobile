@@ -176,8 +176,10 @@ class _FnbOpenBillsSheetState extends State<FnbOpenBillsSheet>
         ),
         Expanded(
           child: _loading
-              ? Center(
-                  child: CircularProgressIndicator(color: primaryColor),
+              ? VeloraOrbitLoader.page(
+                  size: 72,
+                  color: primaryColor,
+                  label: 'Memuat antrean pesanan...',
                 )
               : _error != null
                   ? ErrorState(message: _error!, onRetry: _load)

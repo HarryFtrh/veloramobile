@@ -5,6 +5,7 @@ export '../utils/app_regex.dart';
 export '../utils/app_toast.dart';
 export '../utils/date_time_formatter.dart';
 export '../widgets/app_qr_view.dart';
+export '../widgets/velora_loading.dart';
 
 /// Skala jarak dan radius yang dipakai seluruh aplikasi.
 /// Pakai konstanta ini, jangan menulis angka langsung di widget.

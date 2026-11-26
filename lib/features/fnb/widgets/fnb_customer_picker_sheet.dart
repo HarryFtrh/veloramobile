@@ -485,8 +485,10 @@ class _FnbCustomerPickerSheetState extends State<FnbCustomerPickerSheet> with Si
         // List Members
         Expanded(
           child: _isLoadingMembers
-              ? Center(
-                  child: CircularProgressIndicator(color: primaryColor, strokeWidth: 2.5),
+              ? VeloraOrbitLoader.page(
+                  size: 72,
+                  color: primaryColor,
+                  label: 'Memuat daftar member...',
                 )
               : _memberError != null
                   ? Center(

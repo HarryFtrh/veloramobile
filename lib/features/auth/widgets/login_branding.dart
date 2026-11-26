@@ -65,7 +65,7 @@ class LoginBranding {
         return const LoginBranding(
           badge: 'F&B',
           icon: Icons.coffee_rounded,
-          subtitle: 'Masuk untuk mengelola pesanan & kafe',
+          subtitle: 'Masuk untuk mengelola pesanan & kasir',
           buttonLabel: 'Masuk Sekarang',
           idLabel: 'Email atau Username',
           branchTitle: 'Pilih Cabang',

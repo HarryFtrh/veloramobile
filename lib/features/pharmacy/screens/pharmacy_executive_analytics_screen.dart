@@ -104,18 +104,10 @@ class _PharmacyExecutiveAnalyticsScreenState extends State<PharmacyExecutiveAnal
       ),
       body: SafeArea(
         child: _isLoading
-            ? const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(color: Color(0xFF059669)),
-                    SizedBox(height: 12),
-                    Text(
-                      'Menarik Data Analitik dari /v1/pharmacy/dashboard/analytics...',
-                      style: TextStyle(color: Color(0xFF6D7A72), fontSize: 12),
-                    ),
-                  ],
-                ),
+            ? VeloraOrbitLoader.page(
+                color: const Color(0xFF059669),
+                label: 'Memuat analitik apotek...',
+                subtitle: 'Menarik data terbaru dari server Velora',
               )
             : SingleChildScrollView(
                 padding: const EdgeInsets.all(16),

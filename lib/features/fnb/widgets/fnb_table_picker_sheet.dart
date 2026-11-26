@@ -423,8 +423,10 @@ class _FnbTablePickerSheetState extends State<FnbTablePickerSheet> {
         // Konten Grid Meja / Loading / Empty State
         Expanded(
           child: _isLoading
-              ? Center(
-                  child: CircularProgressIndicator(color: primaryColor),
+              ? VeloraOrbitLoader.page(
+                  size: 72,
+                  color: primaryColor,
+                  label: 'Memuat daftar meja...',
                 )
               : _errorMessage != null
                   ? _buildErrorState(p)

@@ -3,6 +3,7 @@ import 'package:shimmer/shimmer.dart';
 import 'tokens.dart';
 
 export '../components/velora_logo.dart';
+export '../widgets/velora_loading.dart';
 export 'app_confirm_dialog.dart';
 export '../utils/app_regex.dart';
 export '../utils/app_toast.dart';
@@ -304,13 +305,9 @@ class AppButton extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         if (isLoading)
-          SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(fgColor),
-            ),
+          VeloraOrbitLoader.inline(
+            size: 18,
+            color: fgColor,
           )
         else ...[
           if (icon != null) ...[
@@ -382,63 +379,88 @@ class FloatingPillNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (items.isEmpty) return const SizedBox.shrink();
+
     final p = context.palette;
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 12, left: 32, right: 32),
-        child: Container(
-          height: 60,
-          decoration: BoxDecoration(
-            color: p.surface,
-            borderRadius: Corner.full,
-            border: Border.all(color: p.line, width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final safeIndex = currentIndex.clamp(0, items.length - 1);
+    final alignX = items.length <= 1
+        ? 0.0
+        : -1.0 + (2.0 * safeIndex / (items.length - 1));
+
+    return RepaintBoundary(
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 10, left: 28, right: 28),
+          child: Container(
+            height: 60,
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: p.surface,
+              borderRadius: Corner.full,
+              border: Border.all(
+                color: p.line.withValues(alpha: isDark ? 0.75 : 0.9),
+                width: 1,
               ),
-            ],
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(items.length, (index) {
-              final isSelected = index == currentIndex;
-              final item = items[index];
-
-              if (isSelected) {
-                return GestureDetector(
-                  onTap: () => onTap(index),
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: p.primary,
-                      shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.36 : 0.09),
+                  blurRadius: 18,
+                  spreadRadius: -2,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Stack(
+              children: [
+                AnimatedAlign(
+                  alignment: Alignment(alignX, 0),
+                  duration: const Duration(milliseconds: 280),
+                  curve: Curves.easeOutCubic,
+                  child: FractionallySizedBox(
+                    widthFactor: 1 / items.length,
+                    heightFactor: 1,
+                    child: Center(
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: p.primary,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
                     ),
-                    child: Icon(
-                      item.activeIcon ?? item.icon,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                );
-              }
-
-              return InkWell(
-                onTap: () => onTap(index),
-                borderRadius: Corner.full,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  child: Icon(
-                    item.icon,
-                    color: p.textSecondary,
-                    size: 24,
                   ),
                 ),
-              );
-            }),
+                Row(
+                  children: List.generate(items.length, (index) {
+                    final isSelected = index == safeIndex;
+                    final item = items[index];
+                    return Expanded(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => onTap(index),
+                        child: Center(
+                          child: AnimatedScale(
+                            scale: isSelected ? 1.06 : 0.96,
+                            duration: const Duration(milliseconds: 220),
+                            curve: Curves.easeOutCubic,
+                            child: Icon(
+                              isSelected
+                                  ? (item.activeIcon ?? item.icon)
+                                  : item.icon,
+                              color: isSelected ? Colors.white : p.textSecondary,
+                              size: 23,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ],
+            ),
           ),
         ),
       ),

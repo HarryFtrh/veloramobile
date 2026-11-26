@@ -103,11 +103,7 @@ class _Footer extends StatelessWidget {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: Gap.lg),
         child: Center(
-          child: SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
+          child: VeloraOrbitLoader.inline(size: 24),
         ),
       );
     }

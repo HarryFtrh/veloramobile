@@ -138,122 +138,136 @@ class _FnbPaymentSheetState extends State<FnbPaymentSheet> {
                   ),
               ],
             ),
-            if (isSplit) ...[
-              const SizedBox(height: Gap.md),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: primaryColor.withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: primaryColor.withValues(alpha: 0.25)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: primaryColor.withValues(alpha: 0.12),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(Icons.call_split_rounded, color: primaryColor, size: 20),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.topCenter,
+              child: isSplit
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: Gap.md),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: primaryColor.withValues(alpha: 0.06),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: primaryColor.withValues(alpha: 0.25)),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: primaryColor.withValues(alpha: 0.12),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(Icons.call_split_rounded, color: primaryColor, size: 20),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Pembayaran Terpisah (Split Bill)',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 13.5,
+                                          color: p.textPrimary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Patungan per orang atau pisah pembayaran per item tagihan.',
+                                        style: TextStyle(fontSize: 11.5, color: p.textSecondary),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: p.surface,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: p.line),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.info_outline_rounded, size: 14, color: p.textSecondary),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      'Pilih ini untuk membagi tagihan meja atau pesanan patungan.',
+                                      style: TextStyle(fontSize: 11, color: p.textSecondary, fontWeight: FontWeight.w600),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : isCash
+                      ? Padding(
+                          padding: const EdgeInsets.only(top: Gap.md),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Pembayaran Terpisah (Split Bill)',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 13.5,
-                                  color: p.textPrimary,
-                                ),
+                              Wrap(
+                                spacing: Gap.xs + 2,
+                                runSpacing: Gap.xs + 2,
+                                children: [
+                                  for (final v in _presets)
+                                    ChoiceChip(
+                                      label: Text(v == widget.total ? 'Uang pas' : CurrencyFormatter.format(v), style: const TextStyle(fontSize: 12)),
+                                      selected: _paid == v && _custom.text.isEmpty,
+                                      showCheckmark: false,
+                                      shape: const StadiumBorder(),
+                                      onSelected: (_) => setState(() {
+                                        _paid = v;
+                                        _custom.clear();
+                                      }),
+                                    ),
+                                ],
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'Patungan per orang atau pisah pembayaran per item tagihan.',
-                                style: TextStyle(fontSize: 11.5, color: p.textSecondary),
+                              const SizedBox(height: Gap.sm),
+                              TextField(
+                                controller: _custom,
+                                keyboardType: TextInputType.number,
+                                style: const TextStyle(fontSize: 13),
+                                decoration: const InputDecoration(labelText: 'Nominal lain', prefixText: 'Rp '),
+                                onChanged: (v) {
+                                  final clean = v.replaceAll('.', '').replaceAll(',', '').replaceAll(' ', '');
+                                  setState(() => _paid = num.tryParse(clean) ?? 0);
+                                },
+                              ),
+                              const SizedBox(height: Gap.sm),
+                              Row(
+                                children: [
+                                  Text('Kembalian', style: text.bodyMedium?.copyWith(color: p.textSecondary, fontSize: 12)),
+                                  const Spacer(),
+                                  Text(
+                                    enough ? CurrencyFormatter.format(paid - widget.total) : 'Uang kurang',
+                                    style: text.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      color: enough ? p.success : p.danger,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: p.surface,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: p.line),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.info_outline_rounded, size: 14, color: p.textSecondary),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              'Pilih ini untuk membagi tagihan meja atau pesanan patungan.',
-                              style: TextStyle(fontSize: 11, color: p.textSecondary, fontWeight: FontWeight.w600),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ] else if (isCash) ...[
-              const SizedBox(height: Gap.md),
-              Wrap(
-                spacing: Gap.xs + 2,
-                runSpacing: Gap.xs + 2,
-                children: [
-                  for (final v in _presets)
-                    ChoiceChip(
-                      label: Text(v == widget.total ? 'Uang pas' : CurrencyFormatter.format(v), style: const TextStyle(fontSize: 12)),
-                      selected: _paid == v && _custom.text.isEmpty,
-                      showCheckmark: false,
-                      shape: const StadiumBorder(),
-                      onSelected: (_) => setState(() {
-                        _paid = v;
-                        _custom.clear();
-                      }),
-                    ),
-                ],
-              ),
-              const SizedBox(height: Gap.sm),
-              TextField(
-                controller: _custom,
-                keyboardType: TextInputType.number,
-                style: const TextStyle(fontSize: 13),
-                decoration: const InputDecoration(labelText: 'Nominal lain', prefixText: 'Rp '),
-                onChanged: (v) {
-                  final clean = v.replaceAll('.', '').replaceAll(',', '').replaceAll(' ', '');
-                  setState(() => _paid = num.tryParse(clean) ?? 0);
-                },
-              ),
-              const SizedBox(height: Gap.sm),
-              Row(
-                children: [
-                  Text('Kembalian', style: text.bodyMedium?.copyWith(color: p.textSecondary, fontSize: 12)),
-                  const Spacer(),
-                  Text(
-                    enough ? CurrencyFormatter.format(paid - widget.total) : 'Uang kurang',
-                    style: text.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: enough ? p.success : p.danger,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+                        )
+                      : const SizedBox.shrink(),
+            ),
             const SizedBox(height: Gap.md),
             SizedBox(
               width: double.infinity,

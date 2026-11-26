@@ -287,7 +287,10 @@ class _PharmacyStockOpnameScreenState extends State<PharmacyStockOpnameScreen> {
             // Opname Items List
             Expanded(
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator(color: emeraldPrimary))
+                  ? VeloraOrbitLoader.page(
+                      color: emeraldPrimary,
+                      label: 'Memuat data stok opname...',
+                    )
                   : filtered.isEmpty
                       ? Center(
                           child: Text('Tidak ada batch yang cocok dengan kriteria audit.', style: TextStyle(color: textMuted)),

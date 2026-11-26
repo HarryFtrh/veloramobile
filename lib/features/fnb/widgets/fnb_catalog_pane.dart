@@ -149,10 +149,12 @@ class FnbCatalogPane extends StatelessWidget {
                   itemBuilder: (_, i) {
                     final item = items[i];
                     final hasVariants = ctrl.hasVariantsFor(item);
-                    return FnbProductGridCard(
-                      item: item,
-                      hasVariants: hasVariants,
-                      onAdd: () => onAdd(item),
+                    return RepaintBoundary(
+                      child: FnbProductGridCard(
+                        item: item,
+                        hasVariants: hasVariants,
+                        onAdd: () => onAdd(item),
+                      ),
                     );
                   },
                 ),

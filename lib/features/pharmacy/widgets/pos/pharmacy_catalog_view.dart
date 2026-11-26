@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import '../../../../core/widgets/velora_loading.dart';
 import '../pharmacy_drug_card.dart';
 
 /// Catalog View for Pharmacy POS Screen: handles loading, remote searching, empty states, and Grid/List switching
@@ -33,34 +34,18 @@ class PharmacyCatalogView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(color: Color(0xFF059669)),
-            SizedBox(height: 16),
-            Text(
-              'Menghubungkan ke Database Velora...',
-              style: TextStyle(color: Color(0xFF6D7A72), fontSize: 13),
-            ),
-          ],
-        ),
+      return VeloraOrbitLoader.page(
+        color: const Color(0xFF059669),
+        label: 'Menghubungkan ke Database Velora...',
       );
     }
 
     if (items.isEmpty && isSearchingRemote) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const CircularProgressIndicator(color: Color(0xFF059669)),
-            const SizedBox(height: 14),
-            Text(
-              'Mencari "$searchQuery" di Katalog & Indikasi Obat...',
-              style: const TextStyle(color: Color(0xFF6D7A72), fontSize: 13),
-            ),
-          ],
-        ),
+      return VeloraOrbitLoader.page(
+        size: 76,
+        color: const Color(0xFF059669),
+        label: 'Mencari "$searchQuery"...',
+        subtitle: 'Memeriksa katalog & indikasi obat',
       );
     }
 

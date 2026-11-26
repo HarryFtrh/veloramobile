@@ -387,8 +387,9 @@ class _FnbPaymentSplitScreenState extends State<FnbPaymentSplitScreen> {
                   : null,
             ),
             body: state.loading
-                ? Center(
-                    child: CircularProgressIndicator(color: primaryColor),
+                ? VeloraOrbitLoader.page(
+                    color: primaryColor,
+                    label: 'Memuat rincian tagihan...',
                   )
                 : isWide
                     ? Row(

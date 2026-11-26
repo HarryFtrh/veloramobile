@@ -83,7 +83,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: isTablet ? 680 : double.infinity),
           child: _isLoading
-              ? Center(child: CircularProgressIndicator(color: primary))
+              ? VeloraOrbitLoader.page(
+                  color: primary,
+                  label: 'Memuat paket langganan...',
+                )
               : _errorMessage != null
                   ? Center(
                       child: Padding(

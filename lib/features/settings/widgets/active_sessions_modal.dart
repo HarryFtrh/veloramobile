@@ -79,11 +79,9 @@ class _ActiveSessionsModalState extends State<ActiveSessionsModal> {
             ),
             const SizedBox(height: 12),
             if (_loading)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: CircularProgressIndicator(),
-                ),
+              VeloraOrbitLoader.page(
+                size: 68,
+                label: 'Memuat sesi perangkat...',
               )
             else if (_error != null)
               Center(child: Text(_error!, style: TextStyle(color: p.danger)))

@@ -455,7 +455,7 @@ class _AppShellState extends State<AppShell> {
       role: SessionStorage.instance.getUserRole(),
     ) == BusinessVertical.pharmacy;
 
-    final body = IndexedStack(
+    final body = _SmoothIndexedStack(
       index: _index,
       children: [
         for (var i = 0; i < widget.tabs.length; i++)
@@ -511,6 +511,43 @@ class _AppShellState extends State<AppShell> {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// Preserves tab state & scroll position like [IndexedStack] while smoothly
+/// fading in the active tab and pausing animations on hidden tabs.
+class _SmoothIndexedStack extends StatelessWidget {
+  const _SmoothIndexedStack({
+    required this.index,
+    required this.children,
+  });
+
+  final int index;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        for (var i = 0; i < children.length; i++)
+          Offstage(
+            offstage: i != index,
+            child: TickerMode(
+              enabled: i == index,
+              child: IgnorePointer(
+                ignoring: i != index,
+                child: AnimatedOpacity(
+                  opacity: i == index ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOutCubic,
+                  child: children[i],
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

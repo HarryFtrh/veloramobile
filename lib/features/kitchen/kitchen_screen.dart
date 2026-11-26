@@ -146,7 +146,10 @@ class _KitchenView extends StatelessWidget {
             ..showSnackBar(SnackBar(content: Text(msg)));
         },
         builder: (context, state) => switch (state) {
-          KitchenLoading() => Center(child: CircularProgressIndicator(color: primaryColor)),
+          KitchenLoading() => VeloraOrbitLoader.page(
+              color: primaryColor,
+              label: 'Memuat antrean dapur...',
+            ),
           KitchenFailed(:final message) => Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),

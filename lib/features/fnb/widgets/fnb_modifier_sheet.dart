@@ -265,33 +265,40 @@ class _FnbModifierSheetState extends State<FnbModifierSheet> {
         ),
         Divider(height: 1, color: p.line),
 
-        // Scrollable Groups, Tiles, Quantity & Barista Note
+        // Scrollable Groups, Tiles, Quantity & Barista Note (lazy builder)
         Flexible(
-          child: ListView(
+          child: ListView.builder(
+            physics: const BouncingScrollPhysics(),
             padding: EdgeInsets.symmetric(horizontal: paddingHoriz, vertical: 14),
-            shrinkWrap: true,
-            children: [
-              for (int gi = 0; gi < widget.groups.length; gi++) ...[
-                FnbModifierGroupSection(
-                  group: widget.groups[gi],
-                  selectedOptionIds: _of(widget.groups[gi]),
-                  onToggle: (opt) => _toggle(widget.groups[gi], opt),
-                ),
-                const SizedBox(height: 16),
-              ],
-
-              // Divider pemisah sebelum kontrol porsi & catatan
-              Divider(color: p.line, height: 24),
-
-              // Portion & Kitchen Note
-              FnbModifierQuantityBar(
-                quantity: _quantity,
-                noteCtrl: _noteCtrl,
-                onIncrement: _incrementQty,
-                onDecrement: _decrementQty,
-              ),
-              const SizedBox(height: 12),
-            ],
+            itemCount: widget.groups.length + 1,
+            itemBuilder: (_, index) {
+              if (index < widget.groups.length) {
+                final group = widget.groups[index];
+                return RepaintBoundary(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: FnbModifierGroupSection(
+                      group: group,
+                      selectedOptionIds: _of(group),
+                      onToggle: (opt) => _toggle(group, opt),
+                    ),
+                  ),
+                );
+              }
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Divider(color: p.line, height: 24),
+                  FnbModifierQuantityBar(
+                    quantity: _quantity,
+                    noteCtrl: _noteCtrl,
+                    onIncrement: _incrementQty,
+                    onDecrement: _decrementQty,
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              );
+            },
           ),
         ),
 

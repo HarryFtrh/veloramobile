@@ -455,53 +455,67 @@ class _FnbRegisterScreenState extends State<FnbRegisterScreen> {
             ),
             bottomNavigationBar: (wide || _ctrl.shiftId == null)
                 ? null
-                : (_ctrl.lines.isEmpty
-                    ? null
-                    : FnbCartBar(
-                        ctrl: _ctrl,
-                        onOpen: () => showModalBottomSheet<void>(
-                          context: context,
-                          isScrollControlled: true,
-                          showDragHandle: false,
-                          useSafeArea: true,
-                          backgroundColor: p.surface,
-                          clipBehavior: Clip.antiAlias,
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                          ),
-                          builder: (sheetContext) => SizedBox(
-                            height: MediaQuery.sizeOf(sheetContext).height * 0.90,
-                            child: Center(
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 560),
-                                child: FnbOrderPanel(
-                                  ctrl: _ctrl,
-                                  onPickTable: _pickTable,
-                                  isModal: true,
-                                  onOpenBills: _openBillsModal,
-                                  onSplitBill: () {
-                                    Navigator.pop(sheetContext);
-                                    _openSplitBill();
-                                  },
-                                  onKitchen: () async {
-                                    Navigator.pop(sheetContext);
-                                    await _kitchen();
-                                  },
-                                  onHold: () async {
-                                    Navigator.pop(sheetContext);
-                                    await _hold();
-                                  },
-                                  onPay: () async {
-                                    Navigator.pop(sheetContext);
-                                    await Future.delayed(const Duration(milliseconds: 150));
-                                    if (mounted) await _pay();
-                                  },
+                : AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 240),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (child, animation) => SizeTransition(
+                      sizeFactor: animation,
+                      alignment: Alignment.topCenter,
+                      child: FadeTransition(
+                        opacity: animation,
+                        child: child,
+                      ),
+                    ),
+                    child: _ctrl.lines.isEmpty
+                        ? const SizedBox.shrink(key: ValueKey<String>('cart_empty'))
+                        : FnbCartBar(
+                            key: const ValueKey<String>('cart_active'),
+                            ctrl: _ctrl,
+                            onOpen: () => showModalBottomSheet<void>(
+                              context: context,
+                              isScrollControlled: true,
+                              showDragHandle: false,
+                              useSafeArea: true,
+                              backgroundColor: p.surface,
+                              clipBehavior: Clip.antiAlias,
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                              ),
+                              builder: (sheetContext) => SizedBox(
+                                height: MediaQuery.sizeOf(sheetContext).height * 0.90,
+                                child: Center(
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(maxWidth: 560),
+                                    child: FnbOrderPanel(
+                                      ctrl: _ctrl,
+                                      onPickTable: _pickTable,
+                                      isModal: true,
+                                      onOpenBills: _openBillsModal,
+                                      onSplitBill: () {
+                                        Navigator.pop(sheetContext);
+                                        _openSplitBill();
+                                      },
+                                      onKitchen: () async {
+                                        Navigator.pop(sheetContext);
+                                        await _kitchen();
+                                      },
+                                      onHold: () async {
+                                        Navigator.pop(sheetContext);
+                                        await _hold();
+                                      },
+                                      onPay: () async {
+                                        Navigator.pop(sheetContext);
+                                        await Future.delayed(const Duration(milliseconds: 150));
+                                        if (mounted) await _pay();
+                                      },
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      )),
+                  ),
           );
         });
       },

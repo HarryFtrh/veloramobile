@@ -129,7 +129,10 @@ class _PharmacyShiftReportScreenState extends State<PharmacyShiftReportScreen> {
       backgroundColor: context.palette.canvas,
       body: SafeArea(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: emeraldPrimary))
+            ? VeloraOrbitLoader.page(
+                color: emeraldPrimary,
+                label: 'Memuat laporan shift...',
+              )
             : Column(
                 children: [
                   // Clinical Header

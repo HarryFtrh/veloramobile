@@ -285,8 +285,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
         onLogout: widget.onLogout,
       ),
       body: _loading
-          ? Center(
-              child: CircularProgressIndicator(color: primaryColor),
+          ? VeloraOrbitLoader.page(
+              color: primaryColor,
+              label: 'Memuat menu...',
             )
           : _error != null
               ? Center(

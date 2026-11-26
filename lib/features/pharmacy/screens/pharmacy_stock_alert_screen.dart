@@ -290,8 +290,9 @@ class _PharmacyStockAlertScreenState extends State<PharmacyStockAlertScreen> {
             // Alert Items List / Grid
             Expanded(
               child: _isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(color: emeraldPrimary),
+                  ? VeloraOrbitLoader.page(
+                      color: emeraldPrimary,
+                      label: 'Memuat peringatan stok...',
                     )
                   : filtered.isEmpty
                       ? Center(
