@@ -119,11 +119,7 @@ Future<void> showAddTableDialog(
               shape: const StadiumBorder(),
             ),
             child: busy
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                  )
+                ? const VeloraOrbitLoader.inline(size: 18, color: Colors.white)
                 : const Text('Simpan Meja'),
           ),
         ],

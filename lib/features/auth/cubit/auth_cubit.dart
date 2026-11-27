@@ -10,6 +10,7 @@ import 'auth_state.dart';
 class AuthCubit extends Cubit<AuthState> {
   final AuthService _authService;
   bool _hasShownIntroSplash = false;
+  bool _isCheckingAuth = false;
 
   AuthCubit({AuthService? authService})
       : _authService = authService ?? AuthService.instance,
@@ -19,8 +20,27 @@ class AuthCubit extends Cubit<AuthState> {
     };
   }
 
+  /// Directly transitions to [Authenticated] after LoginScreen already
+  /// verified credentials/Google/register, avoiding a redundant `/v1/me` call
+  /// and preventing a brief SplashScreen flash.
+  void completeLogin(AuthUser user) {
+    final locName = SessionStorage.instance.getLocationName() ??
+        (user.locations.isNotEmpty ? user.locations.first.name : 'Cabang Utama');
+    emit(Authenticated(user: user, activeLocationName: locName));
+  }
+
   /// Checks stored credentials on startup with safe fallback
   Future<void> checkAuthStatus() async {
+    if (_isCheckingAuth) return;
+    _isCheckingAuth = true;
+    try {
+      await _checkAuthStatusInternal();
+    } finally {
+      _isCheckingAuth = false;
+    }
+  }
+
+  Future<void> _checkAuthStatusInternal() async {
     final showIntro = !_hasShownIntroSplash;
     _hasShownIntroSplash = true;
     final minSplashFuture = showIntro

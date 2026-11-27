@@ -113,11 +113,7 @@ class DashboardHeaderCard extends StatelessWidget {
             tooltip: 'Sinkronkan / Refresh Data',
             onPressed: isRefreshing ? null : onRefresh,
             icon: isRefreshing
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
+                ? VeloraOrbitLoader.inline(size: 18, color: primaryColor)
                 : const Icon(Icons.refresh_rounded, size: 20),
             style: IconButton.styleFrom(
               backgroundColor: primaryColor.withValues(alpha: 0.08),

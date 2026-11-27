@@ -159,7 +159,16 @@ class AuthService {
     // Gerbang flavor: app kasir/staf menolak akun pelanggan sebelum sesi disimpan.
     final flavor = AppConfig.instance.flavor;
     if (flavor != AppFlavor.customer && user.isCustomerAccount) {
-      throw Exception('Akun ini adalah akun pelanggan, bukan akun kasir/staf toko. Gunakan aplikasi Velora Customer.');
+      throw const ApiException('Akun ini adalah akun pelanggan, bukan akun kasir/staf toko. Gunakan aplikasi Velora Customer.');
+    }
+
+    // Edge case Google Auth / akun baru tanpa tenant aktif: jangan simpan sesi kasir kosong.
+    final hasTenantFlag = data['has_tenant'];
+    if (flavor != AppFlavor.customer &&
+        (hasTenantFlag == false || (user.tenantId.isEmpty && !user.isVeloraStaff))) {
+      throw const ApiException(
+        'Akun Anda belum terhubung dengan bisnis/toko aktif. Silakan daftar bisnis baru atau hubungi administrator.',
+      );
     }
 
     await SessionStorage.instance.saveAuthToken(token);
@@ -334,7 +343,26 @@ class AuthService {
     throw ApiException.from(e);
   }
 
-  /// Registrasi tenant / toko baru langsung dari aplikasi mobile
+  /// Mengambil konfigurasi publik auth & skema registrasi dinamis dari `GET /v1/auth/settings`.
+  Future<AuthPublicSettings> getAuthSettings() async {
+    try {
+      final response = await ApiClient.instance.dio.get('/v1/auth/settings');
+      final raw = response.data;
+      if (raw is Map) {
+        final inner = raw['data'];
+        final map = inner is Map
+            ? Map<String, dynamic>.from(inner)
+            : Map<String, dynamic>.from(raw);
+        return AuthPublicSettings.fromJson(map);
+      }
+    } catch (e) {
+      debugPrint('[AuthService] getAuthSettings fallback to default: $e');
+    }
+    return AuthPublicSettings.defaults();
+  }
+
+  /// Registrasi tenant / toko baru langsung dari aplikasi mobile (`POST /api/v1/register`)
+  /// Mendukung tipe bisnis `cafe`, `retail`, `pharmacy`, dan `pbf` beserta field ekstra regulasi.
   Future<AuthUser> register({
     required String name,
     required String email,
@@ -343,43 +371,73 @@ class AuthService {
     String? username,
     String? phone,
     String businessType = 'cafe',
+    Map<String, String> extraFields = const {},
+    String? address,
+    String? voucherCode,
   }) async {
-    // Backend mengharapkan 'cafe' untuk bisnis FnB/kafe/restoran
-    final mappedType = (businessType == 'fnb' || businessType == 'cafe') ? 'cafe' : businessType;
+    final mappedType = (businessType == 'fnb' || businessType == 'cafe')
+        ? 'cafe'
+        : businessType.trim().toLowerCase();
 
     final cleanPhone = (phone != null && phone.trim().isNotEmpty)
         ? phone.trim().replaceAll(AppRegex.nonDigits, '')
-        : '081234567890';
+        : '';
 
     final emailPrefix = email.split('@').first.toLowerCase().replaceAll(_identifierCleanRegex, '');
     final cleanUsername = (username != null && username.trim().isNotEmpty)
         ? username.trim().toLowerCase().replaceAll(_identifierCleanRegex, '')
         : (emailPrefix.length >= 3 ? emailPrefix : '${emailPrefix}123');
 
-    final payload = {
+    final clientType = kIsWeb
+        ? 'flutter_web'
+        : (Platform.isIOS ? 'flutter_ios' : 'flutter_android');
+    final deviceName = kIsWeb
+        ? 'Velora Web POS'
+        : (Platform.isIOS ? 'Velora Flutter iOS' : 'Velora Flutter Android');
+
+    final payload = <String, dynamic>{
+      'business_type': mappedType,
+      'business_name': storeName.trim(),
       'name': name.trim(),
       'email': email.trim(),
       'username': cleanUsername,
-      'phone': cleanPhone.length >= 9 ? cleanPhone : '081234567890',
+      'phone': cleanPhone,
       'password': password,
-      'password_confirmation': password,
-      'business_name': storeName.trim(),
-      'store_name': storeName.trim(),
-      'business_type': mappedType,
-      'device_name': 'Velora Mobile POS',
+      'device_name': deviceName,
+      'client_type': clientType,
     };
+
+    if (address != null && address.trim().isNotEmpty) {
+      payload['address'] = address.trim();
+    }
+    if (voucherCode != null && voucherCode.trim().isNotEmpty) {
+      payload['voucher_code'] = voucherCode.trim().toUpperCase();
+    }
+
+    // Field ekstra dinamis per tipe bisnis (pharmacy & pbf mendukung sia/sipa/pharmacist_name; semua mendukung npwp_number)
+    final isPharmaOrPbf = mappedType == 'pharmacy' || mappedType == 'pbf';
+    for (final entry in extraFields.entries) {
+      final key = entry.key.trim();
+      final val = entry.value.trim();
+      if (val.isEmpty) continue;
+      if (!isPharmaOrPbf &&
+          (key == 'sia_number' || key == 'sipa_number' || key == 'pharmacist_name')) {
+        continue;
+      }
+      payload[key] = val;
+    }
 
     Response response;
     try {
       response = await ApiClient.instance.dio.post(
-        '/v1/auth/register',
+        '/v1/register',
         data: payload,
       );
     } on DioException catch (e) {
       if (e.response?.statusCode == 404 || e.response?.statusCode == 405) {
         try {
           response = await ApiClient.instance.dio.post(
-            '/auth/register',
+            '/v1/auth/register',
             data: payload,
           );
         } on DioException catch (e2) {
@@ -390,13 +448,19 @@ class AuthService {
       }
     }
 
-    try {
-      return await _processAuthResponse(response.data);
-    } catch (_) {
-      // Jika endpoint registrasi backend hanya mengembalikan pesan berhasil tanpa token,
-      // lakukan auto-login menggunakan kredensial yang baru didaftarkan
-      return await login(email: email, password: password);
+    final rawData = response.data;
+    Map<String, dynamic> parsed = {};
+    if (rawData is Map) {
+      final inner = rawData['data'];
+      parsed = inner is Map
+          ? Map<String, dynamic>.from(inner)
+          : Map<String, dynamic>.from(rawData);
     }
+    final hasToken = parsed.getString('access_token', fallback: parsed.getString('token')).isNotEmpty;
+    if (hasToken) {
+      return await _processAuthResponse(rawData);
+    }
+    return await login(email: email, password: password);
   }
 
   /// Mengirim permintaan tautan reset kata sandi ke backend
@@ -530,4 +594,181 @@ class AuthService {
       debugPrint('[AuthService] Sinkronisasi PIN backend: $e');
     }
   }
+}
+
+/// Konfigurasi publik auth & skema registrasi dinamis dari `GET /api/v1/auth/settings`.
+class AuthPublicSettings {
+  const AuthPublicSettings({
+    required this.allowPublicRegistration,
+    required this.allowPasswordReset,
+    required this.maintenanceMode,
+    required this.enableGoogleAuth,
+    required this.registrationSchema,
+  });
+
+  final bool allowPublicRegistration;
+  final bool allowPasswordReset;
+  final bool maintenanceMode;
+  final bool enableGoogleAuth;
+  final Map<String, RegistrationTypeSchema> registrationSchema;
+
+  RegistrationTypeSchema schemaFor(String businessType) {
+    final key = businessType.trim().toLowerCase();
+    return registrationSchema[key] ??
+        defaults().registrationSchema[key] ??
+        defaults().registrationSchema['cafe']!;
+  }
+
+  factory AuthPublicSettings.fromJson(Map<String, dynamic> json) {
+    final fallback = AuthPublicSettings.defaults();
+    final rawSchema = json['registration_schema'];
+    final parsedSchema = <String, RegistrationTypeSchema>{};
+    if (rawSchema is Map) {
+      for (final entry in rawSchema.entries) {
+        final key = entry.key.toString().toLowerCase();
+        if (entry.value is Map) {
+          parsedSchema[key] = RegistrationTypeSchema.fromJson(
+            key,
+            Map<String, dynamic>.from(entry.value as Map),
+          );
+        }
+      }
+    }
+
+    return AuthPublicSettings(
+      allowPublicRegistration: json['allow_public_registration'] is bool
+          ? json['allow_public_registration'] as bool
+          : fallback.allowPublicRegistration,
+      allowPasswordReset: json['allow_password_reset'] is bool
+          ? json['allow_password_reset'] as bool
+          : fallback.allowPasswordReset,
+      maintenanceMode: json['maintenance_mode'] is bool
+          ? json['maintenance_mode'] as bool
+          : fallback.maintenanceMode,
+      enableGoogleAuth: json['enable_google_auth'] is bool
+          ? json['enable_google_auth'] as bool
+          : fallback.enableGoogleAuth,
+      registrationSchema:
+          parsedSchema.isNotEmpty ? parsedSchema : fallback.registrationSchema,
+    );
+  }
+
+  factory AuthPublicSettings.defaults() {
+    return const AuthPublicSettings(
+      allowPublicRegistration: true,
+      allowPasswordReset: true,
+      maintenanceMode: false,
+      enableGoogleAuth: true,
+      registrationSchema: {
+        'cafe': RegistrationTypeSchema(
+          key: 'cafe',
+          label: 'Cafe & F&B',
+          businessNameLabel: 'Nama Cafe / Resto',
+          extraFields: [
+            RegistrationExtraField(key: 'npwp_number', label: 'NPWP', required: false),
+          ],
+        ),
+        'retail': RegistrationTypeSchema(
+          key: 'retail',
+          label: 'Retail / Toko',
+          businessNameLabel: 'Nama Toko',
+          extraFields: [
+            RegistrationExtraField(key: 'npwp_number', label: 'NPWP', required: false),
+          ],
+        ),
+        'pharmacy': RegistrationTypeSchema(
+          key: 'pharmacy',
+          label: 'Apotek',
+          businessNameLabel: 'Nama Apotek',
+          extraFields: [
+            RegistrationExtraField(key: 'sia_number', label: 'Nomor SIA', required: false),
+            RegistrationExtraField(key: 'sipa_number', label: 'Nomor SIPA', required: false),
+            RegistrationExtraField(
+              key: 'pharmacist_name',
+              label: 'Nama Apoteker Penanggung Jawab',
+              required: false,
+            ),
+            RegistrationExtraField(key: 'npwp_number', label: 'NPWP', required: false),
+          ],
+        ),
+        'pbf': RegistrationTypeSchema(
+          key: 'pbf',
+          label: 'PBF (Distributor)',
+          businessNameLabel: 'Nama PBF / Distributor',
+          extraFields: [
+            RegistrationExtraField(
+              key: 'sia_number',
+              label: 'Nomor Izin PBF / Sertifikat Distribusi',
+              required: false,
+            ),
+            RegistrationExtraField(
+              key: 'sipa_number',
+              label: 'Nomor SIPA APJ PBF',
+              required: false,
+            ),
+            RegistrationExtraField(
+              key: 'pharmacist_name',
+              label: 'Nama Apoteker Penanggung Jawab PBF',
+              required: false,
+            ),
+            RegistrationExtraField(key: 'npwp_number', label: 'NPWP', required: false),
+          ],
+        ),
+      },
+    );
+  }
+}
+
+class RegistrationTypeSchema {
+  const RegistrationTypeSchema({
+    required this.key,
+    required this.label,
+    required this.businessNameLabel,
+    required this.extraFields,
+  });
+
+  final String key;
+  final String label;
+  final String businessNameLabel;
+  final List<RegistrationExtraField> extraFields;
+
+  factory RegistrationTypeSchema.fromJson(String key, Map<String, dynamic> json) {
+    final fields = <RegistrationExtraField>[];
+    final rawFields = json['extra_fields'];
+    if (rawFields is List) {
+      for (final item in rawFields) {
+        if (item is Map) {
+          final m = Map<String, dynamic>.from(item);
+          final fKey = m['key']?.toString() ?? '';
+          if (fKey.isNotEmpty) {
+            fields.add(
+              RegistrationExtraField(
+                key: fKey,
+                label: m['label']?.toString() ?? fKey,
+                required: m['required'] == true,
+              ),
+            );
+          }
+        }
+      }
+    }
+    return RegistrationTypeSchema(
+      key: key,
+      label: json['label']?.toString() ?? key.toUpperCase(),
+      businessNameLabel: json['business_name_label']?.toString() ?? 'Nama Bisnis',
+      extraFields: fields,
+    );
+  }
+}
+
+class RegistrationExtraField {
+  const RegistrationExtraField({
+    required this.key,
+    required this.label,
+    this.required = false,
+  });
+
+  final String key;
+  final String label;
+  final bool required;
 }

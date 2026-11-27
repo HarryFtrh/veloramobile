@@ -467,7 +467,7 @@ class _AppShellState extends State<AppShell> {
       if (isPharmacy) {
         return Scaffold(
           resizeToAvoidBottomInset: false,
-          backgroundColor: const Color(0xFFFAF8FF),
+          backgroundColor: context.palette.canvas,
           body: SafeArea(
             child: Row(
               children: [

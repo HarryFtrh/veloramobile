@@ -29,115 +29,201 @@ class _KitchenView extends StatelessWidget {
     final isWide = MediaQuery.sizeOf(context).width >= 600;
     final canPop = ModalRoute.of(context)?.canPop ?? false;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       backgroundColor: p.canvas,
-      appBar: (!isWide || canPop)
-          ? AppBar(
-              backgroundColor: p.surface,
-              elevation: 0,
-              titleSpacing: 14,
-              title: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(7),
-                    decoration: BoxDecoration(
-                      color: primaryColor,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.soup_kitchen_rounded, color: Colors.white, size: 18),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                SessionStorage.instance.getTenantName() ??
-                                    SessionStorage.instance.getLocationName() ??
-                                    'Kitchen Display',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 15,
-                                  color: p.textPrimary,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF059669).withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.circle, size: 6, color: Color(0xFF059669)),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'LIVE KDS',
-                                    style: TextStyle(
-                                      color: Color(0xFF059669),
-                                      fontSize: 8.5,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            if (!isWide || canPop)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Row(
+                  children: [
+                    if (canPop) ...[
+                      Material(
+                        color: p.surface,
+                        shape: CircleBorder(
+                          side: BorderSide(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.08)
+                                : p.line.withValues(alpha: 0.55),
+                          ),
                         ),
-                        Text(
-                          '${SessionStorage.instance.getLocationName() ?? "Outlet"} • Barista & Kitchen Display',
-                          style: TextStyle(fontSize: 11, color: p.textSecondary),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        child: InkWell(
+                          customBorder: const CircleBorder(),
+                          onTap: () => Navigator.of(context).pop(),
+                          child: SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: Icon(
+                              Icons.chevron_left_rounded,
+                              size: 22,
+                              color: p.textPrimary,
+                            ),
+                          ),
                         ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                BlocBuilder<KitchenCubit, KitchenState>(
-                  builder: (context, state) {
-                    final isSoundOn = state is KitchenLoaded ? state.soundEnabled : true;
-                    return IconButton(
-                      icon: Icon(
-                        isSoundOn ? Icons.volume_up_rounded : Icons.volume_off_rounded,
-                        color: isSoundOn ? primaryColor : p.textSecondary,
-                        size: 20,
                       ),
-                      tooltip: isSoundOn ? 'Notifikasi Suara Aktif' : 'Notifikasi Suara Senyap',
-                      onPressed: () {
-                        context.read<KitchenCubit>().toggleSound();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(isSoundOn
-                                ? '🔇 Notifikasi suara KDS dimatikan'
-                                : '🔔 Notifikasi suara pesanan KDS diaktifkan'),
-                            duration: const Duration(seconds: 1),
+                      const SizedBox(width: 10),
+                    ],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                'Dapur',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w800,
+                                  color: p.textPrimary,
+                                  letterSpacing: -0.6,
+                                  height: 1.1,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: p.success.withValues(
+                                    alpha: isDark ? 0.20 : 0.12,
+                                  ),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 6,
+                                      height: 6,
+                                      decoration: BoxDecoration(
+                                        color: p.success,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'LIVE KDS',
+                                      style: TextStyle(
+                                        color: p.success,
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${SessionStorage.instance.getLocationName() ?? "Outlet"} • Antrean Bar & Dapur',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w500,
+                              color: p.textSecondary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    BlocBuilder<KitchenCubit, KitchenState>(
+                      builder: (context, state) {
+                        final isSoundOn =
+                            state is KitchenLoaded ? state.soundEnabled : true;
+                        return Tooltip(
+                          message: isSoundOn
+                              ? 'Notifikasi Suara Aktif'
+                              : 'Notifikasi Suara Senyap',
+                          child: Material(
+                            color: isSoundOn
+                                ? primaryColor.withValues(alpha: isDark ? 0.22 : 0.12)
+                                : p.surface,
+                            shape: CircleBorder(
+                              side: BorderSide(
+                                color: isSoundOn
+                                    ? primaryColor.withValues(alpha: 0.28)
+                                    : (isDark
+                                        ? Colors.white.withValues(alpha: 0.08)
+                                        : p.line.withValues(alpha: 0.55)),
+                              ),
+                            ),
+                            child: InkWell(
+                              customBorder: const CircleBorder(),
+                              onTap: () {
+                                context.read<KitchenCubit>().toggleSound();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      isSoundOn
+                                          ? '🔇 Notifikasi suara KDS dimatikan'
+                                          : '🔔 Notifikasi suara pesanan KDS diaktifkan',
+                                    ),
+                                    duration: const Duration(seconds: 1),
+                                  ),
+                                );
+                              },
+                              child: SizedBox(
+                                width: 40,
+                                height: 40,
+                                child: Icon(
+                                  isSoundOn
+                                      ? Icons.volume_up_rounded
+                                      : Icons.volume_off_rounded,
+                                  color: isSoundOn
+                                      ? primaryColor
+                                      : p.textSecondary,
+                                  size: 19,
+                                ),
+                              ),
+                            ),
                           ),
                         );
                       },
-                    );
-                  },
+                    ),
+                    const SizedBox(width: 8),
+                    Tooltip(
+                      message: 'Muat Ulang Antrean',
+                      child: Material(
+                        color: p.surface,
+                        shape: CircleBorder(
+                          side: BorderSide(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.08)
+                                : p.line.withValues(alpha: 0.55),
+                          ),
+                        ),
+                        child: InkWell(
+                          customBorder: const CircleBorder(),
+                          onTap: () => context
+                              .read<KitchenCubit>()
+                              .refresh(silent: false),
+                          child: SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: Icon(
+                              Icons.refresh_rounded,
+                              color: p.textPrimary,
+                              size: 19,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                IconButton(
-                  tooltip: 'Muat Ulang Antrean',
-                  icon: Icon(Icons.refresh_rounded, color: p.textPrimary, size: 21),
-                  onPressed: () => context.read<KitchenCubit>().refresh(silent: false),
-                ),
-              ],
-            )
-          : null,
-      body: BlocConsumer<KitchenCubit, KitchenState>(
+              ),
+            Expanded(
+              child: BlocConsumer<KitchenCubit, KitchenState>(
         listenWhen: (_, s) => s is KitchenLoaded && s.actionError != null,
         listener: (context, s) {
           final msg = (s as KitchenLoaded).actionError!;
@@ -192,6 +278,10 @@ class _KitchenView extends StatelessWidget {
             ),
           KitchenLoaded() => _Board(state: state, isWide: isWide, canPop: canPop),
         },
+      ),
+            ),
+          ],
+        ),
       ),
     );
   }

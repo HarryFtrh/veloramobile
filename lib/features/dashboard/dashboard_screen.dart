@@ -51,97 +51,174 @@ class _DashboardViewState extends State<_DashboardView> {
     final p = context.palette;
     final primaryColor = Theme.of(context).colorScheme.primary;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       backgroundColor: p.canvas,
-      appBar: (!isWide || canPop)
-          ? AppBar(
-              title: const Text(
-                'Dashboard Penjualan',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
-              ),
-              centerTitle: false,
-              actions: [
-                IconButton(
-                  tooltip: 'Muat Ulang Data',
-                  onPressed: _isRefreshing ? null : () => _handleRefresh(context),
-                  icon: _isRefreshing
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.refresh_rounded),
+      body: SafeArea(
+        bottom: false,
+        child: BlocBuilder<DashboardCubit, DashboardState>(
+          builder: (context, state) {
+            return RefreshIndicator(
+              color: primaryColor,
+              onRefresh: () => cubit.load(),
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
                 ),
-                const SizedBox(width: 8),
-              ],
-            )
-          : null,
-      body: BlocBuilder<DashboardCubit, DashboardState>(
-        builder: (context, state) {
-          return RefreshIndicator(
-            color: primaryColor,
-            onRefresh: () => cubit.load(),
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.fromLTRB(
-                isWide ? Gap.xl : Gap.md,
-                isWide ? Gap.md : Gap.xs,
-                isWide ? Gap.xl : Gap.md,
-                Gap.xxl,
-              ),
-              children: [
-                Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 960),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // 1. Header Card (Store / Outlet / Kasir & Live Status)
-                        DashboardHeaderCard(
-                          isRefreshing: _isRefreshing,
-                          onRefresh: () => _handleRefresh(context),
-                        ),
-
-                        const SizedBox(height: Gap.md),
-
-                        // 2. Filter Rentang Waktu (Hari ini, 7 Hari, 30 Hari)
-                        DashboardRangePicker(
-                          selected: state.range,
-                          onChanged: (r) {
-                            AudioHelper.tapFeedback();
-                            cubit.load(r);
-                          },
-                        ),
-
-                        const SizedBox(height: Gap.md),
-
-                        // 3. Status Data (Loading, Error, Loaded)
-                        switch (state) {
-                          DashboardLoading() => const Padding(
-                              padding: EdgeInsets.only(top: Gap.lg),
-                              child: SkeletonList(count: 4, itemHeight: 96),
+                padding: EdgeInsets.fromLTRB(
+                  isWide ? Gap.xl : 16,
+                  isWide ? Gap.md : 12,
+                  isWide ? Gap.xl : 16,
+                  Gap.xxl,
+                ),
+                children: [
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 960),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (!isWide || canPop) ...[
+                            Row(
+                              children: [
+                                if (canPop) ...[
+                                  Material(
+                                    color: p.surface,
+                                    shape: CircleBorder(
+                                      side: BorderSide(
+                                        color: isDark
+                                            ? Colors.white.withValues(alpha: 0.08)
+                                            : p.line.withValues(alpha: 0.55),
+                                      ),
+                                    ),
+                                    child: InkWell(
+                                      customBorder: const CircleBorder(),
+                                      onTap: () => Navigator.of(context).pop(),
+                                      child: SizedBox(
+                                        width: 40,
+                                        height: 40,
+                                        child: Icon(
+                                          Icons.chevron_left_rounded,
+                                          size: 22,
+                                          color: p.textPrimary,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                ],
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Dashboard',
+                                        style: TextStyle(
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.w800,
+                                          color: p.textPrimary,
+                                          letterSpacing: -0.6,
+                                          height: 1.1,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Ringkasan penjualan & performa outlet',
+                                        style: TextStyle(
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w500,
+                                          color: p.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Tooltip(
+                                  message: 'Muat Ulang Data',
+                                  child: Material(
+                                    color: p.surface,
+                                    shape: CircleBorder(
+                                      side: BorderSide(
+                                        color: isDark
+                                            ? Colors.white.withValues(alpha: 0.08)
+                                            : p.line.withValues(alpha: 0.55),
+                                      ),
+                                    ),
+                                    child: InkWell(
+                                      customBorder: const CircleBorder(),
+                                      onTap: _isRefreshing ? null : () => _handleRefresh(context),
+                                      child: SizedBox(
+                                        width: 40,
+                                        height: 40,
+                                        child: Center(
+                                          child: _isRefreshing
+                                              ? VeloraOrbitLoader.inline(
+                                                  size: 18,
+                                                  color: primaryColor,
+                                                )
+                                              : Icon(
+                                                  Icons.refresh_rounded,
+                                                  size: 19,
+                                                  color: p.textPrimary,
+                                                ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          DashboardFailed(:final message) => Padding(
-                              padding: const EdgeInsets.only(top: Gap.xl),
-                              child: ErrorState(
-                                message: message,
-                                onRetry: () => cubit.load(),
+                            const SizedBox(height: 16),
+                          ],
+
+                          // 1. Header Card (Store / Outlet / Kasir & Live Status)
+                          DashboardHeaderCard(
+                            isRefreshing: _isRefreshing,
+                            onRefresh: () => _handleRefresh(context),
+                          ),
+
+                          const SizedBox(height: Gap.md),
+
+                          // 2. Filter Rentang Waktu (Hari ini, 7 Hari, 30 Hari)
+                          DashboardRangePicker(
+                            selected: state.range,
+                            onChanged: (r) {
+                              AudioHelper.tapFeedback();
+                              cubit.load(r);
+                            },
+                          ),
+
+                          const SizedBox(height: Gap.md),
+
+                          // 3. Status Data (Loading, Error, Loaded)
+                          switch (state) {
+                            DashboardLoading() => const Padding(
+                                padding: EdgeInsets.only(top: Gap.lg),
+                                child: SkeletonList(count: 4, itemHeight: 96),
                               ),
-                            ),
-                          DashboardLoaded(:final summary) => DashboardSummaryView(
-                              summary: summary,
-                              range: state.range,
-                              isWide: isWide,
-                            ),
-                        },
-                      ],
+                            DashboardFailed(:final message) => Padding(
+                                padding: const EdgeInsets.only(top: Gap.xl),
+                                child: ErrorState(
+                                  message: message,
+                                  onRetry: () => cubit.load(),
+                                ),
+                              ),
+                            DashboardLoaded(:final summary) => DashboardSummaryView(
+                                summary: summary,
+                                range: state.range,
+                                isWide: isWide,
+                              ),
+                          },
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          );
-        },
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }

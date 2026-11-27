@@ -148,7 +148,7 @@ class _CustomerAddDialogState extends State<CustomerAddDialog> {
         FilledButton(
           onPressed: _saving ? null : _submit,
           child: _saving
-              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              ? const VeloraOrbitLoader.inline(size: 18, color: Colors.white)
               : const Text('Simpan'),
         ),
       ],

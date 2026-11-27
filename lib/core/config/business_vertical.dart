@@ -43,7 +43,7 @@ enum BusinessVertical {
 
     // 3. Normalized business type from backend / tenant
     final b = (businessType ?? '').toLowerCase().trim();
-    if (b.contains('pharm') || b.contains('apotek') || b.contains('klinik') || b.contains('med')) {
+    if (b == 'pbf' || b.contains('pbf') || b.contains('pharm') || b.contains('apotek') || b.contains('klinik') || b.contains('med')) {
       return BusinessVertical.pharmacy;
     }
     if (b.contains('fnb') || b.contains('cafe') || b.contains('resto') || b.contains('kopi') || b.contains('coffee') || b.contains('kuliner') || b.contains('food')) {

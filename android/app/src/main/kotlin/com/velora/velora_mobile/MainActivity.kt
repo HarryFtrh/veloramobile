@@ -218,6 +218,10 @@ class MainActivity : FlutterActivity() {
                 }
                 "openPlayStore" -> {
                     val targetPackage = call.argument<String>("packageName") ?: packageName
+                    if (!Regex("^[a-zA-Z0-9_.]+$").matches(targetPackage)) {
+                        result.error("INVALID_PACKAGE", "Nama paket tidak valid", null)
+                        return@setMethodCallHandler
+                    }
                     try {
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$targetPackage")).apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -237,13 +241,19 @@ class MainActivity : FlutterActivity() {
                     }
                 }
                 "openUrl" -> {
-                    val targetUrl = call.argument<String>("url")
+                    val targetUrl = call.argument<String>("url")?.trim()
                     if (targetUrl.isNullOrBlank()) {
                         result.error("INVALID_URL", "URL kosong", null)
                         return@setMethodCallHandler
                     }
+                    val parsed = Uri.parse(targetUrl)
+                    val scheme = parsed.scheme?.lowercase(Locale.ROOT)
+                    if (scheme != "https" || parsed.host.isNullOrBlank()) {
+                        result.error("UNSAFE_URL", "Hanya URL HTTPS valid yang diizinkan", null)
+                        return@setMethodCallHandler
+                    }
                     try {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(targetUrl)).apply {
+                        val intent = Intent(Intent.ACTION_VIEW, parsed).apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         }
                         startActivity(intent)

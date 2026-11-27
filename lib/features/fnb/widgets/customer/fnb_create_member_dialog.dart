@@ -156,7 +156,7 @@ class _FnbCreateMemberDialogState extends State<FnbCreateMemberDialog> {
                   }
                 },
           child: saving
-              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              ? const VeloraOrbitLoader.inline(size: 18, color: Colors.white)
               : const Text('Simpan & Pilih'),
         ),
       ],

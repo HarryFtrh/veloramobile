@@ -1,10 +1,12 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/storage/session_storage.dart';
 import '../../core/utils/audio_helper.dart';
 import 'auth_service.dart';
+import 'cubit/auth_cubit.dart';
 import 'widgets/branch_selector_dialog.dart';
 import 'widgets/forgot_password_dialog.dart';
 import 'widgets/login_branding.dart';
@@ -37,8 +39,23 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _rememberMe = true;
   String? _errorMessage;
+  AuthPublicSettings? _authSettings;
 
-  LoginBranding get _branding => LoginBranding.of(AppConfig.instance.flavor);
+  LoginBranding get _branding {
+    final base = LoginBranding.of(AppConfig.instance.flavor);
+    if (_authSettings != null && !_authSettings!.allowPublicRegistration) {
+      return LoginBranding(
+        badge: base.badge,
+        icon: base.icon,
+        subtitle: base.subtitle,
+        buttonLabel: base.buttonLabel,
+        idLabel: base.idLabel,
+        branchTitle: base.branchTitle,
+        showRegister: false,
+      );
+    }
+    return base;
+  }
 
   String _greetingText() {
     final hour = DateTime.now().hour;
@@ -52,6 +69,14 @@ class _LoginScreenState extends State<LoginScreen> {
   void initState() {
     super.initState();
     _loadRememberedCredentials();
+    _loadAuthSettings();
+  }
+
+  Future<void> _loadAuthSettings() async {
+    final settings = await AuthService.instance.getAuthSettings();
+    if (mounted) {
+      setState(() => _authSettings = settings);
+    }
   }
 
   void _loadRememberedCredentials() {
@@ -110,9 +135,9 @@ class _LoginScreenState extends State<LoginScreen> {
         if (!mounted) return;
         if (user.locations.length > 1) {
           setState(() => _isLoginSuccess = false);
-          _showBranchSelectorDialog(user.locations);
+          _showBranchSelectorDialog(user);
         } else {
-          widget.onLoginSuccess();
+          _finishAuthenticated(user);
         }
       }
     } on DioException catch (e) {
@@ -164,9 +189,9 @@ class _LoginScreenState extends State<LoginScreen> {
         if (!mounted) return;
         if (user.locations.length > 1) {
           setState(() => _isLoginSuccess = false);
-          _showBranchSelectorDialog(user.locations);
+          _showBranchSelectorDialog(user);
         } else {
-          widget.onLoginSuccess();
+          _finishAuthenticated(user);
         }
       }
     } on DioException catch (e) {
@@ -194,13 +219,21 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _showBranchSelectorDialog(List<BranchLocation> locations) {
+  void _finishAuthenticated(AuthUser user) {
+    try {
+      context.read<AuthCubit>().completeLogin(user);
+    } catch (_) {
+      widget.onLoginSuccess();
+    }
+  }
+
+  void _showBranchSelectorDialog(AuthUser user) {
     showBranchSelectorDialog(
       context,
-      locations: locations,
+      locations: user.locations,
       branchTitle: _branding.branchTitle,
       onBranchSelected: () {
-        if (mounted) widget.onLoginSuccess();
+        if (mounted) _finishAuthenticated(user);
       },
     );
   }
@@ -215,12 +248,13 @@ class _LoginScreenState extends State<LoginScreen> {
   void _showRegisterDialog() {
     showRegisterTenantSheet(
       context,
+      initialSettings: _authSettings,
       onRegistered: (user) {
         if (mounted) {
           if (user.locations.length > 1) {
-            _showBranchSelectorDialog(user.locations);
+            _showBranchSelectorDialog(user);
           } else {
-            widget.onLoginSuccess();
+            _finishAuthenticated(user);
           }
         }
       },
@@ -240,6 +274,9 @@ class _LoginScreenState extends State<LoginScreen> {
       isGoogleLoading: _isGoogleLoading,
       isLoginSuccess: _isLoginSuccess,
       greetingText: _greetingText(),
+      showGoogleLogin: _authSettings?.enableGoogleAuth ?? true,
+      showForgotPassword: _authSettings?.allowPasswordReset ?? true,
+      maintenanceMode: _authSettings?.maintenanceMode ?? false,
       onToggleObscurePassword: () => setState(() => _obscurePassword = !_obscurePassword),
       onToggleRememberMe: (v) => setState(() => _rememberMe = v),
       onLogin: _handleLogin,
